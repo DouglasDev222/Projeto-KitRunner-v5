@@ -140,7 +140,11 @@ Preferred communication style: Simple, everyday language.
 - ✓ Added proper returnPath functionality for login redirection
 - ✓ Enhanced status translation in orders (confirmed → Confirmado)
 
-### Replit Migration & User Flow Improvements (January 2025)
+### Event Form UX Enhancement & Replit Migration (January 2025)
+- ✓ Enhanced event creation form with smart pricing type selector to prevent accidental zero pricing
+- ✓ Added "Tipo de Precificação" select field with "Calculado por Distância" and "Preço Fixo" options  
+- ✓ Fixed price field only shows when "Preço Fixo" is selected, preventing pricing errors
+- ✓ Added form validation requiring valid price when fixed pricing is selected
 - ✓ Successfully migrated from Replit Agent to standard Replit environment
 - ✓ Configured PostgreSQL database with proper schema migration
 - ✓ Updated database connection from Neon to standard PostgreSQL for Replit compatibility

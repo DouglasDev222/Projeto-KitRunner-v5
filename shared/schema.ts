@@ -245,11 +245,25 @@ export const adminEventCreationSchema = z.object({
   city: z.string().min(1, "Cidade é obrigatória"),
   state: z.string().length(2, "Estado deve ter 2 caracteres"),
   pickupZipCode: z.string().length(8, "CEP deve ter 8 dígitos"),
+  pricingType: z.enum(["distance", "fixed"]).default("distance"),
   fixedPrice: z.string().optional(),
   extraKitPrice: z.string().default("8.00"),
   donationRequired: z.boolean().default(false),
   donationAmount: z.string().optional(),
   donationDescription: z.string().optional(),
+}).refine((data) => {
+  // If pricing type is "fixed", fixedPrice must be provided and be a valid number > 0
+  if (data.pricingType === "fixed") {
+    if (!data.fixedPrice || data.fixedPrice.trim() === "") {
+      return false;
+    }
+    const price = parseFloat(data.fixedPrice);
+    return !isNaN(price) && price > 0;
+  }
+  return true;
+}, {
+  message: "Preço fixo é obrigatório e deve ser maior que zero quando o tipo de precificação for 'Preço Fixo'",
+  path: ["fixedPrice"]
 });
 
 // Type exports

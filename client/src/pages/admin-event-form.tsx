@@ -44,6 +44,7 @@ export default function AdminEventForm() {
       city: "",
       state: "PB",
       pickupZipCode: "",
+      pricingType: "distance",
       fixedPrice: "",
       extraKitPrice: "8.00",
       donationRequired: false,
@@ -80,6 +81,7 @@ export default function AdminEventForm() {
   };
 
   const watchDonationRequired = form.watch("donationRequired");
+  const watchPricingType = form.watch("pricingType");
 
   if (!isAuthenticated) {
     return <AdminAuth onAuthenticated={() => setIsAuthenticated(true)} />;
@@ -222,25 +224,52 @@ export default function AdminEventForm() {
 
                   <FormField
                     control={form.control}
-                    name="fixedPrice"
+                    name="pricingType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Preço Fixo (Opcional)</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="0.00"
-                            type="number"
-                            step="0.01"
-                            {...field}
-                          />
-                        </FormControl>
+                        <FormLabel>Tipo de Precificação</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="distance">Calculado por Distância</SelectItem>
+                            <SelectItem value="fixed">Preço Fixo</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormDescription>
-                          Se definido, será usado como preço base ao invés do cálculo por distância
+                          Escolha como o preço base será calculado para este evento
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+
+                  {watchPricingType === "fixed" && (
+                    <FormField
+                      control={form.control}
+                      name="fixedPrice"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Preço Fixo</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="0.00"
+                              type="number"
+                              step="0.01"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Valor fixo em reais para o kit base deste evento
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   <FormField
                     control={form.control}

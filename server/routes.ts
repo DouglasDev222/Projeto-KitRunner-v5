@@ -428,15 +428,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = adminEventCreationSchema.parse(req.body);
       
-      // Convert string prices to proper format
+      // Convert string prices to proper format and handle pricing logic
       const eventData = {
         ...validatedData,
-        fixedPrice: validatedData.fixedPrice ? validatedData.fixedPrice : null,
+        // Only save fixedPrice if pricing type is "fixed" and price is provided
+        fixedPrice: validatedData.pricingType === "fixed" && validatedData.fixedPrice ? validatedData.fixedPrice : null,
         extraKitPrice: validatedData.extraKitPrice ? validatedData.extraKitPrice : "8.00",
         donationAmount: validatedData.donationAmount ? validatedData.donationAmount : null,
       };
 
-      const event = await storage.createEvent(eventData);
+      // Remove pricingType from eventData as it's not in the database schema
+      const { pricingType, ...dataToSave } = eventData;
+
+      const event = await storage.createEvent(dataToSave);
       res.json(event);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
