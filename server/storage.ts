@@ -92,12 +92,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateEvent(id: number, eventData: Partial<InsertEvent>): Promise<Event | undefined> {
-    const [event] = await db
-      .update(events)
-      .set(eventData)
-      .where(eq(events.id, id))
-      .returning();
-    return event || undefined;
+    try {
+      console.log("=== STORAGE UPDATE EVENT DEBUG ===");
+      console.log("Event ID:", id);
+      console.log("Event data to update:", JSON.stringify(eventData, null, 2));
+      
+      const [event] = await db
+        .update(events)
+        .set(eventData)
+        .where(eq(events.id, id))
+        .returning();
+        
+      console.log("Updated event from DB:", JSON.stringify(event, null, 2));
+      console.log("=== END STORAGE DEBUG ===");
+      
+      return event || undefined;
+    } catch (error: any) {
+      console.error("=== STORAGE UPDATE ERROR ===");
+      console.error("Error details:", error);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+      console.error("=== END STORAGE ERROR ===");
+      throw error;
+    }
   }
 
   async deleteEvent(id: number): Promise<boolean> {

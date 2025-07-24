@@ -469,19 +469,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const updateData = req.body;
       
+      console.log("=== UPDATE EVENT DEBUG ===");
+      console.log("Event ID:", id);
+      console.log("Raw request body:", JSON.stringify(updateData, null, 2));
+      
       // Convert date format if needed
       if (updateData.date && !updateData.date.includes('T')) {
         updateData.date = updateData.date + 'T00:00:00.000Z';
       }
       
-      const event = await storage.updateEvent(id, updateData);
+      // Clean up the data - ensure proper types
+      const cleanedData = {
+        ...updateData,
+        // Convert boolean strings to actual booleans
+        donationRequired: updateData.donationRequired === true || updateData.donationRequired === "true",
+        available: updateData.available === true || updateData.available === "true",
+        // Handle decimal fields - convert empty strings to null
+        fixedPrice: updateData.fixedPrice && updateData.fixedPrice.toString().trim() !== "" ? updateData.fixedPrice.toString() : null,
+        extraKitPrice: updateData.extraKitPrice && updateData.extraKitPrice.toString().trim() !== "" ? updateData.extraKitPrice.toString() : "8.00",
+        donationAmount: updateData.donationAmount && updateData.donationAmount.toString().trim() !== "" ? updateData.donationAmount.toString() : null,
+      };
+      
+      console.log("Cleaned data:", JSON.stringify(cleanedData, null, 2));
+      
+      const event = await storage.updateEvent(id, cleanedData);
       
       if (!event) {
         return res.status(404).json({ message: "Evento não encontrado" });
       }
       
+      console.log("Updated event:", JSON.stringify(event, null, 2));
+      console.log("=== END UPDATE EVENT DEBUG ===");
+      
       res.json(event);
     } catch (error: any) {
+      console.error("=== UPDATE EVENT ERROR ===");
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+      console.error("=== END ERROR ===");
       res.status(500).json({ error: error.message });
     }
   });
