@@ -15,7 +15,7 @@ import type { Address } from "@shared/schema";
 
 export default function Profile() {
   const [, setLocation] = useLocation();
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, isLoading } = useAuth();
 
   const { data: addresses } = useQuery({
     queryKey: ["addresses", user?.id],
@@ -33,11 +33,23 @@ export default function Profile() {
 
   // Use effect to handle redirection to avoid React warning
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       sessionStorage.setItem("loginReturnPath", "/profile");
       setLocation("/login");
     }
-  }, [isAuthenticated, setLocation]);
+  }, [isLoading, isAuthenticated, setLocation]);
+
+  // Show loading while auth context is initializing
+  if (isLoading) {
+    return (
+      <div className="max-w-md mx-auto bg-white min-h-screen">
+        <Header showBackButton onBack={() => setLocation("/")} />
+        <div className="p-4 text-center">
+          <p className="text-neutral-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   // If not authenticated, show loading while redirecting
   if (!isAuthenticated) {
