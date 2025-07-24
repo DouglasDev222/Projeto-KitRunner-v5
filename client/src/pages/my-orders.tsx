@@ -32,44 +32,11 @@ const getStatusLabel = (status: string): string => {
 };
 
 export default function MyOrders() {
+  // ALL hooks must be at the very top, before any conditional logic
   const [, setLocation] = useLocation();
   const { user, isAuthenticated, isLoading } = useAuth();
   const [customer, setCustomer] = useState(null);
   const [showOrders, setShowOrders] = useState(false);
-
-  // Use effect to handle redirection to avoid React warning
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated && !showOrders && !customer) {
-      setLocation("/login?returnPath=/my-orders");
-    }
-  }, [isLoading, isAuthenticated, showOrders, customer, setLocation]);
-
-  // Show loading while auth context is initializing
-  if (isLoading) {
-    return (
-      <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header showBackButton onBack={() => setLocation("/")} />
-        <div className="p-4 text-center">
-          <p className="text-neutral-600">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If user is not authenticated and not showing orders, redirect to login
-  if (!isAuthenticated && !showOrders && !customer) {
-    return (
-      <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header showBackButton onBack={() => setLocation("/")} />
-        <div className="p-4 text-center">
-          <p className="text-neutral-600">Redirecionando para login...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If user is authenticated, use that, otherwise require login
-  const effectiveCustomer = user || customer;
 
   const form = useForm<CustomerIdentification>({
     resolver: zodResolver(customerIdentificationSchema),
@@ -78,6 +45,8 @@ export default function MyOrders() {
       birthDate: "",
     },
   });
+
+  const effectiveCustomer = user || customer;
 
   const { data: orders, isLoading: ordersLoading } = useQuery({
     queryKey: ["orders", effectiveCustomer?.id],
@@ -104,6 +73,13 @@ export default function MyOrders() {
     },
   });
 
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && !showOrders && !customer) {
+      setLocation("/login?returnPath=/my-orders");
+    }
+  }, [isLoading, isAuthenticated, showOrders, customer, setLocation]);
+
+  // Handler functions
   const onSubmit = (data: CustomerIdentification) => {
     const cleanCPF = data.cpf.replace(/\D/g, "");
     if (!isValidCPF(cleanCPF)) {
@@ -117,7 +93,31 @@ export default function MyOrders() {
     setLocation(`/orders/${orderNumber}`);
   };
 
-  // If authenticated, skip login form
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="max-w-md mx-auto bg-white min-h-screen">
+        <Header showBackButton onBack={() => setLocation("/")} />
+        <div className="p-4 text-center">
+          <p className="text-neutral-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect state
+  if (!isAuthenticated && !showOrders && !customer) {
+    return (
+      <div className="max-w-md mx-auto bg-white min-h-screen">
+        <Header showBackButton onBack={() => setLocation("/")} />
+        <div className="p-4 text-center">
+          <p className="text-neutral-600">Redirecionando para login...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Authenticated or identified customer view
   if (isAuthenticated || (showOrders && customer)) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
@@ -209,6 +209,7 @@ export default function MyOrders() {
     );
   }
 
+  // Guest identification form
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
       <Header showBackButton onBack={() => setLocation("/")} />

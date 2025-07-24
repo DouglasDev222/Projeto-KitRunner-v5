@@ -17,16 +17,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Load user from localStorage on mount
-    const savedUser = localStorage.getItem('kitrunner_user');
-    if (savedUser) {
+    const loadUserFromStorage = () => {
       try {
-        const parsedUser = JSON.parse(savedUser);
-        setUser(parsedUser);
+        const savedUser = localStorage.getItem('kitrunner_user');
+        if (savedUser) {
+          const parsedUser = JSON.parse(savedUser);
+          // Validate that the parsed user has required fields
+          if (parsedUser && parsedUser.id && parsedUser.name && parsedUser.cpf) {
+            setUser(parsedUser);
+          } else {
+            localStorage.removeItem('kitrunner_user');
+          }
+        }
       } catch (error) {
+        console.warn('Failed to load user from localStorage:', error);
         localStorage.removeItem('kitrunner_user');
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+
+    // Small delay to ensure localStorage is available
+    const timeout = setTimeout(loadUserFromStorage, 100);
+    return () => clearTimeout(timeout);
   }, []);
 
   const login = (customer: Customer) => {
