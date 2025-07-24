@@ -33,18 +33,30 @@ const getStatusLabel = (status: string): string => {
 
 export default function MyOrders() {
   const [, setLocation] = useLocation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [customer, setCustomer] = useState(null);
   const [showOrders, setShowOrders] = useState(false);
 
   // Use effect to handle redirection to avoid React warning
   useEffect(() => {
-    if (!isAuthenticated && !showOrders && !customer) {
-      setLocation("/login");
+    if (!isLoading && !isAuthenticated && !showOrders && !customer) {
+      setLocation("/login?returnPath=/my-orders");
     }
-  }, [isAuthenticated, showOrders, customer, setLocation]);
+  }, [isLoading, isAuthenticated, showOrders, customer, setLocation]);
 
-  // If user is not authenticated, show loading while redirecting
+  // Show loading while auth context is initializing
+  if (isLoading) {
+    return (
+      <div className="max-w-md mx-auto bg-white min-h-screen">
+        <Header showBackButton onBack={() => setLocation("/")} />
+        <div className="p-4 text-center">
+          <p className="text-neutral-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is not authenticated and not showing orders, redirect to login
   if (!isAuthenticated && !showOrders && !customer) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
@@ -153,7 +165,19 @@ export default function MyOrders() {
                         </div>
                         <div className="flex items-center text-sm text-neutral-600 mb-2">
                           <Calendar className="w-4 h-4 mr-2" />
-                          {formatDate(typeof order.createdAt === 'string' ? order.createdAt.split('T')[0] : new Date(order.createdAt as any).toISOString().split('T')[0])}
+                          {(() => {
+                            try {
+                              const dateStr = order.createdAt ? 
+                                (typeof order.createdAt === 'string' ? 
+                                  order.createdAt : 
+                                  new Date(order.createdAt).toISOString()
+                                ).split('T')[0] : 
+                                new Date().toISOString().split('T')[0];
+                              return formatDate(dateStr);
+                            } catch {
+                              return formatDate(new Date().toISOString().split('T')[0]);
+                            }
+                          })()}
                         </div>
                         <p className="text-lg font-bold text-primary">
                           {formatCurrency(parseFloat(order.totalCost))}

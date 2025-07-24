@@ -6,12 +6,14 @@ interface AuthContextType {
   login: (customer: Customer) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Customer | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Load user from localStorage on mount
@@ -24,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('kitrunner_user');
       }
     }
+    setIsLoading(false);
   }, []);
 
   const login = (customer: Customer) => {
@@ -42,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isAuthenticated = !!user;
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
