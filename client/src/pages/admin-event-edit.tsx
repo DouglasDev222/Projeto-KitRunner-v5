@@ -24,12 +24,25 @@ const eventSchema = z.object({
   city: z.string().min(1, "Cidade é obrigatória"),
   state: z.string().min(1, "Estado é obrigatório"),
   pickupZipCode: z.string().min(8, "CEP é obrigatório"),
+  pricingType: z.enum(["distance", "fixed"]).default("distance"),
   fixedPrice: z.string().optional(),
   extraKitPrice: z.string().default("8.00"),
   donationRequired: z.boolean().default(false),
   donationAmount: z.string().optional(),
   donationDescription: z.string().optional(),
   available: z.boolean().default(true),
+}).refine((data) => {
+  if (data.pricingType === "fixed") {
+    if (!data.fixedPrice || data.fixedPrice.trim() === "") {
+      return false;
+    }
+    const price = parseFloat(data.fixedPrice);
+    return !isNaN(price) && price > 0;
+  }
+  return true;
+}, {
+  message: "Preço fixo é obrigatório e deve ser maior que zero quando o tipo de precificação for 'Preço Fixo'",
+  path: ["fixedPrice"]
 });
 
 type EventFormData = z.infer<typeof eventSchema>;
@@ -65,6 +78,7 @@ export default function AdminEventEdit() {
       city: "",
       state: "",
       pickupZipCode: "",
+      pricingType: "distance",
       fixedPrice: "",
       extraKitPrice: "8.00",
       donationRequired: false,
@@ -75,6 +89,7 @@ export default function AdminEventEdit() {
   });
 
   const donationRequired = form.watch("donationRequired");
+  const watchPricingType = form.watch("pricingType");
 
   useEffect(() => {
     if (event) {
@@ -85,6 +100,7 @@ export default function AdminEventEdit() {
         city: event.city,
         state: event.state,
         pickupZipCode: event.pickupZipCode,
+        pricingType: event.fixedPrice ? "fixed" : "distance", // Determina o tipo baseado se tem preço fixo
         fixedPrice: event.fixedPrice || "",
         extraKitPrice: event.extraKitPrice || "8.00",
         donationRequired: event.donationRequired || false,
@@ -97,10 +113,17 @@ export default function AdminEventEdit() {
 
   const updateEventMutation = useMutation({
     mutationFn: async (data: EventFormData) => {
+      // Remove pricingType and adjust fixedPrice based on pricing type
+      const { pricingType, ...eventData } = data;
+      const finalData = {
+        ...eventData,
+        fixedPrice: pricingType === "fixed" && data.fixedPrice ? data.fixedPrice : null,
+      };
+      
       const response = await fetch(`/api/admin/events/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(finalData),
       });
       if (!response.ok) throw new Error("Erro ao atualizar evento");
       return response.json();
@@ -284,25 +307,52 @@ export default function AdminEventEdit() {
 
                 <FormField
                   control={form.control}
-                  name="fixedPrice"
+                  name="pricingType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Preço Fixo (Opcional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="0.00"
-                          type="number"
-                          step="0.01"
-                          {...field}
-                        />
-                      </FormControl>
+                      <FormLabel>Tipo de Precificação</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="distance">Calculado por Distância</SelectItem>
+                          <SelectItem value="fixed">Preço Fixo</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormDescription>
-                        Se definido, será usado como preço base ao invés do cálculo por distância
+                        Escolha como o preço base será calculado para este evento
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                {watchPricingType === "fixed" && (
+                  <FormField
+                    control={form.control}
+                    name="fixedPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Preço Fixo</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="0.00"
+                            type="number"
+                            step="0.01"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Valor fixo em reais para o kit base deste evento
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <FormField
                   control={form.control}
