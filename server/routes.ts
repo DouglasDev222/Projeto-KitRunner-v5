@@ -552,6 +552,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin Orders Management Routes
+  
+  // Get all orders with filters and pagination
+  app.get("/api/admin/orders", async (req, res) => {
+    try {
+      const filters = req.query;
+      
+      // Get all orders with customer, event, and address details
+      const orders = await storage.getAllOrdersWithDetails(filters);
+      
+      res.json(orders);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get single order with full details
+  app.get("/api/admin/orders/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const order = await storage.getOrderWithFullDetails(id);
+      
+      if (!order) {
+        return res.status(404).json({ message: "Pedido não encontrado" });
+      }
+      
+      res.json(order);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update order status
+  app.patch("/api/admin/orders/:id/status", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status } = req.body;
+      
+      // Validate status
+      const validStatuses = ["confirmed", "awaiting_payment", "cancelled", "kits_being_prepared", "kits_ready", "in_transit", "delivered"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ message: "Status inválido" });
+      }
+      
+      const order = await storage.updateOrderStatus(id, status);
+      
+      if (!order) {
+        return res.status(404).json({ message: "Pedido não encontrado" });
+      }
+      
+      res.json(order);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update order details (admin can edit order)
+  app.put("/api/admin/orders/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updateData = req.body;
+      
+      const order = await storage.updateOrder(id, updateData);
+      
+      if (!order) {
+        return res.status(404).json({ message: "Pedido não encontrado" });
+      }
+      
+      res.json(order);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get order statistics
+  app.get("/api/admin/orders/stats", async (req, res) => {
+    try {
+      const stats = await storage.getOrderStats();
+      res.json(stats);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

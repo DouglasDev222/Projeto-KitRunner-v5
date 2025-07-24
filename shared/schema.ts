@@ -66,7 +66,7 @@ export const orders = pgTable("orders", {
   couponCode: text("coupon_code"), // Código do cupom usado
   totalCost: decimal("total_cost", { precision: 10, scale: 2 }).notNull(),
   paymentMethod: text("payment_method").notNull(),
-  status: text("status").notNull().default("confirmed"),
+  status: text("status").notNull().default("confirmed"), // "confirmed", "awaiting_payment", "cancelled", "kits_being_prepared", "kits_ready", "in_transit", "delivered"
   donationAmount: decimal("donation_amount", { precision: 10, scale: 2 }).notNull().default("0"), // Valor da doação
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -290,3 +290,20 @@ export type KitInformation = z.infer<typeof kitInformationSchema>;
 export type OrderCreation = z.infer<typeof orderCreationSchema>;
 export type CustomerRegistration = z.infer<typeof customerRegistrationSchema>;
 export type AdminEventCreation = z.infer<typeof adminEventCreationSchema>;
+
+// Admin order management schemas
+export const orderStatusUpdateSchema = z.object({
+  status: z.enum(["confirmed", "awaiting_payment", "cancelled", "kits_being_prepared", "kits_ready", "in_transit", "delivered"]),
+});
+
+export const orderSearchFiltersSchema = z.object({
+  status: z.enum(["all", "confirmed", "awaiting_payment", "cancelled", "kits_being_prepared", "kits_ready", "in_transit", "delivered"]).default("all"),
+  eventId: z.number().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  customerName: z.string().optional(),
+  orderNumber: z.string().optional(),
+});
+
+export type OrderStatusUpdate = z.infer<typeof orderStatusUpdateSchema>;
+export type OrderSearchFilters = z.infer<typeof orderSearchFiltersSchema>;

@@ -306,6 +306,187 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  // Admin Order Management Functions
+  async getAllOrdersWithDetails(filters: any = {}): Promise<any[]> {
+    let query = db.select({
+      id: orders.id,
+      orderNumber: orders.orderNumber,
+      eventId: orders.eventId,
+      customerId: orders.customerId,
+      addressId: orders.addressId,
+      kitQuantity: orders.kitQuantity,
+      deliveryCost: orders.deliveryCost,
+      extraKitsCost: orders.extraKitsCost,
+      donationCost: orders.donationCost,
+      discountAmount: orders.discountAmount,
+      couponCode: orders.couponCode,
+      totalCost: orders.totalCost,
+      paymentMethod: orders.paymentMethod,
+      status: orders.status,
+      donationAmount: orders.donationAmount,
+      createdAt: orders.createdAt,
+      customer: {
+        id: customers.id,
+        name: customers.name,
+        cpf: customers.cpf,
+        email: customers.email,
+        phone: customers.phone,
+      },
+      event: {
+        id: events.id,
+        name: events.name,
+        date: events.date,
+        location: events.location,
+        city: events.city,
+        state: events.state,
+      },
+      address: {
+        id: addresses.id,
+        street: addresses.street,
+        number: addresses.number,
+        complement: addresses.complement,
+        neighborhood: addresses.neighborhood,
+        city: addresses.city,
+        state: addresses.state,
+        zipCode: addresses.zipCode,
+      },
+    })
+    .from(orders)
+    .leftJoin(customers, eq(orders.customerId, customers.id))
+    .leftJoin(events, eq(orders.eventId, events.id))
+    .leftJoin(addresses, eq(orders.addressId, addresses.id));
+
+    // Apply filters
+    if (filters.status && filters.status !== 'all') {
+      query = query.where(eq(orders.status, filters.status));
+    }
+
+    if (filters.eventId) {
+      query = query.where(eq(orders.eventId, parseInt(filters.eventId)));
+    }
+
+    if (filters.orderNumber) {
+      query = query.where(eq(orders.orderNumber, filters.orderNumber));
+    }
+
+    const result = await query.orderBy(desc(orders.createdAt));
+    return result;
+  }
+
+  async getOrderWithFullDetails(orderId: number): Promise<any | undefined> {
+    const [order] = await db.select({
+      id: orders.id,
+      orderNumber: orders.orderNumber,
+      eventId: orders.eventId,
+      customerId: orders.customerId,
+      addressId: orders.addressId,
+      kitQuantity: orders.kitQuantity,
+      deliveryCost: orders.deliveryCost,
+      extraKitsCost: orders.extraKitsCost,
+      donationCost: orders.donationCost,
+      discountAmount: orders.discountAmount,
+      couponCode: orders.couponCode,
+      totalCost: orders.totalCost,
+      paymentMethod: orders.paymentMethod,
+      status: orders.status,
+      donationAmount: orders.donationAmount,
+      createdAt: orders.createdAt,
+      customer: {
+        id: customers.id,
+        name: customers.name,
+        cpf: customers.cpf,
+        email: customers.email,
+        phone: customers.phone,
+      },
+      event: {
+        id: events.id,
+        name: events.name,
+        date: events.date,
+        location: events.location,
+        city: events.city,
+        state: events.state,
+        pickupZipCode: events.pickupZipCode,
+        fixedPrice: events.fixedPrice,
+        extraKitPrice: events.extraKitPrice,
+        donationRequired: events.donationRequired,
+        donationAmount: events.donationAmount,
+        donationDescription: events.donationDescription,
+      },
+      address: {
+        id: addresses.id,
+        label: addresses.label,
+        street: addresses.street,
+        number: addresses.number,
+        complement: addresses.complement,
+        neighborhood: addresses.neighborhood,
+        city: addresses.city,
+        state: addresses.state,
+        zipCode: addresses.zipCode,
+      },
+    })
+    .from(orders)
+    .leftJoin(customers, eq(orders.customerId, customers.id))
+    .leftJoin(events, eq(orders.eventId, events.id))
+    .leftJoin(addresses, eq(orders.addressId, addresses.id))
+    .where(eq(orders.id, orderId));
+
+    if (!order) return undefined;
+
+    // Get kits for this order
+    const orderKits = await db.select().from(kits).where(eq(kits.orderId, orderId));
+
+    return {
+      ...order,
+      kits: orderKits,
+    };
+  }
+
+  async updateOrderStatus(orderId: number, status: string): Promise<Order | undefined> {
+    const [order] = await db
+      .update(orders)
+      .set({ status })
+      .where(eq(orders.id, orderId))
+      .returning();
+    return order;
+  }
+
+  async updateOrder(orderId: number, updateData: Partial<InsertOrder>): Promise<Order | undefined> {
+    const [order] = await db
+      .update(orders)
+      .set(updateData)
+      .where(eq(orders.id, orderId))
+      .returning();
+    return order;
+  }
+
+  async getOrderStats(): Promise<{
+    totalOrders: number;
+    confirmedOrders: number;
+    awaitingPayment: number;
+    cancelledOrders: number;
+    inTransitOrders: number;
+    deliveredOrders: number;
+    totalRevenue: number;
+  }> {
+    const [totalOrdersCount] = await db.select({ count: count() }).from(orders);
+    const [confirmedCount] = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'confirmed'));
+    const [awaitingPaymentCount] = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'awaiting_payment'));
+    const [cancelledCount] = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'cancelled'));
+    const [inTransitCount] = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'in_transit'));
+    const [deliveredCount] = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'delivered'));
+    const [revenue] = await db.select({ total: sum(orders.totalCost) }).from(orders);
+
+    return {
+      totalOrders: totalOrdersCount.count,
+      confirmedOrders: confirmedCount.count,
+      awaitingPayment: awaitingPaymentCount.count,
+      cancelledOrders: cancelledCount.count,
+      inTransitOrders: inTransitCount.count,
+      deliveredOrders: deliveredCount.count,
+      totalRevenue: Number(revenue.total) || 0,
+    };
+  }
+
   // Price calculation - provisório
   async calculateDeliveryPrice(fromZipCode: string, toZipCode: string): Promise<number> {
     // Algoritmo provisório baseado na diferença dos CEPs
