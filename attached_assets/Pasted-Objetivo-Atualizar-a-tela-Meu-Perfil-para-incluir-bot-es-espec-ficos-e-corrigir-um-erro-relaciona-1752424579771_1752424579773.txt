@@ -1,0 +1,85 @@
+Objetivo
+
+Atualizar a tela "Meu Perfil" para incluir botões específicos e corrigir um erro relacionado à edição de endereços, garantindo que o problema não ocorra no fluxo de criação de pedidos.
+
+Requisitos
+
+1. Tela de Perfil
+
+
+
+
+
+Na tela "Meu Perfil", adicionar os seguintes botões acima do card "Meus Dados":
+
+
+
+
+
+Botão Pedidos: Exibir o histórico de pedidos do usuário.
+
+
+
+Botão Fazer Novo Pedido: Permitir a criação de um novo pedido.
+
+2. Correção de Erro na Edição de Endereço
+
+
+
+
+
+Resolver o erro [plugin:runtime-error-plugin] Expected enabled to be a boolean or a callback that returns a boolean que ocorre ao tentar editar um endereço na tela "Meu Perfil".
+
+
+
+O erro está localizado no arquivo /home/runner/workspace/client/src/pages/new-address.tsx:37:37, no uso do useQuery:
+
+const { data: existingAddress } = useQuery({
+  queryKey: ["address", id],
+  queryFn: async () => {
+
+
+
+O problema ocorre apenas na tela "Meu Perfil", não no fluxo de criação de pedidos.
+
+
+
+Ação necessária:
+
+
+
+
+
+Revisar a lógica do useQuery no arquivo new-address.tsx, garantindo que a propriedade enabled seja configurada corretamente como um booleano ou uma função que retorna um booleano.
+
+
+
+Verificar se o parâmetro id (usado em queryKey: ["address", id]) está sendo passado corretamente ao editar um endereço na tela "Meu Perfil".
+
+
+
+Garantir que a consulta (queryFn) seja executada apenas quando necessário, ajustando a lógica de habilitação da query.
+
+3. Considerações Técnicas
+
+
+
+
+
+A correção do erro deve focar na propriedade enabled do useQuery para evitar o erro de tipo reportado.
+
+
+
+Garantir que a edição de endereços na tela "Meu Perfil" funcione de forma consistente com o fluxo de criação de pedidos, onde o erro não ocorre.
+
+4. Fluxo do Usuário
+
+
+
+
+
+Visualização do Perfil: Na tela "Meu Perfil", exibir os botões Pedidos e Fazer Novo Pedido acima do card "Meus Dados".
+
+
+
+Edição de Endereço: A edição de endereços na tela "Meu Perfil" deve funcionar sem erros, com a mesma funcionalidade do fluxo de pedidos.

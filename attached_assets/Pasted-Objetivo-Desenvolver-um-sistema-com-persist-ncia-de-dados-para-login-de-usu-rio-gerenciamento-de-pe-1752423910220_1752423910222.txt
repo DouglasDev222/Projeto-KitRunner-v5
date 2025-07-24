@@ -1,0 +1,42 @@
+Objetivo
+Desenvolver um sistema com persistência de dados para login de usuário, gerenciamento de perfil e pedidos, garantindo a exibição correta do status de login, informações do usuário e gerenciamento de endereços com restrições específicas.
+
+Requisitos
+1. Persistência de Login
+Implementar um mecanismo para rastrear o status de login do usuário (logado ou não).
+Armazenar o estado de login de forma persistente para manter as informações da sessão entre interações.
+2. Tela de Perfil
+Se nenhum usuário estiver logado:
+Exibir um formulário de login para autenticação do usuário.
+Se um usuário estiver logado:
+Mostrar opções para:
+Meus Pedidos: Exibir o histórico de pedidos do usuário.
+Sair: Permitir que o usuário faça logout, limpando a sessão.
+Exibir uma seção para Meus Dados, incluindo:
+Nome
+Telefone
+CPF
+Data de nascimento
+Exibir uma seção para Endereços, mostrando os endereços salvos do usuário.
+3. Gerenciamento de Endereços
+Permitir que os usuários adicionem múltiplos endereços.
+Garantir que apenas um endereço possa ser definido como padrão por usuário.
+Corrigir o problema atual em que múltiplos endereços podem ser marcados como padrão.
+Ao adicionar um novo endereço:
+Incluir uma caixa de seleção (checkbox) para indicar se o endereço deve ser definido como padrão.
+Se a caixa for marcada e já houver um endereço padrão, atualizar o status padrão para o novo endereço.
+Se não houver endereços cadastrados para o usuário, o primeiro endereço adicionado deve ser automaticamente definido como padrão.
+4. Criação de Pedidos
+Quando um usuário logado criar um novo pedido:
+Não solicitar novamente CPF ou data de nascimento, pois essas informações já devem estar armazenadas no perfil do usuário.
+Garantir que o sistema use o endereço padrão do usuário para o pedido, a menos que outro seja especificado.
+5. Considerações Técnicas
+Utilizar um banco de dados ou mecanismo de armazenamento adequado para dados persistentes (por exemplo, credenciais de usuário, detalhes do perfil, endereços e pedidos).
+Validar que apenas um endereço esteja marcado como padrão em qualquer momento.
+Garantir o tratamento seguro de dados sensíveis (por exemplo, CPF e data de nascimento).
+Implementar um gerenciamento de sessão adequado para rastrear o status de login.
+6. Fluxo do Usuário
+Login: O usuário faz login por meio do formulário de login, se não estiver autenticado.
+Visualização do Perfil: Após o login, a tela de perfil exibe os dados do usuário, endereços, histórico de pedidos e a opção de logout.
+Gerenciamento de Endereços: O usuário pode adicionar/editar endereços, com uma caixa de seleção para definir um novo endereço como padrão.
+Realização de Pedidos: Usuários logados podem fazer pedidos sem precisar reinserir CPF ou data de nascimento, utilizando os dados armazenados no perfil.

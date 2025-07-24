@@ -1,0 +1,177 @@
+Objetivo
+
+Desenvolver um painel de administrador responsivo, que funcione em dispositivos móveis e desktop, para gerenciar clientes, pedidos e eventos, além de implementar a lógica de precificação do serviço da Kitrunner e realizar alterações no banco de dados para suportar as novas funcionalidades.
+
+Requisitos
+
+1. Painel de Administrador
+
+
+
+
+
+Criar um painel de administrador responsivo, compatível com dispositivos móveis e desktop.
+
+
+
+O painel deve permitir que o administrador visualize:
+
+
+
+
+
+Todos os clientes cadastrados no sistema.
+
+
+
+Todos os pedidos realizados, incluindo detalhes relacionados.
+
+
+
+O administrador deve ter a capacidade de adicionar novos eventos com as seguintes informações:
+
+
+
+
+
+Nome do evento.
+
+
+
+Data do evento.
+
+
+
+Preço fixo (opcional, pode ou não ser definido).
+
+2. Modelo de Negócio e Precificação
+
+
+
+
+
+O preço final de um pedido é calculado com base nas seguintes variáveis:
+
+
+
+
+
+Cálculo da distância: O valor principal é baseado na distância entre o CEP de retirada e o CEP do cliente.
+
+
+
+
+
+Implementar um algoritmo provisório para calcular a distância (o algoritmo real será implementado posteriormente).
+
+
+
+Kit extra no pedido: O pedido pode incluir kits extras, que podem ser personalizados por evento, com um valor adicional associado.
+
+
+
+Doação de alimentos: Para alguns eventos, pode haver um requisito de doação (ex.: 1 kg de alimento) para retirar o kit. Esse valor extra deve:
+
+
+
+
+
+Ser informado claramente ao cliente.
+
+
+
+Ser adicionado ao preço final do pedido.
+
+
+
+Caso de apenas 1 kit: Se o pedido contiver apenas um kit, o cliente será cobrado apenas pelo valor da entrega e, se aplicável, pelo valor da doação.
+
+
+
+Cupom de desconto: Implementar a opção de aplicar um cupom de desconto, que será deduzido do valor total do pedido.
+
+3. Alterações no Banco de Dados
+
+
+
+
+
+Atualizar o banco de dados para suportar as novas funcionalidades, incluindo:
+
+
+
+
+
+Armazenamento de informações de eventos (nome, data, preço fixo opcional).
+
+
+
+Suporte para a lógica de precificação (distância, kits extras, doação, cupom de desconto).
+
+
+
+Remoção dos campos desnecessários do banco de dados:
+
+
+
+
+
+Quantidade de participantes do evento.
+
+
+
+Hora do evento.
+
+
+
+Garantir que o banco de dados armazene todas as informações necessárias para clientes, pedidos, endereços e eventos, mantendo a consistência com as funcionalidades existentes.
+
+4. Considerações Técnicas
+
+
+
+
+
+O painel de administrador deve ser responsivo, utilizando técnicas de design que garantam boa usabilidade em dispositivos móveis e desktop.
+
+
+
+O algoritmo provisório para cálculo de distância deve ser implementado de forma simples, mas funcional, permitindo substituição futura pelo algoritmo real.
+
+
+
+Garantir que o sistema informe claramente ao cliente sobre valores adicionais, como a doação de alimentos, antes da finalização do pedido.
+
+
+
+A aplicação de cupons de desconto deve ser validada e refletida no valor total do pedido.
+
+
+
+As alterações no banco de dados devem ser compatíveis com as funcionalidades existentes (como login, perfil e pedidos) e não causar interrupções no sistema.
+
+5. Fluxo do Sistema
+
+
+
+
+
+Painel de Administrador: O administrador acessa o painel para visualizar clientes e pedidos, e pode adicionar novos eventos com nome, data e preço fixo (opcional).
+
+
+
+Criação de Pedidos:
+
+
+
+
+
+O sistema calcula o preço final com base na distância (CEP de retirada até o CEP do cliente), valor de kits extras (se aplicável), doação (se exigida pelo evento) e desconto (se um cupom for aplicado).
+
+
+
+Para pedidos com apenas um kit, apenas o valor da entrega e da doação (se aplicável) são cobrados.
+
+
+
+Gerenciamento de Eventos: O administrador adiciona eventos no painel, e o sistema associa os pedidos aos eventos, considerando as regras de precificação específicas.
