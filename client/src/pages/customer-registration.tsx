@@ -15,11 +15,16 @@ import { useState } from "react";
 import { customerRegistrationSchema, type CustomerRegistration } from "@shared/schema";
 import { formatCPF, isValidCPF } from "@/lib/cpf-validator";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/lib/auth-context";
 
 export default function CustomerRegistration() {
   const [, setLocation] = useLocation();
   const { id } = useParams<{ id: string }>();
   const [error, setError] = useState<string | null>(null);
+  const { login } = useAuth();
+  
+  // Check if we're in standalone registration mode (no event ID)
+  const isStandaloneRegistration = !id;
 
   const form = useForm<CustomerRegistration>({
     resolver: zodResolver(customerRegistrationSchema),
@@ -56,10 +61,16 @@ export default function CustomerRegistration() {
       return response.json();
     },
     onSuccess: (data) => {
-      // Store customer data in sessionStorage for next steps
-      sessionStorage.setItem("customerData", JSON.stringify(data.customer));
-      sessionStorage.setItem("customerAddresses", JSON.stringify(data.addresses));
-      setLocation(`/events/${id}/address`);
+      if (isStandaloneRegistration) {
+        // Standalone registration - log in user and go to profile
+        login(data.customer);
+        setLocation("/profile");
+      } else {
+        // Event flow registration - store data and continue to address confirmation
+        sessionStorage.setItem("customerData", JSON.stringify(data.customer));
+        sessionStorage.setItem("customerAddresses", JSON.stringify(data.addresses));
+        setLocation(`/events/${id}/address`);
+      }
     },
     onError: (error: any) => {
       setError(error.message || "Erro ao registrar cliente");
@@ -96,9 +107,17 @@ export default function CustomerRegistration() {
     });
   };
 
+  const getBackNavigation = () => {
+    if (isStandaloneRegistration) {
+      return () => setLocation("/login");
+    } else {
+      return () => setLocation(`/events/${id}/identify`);
+    }
+  };
+
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
-      <Header showBackButton onBack={() => setLocation(`/events/${id}/identify`)} />
+      <Header showBackButton onBack={getBackNavigation()} />
       <div className="p-4">
         <div className="flex items-center mb-4">
           <UserPlus className="w-6 h-6 text-primary mr-2" />

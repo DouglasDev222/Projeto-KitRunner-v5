@@ -29,6 +29,7 @@ type AddressData = {
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatZipCode } from "@/lib/brazilian-formatter";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/lib/auth-context";
 import { z } from "zod";
 
 export default function AddressConfirmation() {
@@ -37,10 +38,11 @@ export default function AddressConfirmation() {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const queryClient = useQueryClient();
+  const { user: authUser } = useAuth();
   
-  // Get customer data from sessionStorage
+  // Get customer data from sessionStorage or auth context
   const customerData = sessionStorage.getItem("customerData");
-  const customer = customerData ? JSON.parse(customerData) : null;
+  const customer = authUser || (customerData ? JSON.parse(customerData) : null);
   
   // Fetch customer addresses
   const { data: addresses, isLoading } = useQuery({
@@ -208,10 +210,21 @@ export default function AddressConfirmation() {
     form.setValue("zipCode", formatted);
   };
   
+  // Determine back navigation based on authentication status
+  const getBackNavigation = () => {
+    if (authUser) {
+      // If user is authenticated, go back to event details
+      return () => setLocation(`/events/${id}`);
+    } else {
+      // If not authenticated, go back to identification
+      return () => setLocation(`/events/${id}/identify`);
+    }
+  };
+
   if (!customer) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header showBackButton onBack={() => setLocation(`/events/${id}/identify`)} />
+        <Header showBackButton onBack={getBackNavigation()} />
         <div className="p-4">
           <p className="text-center text-neutral-600">Carregando...</p>
         </div>
@@ -222,7 +235,7 @@ export default function AddressConfirmation() {
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header showBackButton onBack={() => setLocation(`/events/${id}/identify`)} />
+        <Header showBackButton onBack={getBackNavigation()} />
         <div className="p-4">
           <p className="text-center text-neutral-600">Carregando endereços...</p>
         </div>
@@ -232,7 +245,7 @@ export default function AddressConfirmation() {
   
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
-      <Header showBackButton onBack={() => setLocation(`/events/${id}/identify`)} />
+      <Header showBackButton onBack={getBackNavigation()} />
       <div className="p-4">
         <div className="flex items-center mb-4">
           <MapPin className="w-6 h-6 text-primary mr-2" />

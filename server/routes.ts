@@ -469,10 +469,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const updateData = req.body;
       
-      console.log("=== UPDATE EVENT DEBUG ===");
-      console.log("Event ID:", id);
-      console.log("Raw request body:", JSON.stringify(updateData, null, 2));
-      
       // Convert date format if needed
       if (updateData.date && !updateData.date.includes('T')) {
         updateData.date = updateData.date + 'T00:00:00.000Z';
@@ -490,23 +486,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         donationAmount: updateData.donationAmount && updateData.donationAmount.toString().trim() !== "" ? updateData.donationAmount.toString() : null,
       };
       
-      console.log("Cleaned data:", JSON.stringify(cleanedData, null, 2));
-      
       const event = await storage.updateEvent(id, cleanedData);
       
       if (!event) {
         return res.status(404).json({ message: "Evento não encontrado" });
       }
       
-      console.log("Updated event:", JSON.stringify(event, null, 2));
-      console.log("=== END UPDATE EVENT DEBUG ===");
-      
       res.json(event);
     } catch (error: any) {
-      console.error("=== UPDATE EVENT ERROR ===");
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
-      console.error("=== END ERROR ===");
       res.status(500).json({ error: error.message });
     }
   });

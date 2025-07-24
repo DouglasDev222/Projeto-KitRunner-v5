@@ -73,12 +73,12 @@ export default function Login() {
     if (currentCpf) {
       sessionStorage.setItem("registrationCpf", currentCpf);
     }
-    setLocation("/events");
+    setLocation("/register");
   };
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
-      <Header showBackButton onBack={() => setLocation("/profile")} />
+      <Header showBackButton onBack={() => setLocation("/")} />
       <div className="p-4">
         <Card>
           <CardHeader className="text-center">

@@ -113,9 +113,6 @@ export default function AdminEventEdit() {
 
   const updateEventMutation = useMutation({
     mutationFn: async (data: EventFormData) => {
-      console.log("=== CLIENT UPDATE EVENT DEBUG ===");
-      console.log("Form data received:", JSON.stringify(data, null, 2));
-      
       // Remove pricingType and adjust data types for API
       const { pricingType, ...eventData } = data;
       const finalData = {
@@ -128,9 +125,6 @@ export default function AdminEventEdit() {
         donationDescription: data.donationDescription && data.donationDescription.trim() !== "" ? data.donationDescription : null,
       };
       
-      console.log("Final data to send:", JSON.stringify(finalData, null, 2));
-      console.log("=== END CLIENT DEBUG ===");
-      
       const response = await fetch(`/api/admin/events/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -139,7 +133,6 @@ export default function AdminEventEdit() {
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Server response error:", response.status, errorText);
         throw new Error(`Erro ao atualizar evento: ${response.status} - ${errorText}`);
       }
       

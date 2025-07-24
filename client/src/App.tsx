@@ -42,6 +42,7 @@ function Router() {
       <Route path="/profile/address/new" component={NewAddress} />
       <Route path="/profile/address/:id/edit" component={NewAddress} />
       <Route path="/login" component={Login} />
+      <Route path="/register" component={CustomerRegistration} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/events" component={AdminEvents} />
       <Route path="/admin/events/new" component={AdminEventForm} />
