@@ -56,22 +56,29 @@ export default function AdminEventEdit() {
     enabled: !!id,
   });
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setValue,
-    watch,
-    reset,
-  } = useForm<EventFormData>({
+  const form = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
+    defaultValues: {
+      name: "",
+      date: "",
+      location: "",
+      city: "",
+      state: "",
+      pickupZipCode: "",
+      fixedPrice: "",
+      extraKitPrice: "8.00",
+      donationRequired: false,
+      donationAmount: "",
+      donationDescription: "",
+      available: true,
+    },
   });
 
-  const donationRequired = watch("donationRequired");
+  const donationRequired = form.watch("donationRequired");
 
   useEffect(() => {
     if (event) {
-      reset({
+      form.reset({
         name: event.name,
         date: event.date,
         location: event.location,
@@ -86,7 +93,7 @@ export default function AdminEventEdit() {
         available: event.available,
       });
     }
-  }, [event, reset]);
+  }, [event, form]);
 
   const updateEventMutation = useMutation({
     mutationFn: async (data: EventFormData) => {
