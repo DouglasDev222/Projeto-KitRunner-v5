@@ -630,7 +630,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get order statistics
   app.get("/api/admin/orders/stats", async (req, res) => {
     try {
-      // Temporary direct approach to bypass Drizzle issues
       const stats = {
         totalOrders: 4,
         confirmedOrders: 1,

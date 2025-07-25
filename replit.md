@@ -143,6 +143,9 @@ Preferred communication style: Simple, everyday language.
 - ✓ Fixed admin dashboard statistics API to work with Portuguese status names
 - ✓ Updated client-side status displays and dropdowns to use Portuguese
 - ✓ Application now fully operational on port 5000 with consistent Portuguese status system
+- ✓ Fixed admin dashboard main page status display to show properly formatted Portuguese labels
+- ✓ Added "Ver Detalhes" button to admin dashboard orders for easy access to order management page
+- ✓ All status values throughout system now properly translated and formatted
 
 ### Replit Migration Completion & Authentication Fixes (January 2025)
 - ✓ Successfully completed migration from Replit Agent to Replit environment
