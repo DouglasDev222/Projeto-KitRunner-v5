@@ -591,9 +591,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { status } = req.body;
       
       // Validate status
-      const validStatuses = ["confirmed", "awaiting_payment", "cancelled", "kits_being_prepared", "kits_ready", "in_transit", "delivered"];
+      const validStatuses = ["confirmed", "awaiting_payment", "cancelled", "kits_being_picked_up", "in_transit", "delivered"];
+      console.log('Received status:', status, 'Valid statuses:', validStatuses);
       if (!validStatuses.includes(status)) {
-        return res.status(400).json({ message: "Status inválido" });
+        return res.status(400).json({ message: "Status inválido", received: status, valid: validStatuses });
       }
       
       const order = await storage.updateOrderStatus(id, status);
