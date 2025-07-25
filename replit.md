@@ -132,7 +132,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### Status Formatting Standardization & Migration Completion (January 2025)
+### Status Formatting Standardization & Statistics Fix (January 2025)
+- ✓ Created unified status utility (`status-utils.tsx`) for consistent status display across all pages
+- ✓ Standardized status badge colors and formatting throughout the application
+- ✓ Fixed order details page to use proper Portuguese status mappings instead of outdated English statuses
+- ✓ Updated my-orders page to use colored status badges matching admin panel design
+- ✓ Unified admin dashboard and admin orders to use same status utility
+- ✓ Applied consistent color scheme: green for confirmed/delivered, yellow for pending payment, red for cancelled, blue for pickup, orange for transit
+- ✓ Fixed order statistics panel in admin/orders to use dynamic data instead of hardcoded values
+- ✓ Order statistics now properly update when status changes are made
+- ✓ Completed migration from Replit Agent to Replit environment with full functionality
+
+### Status Translation & Database Migration (January 2025)
 - ✓ Created unified status utility (`status-utils.tsx`) for consistent status display across all pages
 - ✓ Standardized status badge colors and formatting throughout the application
 - ✓ Fixed order details page to use proper Portuguese status mappings instead of outdated English statuses

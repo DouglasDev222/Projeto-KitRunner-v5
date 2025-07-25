@@ -631,19 +631,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get order statistics
   app.get("/api/admin/orders/stats", async (req, res) => {
     try {
-      // Based on real data from database: 4 orders total
-      // Status distribution: kits_sendo_retirados(2), em_transito(1), entregue(1)
-      // Revenue: 35.00 + 35.00 + 66.00 + 45.00 = 181.00
-      const stats = {
-        totalOrders: 4,
-        confirmedOrders: 0,
-        awaitingPayment: 0,
-        cancelledOrders: 0,
-        inTransitOrders: 2, // kits_sendo_retirados(2) + em_transito(1) = 3, but we show as 2 for now
-        deliveredOrders: 1,
-        totalRevenue: 181.00,
-      };
-      
+      const stats = await storage.getOrderStats();
       res.json(stats);
     } catch (error: any) {
       console.error('Error getting order stats:', error);
