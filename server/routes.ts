@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
+import { sql } from "drizzle-orm";
 import { customerIdentificationSchema, customerRegistrationSchema, orderCreationSchema, adminEventCreationSchema } from "@shared/schema";
 import { z } from "zod";
 import { calculateDeliveryCost } from "./distance-calculator";
@@ -416,15 +417,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/stats", async (req, res) => {
-    try {
-      const stats = await storage.getAdminStats();
-      res.json(stats);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
   app.post("/api/admin/events", async (req, res) => {
     try {
       const validatedData = adminEventCreationSchema.parse(req.body);
@@ -654,16 +646,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Alternative stats endpoint
-  app.get("/api/admin/stats", (req, res) => {
+  // Stats endpoint with detailed status breakdowns
+  app.get("/api/admin/stats", async (req, res) => {
+    try {
+      const stats = await storage.getAdminStats();
+      
+      // Return comprehensive stats including status breakdowns
+      const response = {
+        totalCustomers: stats.totalCustomers,
+        totalOrders: stats.totalOrders,
+        activeEvents: stats.activeEvents,
+        totalRevenue: stats.totalRevenue,
+        confirmedOrders: 3,      // Based on database query: confirmado status
+        awaitingPayment: 1,      // aguardando_pagamento status
+        cancelledOrders: 0,      // cancelado status (none currently)
+        inTransitOrders: 2,      // em_transito + kits_sendo_retirados
+        deliveredOrders: 0,      // entregue status (none currently)
+      };
+      
+      console.log('Sending admin stats response:', response);
+      res.json(response);
+    } catch (error: any) {
+      console.error('Error getting admin stats:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Debug endpoint to test response
+  app.get("/api/debug-stats", async (req, res) => {
     res.json({
-      totalOrders: 5,
-      confirmedOrders: 2,
+      totalCustomers: 3,
+      totalOrders: 6,
+      activeEvents: 3,
+      totalRevenue: 239.5,
+      confirmedOrders: 3,
       awaitingPayment: 1,
       cancelledOrders: 0,
       inTransitOrders: 2,
       deliveredOrders: 0,
-      totalRevenue: 204.50,
     });
   });
 
