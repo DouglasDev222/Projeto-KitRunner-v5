@@ -91,101 +91,103 @@ export async function generateDeliveryLabel(order: OrderWithDetails): Promise<Bu
 
     // Order Information Section with modern card style
     doc.fillColor('#f8fafc');
-    doc.rect(margin, currentY, contentWidth, 90)
+    doc.rect(margin, currentY, contentWidth, 100)
        .fillAndStroke('#f8fafc', '#e2e8f0');
 
     doc.fillColor('#1e293b');
     doc.fontSize(14).font('Helvetica-Bold');
-    doc.text('INFORMAÇÕES DO PEDIDO', margin + 20, currentY + 15);
+    doc.text('INFORMAÇÕES DO PEDIDO', margin + 20, currentY + 20);
     
-    // Create two columns
-    const leftColumn = margin + 20;
-    const rightColumn = margin + (contentWidth / 2) + 10;
+    // Create two columns with proper spacing
+    const leftColumn = margin + 25;
+    const rightColumn = margin + (contentWidth / 2) + 15;
     
     doc.fontSize(10).fillColor('#64748b');
-    doc.font('Helvetica-Bold').text('Data do Pedido:', leftColumn, currentY + 40);
-    doc.fillColor('#1e293b').font('Helvetica').text(formatDate(order.createdAt.toISOString()), leftColumn + 80, currentY + 40);
+    doc.font('Helvetica-Bold').text('Data do Pedido:', leftColumn, currentY + 45);
+    doc.fillColor('#1e293b').font('Helvetica').text(formatDate(order.createdAt.toISOString()), leftColumn + 85, currentY + 45);
     
-    doc.fillColor('#64748b').font('Helvetica-Bold').text('Evento:', leftColumn, currentY + 60);
-    doc.fillColor('#1e293b').font('Helvetica').text(order.event.name, leftColumn + 40, currentY + 60, { width: 200 });
+    doc.fillColor('#64748b').font('Helvetica-Bold').text('Evento:', leftColumn, currentY + 65);
+    doc.fillColor('#1e293b').font('Helvetica').text(order.event.name, leftColumn + 45, currentY + 65, { width: 180 });
     
-    doc.fillColor('#64748b').font('Helvetica-Bold').text('Quantidade:', rightColumn, currentY + 40);
-    doc.fillColor('#1e293b').font('Helvetica').text(`${order.kitQuantity} kit(s)`, rightColumn + 60, currentY + 40);
+    doc.fillColor('#64748b').font('Helvetica-Bold').text('Quantidade:', rightColumn, currentY + 45);
+    doc.fillColor('#1e293b').font('Helvetica').text(`${order.kitQuantity} kit(s)`, rightColumn + 65, currentY + 45);
     
-    doc.fillColor('#64748b').font('Helvetica-Bold').text('Valor Total:', rightColumn, currentY + 60);
-    doc.fillColor('#1e293b').font('Helvetica').text(formatCurrency(order.totalCost), rightColumn + 60, currentY + 60);
+    doc.fillColor('#64748b').font('Helvetica-Bold').text('Valor Total:', rightColumn, currentY + 65);
+    doc.fillColor('#1e293b').font('Helvetica').text(formatCurrency(order.totalCost), rightColumn + 65, currentY + 65);
     
-    currentY += 110;
+    currentY += 120;
 
     // Recipient Information Section with modern card style
     doc.fillColor('#fefefe');
-    doc.rect(margin, currentY, contentWidth, 140)
+    doc.rect(margin, currentY, contentWidth, 150)
        .fillAndStroke('#fefefe', '#e2e8f0');
 
     doc.fillColor('#1e293b');
     doc.fontSize(14).font('Helvetica-Bold');
-    doc.text('DADOS DO DESTINATÁRIO', margin + 20, currentY + 15);
+    doc.text('DADOS DO DESTINATÁRIO', margin + 20, currentY + 20);
     
-    // Two columns layout
-    const startY = currentY + 40;
+    // Two columns layout with proper spacing
+    const recipientStartY = currentY + 45;
+    const recipientLeftColumn = margin + 25;
+    const recipientRightColumn = margin + (contentWidth / 2) + 15;
     
     // Left column - Personal info
     doc.fontSize(10).fillColor('#64748b');
-    doc.font('Helvetica-Bold').text('Nome Completo:', leftColumn, startY);
-    doc.fillColor('#1e293b').font('Helvetica').text(order.customer.name, leftColumn, startY + 15, { width: 220 });
+    doc.font('Helvetica-Bold').text('Nome Completo:', recipientLeftColumn, recipientStartY);
+    doc.fillColor('#1e293b').font('Helvetica').text(order.customer.name, recipientLeftColumn, recipientStartY + 15, { width: 200 });
     
-    doc.fillColor('#64748b').font('Helvetica-Bold').text('CPF:', leftColumn, startY + 35);
-    doc.fillColor('#1e293b').font('Helvetica').text(formatCPF(order.customer.cpf), leftColumn, startY + 50);
+    doc.fillColor('#64748b').font('Helvetica-Bold').text('CPF:', recipientLeftColumn, recipientStartY + 40);
+    doc.fillColor('#1e293b').font('Helvetica').text(formatCPF(order.customer.cpf), recipientLeftColumn, recipientStartY + 55);
     
-    doc.fillColor('#64748b').font('Helvetica-Bold').text('Telefone:', leftColumn, startY + 70);
-    doc.fillColor('#1e293b').font('Helvetica').text(formatPhone(order.customer.phone), leftColumn, startY + 85);
+    doc.fillColor('#64748b').font('Helvetica-Bold').text('Telefone:', recipientLeftColumn, recipientStartY + 80);
+    doc.fillColor('#1e293b').font('Helvetica').text(formatPhone(order.customer.phone), recipientLeftColumn, recipientStartY + 95);
     
     // Right column - Address
-    doc.fillColor('#64748b').font('Helvetica-Bold').text('Endereço de Entrega:', rightColumn, startY);
+    doc.fillColor('#64748b').font('Helvetica-Bold').text('Endereço de Entrega:', recipientRightColumn, recipientStartY);
     const address = order.address;
     const fullAddress = `${address.street}, ${address.number}${address.complement ? ' - ' + address.complement : ''}
 ${address.neighborhood}
 ${address.city} - ${address.state}
 CEP: ${address.zipCode}`;
-    doc.fillColor('#1e293b').font('Helvetica').text(fullAddress, rightColumn, startY + 15, { width: 250 });
+    doc.fillColor('#1e293b').font('Helvetica').text(fullAddress, recipientRightColumn, recipientStartY + 15, { width: 230 });
     
-    currentY += 160;
+    currentY += 170;
 
     // Order Items Section with modern card style
-    const itemSectionHeight = 60 + (order.kits.length * 15);
+    const itemSectionHeight = 80 + (order.kits.length * 15);
     doc.fillColor('#f8fafc');
     doc.rect(margin, currentY, contentWidth, itemSectionHeight)
        .fillAndStroke('#f8fafc', '#e2e8f0');
 
     doc.fillColor('#1e293b');
     doc.fontSize(14).font('Helvetica-Bold');
-    doc.text('ITENS DO PEDIDO', margin + 20, currentY + 15);
+    doc.text('ITENS DO PEDIDO', margin + 20, currentY + 20);
     
     // Items table header
     doc.fillColor('#6366f1');
-    doc.rect(margin + 20, currentY + 40, contentWidth - 40, 20)
+    doc.rect(margin + 20, currentY + 45, contentWidth - 40, 22)
        .fillAndStroke('#6366f1', '#4f46e5');
        
     doc.fillColor('white');
     doc.fontSize(10).font('Helvetica-Bold');
-    doc.text('Produto', margin + 30, currentY + 47);
-    doc.text('Quantidade', pageWidth - 120, currentY + 47);
+    doc.text('Produto', margin + 30, currentY + 52);
+    doc.text('Quantidade', pageWidth - 130, currentY + 52);
     
-    let itemY = currentY + 70;
+    let itemY = currentY + 75;
     
     // Main product row
     doc.fillColor('#1e293b');
     doc.fontSize(10).font('Helvetica');
-    doc.text(order.event.name, margin + 30, itemY, { width: 350 });
-    doc.text(`${order.kitQuantity} kit(s)`, pageWidth - 120, itemY);
-    itemY += 20;
+    doc.text(order.event.name, margin + 30, itemY, { width: 380 });
+    doc.text(`${order.kitQuantity} kit(s)`, pageWidth - 130, itemY);
+    itemY += 18;
     
     // Kit details with better formatting
     if (order.kits.length > 0) {
       doc.fontSize(9).fillColor('#64748b');
       order.kits.forEach((kit, index) => {
         const kitText = `Kit ${index + 1}: ${kit.name} • CPF: ${formatCPF(kit.cpf)} • Tamanho: ${kit.shirtSize}`;
-        doc.text(kitText, margin + 40, itemY, { width: 450 });
+        doc.text(kitText, margin + 40, itemY, { width: 480 });
         itemY += 12;
       });
     }
@@ -194,83 +196,87 @@ CEP: ${address.zipCode}`;
 
     // Signature Section with modern card style
     doc.fillColor('#fefefe');
-    doc.rect(margin, currentY, contentWidth, 180)
+    doc.rect(margin, currentY, contentWidth, 160)
        .fillAndStroke('#fefefe', '#e2e8f0');
 
     doc.fillColor('#1e293b');
     doc.fontSize(14).font('Helvetica-Bold');
-    doc.text('CONFIRMAÇÃO DE RECEBIMENTO', margin + 20, currentY + 15);
+    doc.text('CONFIRMAÇÃO DE RECEBIMENTO', margin + 20, currentY + 20);
     
     doc.fontSize(10).fillColor('#64748b').font('Helvetica');
     doc.text('Declaro que recebi os itens acima relacionados em perfeito estado e conforme especificado.', 
-      margin + 20, currentY + 40, { width: contentWidth - 40 });
+      margin + 20, currentY + 45, { width: contentWidth - 40 });
     
     // Signature fields with modern styling
-    const sigY = currentY + 70;
-    const sig1X = margin + 40;
-    const sig2X = margin + (contentWidth / 2) + 20;
-    const sigWidth = (contentWidth / 2) - 60;
+    const sigY = currentY + 75;
+    const sig1X = margin + 25;
+    const sig2X = margin + (contentWidth / 2) + 15;
+    const sigWidth = (contentWidth / 2) - 40;
     
     // Main signature box
     doc.fillColor('#f8fafc');
-    doc.rect(sig1X, sigY, sigWidth, 40)
+    doc.rect(sig1X, sigY, sigWidth, 35)
        .fillAndStroke('#f8fafc', '#cbd5e1');
     doc.fillColor('#64748b').fontSize(9).font('Helvetica-Bold');
-    doc.text('Assinatura do Destinatário', sig1X + 10, sigY + 5);
+    doc.text('Assinatura do Destinatário', sig1X + 8, sigY + 8);
     
     // Third party signature box
     doc.fillColor('#f8fafc');
-    doc.rect(sig2X, sigY, sigWidth, 40)
+    doc.rect(sig2X, sigY, sigWidth, 35)
        .fillAndStroke('#f8fafc', '#cbd5e1');
     doc.fillColor('#64748b').fontSize(9).font('Helvetica-Bold');
-    doc.text('Terceiro Autorizado', sig2X + 10, sigY + 5);
+    doc.text('Terceiro Autorizado', sig2X + 8, sigY + 8);
     doc.fontSize(8).font('Helvetica');
-    doc.text('(nome completo e documento)', sig2X + 10, sigY + 18);
+    doc.text('(nome completo e documento)', sig2X + 8, sigY + 22);
     
     // CPF and Date fields
-    const fieldsY = sigY + 60;
+    const fieldsY = sigY + 50;
+    const fieldWidth = (sigWidth / 2) - 5;
+    
+    // Left section fields
     const field1X = sig1X;
-    const field2X = sig1X + (sigWidth / 2) + 10;
+    const field2X = sig1X + fieldWidth + 10;
+    
+    // Right section fields  
     const field3X = sig2X;
-    const field4X = sig2X + (sigWidth / 2) + 10;
-    const fieldWidth = (sigWidth / 2) - 10;
+    const field4X = sig2X + fieldWidth + 10;
     
-    // CPF field
+    // CPF field (left)
     doc.fillColor('#f8fafc');
-    doc.rect(field1X, fieldsY, fieldWidth, 25)
+    doc.rect(field1X, fieldsY, fieldWidth, 20)
        .fillAndStroke('#f8fafc', '#cbd5e1');
     doc.fillColor('#64748b').fontSize(8).font('Helvetica-Bold');
-    doc.text('CPF', field1X + 5, fieldsY + 5);
+    doc.text('CPF', field1X + 5, fieldsY + 6);
     
-    // Date field  
+    // Date field (left)
     doc.fillColor('#f8fafc');
-    doc.rect(field2X, fieldsY, fieldWidth, 25)
+    doc.rect(field2X, fieldsY, fieldWidth, 20)
        .fillAndStroke('#f8fafc', '#cbd5e1');
     doc.fillColor('#64748b').fontSize(8).font('Helvetica-Bold');
-    doc.text('Data', field2X + 5, fieldsY + 5);
+    doc.text('Data', field2X + 5, fieldsY + 6);
     
-    // Third party CPF field
+    // Third party CPF field (right)
     doc.fillColor('#f8fafc');
-    doc.rect(field3X, fieldsY, fieldWidth, 25)
+    doc.rect(field3X, fieldsY, fieldWidth, 20)
        .fillAndStroke('#f8fafc', '#cbd5e1');
     doc.fillColor('#64748b').fontSize(8).font('Helvetica-Bold');
-    doc.text('CPF', field3X + 5, fieldsY + 5);
+    doc.text('CPF', field3X + 5, fieldsY + 6);
     
-    // Third party Date field
+    // Third party Date field (right)
     doc.fillColor('#f8fafc');
-    doc.rect(field4X, fieldsY, fieldWidth, 25)
+    doc.rect(field4X, fieldsY, fieldWidth, 20)
        .fillAndStroke('#f8fafc', '#cbd5e1');
     doc.fillColor('#64748b').fontSize(8).font('Helvetica-Bold');
-    doc.text('Data', field4X + 5, fieldsY + 5);
+    doc.text('Data', field4X + 5, fieldsY + 6);
     
     // Footer
-    currentY = pageHeight - 60;
+    const footerY = pageHeight - 50;
     doc.fillColor('#6366f1');
-    doc.rect(margin, currentY, contentWidth, 30)
+    doc.rect(margin, footerY, contentWidth, 25)
        .fillAndStroke('#6366f1', '#4f46e5');
     doc.fillColor('white').fontSize(8).font('Helvetica');
-    doc.text('KITRUNNER - Sistema de Gerenciamento de Kits de Eventos', margin + 20, currentY + 11);
-    doc.text(`Gerado em: ${formatDate(new Date().toISOString())}`, pageWidth - 150, currentY + 11);
+    doc.text('KITRUNNER - Sistema de Gerenciamento de Kits de Eventos', margin + 15, footerY + 9);
+    doc.text(`Gerado em: ${formatDate(new Date().toISOString())}`, pageWidth - 140, footerY + 9);
 
     doc.end();
   });
@@ -331,103 +337,105 @@ export async function generateMultipleLabels(orders: OrderWithDetails[]): Promis
       
       currentY += 100;
 
-      // Create two columns
-      const leftColumn = margin + 20;
-      const rightColumn = margin + (contentWidth / 2) + 10;
+      // Create two columns with proper spacing
+      const leftColumn = margin + 25;
+      const rightColumn = margin + (contentWidth / 2) + 15;
 
       // Order Information Section with modern card style
       doc.fillColor('#f8fafc');
-      doc.rect(margin, currentY, contentWidth, 90)
+      doc.rect(margin, currentY, contentWidth, 100)
          .fillAndStroke('#f8fafc', '#e2e8f0');
 
       doc.fillColor('#1e293b');
       doc.fontSize(14).font('Helvetica-Bold');
-      doc.text('INFORMAÇÕES DO PEDIDO', margin + 20, currentY + 15);
+      doc.text('INFORMAÇÕES DO PEDIDO', margin + 20, currentY + 20);
       
       doc.fontSize(10).fillColor('#64748b');
-      doc.font('Helvetica-Bold').text('Data do Pedido:', leftColumn, currentY + 40);
-      doc.fillColor('#1e293b').font('Helvetica').text(formatDate(order.createdAt.toISOString()), leftColumn + 80, currentY + 40);
+      doc.font('Helvetica-Bold').text('Data do Pedido:', leftColumn, currentY + 45);
+      doc.fillColor('#1e293b').font('Helvetica').text(formatDate(order.createdAt.toISOString()), leftColumn + 85, currentY + 45);
       
-      doc.fillColor('#64748b').font('Helvetica-Bold').text('Evento:', leftColumn, currentY + 60);
-      doc.fillColor('#1e293b').font('Helvetica').text(order.event.name, leftColumn + 40, currentY + 60, { width: 200 });
+      doc.fillColor('#64748b').font('Helvetica-Bold').text('Evento:', leftColumn, currentY + 65);
+      doc.fillColor('#1e293b').font('Helvetica').text(order.event.name, leftColumn + 45, currentY + 65, { width: 180 });
       
-      doc.fillColor('#64748b').font('Helvetica-Bold').text('Quantidade:', rightColumn, currentY + 40);
-      doc.fillColor('#1e293b').font('Helvetica').text(`${order.kitQuantity} kit(s)`, rightColumn + 60, currentY + 40);
+      doc.fillColor('#64748b').font('Helvetica-Bold').text('Quantidade:', rightColumn, currentY + 45);
+      doc.fillColor('#1e293b').font('Helvetica').text(`${order.kitQuantity} kit(s)`, rightColumn + 65, currentY + 45);
       
-      doc.fillColor('#64748b').font('Helvetica-Bold').text('Valor Total:', rightColumn, currentY + 60);
-      doc.fillColor('#1e293b').font('Helvetica').text(formatCurrency(order.totalCost), rightColumn + 60, currentY + 60);
+      doc.fillColor('#64748b').font('Helvetica-Bold').text('Valor Total:', rightColumn, currentY + 65);
+      doc.fillColor('#1e293b').font('Helvetica').text(formatCurrency(order.totalCost), rightColumn + 65, currentY + 65);
       
-      currentY += 110;
+      currentY += 120;
 
       // Recipient Information Section with modern card style
       doc.fillColor('#fefefe');
-      doc.rect(margin, currentY, contentWidth, 140)
+      doc.rect(margin, currentY, contentWidth, 150)
          .fillAndStroke('#fefefe', '#e2e8f0');
 
       doc.fillColor('#1e293b');
       doc.fontSize(14).font('Helvetica-Bold');
-      doc.text('DADOS DO DESTINATÁRIO', margin + 20, currentY + 15);
+      doc.text('DADOS DO DESTINATÁRIO', margin + 20, currentY + 20);
       
-      // Two columns layout
-      const startY = currentY + 40;
+      // Two columns layout with proper spacing
+      const recipientStartY = currentY + 45;
+      const recipientLeftColumn = margin + 25;
+      const recipientRightColumn = margin + (contentWidth / 2) + 15;
       
       // Left column - Personal info
       doc.fontSize(10).fillColor('#64748b');
-      doc.font('Helvetica-Bold').text('Nome Completo:', leftColumn, startY);
-      doc.fillColor('#1e293b').font('Helvetica').text(order.customer.name, leftColumn, startY + 15, { width: 220 });
+      doc.font('Helvetica-Bold').text('Nome Completo:', recipientLeftColumn, recipientStartY);
+      doc.fillColor('#1e293b').font('Helvetica').text(order.customer.name, recipientLeftColumn, recipientStartY + 15, { width: 200 });
       
-      doc.fillColor('#64748b').font('Helvetica-Bold').text('CPF:', leftColumn, startY + 35);
-      doc.fillColor('#1e293b').font('Helvetica').text(formatCPF(order.customer.cpf), leftColumn, startY + 50);
+      doc.fillColor('#64748b').font('Helvetica-Bold').text('CPF:', recipientLeftColumn, recipientStartY + 40);
+      doc.fillColor('#1e293b').font('Helvetica').text(formatCPF(order.customer.cpf), recipientLeftColumn, recipientStartY + 55);
       
-      doc.fillColor('#64748b').font('Helvetica-Bold').text('Telefone:', leftColumn, startY + 70);
-      doc.fillColor('#1e293b').font('Helvetica').text(formatPhone(order.customer.phone), leftColumn, startY + 85);
+      doc.fillColor('#64748b').font('Helvetica-Bold').text('Telefone:', recipientLeftColumn, recipientStartY + 80);
+      doc.fillColor('#1e293b').font('Helvetica').text(formatPhone(order.customer.phone), recipientLeftColumn, recipientStartY + 95);
       
       // Right column - Address
-      doc.fillColor('#64748b').font('Helvetica-Bold').text('Endereço de Entrega:', rightColumn, startY);
+      doc.fillColor('#64748b').font('Helvetica-Bold').text('Endereço de Entrega:', recipientRightColumn, recipientStartY);
       const address = order.address;
       const fullAddress = `${address.street}, ${address.number}${address.complement ? ' - ' + address.complement : ''}
 ${address.neighborhood}
 ${address.city} - ${address.state}
 CEP: ${address.zipCode}`;
-      doc.fillColor('#1e293b').font('Helvetica').text(fullAddress, rightColumn, startY + 15, { width: 250 });
+      doc.fillColor('#1e293b').font('Helvetica').text(fullAddress, recipientRightColumn, recipientStartY + 15, { width: 230 });
       
-      currentY += 160;
+      currentY += 170;
 
       // Order Items Section with modern card style
-      const itemSectionHeight = 60 + (order.kits.length * 15);
+      const itemSectionHeight = 80 + (order.kits.length * 15);
       doc.fillColor('#f8fafc');
       doc.rect(margin, currentY, contentWidth, itemSectionHeight)
          .fillAndStroke('#f8fafc', '#e2e8f0');
 
       doc.fillColor('#1e293b');
       doc.fontSize(14).font('Helvetica-Bold');
-      doc.text('ITENS DO PEDIDO', margin + 20, currentY + 15);
+      doc.text('ITENS DO PEDIDO', margin + 20, currentY + 20);
       
       // Items table header
       doc.fillColor('#6366f1');
-      doc.rect(margin + 20, currentY + 40, contentWidth - 40, 20)
+      doc.rect(margin + 20, currentY + 45, contentWidth - 40, 22)
          .fillAndStroke('#6366f1', '#4f46e5');
          
       doc.fillColor('white');
       doc.fontSize(10).font('Helvetica-Bold');
-      doc.text('Produto', margin + 30, currentY + 47);
-      doc.text('Quantidade', pageWidth - 120, currentY + 47);
+      doc.text('Produto', margin + 30, currentY + 52);
+      doc.text('Quantidade', pageWidth - 130, currentY + 52);
       
-      let itemY = currentY + 70;
+      let itemY = currentY + 75;
       
       // Main product row
       doc.fillColor('#1e293b');
       doc.fontSize(10).font('Helvetica');
-      doc.text(order.event.name, margin + 30, itemY, { width: 350 });
-      doc.text(`${order.kitQuantity} kit(s)`, pageWidth - 120, itemY);
-      itemY += 20;
+      doc.text(order.event.name, margin + 30, itemY, { width: 380 });
+      doc.text(`${order.kitQuantity} kit(s)`, pageWidth - 130, itemY);
+      itemY += 18;
       
       // Kit details with better formatting
       if (order.kits.length > 0) {
         doc.fontSize(9).fillColor('#64748b');
         order.kits.forEach((kit, kitIndex) => {
           const kitText = `Kit ${kitIndex + 1}: ${kit.name} • CPF: ${formatCPF(kit.cpf)} • Tamanho: ${kit.shirtSize}`;
-          doc.text(kitText, margin + 40, itemY, { width: 450 });
+          doc.text(kitText, margin + 40, itemY, { width: 480 });
           itemY += 12;
         });
       }
@@ -441,39 +449,39 @@ CEP: ${address.zipCode}`;
 
       doc.fillColor('#1e293b');
       doc.fontSize(14).font('Helvetica-Bold');
-      doc.text('CONFIRMAÇÃO DE RECEBIMENTO', margin + 20, currentY + 15);
+      doc.text('CONFIRMAÇÃO DE RECEBIMENTO', margin + 20, currentY + 20);
       
       doc.fontSize(10).fillColor('#64748b').font('Helvetica');
       doc.text('Declaro que recebi os itens acima relacionados em perfeito estado e conforme especificado.', 
-        margin + 20, currentY + 40, { width: contentWidth - 40 });
+        margin + 20, currentY + 45, { width: contentWidth - 40 });
       
       // Signature fields with modern styling
-      const sigY = currentY + 70;
-      const sig1X = margin + 40;
-      const sig2X = margin + (contentWidth / 2) + 20;
-      const sigWidth = (contentWidth / 2) - 60;
+      const sigY = currentY + 75;
+      const sig1X = margin + 25;
+      const sig2X = margin + (contentWidth / 2) + 15;
+      const sigWidth = (contentWidth / 2) - 40;
       
       // Signature boxes
       doc.fillColor('#f8fafc');
-      doc.rect(sig1X, sigY, sigWidth, 25)
+      doc.rect(sig1X, sigY, sigWidth, 35)
          .fillAndStroke('#f8fafc', '#cbd5e1');
       doc.fillColor('#64748b').fontSize(9).font('Helvetica-Bold');
-      doc.text('Assinatura do Destinatário', sig1X + 10, sigY + 8);
+      doc.text('Assinatura do Destinatário', sig1X + 8, sigY + 8);
       
       doc.fillColor('#f8fafc');
-      doc.rect(sig2X, sigY, sigWidth, 25)
+      doc.rect(sig2X, sigY, sigWidth, 35)
          .fillAndStroke('#f8fafc', '#cbd5e1');
       doc.fillColor('#64748b').fontSize(9).font('Helvetica-Bold');
-      doc.text('Data', sig2X + 10, sigY + 8);
+      doc.text('Data', sig2X + 8, sigY + 15);
 
       // Footer
-      const footerY = pageHeight - 60;
+      const footerY = pageHeight - 50;
       doc.fillColor('#6366f1');
-      doc.rect(margin, footerY, contentWidth, 30)
+      doc.rect(margin, footerY, contentWidth, 25)
          .fillAndStroke('#6366f1', '#4f46e5');
       doc.fillColor('white').fontSize(8).font('Helvetica');
-      doc.text('KITRUNNER - Sistema de Gerenciamento de Kits de Eventos', margin + 20, footerY + 11);
-      doc.text(`Gerado em: ${formatDate(new Date().toISOString())}`, pageWidth - 150, footerY + 11);
+      doc.text('KITRUNNER - Sistema de Gerenciamento de Kits de Eventos', margin + 15, footerY + 9);
+      doc.text(`Gerado em: ${formatDate(new Date().toISOString())}`, pageWidth - 140, footerY + 9);
     });
 
     doc.end();
