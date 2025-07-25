@@ -484,17 +484,33 @@ export class DatabaseStorage implements IStorage {
     deliveredOrders: number;
     totalRevenue: number;
   }> {
-    // Since we're having persistent Drizzle issues with this specific function,
-    // and this is a statistics function that should be reliable,
-    // we'll return the current accurate stats based on the known data
+    // Get total orders count
+    const [totalOrdersResult] = await db.select({ count: count() }).from(orders);
+    
+    // Get order counts by status
+    const [confirmedResult] = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'confirmado'));
+    const [awaitingResult] = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'aguardando_pagamento'));
+    const [cancelledResult] = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'cancelado'));
+    const [deliveredResult] = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'entregue'));
+    
+    // In transit includes both "em_transito" and "kits_sendo_retirados"
+    const [inTransitResult] = await db.select({ count: count() }).from(orders).where(
+      sql`${orders.status} IN ('em_transito', 'kits_sendo_retirados')`
+    );
+    
+    // Get total revenue (excluding cancelled orders)
+    const [revenueResult] = await db.select({ 
+      total: sum(orders.totalCost) 
+    }).from(orders).where(ne(orders.status, 'cancelado'));
+
     return {
-      totalOrders: 5,
-      confirmedOrders: 2,
-      awaitingPayment: 1,
-      cancelledOrders: 0,
-      inTransitOrders: 2,
-      deliveredOrders: 0,
-      totalRevenue: 204.50,
+      totalOrders: totalOrdersResult.count,
+      confirmedOrders: confirmedResult.count,
+      awaitingPayment: awaitingResult.count,
+      cancelledOrders: cancelledResult.count,
+      inTransitOrders: inTransitResult.count,
+      deliveredOrders: deliveredResult.count,
+      totalRevenue: Number(revenueResult.total) || 0,
     };
   }
 

@@ -650,18 +650,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/stats", async (req, res) => {
     try {
       const stats = await storage.getAdminStats();
+      const orderStats = await storage.getOrderStats();
       
-      // Return comprehensive stats including status breakdowns
+      // Return comprehensive stats with real data from database
       const response = {
         totalCustomers: stats.totalCustomers,
         totalOrders: stats.totalOrders,
         activeEvents: stats.activeEvents,
         totalRevenue: stats.totalRevenue,
-        confirmedOrders: 3,      // Based on database query: confirmado status
-        awaitingPayment: 1,      // aguardando_pagamento status
-        cancelledOrders: 0,      // cancelado status (none currently)
-        inTransitOrders: 2,      // em_transito + kits_sendo_retirados
-        deliveredOrders: 0,      // entregue status (none currently)
+        confirmedOrders: orderStats.confirmedOrders,
+        awaitingPayment: orderStats.awaitingPayment,
+        cancelledOrders: orderStats.cancelledOrders,
+        inTransitOrders: orderStats.inTransitOrders,
+        deliveredOrders: orderStats.deliveredOrders,
       };
       
       console.log('Sending admin stats response:', response);
