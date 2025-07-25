@@ -428,8 +428,10 @@ export default function AdminOrders() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleViewOrder(order.id)}
+                              className="gap-1"
                             >
                               <Eye className="h-4 w-4" />
+                              Detalhes
                             </Button>
                             
                             <DropdownMenu>
