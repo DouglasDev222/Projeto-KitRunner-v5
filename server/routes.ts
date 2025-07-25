@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
 import { customerIdentificationSchema, customerRegistrationSchema, orderCreationSchema, adminEventCreationSchema } from "@shared/schema";
 import { z } from "zod";
 import { calculateDeliveryCost } from "./distance-calculator";
@@ -630,17 +631,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get order statistics
   app.get("/api/admin/orders/stats", async (req, res) => {
     try {
+      // Get real stats using direct SQL queries
+      const totalResult = await db.execute("SELECT COUNT(*) as total FROM orders");
+      const totalOrders = totalResult.rows[0]?.total || 0;
+      
+      const statusResult = await db.execute(`
+        SELECT 
+          status,
+          COUNT(*) as count 
+        FROM orders 
+        GROUP BY status
+      `);
+      
+      const revenueResult = await db.execute(`
+        SELECT SUM(CAST(total_cost AS DECIMAL)) as total_revenue 
+        FROM orders 
+        WHERE status != 'cancelado'
+      `);
+      
+      // Process status counts
+      let confirmedOrders = 0;
+      let awaitingPayment = 0;
+      let cancelledOrders = 0;
+      let inTransitOrders = 0;
+      let deliveredOrders = 0;
+      
+      statusResult.rows.forEach((row: any) => {
+        const count = parseInt(row.count) || 0;
+        switch (row.status) {
+          case 'confirmado':
+            confirmedOrders = count;
+            break;
+          case 'aguardando_pagamento':
+            awaitingPayment = count;
+            break;
+          case 'cancelado':
+            cancelledOrders = count;
+            break;
+          case 'em_transito':
+            inTransitOrders += count;
+            break;
+          case 'kits_sendo_retirados':
+            inTransitOrders += count;
+            break;
+          case 'entregue':
+            deliveredOrders = count;
+            break;
+        }
+      });
+      
+      const totalRevenue = parseFloat(revenueResult.rows[0]?.total_revenue || '0');
+      
       const stats = {
-        totalOrders: 4,
-        confirmedOrders: 1,
-        awaitingPayment: 0,
-        cancelledOrders: 0,
-        inTransitOrders: 2,
-        deliveredOrders: 1,
-        totalRevenue: 181.00,
+        totalOrders: parseInt(totalOrders.toString()),
+        confirmedOrders,
+        awaitingPayment,
+        cancelledOrders,
+        inTransitOrders,
+        deliveredOrders,
+        totalRevenue,
       };
+      
       res.json(stats);
     } catch (error: any) {
+      console.error('Error getting order stats:', error);
       res.status(500).json({ error: error.message });
     }
   });
