@@ -64,11 +64,12 @@ interface OrderFilters {
 
 const statusOptions = [
   { value: 'all', label: 'Todos os Status', color: 'bg-gray-100 text-gray-800' },
-  { value: 'confirmed', label: 'Confirmado', color: 'bg-green-100 text-green-800' },
-  { value: 'awaiting_payment', label: 'Aguardando Pagamento', color: 'bg-yellow-100 text-yellow-800' },
-  { value: 'cancelled', label: 'Cancelado', color: 'bg-red-100 text-red-800' },
-  { value: 'kits_being_picked_up', label: 'Kits sendo Retirados', color: 'bg-blue-100 text-blue-800' },
-  { value: 'in_transit', label: 'Pedido em Rota', color: 'bg-orange-100 text-orange-800' }
+  { value: 'confirmado', label: 'Confirmado', color: 'bg-green-100 text-green-800' },
+  { value: 'aguardando_pagamento', label: 'Aguardando Pagamento', color: 'bg-yellow-100 text-yellow-800' },
+  { value: 'cancelado', label: 'Cancelado', color: 'bg-red-100 text-red-800' },
+  { value: 'kits_sendo_retirados', label: 'Kits sendo Retirados', color: 'bg-blue-100 text-blue-800' },
+  { value: 'em_transito', label: 'Em Trânsito', color: 'bg-orange-100 text-orange-800' },
+  { value: 'entregue', label: 'Entregue', color: 'bg-green-600 text-white' }
 ];
 
 const getStatusBadge = (status: string) => {

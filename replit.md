@@ -132,15 +132,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### Replit Migration Completion & Database Seeding with Valid CPFs (January 2025)
+### Status Translation & Database Migration (January 2025)
 - ✓ Successfully completed migration from Replit Agent to Replit environment
 - ✓ Set up PostgreSQL database with proper environment variables and schema
 - ✓ Created comprehensive seed data with valid Brazilian CPF numbers using proper algorithm
 - ✓ Added 4 realistic events in Paraíba with proper pricing models and donation requirements
 - ✓ Created 3 customers with valid CPF numbers: 11144477735, 22233344456, 33322211109
-- ✓ Seeded multiple addresses and 4 sample orders with different statuses
-- ✓ Fixed database connection and API endpoints returning proper data
-- ✓ Application now fully operational on port 5000 with persistent data
+- ✓ Translated all order status values to Portuguese in database and API
+- ✓ Updated status mappings: confirmado, aguardando_pagamento, cancelado, kits_sendo_retirados, em_transito, entregue
+- ✓ Fixed admin dashboard statistics API to work with Portuguese status names
+- ✓ Updated client-side status displays and dropdowns to use Portuguese
+- ✓ Application now fully operational on port 5000 with consistent Portuguese status system
 
 ### Replit Migration Completion & Authentication Fixes (January 2025)
 - ✓ Successfully completed migration from Replit Agent to Replit environment

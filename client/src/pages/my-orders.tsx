@@ -21,12 +21,12 @@ import { useAuth } from "@/lib/auth-context";
 // Status translation function
 const getStatusLabel = (status: string): string => {
   const statusMap: Record<string, string> = {
-    'confirmed': 'Confirmado',
-    'pending': 'Pendente',
-    'processing': 'Processando',
-    'shipped': 'Enviado',
-    'delivered': 'Entregue',
-    'cancelled': 'Cancelado'
+    'confirmado': 'Confirmado',
+    'aguardando_pagamento': 'Aguardando Pagamento',
+    'cancelado': 'Cancelado',
+    'kits_sendo_retirados': 'Kits sendo Retirados',
+    'em_transito': 'Em Trânsito',
+    'entregue': 'Entregue'
   };
   return statusMap[status] || status;
 };

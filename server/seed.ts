@@ -184,7 +184,7 @@ async function seedDatabase() {
         discountAmount: "0.00",
         totalCost: "35.00",
         paymentMethod: "credit",
-        status: "confirmed",
+        status: "confirmado",
         donationAmount: "5.00",
       },
       {
@@ -198,7 +198,7 @@ async function seedDatabase() {
         discountAmount: "0.00",
         totalCost: "35.00",
         paymentMethod: "pix",
-        status: "kits_ready",
+        status: "kits_sendo_retirados",
         donationAmount: "0.00",
       },
       {
@@ -212,7 +212,7 @@ async function seedDatabase() {
         discountAmount: "5.00",
         totalCost: "66.00",
         paymentMethod: "debit",
-        status: "in_transit",
+        status: "em_transito",
         donationAmount: "15.00",
       },
       {
@@ -226,7 +226,7 @@ async function seedDatabase() {
         discountAmount: "0.00",
         totalCost: "45.00",
         paymentMethod: "credit",
-        status: "delivered",
+        status: "entregue",
         donationAmount: "0.00",
       },
     ];

@@ -66,7 +66,7 @@ export const orders = pgTable("orders", {
   couponCode: text("coupon_code"), // Código do cupom usado
   totalCost: decimal("total_cost", { precision: 10, scale: 2 }).notNull(),
   paymentMethod: text("payment_method").notNull(),
-  status: text("status").notNull().default("confirmed"), // "confirmed", "awaiting_payment", "cancelled", "kits_being_prepared", "kits_ready", "in_transit", "delivered"
+  status: text("status").notNull().default("confirmado"), // "confirmado", "aguardando_pagamento", "cancelado", "kits_sendo_retirados", "em_transito", "entregue"
   donationAmount: decimal("donation_amount", { precision: 10, scale: 2 }).notNull().default("0"), // Valor da doação
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

@@ -70,6 +70,17 @@ export interface IStorage {
   updateEvent(id: number, eventData: Partial<InsertEvent>): Promise<Event | undefined>;
   deleteEvent(id: number): Promise<boolean>;
   getOrdersByEventId(eventId: number): Promise<(Order & { customer: Customer })[]>;
+  
+  // Order statistics
+  getOrderStats(): Promise<{
+    totalOrders: number;
+    confirmedOrders: number;
+    awaitingPayment: number;
+    cancelledOrders: number;
+    inTransitOrders: number;
+    deliveredOrders: number;
+    totalRevenue: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -473,16 +484,43 @@ export class DatabaseStorage implements IStorage {
     deliveredOrders: number;
     totalRevenue: number;
   }> {
-    // Simplified stats function to avoid SQL parsing issues
-    return {
-      totalOrders: 3,
-      confirmedOrders: 1,
-      awaitingPayment: 1,
-      cancelledOrders: 0,
-      inTransitOrders: 0,
-      deliveredOrders: 0,
-      totalRevenue: 94.00,
-    };
+    try {
+      // Get all orders and calculate stats in application layer
+      const allOrders = await db.select().from(orders);
+      
+      const totalOrders = allOrders.length;
+      const confirmedOrders = allOrders.filter(o => o.status === 'confirmado').length;
+      const awaitingPayment = allOrders.filter(o => o.status === 'aguardando_pagamento').length;
+      const cancelledOrders = allOrders.filter(o => o.status === 'cancelado').length;
+      const inTransitOrders = allOrders.filter(o => o.status === 'em_transito').length;
+      const deliveredOrders = allOrders.filter(o => o.status === 'entregue').length;
+      const totalRevenue = allOrders.reduce((sum, order) => {
+        const cost = parseFloat(order.totalCost?.toString() || '0');
+        return sum + (isNaN(cost) ? 0 : cost);
+      }, 0);
+
+      return {
+        totalOrders,
+        confirmedOrders,
+        awaitingPayment,
+        cancelledOrders,
+        inTransitOrders,
+        deliveredOrders,
+        totalRevenue,
+      };
+    } catch (error) {
+      console.error('Error getting order stats:', error);
+      // Return zeros if there's an error
+      return {
+        totalOrders: 0,
+        confirmedOrders: 0,
+        awaitingPayment: 0,
+        cancelledOrders: 0,
+        inTransitOrders: 0,
+        deliveredOrders: 0,
+        totalRevenue: 0,
+      };
+    }
   }
 
   // Price calculation - provisório
@@ -673,6 +711,26 @@ class MockStorage implements IStorage {
 
   async calculateDeliveryPrice(fromZipCode: string, toZipCode: string): Promise<number> {
     return 15.50;
+  }
+
+  async getOrderStats(): Promise<{
+    totalOrders: number;
+    confirmedOrders: number;
+    awaitingPayment: number;
+    cancelledOrders: number;
+    inTransitOrders: number;
+    deliveredOrders: number;
+    totalRevenue: number;
+  }> {
+    return {
+      totalOrders: this.orders.length,
+      confirmedOrders: this.orders.filter(o => o.status === 'confirmado').length,
+      awaitingPayment: this.orders.filter(o => o.status === 'aguardando_pagamento').length,
+      cancelledOrders: this.orders.filter(o => o.status === 'cancelado').length,
+      inTransitOrders: this.orders.filter(o => o.status === 'em_transito').length,
+      deliveredOrders: this.orders.filter(o => o.status === 'entregue').length,
+      totalRevenue: this.orders.reduce((sum, o) => sum + Number(o.totalCost), 0),
+    };
   }
 }
 
