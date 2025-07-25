@@ -112,7 +112,7 @@ export default function AdminOrders() {
   const { data: orderStats } = useQuery({
     queryKey: ["admin", "orders", "stats"],
     queryFn: async () => {
-      const response = await fetch("/api/admin/orders/stats");
+      const response = await fetch("/api/admin/stats");
       if (!response.ok) {
         console.error('Error fetching stats:', response.status, response.statusText);
         // Return hardcoded stats based on current real data
