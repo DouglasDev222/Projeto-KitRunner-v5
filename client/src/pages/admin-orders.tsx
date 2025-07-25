@@ -67,10 +67,8 @@ const statusOptions = [
   { value: 'confirmed', label: 'Confirmado', color: 'bg-green-100 text-green-800' },
   { value: 'awaiting_payment', label: 'Aguardando Pagamento', color: 'bg-yellow-100 text-yellow-800' },
   { value: 'cancelled', label: 'Cancelado', color: 'bg-red-100 text-red-800' },
-  { value: 'kits_being_prepared', label: 'Kits sendo Preparados', color: 'bg-blue-100 text-blue-800' },
-  { value: 'kits_ready', label: 'Kits Prontos', color: 'bg-purple-100 text-purple-800' },
-  { value: 'in_transit', label: 'Em Trânsito', color: 'bg-orange-100 text-orange-800' },
-  { value: 'delivered', label: 'Entregue', color: 'bg-green-100 text-green-800' }
+  { value: 'kits_being_picked_up', label: 'Kits sendo Retirados', color: 'bg-blue-100 text-blue-800' },
+  { value: 'in_transit', label: 'Pedido em Rota', color: 'bg-orange-100 text-orange-800' }
 ];
 
 const getStatusBadge = (status: string) => {
