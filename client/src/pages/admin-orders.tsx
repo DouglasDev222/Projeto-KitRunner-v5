@@ -17,7 +17,9 @@ import {
   Package,
   DollarSign,
   ChevronDown,
-  ExternalLink
+  ExternalLink,
+  FileText,
+  Download
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
@@ -185,6 +187,67 @@ export default function AdminOrders() {
     setFilters({ status: 'all' });
   };
 
+  // Label generation functions
+  const handleGenerateLabel = async (orderId: number, orderNumber: string) => {
+    try {
+      const response = await fetch(`/api/admin/orders/${orderId}/label`);
+      if (!response.ok) {
+        throw new Error('Erro ao gerar etiqueta');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `etiqueta-${orderNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Etiqueta gerada com sucesso",
+        description: `Etiqueta do pedido ${orderNumber} foi baixada`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao gerar etiqueta",
+        description: "Não foi possível gerar a etiqueta do pedido",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGenerateEventLabels = async (eventId: number, eventName: string) => {
+    try {
+      const response = await fetch(`/api/admin/events/${eventId}/labels`);
+      if (!response.ok) {
+        throw new Error('Erro ao gerar etiquetas');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `etiquetas-${eventName.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Etiquetas geradas com sucesso",
+        description: `Etiquetas do evento ${eventName} foram baixadas`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao gerar etiquetas",
+        description: "Não foi possível gerar as etiquetas do evento",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (!isAuthenticated) {
     return <AdminAuth onAuthenticated={() => setIsAuthenticated(true)} />;
   }
@@ -197,6 +260,29 @@ export default function AdminOrders() {
           <div>
             <h1 className="text-3xl font-bold text-neutral-800">Gerenciamento de Pedidos</h1>
             <p className="text-neutral-600">Visualize, gerencie e acompanhe todos os pedidos</p>
+          </div>
+          <div className="flex gap-2">
+            {events && events.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Etiquetas por Evento
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {events.map((event) => (
+                    <DropdownMenuItem
+                      key={event.id}
+                      onClick={() => handleGenerateEventLabels(event.id, event.name)}
+                    >
+                      {event.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
 
@@ -428,6 +514,17 @@ export default function AdminOrders() {
                             >
                               <Eye className="h-4 w-4" />
                               Detalhes
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleGenerateLabel(order.id, order.orderNumber)}
+                              className="gap-1"
+                              title="Gerar etiqueta de entrega"
+                            >
+                              <FileText className="h-4 w-4" />
+                              Etiqueta
                             </Button>
                             
                             <DropdownMenu>

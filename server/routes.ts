@@ -688,6 +688,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Generate delivery label for single order
+  app.get("/api/admin/orders/:id/label", async (req, res) => {
+    try {
+      const orderId = parseInt(req.params.id);
+      const order = await storage.getOrderWithFullDetails(orderId);
+      
+      if (!order) {
+        return res.status(404).json({ message: "Pedido não encontrado" });
+      }
+      
+      const { generateDeliveryLabel } = await import('./label-generator');
+      const pdfBuffer = await generateDeliveryLabel(order);
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="etiqueta-${order.orderNumber}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error: any) {
+      console.error('Error generating delivery label:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Generate delivery labels for multiple orders by event
+  app.get("/api/admin/events/:eventId/labels", async (req, res) => {
+    try {
+      const eventId = parseInt(req.params.eventId);
+      const orders = await storage.getOrdersByEventId(eventId);
+      
+      if (!orders || orders.length === 0) {
+        return res.status(404).json({ message: "Nenhum pedido encontrado para este evento" });
+      }
+      
+      // Get full details for each order
+      const ordersWithDetails = await Promise.all(
+        orders.map(order => storage.getOrderWithFullDetails(order.id))
+      );
+      
+      const validOrders = ordersWithDetails.filter(order => order !== undefined);
+      
+      if (validOrders.length === 0) {
+        return res.status(404).json({ message: "Nenhum pedido válido encontrado" });
+      }
+      
+      const { generateMultipleLabels } = await import('./label-generator');
+      const pdfBuffer = await generateMultipleLabels(validOrders);
+      
+      // Get event name for filename
+      const event = await storage.getEvent(eventId);
+      const eventName = event?.name.replace(/[^a-zA-Z0-9]/g, '-') || 'evento';
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="etiquetas-${eventName}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error: any) {
+      console.error('Error generating multiple labels:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Generate delivery labels for selected orders
+  app.post("/api/admin/orders/labels", async (req, res) => {
+    try {
+      const { orderIds } = req.body;
+      
+      if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+        return res.status(400).json({ message: "Lista de pedidos é obrigatória" });
+      }
+      
+      // Get full details for each order
+      const ordersWithDetails = await Promise.all(
+        orderIds.map((id: number) => storage.getOrderWithFullDetails(id))
+      );
+      
+      const validOrders = ordersWithDetails.filter(order => order !== undefined);
+      
+      if (validOrders.length === 0) {
+        return res.status(404).json({ message: "Nenhum pedido válido encontrado" });
+      }
+      
+      const { generateMultipleLabels } = await import('./label-generator');
+      const pdfBuffer = await generateMultipleLabels(validOrders);
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="etiquetas-selecionadas.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error: any) {
+      console.error('Error generating selected labels:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
