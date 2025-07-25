@@ -326,17 +326,17 @@ export default function AdminOrders() {
               <div>
                 <label className="text-sm font-medium mb-2 block">Evento</label>
                 <Select
-                  value={filters.eventId?.toString() || ''}
+                  value={filters.eventId?.toString() || 'all'}
                   onValueChange={(value) => setFilters({ 
                     ...filters, 
-                    eventId: value ? parseInt(value) : undefined 
+                    eventId: value === 'all' ? undefined : parseInt(value) 
                   })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Todos os eventos" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos os eventos</SelectItem>
+                    <SelectItem value="all">Todos os eventos</SelectItem>
                     {events?.map((event: any) => (
                       <SelectItem key={event.id} value={event.id.toString()}>
                         {event.name}

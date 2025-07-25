@@ -20,7 +20,7 @@ import {
   coupons
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, count, sum, desc } from "drizzle-orm";
+import { eq, and, count, sum, desc, ne } from "drizzle-orm";
 
 export interface IStorage {
   // Events
@@ -285,7 +285,7 @@ export class DatabaseStorage implements IStorage {
     const [customersCount] = await db.select({ count: count() }).from(customers);
     const [ordersCount] = await db.select({ count: count() }).from(orders);
     const [activeEventsCount] = await db.select({ count: count() }).from(events).where(eq(events.available, true));
-    const [revenue] = await db.select({ total: sum(orders.totalCost) }).from(orders);
+    const [revenue] = await db.select({ total: sum(orders.totalCost) }).from(orders).where(ne(orders.status, 'cancelled'));
 
     return {
       totalCustomers: customersCount.count,
@@ -356,17 +356,20 @@ export class DatabaseStorage implements IStorage {
     .leftJoin(events, eq(orders.eventId, events.id))
     .leftJoin(addresses, eq(orders.addressId, addresses.id));
 
-    // Apply filters
+    // Apply filters - fix by creating proper where conditions
+    const conditions = [];
     if (filters.status && filters.status !== 'all') {
-      query = query.where(eq(orders.status, filters.status));
+      conditions.push(eq(orders.status, filters.status));
     }
-
     if (filters.eventId) {
-      query = query.where(eq(orders.eventId, parseInt(filters.eventId)));
+      conditions.push(eq(orders.eventId, parseInt(filters.eventId)));
     }
-
     if (filters.orderNumber) {
-      query = query.where(eq(orders.orderNumber, filters.orderNumber));
+      conditions.push(eq(orders.orderNumber, filters.orderNumber));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
     }
 
     const result = await query.orderBy(desc(orders.createdAt));
@@ -474,7 +477,7 @@ export class DatabaseStorage implements IStorage {
     const [cancelledCount] = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'cancelled'));
     const [inTransitCount] = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'in_transit'));
     const [deliveredCount] = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'delivered'));
-    const [revenue] = await db.select({ total: sum(orders.totalCost) }).from(orders);
+    const [revenue] = await db.select({ total: sum(orders.totalCost) }).from(orders).where(ne(orders.status, 'cancelled'));
 
     return {
       totalOrders: totalOrdersCount.count,
