@@ -11,34 +11,10 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
 import { formatCPF } from "@/lib/cpf-validator";
-import type { Customer, Order, Event } from "@shared/schema";
+import { getStatusBadge } from "@/lib/status-utils";
+import type { Customer, Order, Event } from "@shared/schema";;
 
-// Status translation function
-const getStatusLabel = (status: string): string => {
-  const statusMap: Record<string, string> = {
-    'confirmado': 'Confirmado',
-    'aguardando_pagamento': 'Aguardando Pagamento',
-    'cancelado': 'Cancelado',
-    'kits_sendo_retirados': 'Kits sendo Retirados',
-    'em_transito': 'Em Trânsito',
-    'entregue': 'Entregue'
-  };
-  return statusMap[status] || status;
-};
 
-const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-  switch (status) {
-    case 'confirmado':
-    case 'entregue':
-      return 'default';
-    case 'cancelado':
-      return 'destructive';
-    case 'aguardando_pagamento':
-      return 'outline';
-    default:
-      return 'secondary';
-  }
-};
 
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
@@ -220,9 +196,7 @@ export default function AdminDashboard() {
                             <Badge variant="secondary">{order.orderNumber}</Badge>
                             <span className="font-medium">{order.customer?.name}</span>
                           </div>
-                          <Badge variant={getStatusVariant(order.status)}>
-                            {getStatusLabel(order.status)}
-                          </Badge>
+                          {getStatusBadge(order.status)}
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-neutral-600">
                           <div>

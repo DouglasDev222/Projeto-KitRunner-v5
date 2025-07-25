@@ -17,19 +17,7 @@ import { formatCPF, isValidCPF } from "@/lib/cpf-validator";
 import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth-context";
-
-// Status translation function
-const getStatusLabel = (status: string): string => {
-  const statusMap: Record<string, string> = {
-    'confirmado': 'Confirmado',
-    'aguardando_pagamento': 'Aguardando Pagamento',
-    'cancelado': 'Cancelado',
-    'kits_sendo_retirados': 'Kits sendo Retirados',
-    'em_transito': 'Em Trânsito',
-    'entregue': 'Entregue'
-  };
-  return statusMap[status] || status;
-};
+import { getStatusBadge } from "@/lib/status-utils";;
 
 export default function MyOrders() {
   // ALL hooks must be at the very top, before any conditional logic
@@ -152,12 +140,7 @@ export default function MyOrders() {
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
                           <p className="font-semibold text-neutral-800">#{order.orderNumber}</p>
-                          <Badge 
-                            variant="default" 
-                            className="bg-secondary hover:bg-secondary/80"
-                          >
-                            {getStatusLabel(order.status)}
-                          </Badge>
+                          {getStatusBadge(order.status)}
                         </div>
                         <div className="flex items-center text-sm text-neutral-600 mb-1">
                           <Package className="w-4 h-4 mr-2" />

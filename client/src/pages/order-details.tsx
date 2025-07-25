@@ -8,20 +8,8 @@ import { useQuery } from "@tanstack/react-query";
 import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
 import { formatCPF } from "@/lib/cpf-validator";
 import { calculatePricing, formatPricingBreakdown } from "@/lib/pricing-calculator";
+import { getStatusBadge } from "@/lib/status-utils";
 import type { Order, Kit, Address, Event } from "@shared/schema";
-
-// Status translation function
-const getStatusLabel = (status: string): string => {
-  const statusMap: Record<string, string> = {
-    'confirmed': 'Confirmado',
-    'pending': 'Pendente',
-    'processing': 'Processando',
-    'shipped': 'Enviado',
-    'delivered': 'Entregue',
-    'cancelled': 'Cancelado'
-  };
-  return statusMap[status] || status;
-};
 
 export default function OrderDetails() {
   const [, setLocation] = useLocation();
@@ -87,12 +75,7 @@ export default function OrderDetails() {
               {formatDate(order.createdAt.split('T')[0])}
             </p>
           </div>
-          <Badge 
-            variant="default" 
-            className="bg-secondary hover:bg-secondary/80"
-          >
-            {getStatusLabel(order.status)}
-          </Badge>
+          {getStatusBadge(order.status)}
         </div>
 
         {/* Event Information */}

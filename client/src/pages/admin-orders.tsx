@@ -23,6 +23,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
 import { formatCPF } from "@/lib/cpf-validator";
 import { useToast } from "@/hooks/use-toast";
+import { statusOptions, getStatusBadge } from "@/lib/status-utils";
 import {
   Dialog,
   DialogContent,
@@ -61,25 +62,6 @@ interface OrderFilters {
   startDate?: string;
   endDate?: string;
 }
-
-const statusOptions = [
-  { value: 'all', label: 'Todos os Status', color: 'bg-gray-100 text-gray-800' },
-  { value: 'confirmado', label: 'Confirmado', color: 'bg-green-100 text-green-800' },
-  { value: 'aguardando_pagamento', label: 'Aguardando Pagamento', color: 'bg-yellow-100 text-yellow-800' },
-  { value: 'cancelado', label: 'Cancelado', color: 'bg-red-100 text-red-800' },
-  { value: 'kits_sendo_retirados', label: 'Kits sendo Retirados', color: 'bg-blue-100 text-blue-800' },
-  { value: 'em_transito', label: 'Em Trânsito', color: 'bg-orange-100 text-orange-800' },
-  { value: 'entregue', label: 'Entregue', color: 'bg-green-600 text-white' }
-];
-
-const getStatusBadge = (status: string) => {
-  const statusConfig = statusOptions.find(s => s.value === status) || statusOptions[0];
-  return (
-    <Badge className={statusConfig.color}>
-      {statusConfig.label}
-    </Badge>
-  );
-};
 
 const paymentMethodLabels: { [key: string]: string } = {
   credit: 'Cartão de Crédito',
