@@ -220,7 +220,7 @@ export default function AdminCustomers() {
   });
 
   // Filter customers based on search term
-  const filteredCustomers = customers?.filter(customer =>
+  const filteredCustomers = customers?.filter((customer: any) =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.cpf.includes(searchTerm) ||
     customer.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -278,7 +278,7 @@ export default function AdminCustomers() {
     deleteCustomerMutation.mutate(customerToDelete.id);
   };
 
-  const openEditModal = (customer: CustomerWithAddresses) => {
+  const openEditModal = (customer: any) => {
     setSelectedCustomer(customer);
     editForm.reset({
       name: customer.name,
@@ -729,7 +729,7 @@ export default function AdminCustomers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {customers.map((customer) => (
+                {customers.map((customer: any) => (
                   <TableRow key={customer.id}>
                     <TableCell className="font-medium">{customer.name}</TableCell>
                     <TableCell>{formatCPF(customer.cpf)}</TableCell>
@@ -738,7 +738,7 @@ export default function AdminCustomers() {
                     <TableCell>
                       {customer.addresses && customer.addresses.length > 0 ? (
                         <div className="space-y-1">
-                          {customer.addresses.slice(0, 2).map((address) => (
+                          {customer.addresses.slice(0, 2).map((address: any) => (
                             <div key={address.id} className="text-xs">
                               <span className="font-medium">{address.label}:</span> {address.street}, {address.number}
                             </div>

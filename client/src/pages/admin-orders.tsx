@@ -229,7 +229,7 @@ export default function AdminOrders() {
   };
 
   const handleSelectAll = (checked: boolean) => {
-    setSelectedOrders(checked ? orders.map(order => order.id) : []);
+    setSelectedOrders(checked ? orders.map((order: any) => order.id) : []);
   };
 
   // Label generation functions
