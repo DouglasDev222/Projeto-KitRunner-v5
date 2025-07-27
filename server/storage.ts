@@ -534,6 +534,74 @@ export class DatabaseStorage implements IStorage {
     
     return basePrice + (distance * pricePerKm);
   }
+
+  // Admin customer management methods
+  async getAllCustomersWithAddresses(): Promise<(Customer & { addresses: Address[]; orderCount: number })[]> {
+    const customersData = await db.select().from(customers).orderBy(desc(customers.createdAt));
+    
+    const result = [];
+    for (const customer of customersData) {
+      const customerAddresses = await db.select().from(addresses).where(eq(addresses.customerId, customer.id));
+      const [orderCountResult] = await db.select({ count: count() }).from(orders).where(eq(orders.customerId, customer.id));
+      
+      result.push({
+        ...customer,
+        addresses: customerAddresses,
+        orderCount: orderCountResult.count
+      });
+    }
+    
+    return result;
+  }
+
+  async createCustomerWithAddresses(customerData: any): Promise<{ customer: Customer; addresses: Address[] }> {
+    const { addresses: addressesData, ...customerInfo } = customerData;
+    
+    // Create customer first
+    const [customer] = await db.insert(customers).values(customerInfo).returning();
+    
+    // Create addresses for the customer
+    const createdAddresses = [];
+    for (const addressData of addressesData) {
+      const [address] = await db.insert(addresses).values({
+        ...addressData,
+        customerId: customer.id
+      }).returning();
+      createdAddresses.push(address);
+    }
+    
+    return { customer, addresses: createdAddresses };
+  }
+
+  async updateCustomer(id: number, customerData: any): Promise<Customer | undefined> {
+    const [customer] = await db
+      .update(customers)
+      .set(customerData)
+      .where(eq(customers.id, id))
+      .returning();
+    return customer || undefined;
+  }
+
+  async deleteCustomer(id: number): Promise<boolean> {
+    // First delete all addresses for this customer
+    await db.delete(addresses).where(eq(addresses.customerId, id));
+    
+    // Then delete the customer
+    const result = await db.delete(customers).where(eq(customers.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getCustomerWithAddresses(id: number): Promise<(Customer & { addresses: Address[] }) | undefined> {
+    const [customer] = await db.select().from(customers).where(eq(customers.id, id));
+    if (!customer) return undefined;
+    
+    const customerAddresses = await db.select().from(addresses).where(eq(addresses.customerId, id));
+    
+    return {
+      ...customer,
+      addresses: customerAddresses
+    };
+  }
 }
 
 // Mock implementation for development without database

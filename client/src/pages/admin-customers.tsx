@@ -614,7 +614,7 @@ export default function AdminCustomers() {
                       <p><span className="font-medium">CPF:</span> {formatCPF(selectedCustomer.cpf)}</p>
                       <p><span className="font-medium">Email:</span> {selectedCustomer.email}</p>
                       <p><span className="font-medium">Telefone:</span> {selectedCustomer.phone}</p>
-                      <p><span className="font-medium">Data de Nascimento:</span> {formatDate(new Date(selectedCustomer.birthDate))}</p>
+                      <p><span className="font-medium">Data de Nascimento:</span> {formatDate(selectedCustomer.birthDate)}</p>
                       <p><span className="font-medium">Pedidos:</span> {selectedCustomer.orderCount || 0}</p>
                     </div>
                   </div>
