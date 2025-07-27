@@ -389,6 +389,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Address management routes
+  app.post("/api/customers/:customerId/addresses", async (req, res) => {
+    try {
+      const customerId = parseInt(req.params.customerId);
+      const addressData = req.body;
+      
+      // If this address is being set as default, update other addresses
+      if (addressData.isDefault) {
+        // First get all customer addresses and set them to non-default
+        const existingAddresses = await storage.getAddressesByCustomerId(customerId);
+        for (const addr of existingAddresses) {
+          if (addr.isDefault) {
+            await storage.updateAddress(addr.id, { isDefault: false });
+          }
+        }
+      }
+      
+      const address = await storage.createAddress({
+        ...addressData,
+        customerId
+      });
+      
+      res.json(address);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/addresses/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const addressData = req.body;
+      
+      // Get the current address to find the customerId
+      const currentAddress = await storage.getAddress(id);
+      if (!currentAddress) {
+        return res.status(404).json({ message: "Endereço não encontrado" });
+      }
+      
+      // If this address is being set as default, update other addresses
+      if (addressData.isDefault) {
+        const existingAddresses = await storage.getAddressesByCustomerId(currentAddress.customerId);
+        for (const addr of existingAddresses) {
+          if (addr.id !== id && addr.isDefault) {
+            await storage.updateAddress(addr.id, { isDefault: false });
+          }
+        }
+      }
+      
+      const address = await storage.updateAddress(id, addressData);
+      res.json(address);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Admin routes
 
   app.get("/api/admin/orders", async (req, res) => {

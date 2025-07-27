@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,9 @@ export default function AdminCustomers() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<CustomerWithAddresses | null>(null);
+  const [isAddAddressDialogOpen, setIsAddAddressDialogOpen] = useState(false);
+  const [isEditAddressDialogOpen, setIsEditAddressDialogOpen] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -156,6 +160,33 @@ export default function AdminCustomers() {
     },
   });
 
+  // Create address mutation
+  const createAddressMutation = useMutation({
+    mutationFn: async (data: { customerId: number; address: any }) => {
+      const response = await apiRequest("POST", `/api/customers/${data.customerId}/addresses`, data.address);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "customers"] });
+      setIsAddAddressDialogOpen(false);
+      addressForm.reset();
+    },
+  });
+
+  // Update address mutation
+  const updateAddressMutation = useMutation({
+    mutationFn: async (data: { id: number; address: any }) => {
+      const response = await apiRequest("PUT", `/api/addresses/${data.id}`, data.address);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "customers"] });
+      setIsEditAddressDialogOpen(false);
+      setSelectedAddress(null);
+      addressForm.reset();
+    },
+  });
+
   // Filter customers based on search term
   const filteredCustomers = customers?.filter(customer =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -236,6 +267,54 @@ export default function AdminCustomers() {
     const currentValue = editForm.getValues("phone");
     const numbersOnly = currentValue.replace(/\D/g, "");
     editForm.setValue("phone", formatPhone(numbersOnly));
+  };
+
+  // Address handlers
+  const openAddAddressModal = () => {
+    addressForm.reset({
+      label: "",
+      street: "",
+      number: "",
+      complement: "",
+      neighborhood: "",
+      city: "",
+      state: "PB",
+      zipCode: "",
+      isDefault: false
+    });
+    setIsAddAddressDialogOpen(true);
+  };
+
+  const openEditAddressModal = (address: Address) => {
+    setSelectedAddress(address);
+    addressForm.reset({
+      label: address.label,
+      street: address.street,
+      number: address.number,
+      complement: address.complement || "",
+      neighborhood: address.neighborhood,
+      city: address.city,
+      state: address.state,
+      zipCode: address.zipCode,
+      isDefault: address.isDefault
+    });
+    setIsEditAddressDialogOpen(true);
+  };
+
+  const handleCreateAddress = (data: any) => {
+    if (!selectedCustomer) return;
+    createAddressMutation.mutate({
+      customerId: selectedCustomer.id,
+      address: data
+    });
+  };
+
+  const handleUpdateAddress = (data: any) => {
+    if (!selectedAddress) return;
+    updateAddressMutation.mutate({
+      id: selectedAddress.id,
+      address: data
+    });
   };
 
   const openDetailsModal = (customer: CustomerWithAddresses) => {
@@ -694,7 +773,7 @@ export default function AdminCustomers() {
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold text-lg">Endereços</h3>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={openAddAddressModal}>
                       <Plus className="h-4 w-4 mr-2" />
                       Adicionar Endereço
                     </Button>
@@ -720,7 +799,7 @@ export default function AdminCustomers() {
                               <p className="text-sm text-gray-600">CEP: {address.zipCode}</p>
                             </div>
                             <div className="flex gap-1">
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" onClick={() => openEditAddressModal(address)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
                             </div>
@@ -866,6 +945,318 @@ export default function AdminCustomers() {
                 </form>
               </Form>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Address Modal */}
+        <Dialog open={isAddAddressDialogOpen} onOpenChange={setIsAddAddressDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Adicionar Endereço</DialogTitle>
+            </DialogHeader>
+            
+            <Form {...addressForm}>
+              <form onSubmit={addressForm.handleSubmit(handleCreateAddress)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={addressForm.control}
+                    name="label"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de Endereço</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Casa, Trabalho, etc." />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={addressForm.control}
+                    name="street"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Rua</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Nome da rua" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={addressForm.control}
+                    name="number"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Número</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="123" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={addressForm.control}
+                    name="complement"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Complemento</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Apto 45, Casa 2, etc." />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={addressForm.control}
+                    name="neighborhood"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bairro</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Nome do bairro" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={addressForm.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cidade</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Nome da cidade" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={addressForm.control}
+                    name="state"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Estado</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="PB" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={addressForm.control}
+                    name="zipCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>CEP</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="58000-000" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={addressForm.control}
+                  name="isDefault"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Definir como endereço padrão
+                        </FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setIsAddAddressDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={createAddressMutation.isPending}>
+                    {createAddressMutation.isPending ? "Salvando..." : "Adicionar Endereço"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Address Modal */}
+        <Dialog open={isEditAddressDialogOpen} onOpenChange={setIsEditAddressDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Editar Endereço</DialogTitle>
+            </DialogHeader>
+            
+            <Form {...addressForm}>
+              <form onSubmit={addressForm.handleSubmit(handleUpdateAddress)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={addressForm.control}
+                    name="label"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de Endereço</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Casa, Trabalho, etc." />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={addressForm.control}
+                    name="street"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Rua</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Nome da rua" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={addressForm.control}
+                    name="number"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Número</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="123" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={addressForm.control}
+                    name="complement"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Complemento</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Apto 45, Casa 2, etc." />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={addressForm.control}
+                    name="neighborhood"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bairro</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Nome do bairro" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={addressForm.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cidade</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Nome da cidade" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={addressForm.control}
+                    name="state"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Estado</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="PB" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={addressForm.control}
+                    name="zipCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>CEP</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="58000-000" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={addressForm.control}
+                  name="isDefault"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Definir como endereço padrão
+                        </FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setIsEditAddressDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={updateAddressMutation.isPending}>
+                    {updateAddressMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
