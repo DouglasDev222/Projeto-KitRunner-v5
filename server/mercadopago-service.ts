@@ -78,10 +78,6 @@ export class MercadoPagoService {
           },
           external_reference: paymentData.orderId,
           binary_mode: false,
-          // Force approval for test environment (remove in production)
-          ...(process.env.NODE_ENV === 'development' && {
-            auto_return: 'approved'
-          }),
         }
       });
 
