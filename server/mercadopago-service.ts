@@ -1,0 +1,153 @@
+import { MercadoPagoConfig, Payment, Preference } from 'mercadopago';
+
+// Initialize MercadoPago client with access token
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
+  options: {
+    timeout: 5000,
+    idempotencyKey: 'abc123'
+  }
+});
+
+const payment = new Payment(client);
+const preference = new Preference(client);
+
+export interface PaymentData {
+  token?: string; // For credit/debit cards
+  paymentMethodId: string; // credit_card, debit_card, pix
+  email: string;
+  amount: number;
+  description: string;
+  orderId: string;
+  payer: {
+    name: string;
+    surname: string;
+    email: string;
+    identification: {
+      type: string;
+      number: string;
+    };
+  };
+}
+
+export interface PIXPaymentResponse {
+  id: number;
+  status: string;
+  qr_code_base64?: string;
+  qr_code?: string;
+  ticket_url?: string;
+  point_of_interaction?: {
+    transaction_data?: {
+      qr_code_base64?: string;
+      qr_code?: string;
+      ticket_url?: string;
+    };
+  };
+}
+
+export class MercadoPagoService {
+  /**
+   * Process credit/debit card payment
+   */
+  static async processCardPayment(paymentData: PaymentData) {
+    try {
+      const paymentResult = await payment.create({
+        body: {
+          transaction_amount: paymentData.amount,
+          token: paymentData.token,
+          description: paymentData.description,
+          installments: 1,
+          payment_method_id: paymentData.paymentMethodId,
+          payer: {
+            email: paymentData.payer.email,
+            first_name: paymentData.payer.name,
+            last_name: paymentData.payer.surname,
+            identification: {
+              type: paymentData.payer.identification.type,
+              number: paymentData.payer.identification.number,
+            },
+          },
+          external_reference: paymentData.orderId,
+        }
+      });
+
+      return {
+        success: true,
+        payment: paymentResult,
+        status: paymentResult.status,
+        id: paymentResult.id
+      };
+    } catch (error) {
+      console.error('Card payment error:', error);
+      return {
+        success: false,
+        error: error,
+        message: 'Erro ao processar pagamento com cartão'
+      };
+    }
+  }
+
+  /**
+   * Create PIX payment
+   */
+  static async createPIXPayment(paymentData: PaymentData): Promise<PIXPaymentResponse | null> {
+    try {
+      const paymentResult = await payment.create({
+        body: {
+          transaction_amount: paymentData.amount,
+          description: paymentData.description,
+          payment_method_id: 'pix',
+          payer: {
+            email: paymentData.payer.email,
+            first_name: paymentData.payer.name,
+            last_name: paymentData.payer.surname,
+            identification: {
+              type: paymentData.payer.identification.type,
+              number: paymentData.payer.identification.number,
+            },
+          },
+          external_reference: paymentData.orderId,
+        }
+      });
+
+      return {
+        id: paymentResult.id!,
+        status: paymentResult.status!,
+        qr_code_base64: paymentResult.point_of_interaction?.transaction_data?.qr_code_base64,
+        qr_code: paymentResult.point_of_interaction?.transaction_data?.qr_code,
+        ticket_url: paymentResult.point_of_interaction?.transaction_data?.ticket_url,
+        point_of_interaction: paymentResult.point_of_interaction
+      };
+    } catch (error) {
+      console.error('PIX payment error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Check payment status by ID
+   */
+  static async getPaymentStatus(paymentId: number) {
+    try {
+      const paymentResult = await payment.get({ id: paymentId });
+      return {
+        success: true,
+        status: paymentResult.status,
+        payment: paymentResult
+      };
+    } catch (error) {
+      console.error('Payment status error:', error);
+      return {
+        success: false,
+        error: error
+      };
+    }
+  }
+
+  /**
+   * Get public key for frontend
+   */
+  static getPublicKey() {
+    return process.env.MERCADO_PAGO_PUBLIC_KEY;
+  }
+}

@@ -5,7 +5,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Landmark, QrCode, Shield, Lock, Heart, Package } from "lucide-react";
+import { CreditCard, Landmark, QrCode, Shield, Lock, Heart, Package, CheckCircle } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
@@ -14,6 +14,8 @@ import { formatCurrency } from "@/lib/brazilian-formatter";
 import { apiRequest } from "@/lib/queryClient";
 import { orderCreationSchema } from "@shared/schema";
 import { calculatePricing, formatPricingBreakdown } from "@/lib/pricing-calculator";
+import { CardPayment } from "@/components/payment/card-payment";
+import { PIXPayment } from "@/components/payment/pix-payment";
 import type { Customer, Event, Address } from "@shared/schema";
 
 type OrderCreation = {
@@ -33,6 +35,10 @@ export default function Payment() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [kitData, setKitData] = useState<any>(null);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [orderNumber, setOrderNumber] = useState<string | null>(null);
 
   const { data: event } = useQuery<Event>({
     queryKey: ["/api/events", id],
@@ -64,11 +70,40 @@ export default function Payment() {
       return response.json();
     },
     onSuccess: (data) => {
-      // Store order confirmation data
-      sessionStorage.setItem("orderConfirmation", JSON.stringify(data));
-      setLocation(`/events/${id}/confirmation`);
+      setOrderNumber(data.order.orderNumber);
+      // Don't redirect immediately for secure payment methods
+      if (paymentMethod === 'pix' || paymentMethod === 'credit' || paymentMethod === 'debit') {
+        // Order created successfully, now handle payment
+        return data;
+      } else {
+        // For other payment methods, go to confirmation
+        sessionStorage.setItem("orderConfirmation", JSON.stringify(data));
+        setLocation(`/events/${id}/confirmation`);
+      }
     },
   });
+
+  // Payment success handler
+  const handlePaymentSuccess = (paymentResult: any) => {
+    setPaymentCompleted(true);
+    setPaymentError(null);
+    // Store order confirmation data
+    const confirmationData = {
+      order: { orderNumber },
+      payment: paymentResult
+    };
+    sessionStorage.setItem("orderConfirmation", JSON.stringify(confirmationData));
+    // Redirect to confirmation page after a short delay
+    setTimeout(() => {
+      setLocation(`/events/${id}/confirmation`);
+    }, 2000);
+  };
+
+  // Payment error handler
+  const handlePaymentError = (error: string) => {
+    setPaymentError(error);
+    setIsProcessing(false);
+  };
 
   if (!customer || !kitData || !event) {
     return (
@@ -111,6 +146,27 @@ export default function Payment() {
 
     createOrderMutation.mutate(orderData);
   };
+
+  // Show payment completed state
+  if (paymentCompleted) {
+    return (
+      <div className="max-w-md mx-auto bg-white min-h-screen">
+        <Header />
+        <div className="p-4">
+          <div className="text-center py-8">
+            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-green-600 mb-2">Pagamento Aprovado!</h2>
+            <p className="text-neutral-600 mb-4">
+              Seu pedido foi confirmado com sucesso.
+            </p>
+            <p className="text-sm text-neutral-500">
+              Redirecionando para confirmação...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
@@ -207,59 +263,122 @@ export default function Payment() {
           </CardContent>
         </Card>
         
-        {/* Payment Methods */}
-        <div className="space-y-4">
-          <h3 className="font-semibold text-lg text-neutral-800">Forma de Pagamento</h3>
-          
-          <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod as any}>
-            <div className="space-y-3">
-              <Label className="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                <RadioGroupItem value="credit" className="mr-3" />
-                <CreditCard className="w-5 h-5 text-primary mr-3" />
-                <div>
-                  <span className="font-medium text-neutral-800">Cartão de Crédito</span>
-                  <p className="text-sm text-neutral-600">Visa, Mastercard, Elo</p>
-                </div>
-              </Label>
+        {/* Payment Methods Selection */}
+        {!orderNumber && (
+          <Card className="mb-6">
+            <CardContent className="p-4">
+              <h3 className="font-semibold text-lg text-neutral-800 mb-4">Forma de Pagamento</h3>
               
-              <Label className="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                <RadioGroupItem value="debit" className="mr-3" />
-                <Landmark className="w-5 h-5 text-primary mr-3" />
-                <div>
-                  <span className="font-medium text-neutral-800">Cartão de Débito</span>
-                  <p className="text-sm text-neutral-600">Débito em conta</p>
+              <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "credit" | "debit" | "pix")}>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-neutral-50">
+                    <RadioGroupItem value="credit" id="credit" />
+                    <Label htmlFor="credit" className="flex items-center gap-3 cursor-pointer w-full">
+                      <CreditCard className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <div className="font-medium">Cartão de Crédito</div>
+                        <div className="text-sm text-neutral-600">Visa, Mastercard, Elo</div>
+                      </div>
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-neutral-50">
+                    <RadioGroupItem value="debit" id="debit" />
+                    <Label htmlFor="debit" className="flex items-center gap-3 cursor-pointer w-full">
+                      <Landmark className="h-5 w-5 text-green-600" />
+                      <div>
+                        <div className="font-medium">Cartão de Débito</div>
+                        <div className="text-sm text-neutral-600">Débito à vista</div>
+                      </div>
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-neutral-50">
+                    <RadioGroupItem value="pix" id="pix" />
+                    <Label htmlFor="pix" className="flex items-center gap-3 cursor-pointer w-full">
+                      <QrCode className="h-5 w-5 text-purple-600" />
+                      <div>
+                        <div className="font-medium">PIX</div>
+                        <div className="text-sm text-neutral-600">Pagamento instantâneo</div>
+                      </div>
+                    </Label>
+                  </div>
                 </div>
-              </Label>
+              </RadioGroup>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Payment Error */}
+        {paymentError && (
+          <Alert className="mb-6 border-red-200 bg-red-50">
+            <AlertDescription className="text-red-700">
+              {paymentError}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Payment Processing Section */}
+        {orderNumber ? (
+          <Card className="mb-6">
+            <CardContent className="p-4">
+              <h3 className="font-semibold text-lg text-neutral-800 mb-4">
+                {paymentMethod === 'pix' ? 'Pagamento PIX' : 'Pagamento com Cartão'}
+              </h3>
               
-              <Label className="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                <RadioGroupItem value="pix" className="mr-3" />
-                <QrCode className="w-5 h-5 text-primary mr-3" />
-                <div>
-                  <span className="font-medium text-neutral-800">PIX</span>
-                  <p className="text-sm text-neutral-600">Pagamento instantâneo</p>
-                </div>
-              </Label>
-            </div>
-          </RadioGroup>
-        </div>
-        
-        <Alert className="mt-6 border-green-200 bg-green-50">
-          <Shield className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">
-            <span className="font-medium">Pagamento Seguro:</span> Suas informações são protegidas com 
-            criptografia SSL. Pagamento processado em ambiente seguro.
-          </AlertDescription>
-        </Alert>
-        
-        <Button 
-          className="w-full bg-secondary text-white hover:bg-secondary/90 mt-6" 
-          size="lg"
-          onClick={handleFinishOrder}
-          disabled={createOrderMutation.isPending}
-        >
-          <Lock className="w-4 h-4 mr-2" />
-          {createOrderMutation.isPending ? "Processando..." : "Finalizar Pedido"}
-        </Button>
+              {(paymentMethod === 'credit' || paymentMethod === 'debit') && (
+                <CardPayment
+                  amount={pricing.totalCost}
+                  orderId={orderNumber}
+                  customerData={{
+                    name: customer.name,
+                    email: customer.email,
+                    cpf: customer.cpf
+                  }}
+                  onSuccess={handlePaymentSuccess}
+                  onError={handlePaymentError}
+                  isProcessing={isProcessing}
+                  setIsProcessing={setIsProcessing}
+                />
+              )}
+              
+              {paymentMethod === 'pix' && (
+                <PIXPayment
+                  amount={pricing.totalCost}
+                  orderId={orderNumber}
+                  customerData={{
+                    name: customer.name,
+                    email: customer.email,
+                    cpf: customer.cpf
+                  }}
+                  onSuccess={handlePaymentSuccess}
+                  onError={handlePaymentError}
+                  isProcessing={isProcessing}
+                  setIsProcessing={setIsProcessing}
+                />
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* Security Notice */}
+            <Alert className="mb-6">
+              <Shield className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Pagamento Seguro:</strong> Seus dados são protegidos por criptografia SSL e processados pelo Mercado Pago.
+              </AlertDescription>
+            </Alert>
+
+            <Button 
+              onClick={handleFinishOrder} 
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={createOrderMutation.isPending || isProcessing}
+            >
+              <Lock className="h-4 w-4 mr-2" />
+              {createOrderMutation.isPending ? "Criando Pedido..." : "Continuar para Pagamento"}
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

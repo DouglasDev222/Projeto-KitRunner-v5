@@ -6,6 +6,7 @@ import { sql } from "drizzle-orm";
 import { customerIdentificationSchema, customerRegistrationSchema, orderCreationSchema, adminEventCreationSchema } from "@shared/schema";
 import { z } from "zod";
 import { calculateDeliveryCost } from "./distance-calculator";
+import { MercadoPagoService } from "./mercadopago-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all events
@@ -972,6 +973,208 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error generating kits report:', error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ========================================
+  // MERCADO PAGO PAYMENT ROUTES
+  // ========================================
+
+  // Get MercadoPago public key for frontend
+  app.get("/api/mercadopago/public-key", async (req, res) => {
+    try {
+      const publicKey = MercadoPagoService.getPublicKey();
+      if (!publicKey) {
+        return res.status(500).json({ message: "Chave pública do Mercado Pago não configurada" });
+      }
+      res.json({ publicKey });
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao obter chave pública" });
+    }
+  });
+
+  // Process card payment (credit/debit)
+  app.post("/api/mercadopago/process-card-payment", async (req, res) => {
+    try {
+      const { token, paymentMethodId, orderId, amount, email, customerName, cpf } = req.body;
+      
+      if (!token || !paymentMethodId || !orderId || !amount) {
+        return res.status(400).json({ message: "Dados obrigatórios não fornecidos" });
+      }
+
+      const [firstName, ...lastNameParts] = customerName.split(' ');
+      const lastName = lastNameParts.join(' ') || '';
+
+      const paymentData = {
+        token,
+        paymentMethodId,
+        email,
+        amount: parseFloat(amount),
+        description: `Pedido KitRunner #${orderId}`,
+        orderId,
+        payer: {
+          name: firstName,
+          surname: lastName,
+          email,
+          identification: {
+            type: 'CPF',
+            number: cpf.replace(/\D/g, ''),
+          },
+        },
+      };
+
+      const result = await MercadoPagoService.processCardPayment(paymentData);
+      
+      if (result.success) {
+        // Update order status based on payment status
+        if (result.status === 'approved') {
+          await storage.updateOrderStatus(orderId, 'confirmado');
+        } else if (result.status === 'pending') {
+          await storage.updateOrderStatus(orderId, 'aguardando_pagamento');
+        } else {
+          await storage.updateOrderStatus(orderId, 'cancelado');
+        }
+        
+        res.json({
+          success: true,
+          status: result.status,
+          paymentId: result.id,
+          message: result.status === 'approved' ? 'Pagamento aprovado!' : 'Pagamento em processamento'
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.message || 'Erro ao processar pagamento'
+        });
+      }
+    } catch (error) {
+      console.error('Card payment error:', error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Create PIX payment
+  app.post("/api/mercadopago/create-pix-payment", async (req, res) => {
+    try {
+      const { orderId, amount, email, customerName, cpf } = req.body;
+      
+      if (!orderId || !amount || !email || !customerName || !cpf) {
+        return res.status(400).json({ message: "Dados obrigatórios não fornecidos" });
+      }
+
+      const [firstName, ...lastNameParts] = customerName.split(' ');
+      const lastName = lastNameParts.join(' ') || '';
+
+      const paymentData = {
+        paymentMethodId: 'pix',
+        email,
+        amount: parseFloat(amount),
+        description: `Pedido KitRunner #${orderId}`,
+        orderId,
+        payer: {
+          name: firstName,
+          surname: lastName,
+          email,
+          identification: {
+            type: 'CPF',
+            number: cpf.replace(/\D/g, ''),
+          },
+        },
+      };
+
+      const result = await MercadoPagoService.createPIXPayment(paymentData);
+      
+      if (result) {
+        // Update order status to awaiting payment
+        await storage.updateOrderStatus(orderId, 'aguardando_pagamento');
+        
+        res.json({
+          success: true,
+          paymentId: result.id,
+          qrCode: result.qr_code,
+          qrCodeBase64: result.qr_code_base64,
+          ticketUrl: result.ticket_url
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: 'Erro ao criar pagamento PIX'
+        });
+      }
+    } catch (error) {
+      console.error('PIX payment error:', error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Check payment status
+  app.get("/api/mercadopago/payment-status/:paymentId", async (req, res) => {
+    try {
+      const paymentId = parseInt(req.params.paymentId);
+      
+      if (!paymentId) {
+        return res.status(400).json({ message: "ID de pagamento inválido" });
+      }
+
+      const result = await MercadoPagoService.getPaymentStatus(paymentId);
+      
+      if (result.success && result.payment) {
+        // Get order by payment external reference
+        const orderId = result.payment.external_reference;
+        
+        // Update order status based on current payment status
+        if (result.status === 'approved' && orderId) {
+          await storage.updateOrderStatus(parseInt(orderId), 'confirmado');
+        } else if ((result.status === 'cancelled' || result.status === 'rejected') && orderId) {
+          await storage.updateOrderStatus(parseInt(orderId), 'cancelado');
+        }
+        
+        res.json({
+          success: true,
+          status: result.status,
+          payment: {
+            id: result.payment.id,
+            status: result.payment.status,
+            status_detail: result.payment.status_detail,
+            external_reference: result.payment.external_reference
+          }
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: 'Erro ao verificar status do pagamento'
+        });
+      }
+    } catch (error) {
+      console.error('Payment status error:', error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Webhook for MercadoPago notifications (optional but recommended)
+  app.post("/api/mercadopago/webhook", async (req, res) => {
+    try {
+      const { action, data } = req.body;
+      
+      if (action === 'payment.updated' && data?.id) {
+        const result = await MercadoPagoService.getPaymentStatus(data.id);
+        
+        if (result.success && result.payment) {
+          const orderId = result.payment.external_reference;
+          
+          // Update order status based on payment status
+          if (result.status === 'approved' && orderId) {
+            await storage.updateOrderStatus(parseInt(orderId), 'confirmado');
+          } else if ((result.status === 'cancelled' || result.status === 'rejected') && orderId) {
+            await storage.updateOrderStatus(parseInt(orderId), 'cancelado');
+          }
+        }
+      }
+      
+      res.status(200).send('OK');
+    } catch (error) {
+      console.error('Webhook error:', error);
+      res.status(500).send('Error');
     }
   });
 
