@@ -68,21 +68,44 @@ export class MercadoPagoService {
             },
           },
           external_reference: paymentData.orderId,
+          binary_mode: false,
         }
       });
 
-      return {
-        success: true,
-        payment: paymentResult,
-        status: paymentResult.status,
-        id: paymentResult.id
-      };
-    } catch (error) {
+      console.log('MercadoPago payment result:', JSON.stringify(paymentResult, null, 2));
+
+      if (paymentResult.status === 'approved' || paymentResult.status === 'pending') {
+        return {
+          success: true,
+          payment: paymentResult,
+          status: paymentResult.status,
+          id: paymentResult.id
+        };
+      } else {
+        return {
+          success: false,
+          payment: paymentResult,
+          status: paymentResult.status,
+          message: paymentResult.status_detail || 'Pagamento rejeitado',
+          id: paymentResult.id
+        };
+      }
+    } catch (error: any) {
       console.error('Card payment error:', error);
+      
+      // Better error handling for common errors
+      let errorMessage = 'Erro ao processar pagamento com cartão';
+      
+      if (error.message?.includes('bin_not_found')) {
+        errorMessage = 'Número do cartão inválido. Use um cartão de teste válido.';
+      } else if (error.cause?.length > 0) {
+        errorMessage = error.cause[0].description || errorMessage;
+      }
+      
       return {
         success: false,
         error: error,
-        message: 'Erro ao processar pagamento com cartão'
+        message: errorMessage
       };
     }
   }

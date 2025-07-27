@@ -478,13 +478,32 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async updateOrderStatus(orderId: number, status: string): Promise<Order | undefined> {
-    const [order] = await db
-      .update(orders)
-      .set({ status })
-      .where(eq(orders.id, orderId))
-      .returning();
-    return order;
+  async updateOrderStatus(orderId: number | string, status: string): Promise<Order | undefined> {
+    // If orderId is a string (orderNumber), find the order by orderNumber first
+    if (typeof orderId === 'string') {
+      const existingOrder = await this.db.select()
+        .from(orders)
+        .where(eq(orders.orderNumber, orderId))
+        .limit(1);
+      
+      if (existingOrder.length === 0) {
+        throw new Error(`Order not found with orderNumber: ${orderId}`);
+      }
+      
+      const [order] = await this.db
+        .update(orders)
+        .set({ status })
+        .where(eq(orders.id, existingOrder[0].id))
+        .returning();
+      return order;
+    } else {
+      const [order] = await this.db
+        .update(orders)
+        .set({ status })
+        .where(eq(orders.id, orderId))
+        .returning();
+      return order;
+    }
   }
 
   async updateOrder(orderId: number, updateData: Partial<InsertOrder>): Promise<Order | undefined> {
@@ -631,8 +650,11 @@ export class DatabaseStorage implements IStorage {
     const offset_value = (page - 1) * pageLimit;
     
     // Build search conditions
-    let query = db.select().from(customers);
-    let countQuery = db.select({ count: count() }).from(customers);
+    const baseQuery = db.select().from(customers);
+    const baseCountQuery = db.select({ count: count() }).from(customers);
+    
+    let query = baseQuery;
+    let countQuery = baseCountQuery;
     
     if (search && search.trim()) {
       const searchCondition = or(
@@ -640,8 +662,8 @@ export class DatabaseStorage implements IStorage {
         like(customers.cpf, `%${search}%`),
         like(customers.email, `%${search}%`)
       );
-      query = query.where(searchCondition);
-      countQuery = countQuery.where(searchCondition);
+      query = baseQuery.where(searchCondition);
+      countQuery = baseCountQuery.where(searchCondition);
     }
     
     // Get total count

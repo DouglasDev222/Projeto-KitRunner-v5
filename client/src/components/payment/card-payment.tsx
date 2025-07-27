@@ -106,6 +106,30 @@ export function CardPayment({
     }
   });
 
+  // Detect card brand from number
+  const detectCardBrand = (cardNumber: string) => {
+    const cleanNumber = cardNumber.replace(/\s/g, '');
+    
+    // Mastercard: starts with 5031, 5100-5599
+    if (/^5[1-5]/.test(cleanNumber) || /^5031/.test(cleanNumber)) {
+      return 'master';
+    }
+    // Visa: starts with 4
+    if (/^4/.test(cleanNumber)) {
+      return 'visa';
+    }
+    // American Express: starts with 34 or 37
+    if (/^3[47]/.test(cleanNumber)) {
+      return 'amex';
+    }
+    // Elo: starts with 5067, 4011, 4312, 4389, 4514, 4573, 6277, 6362, 6363, 6550
+    if (/^(5067|4011|4312|4389|4514|4573|6277|6362|6363|6550)/.test(cleanNumber)) {
+      return 'elo';
+    }
+    
+    return 'visa'; // Default fallback
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -132,14 +156,19 @@ export function CardPayment({
       
       if (response.error) {
         setIsProcessing(false);
-        onError(`Erro no cartão: ${response.error.message}`);
+        const errorMessage = response.error.message || 'Erro no cartão';
+        console.error('MercadoPago card token error:', response.error);
+        onError(`Erro no cartão: ${errorMessage}`);
         return;
       }
+
+      // Detect payment method from card number
+      const paymentMethodId = detectCardBrand(formData.cardNumber);
 
       // Process payment with token
       const paymentData = {
         token: response.id,
-        paymentMethodId: 'visa', // This should be detected from card number
+        paymentMethodId,
         orderId,
         amount,
         email: customerData.email,
@@ -150,6 +179,7 @@ export function CardPayment({
       processCardPaymentMutation.mutate(paymentData);
     } catch (error) {
       setIsProcessing(false);
+      console.error('Card payment error:', error);
       onError('Erro ao processar dados do cartão');
     }
   };
