@@ -481,7 +481,7 @@ export class DatabaseStorage implements IStorage {
   async updateOrderStatus(orderId: number | string, status: string): Promise<Order | undefined> {
     // If orderId is a string (orderNumber), find the order by orderNumber first
     if (typeof orderId === 'string') {
-      const existingOrder = await this.db.select()
+      const existingOrder = await db.select()
         .from(orders)
         .where(eq(orders.orderNumber, orderId))
         .limit(1);
@@ -490,14 +490,14 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`Order not found with orderNumber: ${orderId}`);
       }
       
-      const [order] = await this.db
+      const [order] = await db
         .update(orders)
         .set({ status })
         .where(eq(orders.id, existingOrder[0].id))
         .returning();
       return order;
     } else {
-      const [order] = await this.db
+      const [order] = await db
         .update(orders)
         .set({ status })
         .where(eq(orders.id, orderId))
