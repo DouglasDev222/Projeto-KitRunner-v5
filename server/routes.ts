@@ -598,12 +598,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all orders with filters and pagination
   app.get("/api/admin/orders", async (req, res) => {
     try {
-      const filters = req.query;
+      const { page = 1, limit = 10, ...filters } = req.query;
+      const pageNum = parseInt(page as string);
+      const limitNum = parseInt(limit as string);
       
-      // Get all orders with customer, event, and address details
-      const orders = await storage.getAllOrdersWithDetails(filters);
-      
-      res.json(orders);
+      // Check if pagination is requested
+      if (req.query.paginated === 'true') {
+        const result = await storage.getAllOrdersWithDetailsPaginated(pageNum, limitNum, filters);
+        res.json(result);
+      } else {
+        // Fallback to original non-paginated method for backward compatibility
+        const orders = await storage.getAllOrdersWithDetails(filters);
+        res.json(orders);
+      }
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -832,10 +839,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all customers with addresses and order count
   app.get("/api/admin/customers", async (req, res) => {
     try {
-      console.log("🚀 API called for /api/admin/customers");
-      const customers = await storage.getAllCustomersWithAddresses();
-      console.log("📊 Customers returned:", customers.length, "first customer sample:", customers[0]);
-      res.json(customers);
+      const { page = 1, limit = 10, search, paginated } = req.query;
+      const pageNum = parseInt(page as string);
+      const limitNum = parseInt(limit as string);
+      
+      console.log("🚀 API called for /api/admin/customers", { page: pageNum, limit: limitNum, search, paginated });
+      
+      // Check if pagination is requested
+      if (req.query.paginated === 'true') {
+        const result = await storage.getAllCustomersWithAddressesPaginated(pageNum, limitNum, search as string);
+        console.log("📊 Paginated customers returned:", result.customers.length, "total:", result.total);
+        res.json(result);
+      } else {
+        // Fallback to original non-paginated method for backward compatibility
+        const customers = await storage.getAllCustomersWithAddresses();
+        console.log("📊 All customers returned:", customers.length);
+        res.json(customers);
+      }
     } catch (error: any) {
       console.error("❌ Error in /api/admin/customers:", error);
       res.status(500).json({ error: error.message });

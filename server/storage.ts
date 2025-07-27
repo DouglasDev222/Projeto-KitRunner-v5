@@ -20,7 +20,7 @@ import {
   coupons
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, count, sum, desc, ne, sql } from "drizzle-orm";
+import { eq, and, count, sum, desc, ne, sql, like, or, asc, offset, limit } from "drizzle-orm";
 
 export interface IStorage {
   // Events
@@ -84,10 +84,24 @@ export interface IStorage {
 
   // Admin customer management methods
   getAllCustomersWithAddresses(): Promise<(Customer & { addresses: Address[]; orderCount: number })[]>;
+  getAllCustomersWithAddressesPaginated(page: number, limit: number, search?: string): Promise<{
+    customers: (Customer & { addresses: Address[]; orderCount: number })[];
+    total: number;
+    totalPages: number;
+    currentPage: number;
+  }>;
   createCustomerWithAddresses(customerData: any): Promise<{ customer: Customer; addresses: Address[] }>;
   updateCustomer(id: number, customerData: any): Promise<Customer | undefined>;
   deleteCustomer(id: number): Promise<boolean>;
   getCustomerWithAddresses(id: number): Promise<(Customer & { addresses: Address[] }) | undefined>;
+
+  // Admin order management methods
+  getAllOrdersWithDetailsPaginated(page: number, limit: number, filters?: any): Promise<{
+    orders: any[];
+    total: number;
+    totalPages: number;
+    currentPage: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -607,6 +621,168 @@ export class DatabaseStorage implements IStorage {
       addresses: customerAddresses
     };
   }
+
+  async getAllCustomersWithAddressesPaginated(page: number, pageLimit: number, search?: string): Promise<{
+    customers: (Customer & { addresses: Address[]; orderCount: number })[];
+    total: number;
+    totalPages: number;
+    currentPage: number;
+  }> {
+    const offset_value = (page - 1) * pageLimit;
+    
+    // Build search conditions
+    let query = db.select().from(customers);
+    let countQuery = db.select({ count: count() }).from(customers);
+    
+    if (search && search.trim()) {
+      const searchCondition = or(
+        like(customers.name, `%${search}%`),
+        like(customers.cpf, `%${search}%`),
+        like(customers.email, `%${search}%`)
+      );
+      query = query.where(searchCondition);
+      countQuery = countQuery.where(searchCondition);
+    }
+    
+    // Get total count
+    const [totalResult] = await countQuery;
+    const total = totalResult.count;
+    
+    // Get paginated customers
+    const customersData = await query
+      .orderBy(desc(customers.createdAt))
+      .limit(pageLimit)
+      .offset(offset_value);
+    
+    // Get addresses and order count for each customer
+    const result = [];
+    for (const customer of customersData) {
+      const customerAddresses = await db.select().from(addresses).where(eq(addresses.customerId, customer.id));
+      const [orderCountResult] = await db.select({ count: count() }).from(orders).where(eq(orders.customerId, customer.id));
+      
+      result.push({
+        ...customer,
+        addresses: customerAddresses,
+        orderCount: Number(orderCountResult.count)
+      });
+    }
+    
+    const totalPages = Math.ceil(total / pageLimit);
+    
+    return {
+      customers: result,
+      total,
+      totalPages,
+      currentPage: page
+    };
+  }
+
+  async getAllOrdersWithDetailsPaginated(page: number, pageLimit: number, filters?: any): Promise<{
+    orders: any[];
+    total: number;
+    totalPages: number;
+    currentPage: number;
+  }> {
+    const offset_value = (page - 1) * pageLimit;
+    
+    // Build the base query with joins
+    let query = db
+      .select({
+        id: orders.id,
+        orderNumber: orders.orderNumber,
+        eventId: orders.eventId,
+        customerId: orders.customerId,
+        addressId: orders.addressId,
+        totalCost: orders.totalCost,
+        deliveryCost: orders.deliveryCost,
+        donationAmount: orders.donationAmount,
+        extraKitsCost: orders.extraKitsCost,
+        discountAmount: orders.discountAmount,
+        paymentMethod: orders.paymentMethod,
+        status: orders.status,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt,
+        customerName: customers.name,
+        customerCpf: customers.cpf,
+        customerEmail: customers.email,
+        eventName: events.name,
+        eventDate: events.date,
+        eventCity: events.city,
+        addressStreet: addresses.street,
+        addressNumber: addresses.number,
+        addressNeighborhood: addresses.neighborhood,
+        addressCity: addresses.city,
+        addressState: addresses.state,
+      })
+      .from(orders)
+      .innerJoin(customers, eq(orders.customerId, customers.id))
+      .innerJoin(events, eq(orders.eventId, events.id))
+      .innerJoin(addresses, eq(orders.addressId, addresses.id));
+
+    let countQuery = db
+      .select({ count: count() })
+      .from(orders)
+      .innerJoin(customers, eq(orders.customerId, customers.id))
+      .innerJoin(events, eq(orders.eventId, events.id))
+      .innerJoin(addresses, eq(orders.addressId, addresses.id));
+    
+    // Apply filters
+    const conditions = [];
+    if (filters?.status && filters.status !== 'all') {
+      conditions.push(eq(orders.status, filters.status));
+    }
+    if (filters?.eventId) {
+      conditions.push(eq(orders.eventId, parseInt(filters.eventId)));
+    }
+    if (filters?.orderNumber) {
+      conditions.push(like(orders.orderNumber, `%${filters.orderNumber}%`));
+    }
+    if (filters?.customerName) {
+      conditions.push(like(customers.name, `%${filters.customerName}%`));
+    }
+    if (filters?.startDate) {
+      conditions.push(sql`${orders.createdAt} >= ${filters.startDate}`);
+    }
+    if (filters?.endDate) {
+      conditions.push(sql`${orders.createdAt} <= ${filters.endDate}`);
+    }
+    
+    if (conditions.length > 0) {
+      const whereCondition = conditions.length === 1 ? conditions[0] : and(...conditions);
+      query = query.where(whereCondition);
+      countQuery = countQuery.where(whereCondition);
+    }
+    
+    // Get total count
+    const [totalResult] = await countQuery;
+    const total = totalResult.count;
+    
+    // Get paginated results
+    const ordersData = await query
+      .orderBy(desc(orders.createdAt))
+      .limit(pageLimit)
+      .offset(offset_value);
+    
+    // Get kits for each order
+    const ordersWithKits = await Promise.all(
+      ordersData.map(async (order) => {
+        const orderKits = await db.select().from(kits).where(eq(kits.orderId, order.id));
+        return {
+          ...order,
+          kits: orderKits
+        };
+      })
+    );
+    
+    const totalPages = Math.ceil(total / pageLimit);
+    
+    return {
+      orders: ordersWithKits,
+      total,
+      totalPages,
+      currentPage: page
+    };
+  }
 }
 
 // Mock implementation for development without database
@@ -755,6 +931,87 @@ class MockStorage implements IStorage {
       addresses: this.addresses.filter(a => a.customerId === customer.id),
       orderCount: this.orders.filter(o => o.customerId === customer.id).length
     }));
+  }
+
+  async getAllCustomersWithAddressesPaginated(page: number, pageLimit: number, search?: string): Promise<{
+    customers: (Customer & { addresses: Address[]; orderCount: number })[];
+    total: number;
+    totalPages: number;
+    currentPage: number;
+  }> {
+    let filteredCustomers = this.customers;
+    
+    if (search && search.trim()) {
+      const searchLower = search.toLowerCase();
+      filteredCustomers = this.customers.filter(customer => 
+        customer.name.toLowerCase().includes(searchLower) ||
+        customer.cpf.includes(search) ||
+        customer.email.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    const total = filteredCustomers.length;
+    const totalPages = Math.ceil(total / pageLimit);
+    const offset = (page - 1) * pageLimit;
+    const paginatedCustomers = filteredCustomers.slice(offset, offset + pageLimit);
+    
+    const result = paginatedCustomers.map(customer => ({
+      ...customer,
+      addresses: this.addresses.filter(a => a.customerId === customer.id),
+      orderCount: this.orders.filter(o => o.customerId === customer.id).length
+    }));
+    
+    return {
+      customers: result,
+      total,
+      totalPages,
+      currentPage: page
+    };
+  }
+
+  async getAllOrdersWithDetailsPaginated(page: number, pageLimit: number, filters?: any): Promise<{
+    orders: any[];
+    total: number;
+    totalPages: number;
+    currentPage: number;
+  }> {
+    let filteredOrders = this.orders;
+    
+    // Apply filters
+    if (filters?.status && filters.status !== 'all') {
+      filteredOrders = filteredOrders.filter(order => order.status === filters.status);
+    }
+    if (filters?.eventId) {
+      filteredOrders = filteredOrders.filter(order => order.eventId === parseInt(filters.eventId));
+    }
+    if (filters?.orderNumber) {
+      filteredOrders = filteredOrders.filter(order => 
+        order.orderNumber.includes(filters.orderNumber)
+      );
+    }
+    if (filters?.customerName) {
+      filteredOrders = filteredOrders.filter(order => 
+        order.customer.name.toLowerCase().includes(filters.customerName.toLowerCase())
+      );
+    }
+    
+    const total = filteredOrders.length;
+    const totalPages = Math.ceil(total / pageLimit);
+    const offset = (page - 1) * pageLimit;
+    const paginatedOrders = filteredOrders.slice(offset, offset + pageLimit);
+    
+    // Add kits to each order
+    const ordersWithKits = paginatedOrders.map(order => ({
+      ...order,
+      kits: this.kits.filter(kit => kit.orderId === order.id)
+    }));
+    
+    return {
+      orders: ordersWithKits,
+      total,
+      totalPages,
+      currentPage: page
+    };
   }
 
   async getAllOrders(): Promise<(Order & { customer: Customer; event: Event })[]> {

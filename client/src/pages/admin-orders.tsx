@@ -56,6 +56,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis
+} from "@/components/ui/pagination";
 
 interface OrderFilters {
   status: string;
@@ -79,6 +89,9 @@ export default function AdminOrders() {
   const [filters, setFilters] = useState<OrderFilters>({
     status: 'all'
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [selectedOrders, setSelectedOrders] = useState<number[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -87,10 +100,14 @@ export default function AdminOrders() {
     setIsAuthenticated(authStatus === "true");
   }, []);
 
-  const { data: orders, isLoading } = useQuery({
-    queryKey: ["admin", "orders", filters],
+  const { data: ordersData, isLoading } = useQuery({
+    queryKey: ["admin", "orders", filters, currentPage, pageSize],
     queryFn: async () => {
       const params = new URLSearchParams();
+      
+      params.append('paginated', 'true');
+      params.append('page', currentPage.toString());
+      params.append('limit', pageSize.toString());
       
       if (filters.status !== 'all') params.append('status', filters.status);
       if (filters.eventId) params.append('eventId', filters.eventId.toString());
@@ -103,6 +120,10 @@ export default function AdminOrders() {
       return response.json();
     },
   });
+
+  const orders = ordersData?.orders || [];
+  const totalPages = ordersData?.totalPages || 1;
+  const totalOrders = ordersData?.total || 0;
 
   const { data: events } = useQuery({
     queryKey: ["admin", "events"],
@@ -194,6 +215,21 @@ export default function AdminOrders() {
 
   const resetFilters = () => {
     setFilters({ status: 'all' });
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleSelectOrder = (orderId: number, checked: boolean) => {
+    setSelectedOrders(prev => 
+      checked ? [...prev, orderId] : prev.filter(id => id !== orderId)
+    );
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    setSelectedOrders(checked ? orders.map(order => order.id) : []);
   };
 
   // Label generation functions
@@ -612,6 +648,55 @@ export default function AdminOrders() {
                     ))}
                   </TableBody>
                 </Table>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="mt-6 flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, totalOrders)} de {totalOrders} pedidos
+                    </div>
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            href="#" 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (currentPage > 1) handlePageChange(currentPage - 1);
+                            }}
+                            className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                          />
+                        </PaginationItem>
+                        
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handlePageChange(page);
+                              }}
+                              isActive={currentPage === page}
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+                        
+                        <PaginationItem>
+                          <PaginationNext 
+                            href="#" 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                            }}
+                            className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

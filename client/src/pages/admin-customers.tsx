@@ -19,6 +19,15 @@ import { formatCPF, isValidCPF } from "@/lib/cpf-validator";
 import { formatDate, formatPhone, isValidPhone } from "@/lib/brazilian-formatter";
 import { apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
+import { 
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis
+} from "@/components/ui/pagination";
 
 // Schema for customer editing
 const customerEditSchema = z.object({
@@ -47,6 +56,9 @@ export default function AdminCustomers() {
   const [isAddAddressDialogOpen, setIsAddAddressDialogOpen] = useState(false);
   const [isEditAddressDialogOpen, setIsEditAddressDialogOpen] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -54,15 +66,35 @@ export default function AdminCustomers() {
     setIsAuthenticated(authStatus === "true");
   }, []);
 
-  // Fetch customers with addresses
-  const { data: customers, isLoading: customersLoading } = useQuery({
-    queryKey: ["admin", "customers"],
-    queryFn: async (): Promise<CustomerWithAddresses[]> => {
-      const response = await fetch("/api/admin/customers");
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1); // Reset to first page when searching
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Fetch customers with addresses (paginated)
+  const { data: customersData, isLoading: customersLoading } = useQuery({
+    queryKey: ["admin", "customers", currentPage, pageSize, debouncedSearchTerm],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append('paginated', 'true');
+      params.append('page', currentPage.toString());
+      params.append('limit', pageSize.toString());
+      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
+
+      const response = await fetch(`/api/admin/customers?${params}`);
       if (!response.ok) throw new Error("Erro ao carregar clientes");
       return response.json();
     },
   });
+
+  const customers = customersData?.customers || [];
+  const totalPages = customersData?.totalPages || 1;
+  const totalCustomers = customersData?.total || 0;
 
   // Create customer form
   const createForm = useForm<CustomerRegistration>({
@@ -350,6 +382,10 @@ export default function AdminCustomers() {
     const currentValue = createForm.getValues("phone");
     const numbersOnly = currentValue.replace(/\D/g, "");
     createForm.setValue("phone", formatPhone(numbersOnly));
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   if (!isAuthenticated) {
@@ -693,7 +729,7 @@ export default function AdminCustomers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCustomers.map((customer) => (
+                {customers.map((customer) => (
                   <TableRow key={customer.id}>
                     <TableCell className="font-medium">{customer.name}</TableCell>
                     <TableCell>{formatCPF(customer.cpf)}</TableCell>
@@ -742,6 +778,55 @@ export default function AdminCustomers() {
                 ))}
               </TableBody>
             </Table>
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-6 p-4 border-t flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, totalCustomers)} de {totalCustomers} clientes
+                </div>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        href="#" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentPage > 1) handlePageChange(currentPage - 1);
+                        }}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handlePageChange(page);
+                          }}
+                          isActive={currentPage === page}
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        href="#" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                        }}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </div>
         )}
 
