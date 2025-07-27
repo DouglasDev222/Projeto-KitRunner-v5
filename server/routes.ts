@@ -922,6 +922,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reports Routes
+  
+  // Get events for reports dropdown
+  app.get("/api/admin/reports/events", async (req, res) => {
+    try {
+      const { getEventsForReports } = await import('./report-generator');
+      const events = await getEventsForReports();
+      res.json(events);
+    } catch (error: any) {
+      console.error('Error getting events for reports:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Generate kits report for event
+  app.get("/api/admin/reports/kits/:eventId", async (req, res) => {
+    try {
+      const eventId = parseInt(req.params.eventId);
+      
+      if (isNaN(eventId)) {
+        return res.status(400).json({ message: "ID do evento inválido" });
+      }
+
+      const { generateKitsReport } = await import('./report-generator');
+      const excelBuffer = await generateKitsReport(eventId);
+      
+      // Get event name for filename
+      const event = await storage.getEvent(eventId);
+      const eventName = event?.name.replace(/[^a-zA-Z0-9]/g, '-') || 'evento';
+      const currentDate = new Date().toISOString().split('T')[0];
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="relatorio-kits-${eventName}-${currentDate}.xlsx"`);
+      res.send(excelBuffer);
+    } catch (error: any) {
+      console.error('Error generating kits report:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

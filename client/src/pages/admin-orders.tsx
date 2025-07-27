@@ -19,7 +19,8 @@ import {
   ChevronDown,
   ExternalLink,
   FileText,
-  Download
+  Download,
+  FileSpreadsheet
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
@@ -107,6 +108,14 @@ export default function AdminOrders() {
     queryKey: ["admin", "events"],
     queryFn: async () => {
       const response = await fetch("/api/admin/events");
+      return response.json();
+    },
+  });
+
+  const { data: eventsForReports } = useQuery({
+    queryKey: ["admin", "reports", "events"],
+    queryFn: async () => {
+      const response = await fetch("/api/admin/reports/events");
       return response.json();
     },
   });
@@ -248,6 +257,36 @@ export default function AdminOrders() {
     }
   };
 
+  const handleGenerateKitsReport = async (eventId: number, eventName: string) => {
+    try {
+      const response = await fetch(`/api/admin/reports/kits/${eventId}`);
+      if (!response.ok) {
+        throw new Error('Erro ao gerar relatório');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = response.headers.get('Content-Disposition')?.split('filename=')[1]?.replace(/"/g, '') || `relatorio-kits-${eventName.replace(/[^a-zA-Z0-9]/g, '-')}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Relatório de kits gerado com sucesso",
+        description: `Relatório do evento ${eventName} foi baixado`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao gerar relatório",
+        description: "Não foi possível gerar o relatório de kits",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (!isAuthenticated) {
     return <AdminAuth onAuthenticated={() => setIsAuthenticated(true)} />;
   }
@@ -272,10 +311,31 @@ export default function AdminOrders() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  {events.map((event) => (
+                  {events.map((event: any) => (
                     <DropdownMenuItem
                       key={event.id}
                       onClick={() => handleGenerateEventLabels(event.id, event.name)}
+                    >
+                      {event.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            {eventsForReports && eventsForReports.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <FileSpreadsheet className="h-4 w-4" />
+                    Relatório de Kits
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {eventsForReports.map((event: any) => (
+                    <DropdownMenuItem
+                      key={event.id}
+                      onClick={() => handleGenerateKitsReport(event.id, event.name)}
                     >
                       {event.name}
                     </DropdownMenuItem>
