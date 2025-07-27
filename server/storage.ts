@@ -537,20 +537,25 @@ export class DatabaseStorage implements IStorage {
 
   // Admin customer management methods
   async getAllCustomersWithAddresses(): Promise<(Customer & { addresses: Address[]; orderCount: number })[]> {
+    console.log("🔍 Getting all customers with addresses...");
     const customersData = await db.select().from(customers).orderBy(desc(customers.createdAt));
+    console.log(`Found ${customersData.length} customers`);
     
     const result = [];
     for (const customer of customersData) {
       const customerAddresses = await db.select().from(addresses).where(eq(addresses.customerId, customer.id));
       const [orderCountResult] = await db.select({ count: count() }).from(orders).where(eq(orders.customerId, customer.id));
       
+      console.log(`Customer ${customer.name}: ${customerAddresses.length} addresses, ${orderCountResult.count} orders`);
+      
       result.push({
         ...customer,
         addresses: customerAddresses,
-        orderCount: orderCountResult.count
+        orderCount: Number(orderCountResult.count)
       });
     }
     
+    console.log("✅ Customer data prepared, sample:", JSON.stringify(result[0], null, 2));
     return result;
   }
 
@@ -744,6 +749,14 @@ class MockStorage implements IStorage {
     return this.customers;
   }
 
+  async getAllCustomersWithAddresses(): Promise<(Customer & { addresses: Address[]; orderCount: number })[]> {
+    return this.customers.map(customer => ({
+      ...customer,
+      addresses: this.addresses.filter(a => a.customerId === customer.id),
+      orderCount: this.orders.filter(o => o.customerId === customer.id).length
+    }));
+  }
+
   async getAllOrders(): Promise<(Order & { customer: Customer; event: Event })[]> {
     return this.orders;
   }
@@ -824,44 +837,7 @@ class MockStorage implements IStorage {
     };
   }
 
-  // Admin customer management methods implementation
-  async getAllCustomersWithAddresses(): Promise<(Customer & { addresses: Address[]; orderCount: number })[]> {
-    console.log("🔍 Getting all customers with addresses...");
-    
-    // Get all customers
-    const customersResult = await db.select().from(customers).orderBy(desc(customers.createdAt));
-    console.log(`Found ${customersResult.length} customers`);
-    
-    // Get addresses and order counts for each customer
-    const customersWithData = await Promise.all(
-      customersResult.map(async (customer) => {
-        // Get addresses for this customer
-        const customerAddresses = await db
-          .select()
-          .from(addresses)
-          .where(eq(addresses.customerId, customer.id));
-        
-        // Get order count for this customer
-        const orderCountResult = await db
-          .select({ count: count() })
-          .from(orders)
-          .where(eq(orders.customerId, customer.id));
-        
-        const orderCount = orderCountResult[0]?.count || 0;
-        
-        console.log(`Customer ${customer.name}: ${customerAddresses.length} addresses, ${orderCount} orders`);
-        
-        return {
-          ...customer,
-          addresses: customerAddresses,
-          orderCount: Number(orderCount),
-        };
-      })
-    );
-    
-    console.log("✅ Customer data prepared:", customersWithData.length);
-    return customersWithData;
-  }
+
 
   async createCustomerWithAddresses(customerData: any): Promise<{ customer: Customer; addresses: Address[] }> {
     // Start a transaction to ensure data consistency

@@ -390,14 +390,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes
-  app.get("/api/admin/customers", async (req, res) => {
-    try {
-      const customers = await storage.getAllCustomers();
-      res.json(customers);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
 
   app.get("/api/admin/orders", async (req, res) => {
     try {
