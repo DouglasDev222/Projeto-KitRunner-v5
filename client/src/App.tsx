@@ -23,6 +23,7 @@ import AdminEventForm from "@/pages/admin-event-form";
 import AdminEvents from "@/pages/admin-events";
 import AdminEventEdit from "@/pages/admin-event-edit";
 import AdminOrders from "@/pages/admin-orders";
+import AdminCustomers from "@/pages/admin-customers";
 
 function Router() {
   return (
@@ -49,6 +50,7 @@ function Router() {
       <Route path="/admin/events/new" component={AdminEventForm} />
       <Route path="/admin/events/:id/edit" component={AdminEventEdit} />
       <Route path="/admin/orders" component={AdminOrders} />
+      <Route path="/admin/customers" component={AdminCustomers} />
       <Route component={NotFound} />
     </Switch>
   );

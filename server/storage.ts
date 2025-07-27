@@ -81,6 +81,13 @@ export interface IStorage {
     deliveredOrders: number;
     totalRevenue: number;
   }>;
+
+  // Admin customer management methods
+  getAllCustomersWithAddresses(): Promise<(Customer & { addresses: Address[]; orderCount: number })[]>;
+  createCustomerWithAddresses(customerData: any): Promise<{ customer: Customer; addresses: Address[] }>;
+  updateCustomer(id: number, customerData: any): Promise<Customer | undefined>;
+  deleteCustomer(id: number): Promise<boolean>;
+  getCustomerWithAddresses(id: number): Promise<(Customer & { addresses: Address[] }) | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -713,14 +720,148 @@ class MockStorage implements IStorage {
     deliveredOrders: number;
     totalRevenue: number;
   }> {
+    // Get order counts by status from database
+    const totalOrdersResult = await db.select({ count: count() }).from(orders);
+    const totalOrders = totalOrdersResult[0]?.count || 0;
+
+    const confirmedOrdersResult = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'confirmado'));
+    const confirmedOrders = confirmedOrdersResult[0]?.count || 0;
+
+    const awaitingPaymentResult = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'aguardando_pagamento'));
+    const awaitingPayment = awaitingPaymentResult[0]?.count || 0;
+
+    const cancelledOrdersResult = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'cancelado'));
+    const cancelledOrders = cancelledOrdersResult[0]?.count || 0;
+
+    const inTransitOrdersResult = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'em_transito'));
+    const inTransitOrders = inTransitOrdersResult[0]?.count || 0;
+
+    const deliveredOrdersResult = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'entregue'));
+    const deliveredOrders = deliveredOrdersResult[0]?.count || 0;
+
+    // Calculate total revenue
+    const revenueResult = await db.select({ 
+      total: sql<number>`COALESCE(SUM(CAST(${orders.totalCost} AS DECIMAL)), 0)`
+    }).from(orders);
+    const totalRevenue = Number(revenueResult[0]?.total || 0);
+
     return {
-      totalOrders: this.orders.length,
-      confirmedOrders: this.orders.filter(o => o.status === 'confirmado').length,
-      awaitingPayment: this.orders.filter(o => o.status === 'aguardando_pagamento').length,
-      cancelledOrders: this.orders.filter(o => o.status === 'cancelado').length,
-      inTransitOrders: this.orders.filter(o => o.status === 'em_transito').length,
-      deliveredOrders: this.orders.filter(o => o.status === 'entregue').length,
-      totalRevenue: this.orders.reduce((sum, o) => sum + Number(o.totalCost), 0),
+      totalOrders,
+      confirmedOrders,
+      awaitingPayment,
+      cancelledOrders,
+      inTransitOrders,
+      deliveredOrders,
+      totalRevenue,
+    };
+  }
+
+  // Admin customer management methods implementation
+  async getAllCustomersWithAddresses(): Promise<(Customer & { addresses: Address[]; orderCount: number })[]> {
+    // Get all customers
+    const customersResult = await db.select().from(customers).orderBy(desc(customers.createdAt));
+    
+    // Get addresses and order counts for each customer
+    const customersWithData = await Promise.all(
+      customersResult.map(async (customer) => {
+        // Get addresses for this customer
+        const customerAddresses = await db
+          .select()
+          .from(addresses)
+          .where(eq(addresses.customerId, customer.id));
+        
+        // Get order count for this customer
+        const orderCountResult = await db
+          .select({ count: count() })
+          .from(orders)
+          .where(eq(orders.customerId, customer.id));
+        
+        const orderCount = orderCountResult[0]?.count || 0;
+        
+        return {
+          ...customer,
+          addresses: customerAddresses,
+          orderCount,
+        };
+      })
+    );
+    
+    return customersWithData;
+  }
+
+  async createCustomerWithAddresses(customerData: any): Promise<{ customer: Customer; addresses: Address[] }> {
+    // Start a transaction to ensure data consistency
+    const { name, cpf, birthDate, email, phone, addresses: addressesData } = customerData;
+    
+    // Create customer
+    const [customer] = await db
+      .insert(customers)
+      .values({
+        name,
+        cpf,
+        birthDate,
+        email,
+        phone,
+      })
+      .returning();
+    
+    // Create addresses
+    const createdAddresses = await Promise.all(
+      addressesData.map(async (addressData: any) => {
+        const [address] = await db
+          .insert(addresses)
+          .values({
+            ...addressData,
+            customerId: customer.id,
+          })
+          .returning();
+        return address;
+      })
+    );
+    
+    return {
+      customer,
+      addresses: createdAddresses,
+    };
+  }
+
+  async updateCustomer(id: number, customerData: any): Promise<Customer | undefined> {
+    const [customer] = await db
+      .update(customers)
+      .set(customerData)
+      .where(eq(customers.id, id))
+      .returning();
+    
+    return customer || undefined;
+  }
+
+  async deleteCustomer(id: number): Promise<boolean> {
+    // First delete all addresses
+    await db.delete(addresses).where(eq(addresses.customerId, id));
+    
+    // Then delete customer
+    const result = await db.delete(customers).where(eq(customers.id, id));
+    
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getCustomerWithAddresses(id: number): Promise<(Customer & { addresses: Address[] }) | undefined> {
+    // Get customer
+    const [customer] = await db.select().from(customers).where(eq(customers.id, id));
+    
+    if (!customer) {
+      return undefined;
+    }
+    
+    // Get addresses for this customer
+    const customerAddresses = await db
+      .select()
+      .from(addresses)
+      .where(eq(addresses.customerId, id));
+    
+    return {
+      ...customer,
+      addresses: customerAddresses,
     };
   }
 }

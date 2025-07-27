@@ -779,6 +779,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin Customer Management Routes
+  
+  // Get all customers with addresses and order count
+  app.get("/api/admin/customers", async (req, res) => {
+    try {
+      const customers = await storage.getAllCustomersWithAddresses();
+      res.json(customers);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create new customer (admin)
+  app.post("/api/admin/customers", async (req, res) => {
+    try {
+      const customerData = customerRegistrationSchema.parse(req.body);
+      
+      // Check if CPF already exists
+      const existingCustomer = await storage.getCustomerByCPF(customerData.cpf);
+      if (existingCustomer) {
+        return res.status(400).json({ message: "CPF já cadastrado no sistema" });
+      }
+      
+      const result = await storage.createCustomerWithAddresses(customerData);
+      res.json(result);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update customer (admin)
+  app.put("/api/admin/customers/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updateData = req.body;
+      
+      const customer = await storage.updateCustomer(id, updateData);
+      
+      if (!customer) {
+        return res.status(404).json({ message: "Cliente não encontrado" });
+      }
+      
+      res.json(customer);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Delete customer (admin)
+  app.delete("/api/admin/customers/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Check if customer has orders
+      const orders = await storage.getOrdersByCustomerId(id);
+      if (orders.length > 0) {
+        return res.status(400).json({ 
+          message: "Não é possível excluir cliente com pedidos associados" 
+        });
+      }
+      
+      const success = await storage.deleteCustomer(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Cliente não encontrado" });
+      }
+      
+      res.json({ message: "Cliente excluído com sucesso" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get customer details with addresses (admin)
+  app.get("/api/admin/customers/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const customer = await storage.getCustomerWithAddresses(id);
+      
+      if (!customer) {
+        return res.status(404).json({ message: "Cliente não encontrado" });
+      }
+      
+      res.json(customer);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
