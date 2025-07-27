@@ -20,7 +20,7 @@ import {
   coupons
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, count, sum, desc, ne, sql, like, or, asc, offset, limit } from "drizzle-orm";
+import { eq, and, count, sum, desc, ne, sql, like, or, asc } from "drizzle-orm";
 
 export interface IStorage {
   // Events
@@ -683,101 +683,19 @@ export class DatabaseStorage implements IStorage {
     totalPages: number;
     currentPage: number;
   }> {
-    const offset_value = (page - 1) * pageLimit;
+    // Use the existing getAllOrdersWithDetails method and paginate in memory
+    // This is more reliable than complex Drizzle queries with pagination issues
+    const allOrders = await this.getAllOrdersWithDetails(filters);
     
-    // Build the base query with joins
-    let query = db
-      .select({
-        id: orders.id,
-        orderNumber: orders.orderNumber,
-        eventId: orders.eventId,
-        customerId: orders.customerId,
-        addressId: orders.addressId,
-        totalCost: orders.totalCost,
-        deliveryCost: orders.deliveryCost,
-        donationAmount: orders.donationAmount,
-        extraKitsCost: orders.extraKitsCost,
-        discountAmount: orders.discountAmount,
-        paymentMethod: orders.paymentMethod,
-        status: orders.status,
-        createdAt: orders.createdAt,
-        updatedAt: orders.updatedAt,
-        customerName: customers.name,
-        customerCpf: customers.cpf,
-        customerEmail: customers.email,
-        eventName: events.name,
-        eventDate: events.date,
-        eventCity: events.city,
-        addressStreet: addresses.street,
-        addressNumber: addresses.number,
-        addressNeighborhood: addresses.neighborhood,
-        addressCity: addresses.city,
-        addressState: addresses.state,
-      })
-      .from(orders)
-      .innerJoin(customers, eq(orders.customerId, customers.id))
-      .innerJoin(events, eq(orders.eventId, events.id))
-      .innerJoin(addresses, eq(orders.addressId, addresses.id));
-
-    let countQuery = db
-      .select({ count: count() })
-      .from(orders)
-      .innerJoin(customers, eq(orders.customerId, customers.id))
-      .innerJoin(events, eq(orders.eventId, events.id))
-      .innerJoin(addresses, eq(orders.addressId, addresses.id));
-    
-    // Apply filters
-    const conditions = [];
-    if (filters?.status && filters.status !== 'all') {
-      conditions.push(eq(orders.status, filters.status));
-    }
-    if (filters?.eventId) {
-      conditions.push(eq(orders.eventId, parseInt(filters.eventId)));
-    }
-    if (filters?.orderNumber) {
-      conditions.push(like(orders.orderNumber, `%${filters.orderNumber}%`));
-    }
-    if (filters?.customerName) {
-      conditions.push(like(customers.name, `%${filters.customerName}%`));
-    }
-    if (filters?.startDate) {
-      conditions.push(sql`${orders.createdAt} >= ${filters.startDate}`);
-    }
-    if (filters?.endDate) {
-      conditions.push(sql`${orders.createdAt} <= ${filters.endDate}`);
-    }
-    
-    if (conditions.length > 0) {
-      const whereCondition = conditions.length === 1 ? conditions[0] : and(...conditions);
-      query = query.where(whereCondition);
-      countQuery = countQuery.where(whereCondition);
-    }
-    
-    // Get total count
-    const [totalResult] = await countQuery;
-    const total = totalResult.count;
-    
-    // Get paginated results
-    const ordersData = await query
-      .orderBy(desc(orders.createdAt))
-      .limit(pageLimit)
-      .offset(offset_value);
-    
-    // Get kits for each order
-    const ordersWithKits = await Promise.all(
-      ordersData.map(async (order) => {
-        const orderKits = await db.select().from(kits).where(eq(kits.orderId, order.id));
-        return {
-          ...order,
-          kits: orderKits
-        };
-      })
-    );
+    const total = allOrders.length;
+    const startIndex = (page - 1) * pageLimit;
+    const endIndex = startIndex + pageLimit;
+    const paginatedOrders = allOrders.slice(startIndex, endIndex);
     
     const totalPages = Math.ceil(total / pageLimit);
     
     return {
-      orders: ordersWithKits,
+      orders: paginatedOrders,
       total,
       totalPages,
       currentPage: page
