@@ -69,6 +69,8 @@ export class MercadoPagoService {
           },
           external_reference: paymentData.orderId,
           binary_mode: false,
+          // Add notification URL for webhook
+          // notification_url: process.env.MERCADO_PAGO_WEBHOOK_URL,
         }
       });
 
