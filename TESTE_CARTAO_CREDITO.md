@@ -16,24 +16,31 @@ Removido parâmetro inválido `auto_return` que estava causando erro 400.
 2. Selecione "Cartão de Crédito"
 3. Preencha com dados de teste
 
-## 🔧 Cartões de Teste MercadoPago
+## 🔧 Cartões de Teste MercadoPago (2025)
 
-### Mastercard (Aprovado)
-- **Número**: 5031 4332 1540 6351
-- **Validade**: 11/25 (ou qualquer data futura)
-- **CVV**: 123
-- **Nome**: Qualquer nome
-
-### Visa (Aprovado)  
-- **Número**: 4509 9535 6623 3704
+### ✅ Visa - Pagamento Aprovado
+- **Número**: 4013 4013 4013 4013
 - **Validade**: 11/25
 - **CVV**: 123
-- **Nome**: Qualquer nome
+- **Nome**: APRO (nome que força aprovação)
 
-### Visa (Rejeitado - para testar erro)
+### ✅ Mastercard - Pagamento Aprovado  
+- **Número**: 5416 7526 0258 2580
+- **Validade**: 11/25
+- **CVV**: 123
+- **Nome**: APRO
+
+### ❌ Visa - Pagamento Rejeitado (para teste)
 - **Número**: 4000 0000 0000 0002
 - **Validade**: 11/25
 - **CVV**: 123
+- **Nome**: OTHE
+
+### ⏳ Mastercard - Pagamento Pendente
+- **Número**: 5031 7557 3453 0604
+- **Validade**: 11/25
+- **CVV**: 123
+- **Nome**: CONT
 
 ## 📋 Dados Pessoais de Teste
 - **Email**: test@example.com

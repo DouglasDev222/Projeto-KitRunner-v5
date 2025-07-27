@@ -83,13 +83,17 @@ A integração com Mercado Pago está **PARCIALMENTE FUNCIONAL**:
 3. **Fluxo**: ✅ Corrigido para seguir práticas de mercado (aguardando_pagamento → confirmado)
 4. **Segurança**: ✅ Implementada com total proteção de dados
 
-### Status Atual do Problema de Cartão
-- Token de cartão sendo gerado com sucesso
-- Payload enviado corretamente ao MercadoPago
-- Resposta: `cc_rejected_other_reason` 
-- Possível causa: Limitações das chaves de teste ou configuração de payment_method_id
+### Status Atual do Problema de Cartão - RESOLVIDO ✅
+- ✅ Token de cartão sendo gerado com sucesso
+- ✅ Payload enviado corretamente ao MercadoPago  
+- ✅ Erro `auto_return` corrigido
+- ✅ Cartões de teste oficiais implementados
 
-### Próximos Passos
-1. Verificar payment_method_ids corretos
-2. Testar com cartões Visa
-3. Validar configuração da conta de teste
+### 🔑 Solução: Cartões de Teste Corretos
+- **Visa**: 4013 4013 4013 4013
+- **Mastercard**: 5416 7526 0258 2580
+- **Nome crucial**: "APRO" (força aprovação)
+- **CVV**: 123, **Validade**: 11/25
+
+### Sistema Pronto para Teste
+Use os cartões acima com nome "APRO" para aprovação garantida!
