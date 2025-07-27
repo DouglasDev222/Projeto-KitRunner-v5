@@ -76,11 +76,20 @@ curl -X POST http://localhost:5000/api/mercadopago/create-pix-payment \
 
 ## ✅ CONCLUSÃO
 
-A integração com Mercado Pago está **100% FUNCIONAL** com:
+A integração com Mercado Pago está **PARCIALMENTE FUNCIONAL**:
 
-1. **PIX**: Testado e confirmado funcionando
-2. **Cartão**: Implementado com chaves de teste válidas
-3. **Fluxo**: Corrigido para seguir práticas de mercado
-4. **Segurança**: Implementada com total proteção de dados
+1. **PIX**: ✅ Testado e confirmado funcionando com QR Code e copy/paste
+2. **Cartão**: ⚠️ Token sendo criado corretamente, mas pagamento sendo rejeitado
+3. **Fluxo**: ✅ Corrigido para seguir práticas de mercado (aguardando_pagamento → confirmado)
+4. **Segurança**: ✅ Implementada com total proteção de dados
 
-O sistema agora processa pagamentos reais com total segurança usando as chaves de teste do MercadoPago!
+### Status Atual do Problema de Cartão
+- Token de cartão sendo gerado com sucesso
+- Payload enviado corretamente ao MercadoPago
+- Resposta: `cc_rejected_other_reason` 
+- Possível causa: Limitações das chaves de teste ou configuração de payment_method_id
+
+### Próximos Passos
+1. Verificar payment_method_ids corretos
+2. Testar com cartões Visa
+3. Validar configuração da conta de teste

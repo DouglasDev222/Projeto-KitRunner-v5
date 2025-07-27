@@ -106,25 +106,25 @@ export function CardPayment({
     }
   });
 
-  // Detect card brand from number
+  // Detect card brand from number - using MercadoPago payment method IDs
   const detectCardBrand = (cardNumber: string) => {
     const cleanNumber = cardNumber.replace(/\s/g, '');
     
     // Mastercard: starts with 5031, 5100-5599
     if (/^5[1-5]/.test(cleanNumber) || /^5031/.test(cleanNumber)) {
-      return 'master';
+      return 'master'; // MercadoPago payment method ID for Mastercard
     }
     // Visa: starts with 4
     if (/^4/.test(cleanNumber)) {
-      return 'visa';
+      return 'visa'; // MercadoPago payment method ID for Visa
     }
     // American Express: starts with 34 or 37
     if (/^3[47]/.test(cleanNumber)) {
-      return 'amex';
+      return 'amex'; // MercadoPago uses 'amex' for American Express
     }
     // Elo: starts with 5067, 4011, 4312, 4389, 4514, 4573, 6277, 6362, 6363, 6550
     if (/^(5067|4011|4312|4389|4514|4573|6277|6362|6363|6550)/.test(cleanNumber)) {
-      return 'elo';
+      return 'elo'; // MercadoPago uses 'elo' for Elo
     }
     
     return 'visa'; // Default fallback
