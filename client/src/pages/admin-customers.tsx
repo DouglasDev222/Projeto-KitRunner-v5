@@ -164,14 +164,22 @@ export default function AdminCustomers() {
   ) || [];
 
   const handleCreateCustomer = (data: CustomerRegistration) => {
-    // Validate CPF
+    // Extract only numbers from CPF for validation and storage
     const cleanCPF = data.cpf.replace(/\D/g, "");
+    
+    // Validate CPF
     if (!isValidCPF(cleanCPF)) {
       createForm.setError("cpf", { message: "CPF inválido" });
       return;
     }
 
-    createCustomerMutation.mutate({ ...data, cpf: cleanCPF });
+    // Send data with clean CPF (numbers only) to the server
+    const cleanData = {
+      ...data,
+      cpf: cleanCPF
+    };
+    
+    createCustomerMutation.mutate(cleanData);
   };
 
   const handleEditCustomer = (data: CustomerEdit) => {
@@ -208,6 +216,14 @@ export default function AdminCustomers() {
   const handleCPFChange = (value: string) => {
     const formatted = formatCPF(value);
     createForm.setValue("cpf", formatted);
+  };
+
+  const handleCPFBlur = () => {
+    // When field loses focus, store only numbers but keep visual formatting
+    const currentValue = createForm.getValues("cpf");
+    const numbersOnly = currentValue.replace(/\D/g, "");
+    // Keep the formatted display but prepare numbers for submission
+    createForm.setValue("cpf", formatCPF(numbersOnly));
   };
 
   if (!isAuthenticated) {
@@ -263,6 +279,7 @@ export default function AdminCustomers() {
                               {...field}
                               placeholder="000.000.000-00"
                               onChange={(e) => handleCPFChange(e.target.value)}
+                              onBlur={handleCPFBlur}
                               maxLength={14}
                             />
                           </FormControl>
