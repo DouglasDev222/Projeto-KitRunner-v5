@@ -784,9 +784,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all customers with addresses and order count
   app.get("/api/admin/customers", async (req, res) => {
     try {
+      console.log("🚀 API called for /api/admin/customers");
       const customers = await storage.getAllCustomersWithAddresses();
+      console.log("📊 Customers returned:", customers.length, "first customer sample:", customers[0]);
       res.json(customers);
     } catch (error: any) {
+      console.error("❌ Error in /api/admin/customers:", error);
       res.status(500).json({ error: error.message });
     }
   });

@@ -1,17 +1,15 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { AdminLayout } from "@/components/admin-layout";
 import { AdminAuth } from "@/components/admin-auth";
-import { Users, Plus, Search, Edit2, Trash2, MapPin, Phone, Mail, Calendar, FileText, User } from "lucide-react";
+import { Users, Plus, Search, Eye, Edit, Trash2, MapPin, Phone, Mail, Calendar } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,7 +19,7 @@ import { formatDate } from "@/lib/brazilian-formatter";
 import { apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
 
-// Schema for customer editing (separate from registration)
+// Schema for customer editing
 const customerEditSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   email: z.string().email("Email inválido"),
@@ -43,6 +41,8 @@ export default function AdminCustomers() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<CustomerWithAddresses | null>(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -85,11 +85,6 @@ export default function AdminCustomers() {
     },
   });
 
-  const { fields: createAddressFields, append: appendCreateAddress, remove: removeCreateAddress } = useFieldArray({
-    control: createForm.control,
-    name: "addresses",
-  });
-
   // Edit customer form
   const editForm = useForm<CustomerEdit>({
     resolver: zodResolver(customerEditSchema),
@@ -99,6 +94,27 @@ export default function AdminCustomers() {
       phone: "",
       birthDate: "",
     },
+  });
+
+  // Address form for managing addresses in details modal
+  const addressForm = useForm({
+    resolver: zodResolver(addressSchema),
+    defaultValues: {
+      label: "",
+      street: "",
+      number: "",
+      complement: "",
+      neighborhood: "",
+      city: "",
+      state: "PB",
+      zipCode: "",
+      isDefault: false,
+    },
+  });
+
+  const { fields: createAddressFields, append: appendCreateAddress, remove: removeCreateAddress } = useFieldArray({
+    control: createForm.control,
+    name: "addresses",
   });
 
   // Create customer mutation
@@ -135,7 +151,8 @@ export default function AdminCustomers() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "customers"] });
-      setSelectedCustomer(null);
+      setIsDeleteDialogOpen(false);
+      setCustomerToDelete(null);
     },
   });
 
@@ -162,15 +179,12 @@ export default function AdminCustomers() {
     updateCustomerMutation.mutate({ id: selectedCustomer.id, customer: data });
   };
 
-  const handleDeleteCustomer = (customer: CustomerWithAddresses) => {
-    if (customer.orderCount && customer.orderCount > 0) {
-      alert("Não é possível excluir cliente com pedidos associados");
-      return;
-    }
-    deleteCustomerMutation.mutate(customer.id);
+  const handleDeleteCustomer = () => {
+    if (!customerToDelete) return;
+    deleteCustomerMutation.mutate(customerToDelete.id);
   };
 
-  const openEditDialog = (customer: CustomerWithAddresses) => {
+  const openEditModal = (customer: CustomerWithAddresses) => {
     setSelectedCustomer(customer);
     editForm.reset({
       name: customer.name,
@@ -181,9 +195,14 @@ export default function AdminCustomers() {
     setIsEditDialogOpen(true);
   };
 
-  const openViewDialog = (customer: CustomerWithAddresses) => {
+  const openDetailsModal = (customer: CustomerWithAddresses) => {
     setSelectedCustomer(customer);
     setIsViewDialogOpen(true);
+  };
+
+  const openDeleteDialog = (customer: CustomerWithAddresses) => {
+    setCustomerToDelete(customer);
+    setIsDeleteDialogOpen(true);
   };
 
   const handleCPFChange = (value: string) => {
@@ -327,7 +346,7 @@ export default function AdminCustomers() {
                           {createAddressFields.length > 1 && (
                             <Button
                               type="button"
-                              variant="ghost"
+                              variant="destructive"
                               size="sm"
                               onClick={() => removeCreateAddress(index)}
                             >
@@ -335,14 +354,14 @@ export default function AdminCustomers() {
                             </Button>
                           )}
                         </div>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <FormField
                             control={createForm.control}
                             name={`addresses.${index}.label`}
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Rótulo</FormLabel>
+                                <FormLabel>Etiqueta</FormLabel>
                                 <FormControl>
                                   <Input {...field} placeholder="Casa, Trabalho, etc." />
                                 </FormControl>
@@ -350,7 +369,7 @@ export default function AdminCustomers() {
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={createForm.control}
                             name={`addresses.${index}.zipCode`}
@@ -358,27 +377,27 @@ export default function AdminCustomers() {
                               <FormItem>
                                 <FormLabel>CEP</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="58000000" maxLength={8} />
+                                  <Input {...field} placeholder="58000-000" />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={createForm.control}
                             name={`addresses.${index}.street`}
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Rua</FormLabel>
+                                <FormLabel>Logradouro</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="Nome da rua" />
+                                  <Input {...field} placeholder="Rua, Avenida, etc." />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={createForm.control}
                             name={`addresses.${index}.number`}
@@ -392,7 +411,7 @@ export default function AdminCustomers() {
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={createForm.control}
                             name={`addresses.${index}.complement`}
@@ -400,13 +419,13 @@ export default function AdminCustomers() {
                               <FormItem>
                                 <FormLabel>Complemento</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="Apto, casa, etc." />
+                                  <Input {...field} placeholder="Apto, Bloco, etc." />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={createForm.control}
                             name={`addresses.${index}.neighborhood`}
@@ -414,13 +433,13 @@ export default function AdminCustomers() {
                               <FormItem>
                                 <FormLabel>Bairro</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="Nome do bairro" />
+                                  <Input {...field} placeholder="Centro" />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={createForm.control}
                             name={`addresses.${index}.city`}
@@ -428,13 +447,13 @@ export default function AdminCustomers() {
                               <FormItem>
                                 <FormLabel>Cidade</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="Nome da cidade" />
+                                  <Input {...field} placeholder="João Pessoa" />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={createForm.control}
                             name={`addresses.${index}.state`}
@@ -442,14 +461,14 @@ export default function AdminCustomers() {
                               <FormItem>
                                 <FormLabel>Estado</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="PB" maxLength={2} />
+                                  <Input {...field} placeholder="PB" />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
                         </div>
-                        
+
                         <div className="mt-4">
                           <FormField
                             control={createForm.control}
@@ -464,7 +483,7 @@ export default function AdminCustomers() {
                                     className="rounded border-gray-300"
                                   />
                                 </FormControl>
-                                <FormLabel className="font-normal">
+                                <FormLabel className="text-sm font-normal">
                                   Endereço padrão
                                 </FormLabel>
                               </FormItem>
@@ -476,15 +495,11 @@ export default function AdminCustomers() {
                   </div>
 
                   <div className="flex justify-end space-x-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsCreateDialogOpen(false)}
-                    >
+                    <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                       Cancelar
                     </Button>
                     <Button type="submit" disabled={createCustomerMutation.isPending}>
-                      {createCustomerMutation.isPending ? "Cadastrando..." : "Cadastrar Cliente"}
+                      {createCustomerMutation.isPending ? "Criando..." : "Criar Cliente"}
                     </Button>
                   </div>
                 </form>
@@ -495,8 +510,8 @@ export default function AdminCustomers() {
 
         {/* Search */}
         <div className="flex items-center space-x-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 h-4 w-4" />
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               placeholder="Buscar por nome, CPF ou email..."
               value={searchTerm}
@@ -506,184 +521,266 @@ export default function AdminCustomers() {
           </div>
         </div>
 
-        {/* Customer Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {customersLoading ? (
-            <div className="col-span-full text-center py-8">
-              <p className="text-neutral-600">Carregando clientes...</p>
-            </div>
-          ) : filteredCustomers.length === 0 ? (
-            <div className="col-span-full text-center py-8">
-              <Users className="mx-auto h-12 w-12 text-neutral-400 mb-4" />
-              <p className="text-neutral-600">
-                {searchTerm ? "Nenhum cliente encontrado" : "Nenhum cliente cadastrado"}
-              </p>
-            </div>
-          ) : (
-            filteredCustomers.map((customer) => (
-              <Card key={customer.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                        <User className="w-5 h-5 text-primary" />
+        {/* Loading state */}
+        {customersLoading && (
+          <div className="text-center py-8">
+            <p>Carregando clientes...</p>
+          </div>
+        )}
+
+        {/* Customer Table */}
+        {!customersLoading && (
+          <div className="bg-white rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>CPF</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Telefone</TableHead>
+                  <TableHead>Endereços</TableHead>
+                  <TableHead>Pedidos</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredCustomers.map((customer) => (
+                  <TableRow key={customer.id}>
+                    <TableCell className="font-medium">{customer.name}</TableCell>
+                    <TableCell>{formatCPF(customer.cpf)}</TableCell>
+                    <TableCell>{customer.email}</TableCell>
+                    <TableCell>{customer.phone}</TableCell>
+                    <TableCell>
+                      {customer.addresses && customer.addresses.length > 0 ? (
+                        <div className="space-y-1">
+                          {customer.addresses.slice(0, 2).map((address) => (
+                            <div key={address.id} className="text-xs">
+                              <span className="font-medium">{address.label}:</span> {address.street}, {address.number}
+                            </div>
+                          ))}
+                          {customer.addresses.length > 2 && (
+                            <div className="text-xs text-gray-500">
+                              +{customer.addresses.length - 2} mais
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-500 text-sm">Sem endereços</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{customer.orderCount || 0}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDetailsModal(customer)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditModal(customer)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <div>
-                        <CardTitle className="text-lg">{customer.name}</CardTitle>
-                        <p className="text-sm text-neutral-600">{formatCPF(customer.cpf)}</p>
-                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        {/* Details Modal */}
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Detalhes do Cliente</DialogTitle>
+            </DialogHeader>
+            
+            {selectedCustomer && (
+              <div className="space-y-6">
+                {/* Customer Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Informações Pessoais</h3>
+                    <div className="space-y-2 text-sm">
+                      <p><span className="font-medium">Nome:</span> {selectedCustomer.name}</p>
+                      <p><span className="font-medium">CPF:</span> {formatCPF(selectedCustomer.cpf)}</p>
+                      <p><span className="font-medium">Email:</span> {selectedCustomer.email}</p>
+                      <p><span className="font-medium">Telefone:</span> {selectedCustomer.phone}</p>
+                      <p><span className="font-medium">Data de Nascimento:</span> {formatDate(new Date(selectedCustomer.birthDate))}</p>
+                      <p><span className="font-medium">Pedidos:</span> {selectedCustomer.orderCount || 0}</p>
                     </div>
-                    <Badge variant="secondary">
-                      {customer.orderCount || 0} pedidos
-                    </Badge>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center space-x-2 text-sm text-neutral-600">
-                    <Mail className="w-4 h-4" />
-                    <span className="truncate">{customer.email}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm text-neutral-600">
-                    <Phone className="w-4 h-4" />
-                    <span>{customer.phone}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm text-neutral-600">
-                    <Calendar className="w-4 h-4" />
-                    <span>{formatDate(customer.birthDate)}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm text-neutral-600">
-                    <MapPin className="w-4 h-4" />
-                    <span>{customer.addresses?.length || 0} endereços</span>
+                </div>
+
+                {/* Addresses */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-lg">Endereços</h3>
+                    <Button variant="outline" size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar Endereço
+                    </Button>
                   </div>
                   
-                  <div className="flex space-x-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openViewDialog(customer)}
-                      className="flex-1"
-                    >
-                      <FileText className="w-4 h-4 mr-1" />
-                      Ver
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEditDialog(customer)}
-                      className="flex-1"
-                    >
-                      <Edit2 className="w-4 h-4 mr-1" />
-                      Editar
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="px-3">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Tem certeza que deseja excluir o cliente "{customer.name}"? 
-                            Esta ação não pode ser desfeita.
-                            {customer.orderCount && customer.orderCount > 0 && (
-                              <span className="text-red-600 block mt-2">
-                                ⚠️ Este cliente possui {customer.orderCount} pedidos associados e não pode ser excluído.
-                              </span>
-                            )}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDeleteCustomer(customer)}
-                            disabled={customer.orderCount && customer.orderCount > 0}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
+                  {selectedCustomer.addresses && selectedCustomer.addresses.length > 0 ? (
+                    <div className="grid gap-4">
+                      {selectedCustomer.addresses.map((address) => (
+                        <Card key={address.id} className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{address.label}</span>
+                                {address.isDefault && <Badge variant="secondary">Padrão</Badge>}
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                {address.street}, {address.number}
+                                {address.complement && `, ${address.complement}`}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {address.neighborhood}, {address.city}/{address.state}
+                              </p>
+                              <p className="text-sm text-gray-600">CEP: {address.zipCode}</p>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button variant="outline" size="sm">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">Nenhum endereço cadastrado</p>
+                  )}
+                </div>
 
-        {/* Edit Customer Dialog */}
+                {/* Actions */}
+                <div className="flex justify-between pt-4 border-t">
+                  <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        onClick={() => openDeleteDialog(selectedCustomer)}
+                        disabled={(selectedCustomer.orderCount || 0) > 0}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Excluir Cliente
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tem certeza que deseja excluir o cliente "{selectedCustomer.name}"? 
+                          Esta ação não pode ser desfeita.
+                          {(selectedCustomer.orderCount || 0) > 0 && (
+                            <span className="block mt-2 text-red-600">
+                              Este cliente possui {selectedCustomer.orderCount} pedidos associados e não pode ser excluído.
+                            </span>
+                          )}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteCustomer}
+                          disabled={(selectedCustomer.orderCount || 0) > 0}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                  
+                  <Button onClick={() => setIsViewDialogOpen(false)}>
+                    Fechar
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Modal */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Editar Cliente</DialogTitle>
             </DialogHeader>
+            
             {selectedCustomer && (
               <Form {...editForm}>
                 <form onSubmit={editForm.handleSubmit(handleEditCustomer)} className="space-y-4">
-                  <FormField
-                    control={editForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome Completo</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Nome completo" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={editForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="email" placeholder="email@exemplo.com" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={editForm.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Telefone</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="(83) 99999-9999" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={editForm.control}
-                    name="birthDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Data de Nascimento</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="date" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={editForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome Completo</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Nome completo" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={editForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="email" placeholder="email@exemplo.com" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={editForm.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Telefone</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="(83) 99999-9999" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={editForm.control}
+                      name="birthDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Data de Nascimento</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="date" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <div className="flex justify-end space-x-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsEditDialogOpen(false)}
-                    >
+                    <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                       Cancelar
                     </Button>
                     <Button type="submit" disabled={updateCustomerMutation.isPending}>
@@ -692,75 +789,6 @@ export default function AdminCustomers() {
                   </div>
                 </form>
               </Form>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        {/* View Customer Dialog */}
-        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Detalhes do Cliente</DialogTitle>
-            </DialogHeader>
-            {selectedCustomer && (
-              <div className="space-y-6">
-                {/* Customer Info */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-neutral-600">Nome</Label>
-                    <p className="mt-1">{selectedCustomer.name}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-neutral-600">CPF</Label>
-                    <p className="mt-1">{formatCPF(selectedCustomer.cpf)}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-neutral-600">Email</Label>
-                    <p className="mt-1">{selectedCustomer.email}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-neutral-600">Telefone</Label>
-                    <p className="mt-1">{selectedCustomer.phone}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-neutral-600">Data de Nascimento</Label>
-                    <p className="mt-1">{formatDate(selectedCustomer.birthDate)}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-neutral-600">Cadastrado em</Label>
-                    <p className="mt-1">{formatDate(selectedCustomer.createdAt.toString())}</p>
-                  </div>
-                </div>
-
-                {/* Addresses */}
-                <div>
-                  <Label className="text-sm font-medium text-neutral-600 mb-3 block">Endereços</Label>
-                  <div className="space-y-3">
-                    {selectedCustomer.addresses?.map((address) => (
-                      <Card key={address.id} className="p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <Badge variant={address.isDefault ? "default" : "secondary"}>
-                            {address.label}
-                          </Badge>
-                          {address.isDefault && (
-                            <Badge variant="outline">Padrão</Badge>
-                          )}
-                        </div>
-                        <p className="text-sm">
-                          {address.street}, {address.number}
-                          {address.complement && `, ${address.complement}`}
-                        </p>
-                        <p className="text-sm text-neutral-600">
-                          {address.neighborhood}, {address.city} - {address.state}
-                        </p>
-                        <p className="text-sm text-neutral-600">CEP: {address.zipCode}</p>
-                      </Card>
-                    )) || (
-                      <p className="text-neutral-500 text-sm">Nenhum endereço cadastrado</p>
-                    )}
-                  </div>
-                </div>
-              </div>
             )}
           </DialogContent>
         </Dialog>

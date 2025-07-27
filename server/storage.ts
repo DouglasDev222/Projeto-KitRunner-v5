@@ -758,8 +758,11 @@ class MockStorage implements IStorage {
 
   // Admin customer management methods implementation
   async getAllCustomersWithAddresses(): Promise<(Customer & { addresses: Address[]; orderCount: number })[]> {
+    console.log("🔍 Getting all customers with addresses...");
+    
     // Get all customers
     const customersResult = await db.select().from(customers).orderBy(desc(customers.createdAt));
+    console.log(`Found ${customersResult.length} customers`);
     
     // Get addresses and order counts for each customer
     const customersWithData = await Promise.all(
@@ -778,14 +781,17 @@ class MockStorage implements IStorage {
         
         const orderCount = orderCountResult[0]?.count || 0;
         
+        console.log(`Customer ${customer.name}: ${customerAddresses.length} addresses, ${orderCount} orders`);
+        
         return {
           ...customer,
           addresses: customerAddresses,
-          orderCount,
+          orderCount: Number(orderCount),
         };
       })
     );
     
+    console.log("✅ Customer data prepared:", customersWithData.length);
     return customersWithData;
   }
 
