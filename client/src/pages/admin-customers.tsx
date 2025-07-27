@@ -15,7 +15,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { customerRegistrationSchema, addressSchema, type CustomerRegistration, type Customer, type Address } from "@shared/schema";
 import { formatCPF, isValidCPF } from "@/lib/cpf-validator";
-import { formatDate } from "@/lib/brazilian-formatter";
+import { formatDate, formatPhone, isValidPhone } from "@/lib/brazilian-formatter";
 import { apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
 
@@ -166,6 +166,7 @@ export default function AdminCustomers() {
   const handleCreateCustomer = (data: CustomerRegistration) => {
     // Extract only numbers from CPF for validation and storage
     const cleanCPF = data.cpf.replace(/\D/g, "");
+    const cleanPhone = data.phone.replace(/\D/g, "");
     
     // Validate CPF
     if (!isValidCPF(cleanCPF)) {
@@ -173,10 +174,17 @@ export default function AdminCustomers() {
       return;
     }
 
-    // Send data with clean CPF (numbers only) to the server
+    // Validate phone
+    if (!isValidPhone(cleanPhone)) {
+      createForm.setError("phone", { message: "Telefone deve ter 10 ou 11 dígitos" });
+      return;
+    }
+
+    // Send data with clean CPF and phone (numbers only) to the server
     const cleanData = {
       ...data,
-      cpf: cleanCPF
+      cpf: cleanCPF,
+      phone: cleanPhone
     };
     
     createCustomerMutation.mutate(cleanData);
@@ -184,7 +192,22 @@ export default function AdminCustomers() {
 
   const handleEditCustomer = (data: CustomerEdit) => {
     if (!selectedCustomer) return;
-    updateCustomerMutation.mutate({ id: selectedCustomer.id, customer: data });
+    
+    // Clean phone number for storage
+    const cleanPhone = data.phone.replace(/\D/g, "");
+    
+    // Validate phone
+    if (!isValidPhone(cleanPhone)) {
+      editForm.setError("phone", { message: "Telefone deve ter 10 ou 11 dígitos" });
+      return;
+    }
+    
+    const cleanData = {
+      ...data,
+      phone: cleanPhone
+    };
+    
+    updateCustomerMutation.mutate({ id: selectedCustomer.id, customer: cleanData });
   };
 
   const handleDeleteCustomer = () => {
@@ -197,10 +220,22 @@ export default function AdminCustomers() {
     editForm.reset({
       name: customer.name,
       email: customer.email,
-      phone: customer.phone,
+      phone: formatPhone(customer.phone), // Format phone for display
       birthDate: customer.birthDate,
     });
     setIsEditDialogOpen(true);
+  };
+
+  // Edit form phone handlers
+  const handleEditPhoneChange = (value: string) => {
+    const formatted = formatPhone(value);
+    editForm.setValue("phone", formatted);
+  };
+
+  const handleEditPhoneBlur = () => {
+    const currentValue = editForm.getValues("phone");
+    const numbersOnly = currentValue.replace(/\D/g, "");
+    editForm.setValue("phone", formatPhone(numbersOnly));
   };
 
   const openDetailsModal = (customer: CustomerWithAddresses) => {
@@ -224,6 +259,18 @@ export default function AdminCustomers() {
     const numbersOnly = currentValue.replace(/\D/g, "");
     // Keep the formatted display but prepare numbers for submission
     createForm.setValue("cpf", formatCPF(numbersOnly));
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatPhone(value);
+    createForm.setValue("phone", formatted);
+  };
+
+  const handlePhoneBlur = () => {
+    // When field loses focus, keep formatting
+    const currentValue = createForm.getValues("phone");
+    const numbersOnly = currentValue.replace(/\D/g, "");
+    createForm.setValue("phone", formatPhone(numbersOnly));
   };
 
   if (!isAuthenticated) {
@@ -309,7 +356,13 @@ export default function AdminCustomers() {
                         <FormItem>
                           <FormLabel>Telefone</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="(83) 99999-9999" />
+                            <Input 
+                              {...field} 
+                              placeholder="(83) 99999-9999" 
+                              onChange={(e) => handlePhoneChange(e.target.value)}
+                              onBlur={handlePhoneBlur}
+                              maxLength={15}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -566,7 +619,7 @@ export default function AdminCustomers() {
                     <TableCell className="font-medium">{customer.name}</TableCell>
                     <TableCell>{formatCPF(customer.cpf)}</TableCell>
                     <TableCell>{customer.email}</TableCell>
-                    <TableCell>{customer.phone}</TableCell>
+                    <TableCell>{formatPhone(customer.phone)}</TableCell>
                     <TableCell>
                       {customer.addresses && customer.addresses.length > 0 ? (
                         <div className="space-y-1">
@@ -630,7 +683,7 @@ export default function AdminCustomers() {
                       <p><span className="font-medium">Nome:</span> {selectedCustomer.name}</p>
                       <p><span className="font-medium">CPF:</span> {formatCPF(selectedCustomer.cpf)}</p>
                       <p><span className="font-medium">Email:</span> {selectedCustomer.email}</p>
-                      <p><span className="font-medium">Telefone:</span> {selectedCustomer.phone}</p>
+                      <p><span className="font-medium">Telefone:</span> {formatPhone(selectedCustomer.phone)}</p>
                       <p><span className="font-medium">Data de Nascimento:</span> {formatDate(selectedCustomer.birthDate)}</p>
                       <p><span className="font-medium">Pedidos:</span> {selectedCustomer.orderCount || 0}</p>
                     </div>
@@ -774,7 +827,13 @@ export default function AdminCustomers() {
                         <FormItem>
                           <FormLabel>Telefone</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="(83) 99999-9999" />
+                            <Input 
+                              {...field} 
+                              placeholder="(83) 99999-9999"
+                              onChange={(e) => handleEditPhoneChange(e.target.value)}
+                              onBlur={handleEditPhoneBlur}
+                              maxLength={15}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

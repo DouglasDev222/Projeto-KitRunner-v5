@@ -194,7 +194,10 @@ export const customerRegistrationSchema = z.object({
   }, "CPF inválido"),
   birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de nascimento deve estar no formato YYYY-MM-DD"),
   email: z.string().email("Email inválido"),
-  phone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos"),
+  phone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos").refine((phone) => {
+    const cleanPhone = phone.replace(/\D/g, "");
+    return cleanPhone.length >= 10 && cleanPhone.length <= 11;
+  }, "Telefone deve ter 10 ou 11 dígitos"),
   addresses: z.array(addressSchema).min(1, "Pelo menos um endereço é obrigatório"),
 });
 
