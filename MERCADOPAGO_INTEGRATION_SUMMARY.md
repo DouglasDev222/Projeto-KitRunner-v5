@@ -95,5 +95,10 @@ A integração com Mercado Pago está **PARCIALMENTE FUNCIONAL**:
 - **Nome crucial**: "APRO" (força aprovação)
 - **CVV**: 123, **Validade**: 11/25
 
+### ✅ CREDENCIAIS ATUALIZADAS (27/07/2025)
+- Novas chaves MercadoPago configuradas
+- Sistema reiniciado com credenciais frescas
+- Pronto para teste com cartões oficiais
+
 ### Sistema Pronto para Teste
 Use os cartões acima com nome "APRO" para aprovação garantida!
