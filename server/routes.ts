@@ -998,8 +998,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { token, paymentMethodId, orderId, amount, email, customerName, cpf } = req.body;
       
+      console.log('Card payment request data:', { token, paymentMethodId, orderId, amount, email, customerName, cpf });
+      
       if (!token || !paymentMethodId || !orderId || !amount) {
-        return res.status(400).json({ message: "Dados obrigatórios não fornecidos" });
+        return res.status(400).json({ 
+          message: "Dados obrigatórios não fornecidos",
+          missing: { token: !token, paymentMethodId: !paymentMethodId, orderId: !orderId, amount: !amount }
+        });
       }
 
       const [firstName, ...lastNameParts] = customerName.split(' ');

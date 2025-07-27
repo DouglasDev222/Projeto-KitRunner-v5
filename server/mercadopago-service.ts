@@ -51,6 +51,15 @@ export class MercadoPagoService {
    */
   static async processCardPayment(paymentData: PaymentData) {
     try {
+      console.log('Processing card payment with data:', JSON.stringify({
+        ...paymentData,
+        token: paymentData.token ? '[TOKEN_PROVIDED]' : 'NO_TOKEN'
+      }, null, 2));
+      
+      if (!paymentData.token) {
+        throw new Error('Token do cartão é obrigatório');
+      }
+      
       const paymentResult = await payment.create({
         body: {
           transaction_amount: paymentData.amount,
@@ -100,8 +109,12 @@ export class MercadoPagoService {
       
       if (error.message?.includes('bin_not_found')) {
         errorMessage = 'Número do cartão inválido. Use um cartão de teste válido.';
+      } else if (error.message?.includes('invalid_card')) {
+        errorMessage = 'Dados do cartão inválidos. Verifique número, data de validade e CVV.';
       } else if (error.cause?.length > 0) {
         errorMessage = error.cause[0].description || errorMessage;
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
       return {

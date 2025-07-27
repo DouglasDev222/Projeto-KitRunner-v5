@@ -152,13 +152,22 @@ export function CardPayment({
         identificationNumber: customerData.cpf.replace(/\D/g, '')
       };
 
+      console.log('Creating card token with data:', cardData);
       const response = await mp.createCardToken(cardData);
+      
+      console.log('Card token response:', response);
       
       if (response.error) {
         setIsProcessing(false);
         const errorMessage = response.error.message || 'Erro no cartão';
         console.error('MercadoPago card token error:', response.error);
         onError(`Erro no cartão: ${errorMessage}`);
+        return;
+      }
+
+      if (!response.id) {
+        setIsProcessing(false);
+        onError('Token do cartão não foi gerado');
         return;
       }
 
