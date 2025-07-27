@@ -138,11 +138,12 @@ export default function AdminReports() {
                   <li>Nome do atleta</li>
                   <li>CPF (formatado)</li>
                   <li>Tamanho da camiseta</li>
-                  <li>Se o endereço é o mesmo do cliente responsável</li>
                   <li>Nome do produto/evento</li>
                   <li>Cliente responsável pelo pedido</li>
                   <li>Endereço de entrega</li>
                 </ul>
+                <p className="mt-2"><strong>Organização visual:</strong></p>
+                <p>Kits do mesmo pedido são agrupados visualmente com cores alternadas para fácil identificação.</p>
               </div>
             </CardContent>
           </Card>

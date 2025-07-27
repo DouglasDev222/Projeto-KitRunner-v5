@@ -8,7 +8,6 @@ export interface KitReportData {
   athleteName: string;
   cpf: string;
   shirtSize: string;
-  sameAddress: string;
   product: string;
   customerName: string;
   address: string;
@@ -53,9 +52,6 @@ export async function generateKitsReport(eventId: number): Promise<Buffer> {
       .where(eq(kits.orderId, order.orderId));
 
     for (const kit of orderKits) {
-      // Check if kit person is the same as the order customer
-      const sameAddress = kit.cpf === order.customerCpf ? 'Sim' : 'Não';
-      
       // Format address
       const address = `${order.street}, ${order.number}${order.complement ? `, ${order.complement}` : ''} - ${order.neighborhood}, ${order.city}/${order.state}`;
 
@@ -64,7 +60,6 @@ export async function generateKitsReport(eventId: number): Promise<Buffer> {
         athleteName: kit.name,
         cpf: formatCPF(kit.cpf),
         shirtSize: kit.shirtSize,
-        sameAddress,
         product: `[Retirada do Kit] ${event.name}`,
         customerName: order.customerName,
         address,
@@ -85,7 +80,6 @@ export async function generateKitsReport(eventId: number): Promise<Buffer> {
     'Nome do Atleta', 
     'CPF',
     'Camisa',
-    'Mesmo Endereço',
     'Produto',
     'Cliente Responsável',
     'Endereço de Entrega'
@@ -106,33 +100,39 @@ export async function generateKitsReport(eventId: number): Promise<Buffer> {
     { width: 25 }, // Nome do Atleta
     { width: 15 }, // CPF
     { width: 12 }, // Camisa
-    { width: 15 }, // Mesmo Endereço
     { width: 40 }, // Produto
     { width: 25 }, // Cliente Responsável
     { width: 50 }, // Endereço de Entrega
   ];
 
-  // Add data rows
+  // Add data rows with visual grouping by order number
+  let currentOrderNumber = '';
+  let orderGroupColor = 'FFF8F8FF'; // Light color for first group
+  
   reportData.forEach((item, index) => {
+    // Check if this is a new order group
+    if (item.orderNumber !== currentOrderNumber) {
+      currentOrderNumber = item.orderNumber;
+      // Alternate group colors to visually separate orders
+      orderGroupColor = orderGroupColor === 'FFF8F8FF' ? 'FFF0F8FF' : 'FFF8F8FF';
+    }
+
     const row = worksheet.addRow([
       item.orderNumber,
       item.athleteName,
       item.cpf,
       item.shirtSize,
-      item.sameAddress,
       item.product,
       item.customerName,
       item.address
     ]);
 
-    // Alternate row colors
-    if (index % 2 === 0) {
-      row.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFF8F8FF' }
-      };
-    }
+    // Apply group-based coloring to visually group kits from same order
+    row.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: orderGroupColor }
+    };
   });
 
   // Add borders to all cells
