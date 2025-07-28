@@ -1142,7 +1142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             totalCost: totalCost.toString(),
             status: result.status === 'approved' ? 'confirmado' : 'aguardando_pagamento',
             paymentMethod: paymentMethodId === 'master' ? 'credit' : paymentMethodId,
-            paymentProcessorOrderId: result.id?.toString() || null,
+            // paymentProcessorOrderId: result.id?.toString() || null, // Field not in schema
             donationAmount: donationAmount.toString(),
             discountAmount: (validatedOrderData.discountAmount || 0).toString(),
             idempotencyKey: validatedOrderData.idempotencyKey || null,
