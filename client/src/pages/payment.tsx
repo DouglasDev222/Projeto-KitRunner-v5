@@ -99,13 +99,18 @@ export default function Payment() {
     setPaymentError(null);
     // Store order confirmation data
     const confirmationData = {
-      order: { orderNumber },
+      order: { orderNumber: paymentResult.orderNumber || orderNumber },
       payment: paymentResult
     };
     sessionStorage.setItem("orderConfirmation", JSON.stringify(confirmationData));
-    // Redirect to confirmation page after a short delay
+    // Redirect to confirmation page after a short delay using the new route
     setTimeout(() => {
-      setLocation(`/events/${id}/confirmation`);
+      const finalOrderNumber = paymentResult.orderNumber || orderNumber;
+      if (finalOrderNumber) {
+        setLocation(`/order/${finalOrderNumber}/confirmation`);
+      } else {
+        setLocation(`/events/${id}/confirmation`);
+      }
     }, 2000);
   };
 
