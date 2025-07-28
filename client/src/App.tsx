@@ -38,8 +38,8 @@ function Router() {
 
       <Route path="/events/:id/kits" component={KitInformation} />
       <Route path="/events/:id/payment" component={Payment} />
-      <Route path="/events/:id/confirmation" component={OrderConfirmation} />
       <Route path="/order/:orderNumber/confirmation" component={OrderConfirmation} />
+      <Route path="/events/:id/confirmation" component={OrderConfirmation} />
       <Route path="/my-orders" component={MyOrders} />
       <Route path="/orders/:orderNumber" component={OrderDetails} />
       <Route path="/profile" component={Profile} />
