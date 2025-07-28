@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
@@ -9,7 +10,78 @@ import { calculateDeliveryCost } from "./distance-calculator";
 import { MercadoPagoService } from "./mercadopago-service";
 import path from "path";
 
+// Security: Rate limiting for payment endpoints
+const paymentRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Max 5 payment attempts per IP per 15 minutes
+  message: {
+    error: 'Muitas tentativas de pagamento. Tente novamente em 15 minutos.',
+    statusCode: 429
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Security: Rate limiting for identification endpoints
+const identificationRateLimit = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10, // Max 10 identification attempts per IP per 5 minutes
+  message: {
+    error: 'Muitas tentativas de identificação. Tente novamente em 5 minutos.',
+    statusCode: 429
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Security: General rate limiting for API routes
+const generalRateLimit = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // Max 100 requests per IP per minute
+  message: {
+    error: 'Muitas requisições. Tente novamente em 1 minuto.',
+    statusCode: 429
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// CPF validation utility function for backend security
+function validateCPF(cpf: string): boolean {
+  // Remove formatting characters and validate
+  const cleanCPF = cpf.replace(/\D/g, "");
+  
+  // CPF validation algorithm
+  if (cleanCPF.length !== 11) return false;
+  
+  // Check if all digits are the same
+  if (/^(\d)\1{10}$/.test(cleanCPF)) return false;
+  
+  // Validate first check digit
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(cleanCPF.charAt(i)) * (10 - i);
+  }
+  let remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) remainder = 0;
+  if (remainder !== parseInt(cleanCPF.charAt(9))) return false;
+  
+  // Validate second check digit
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(cleanCPF.charAt(i)) * (11 - i);
+  }
+  remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) remainder = 0;
+  if (remainder !== parseInt(cleanCPF.charAt(10))) return false;
+  
+  return true;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Apply general rate limiting to all API routes
+  app.use('/api', generalRateLimit);
   
   // Serve test HTML files
   app.get("/test-rejected-payment.html", (req, res) => {
@@ -50,10 +122,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Identify customer
-  app.post("/api/customers/identify", async (req, res) => {
+  // Identify customer (with rate limiting and CPF validation)
+  app.post("/api/customers/identify", identificationRateLimit, async (req, res) => {
     try {
       const { cpf, birthDate } = customerIdentificationSchema.parse(req.body);
+      
+      // Security: Additional CPF validation on backend
+      if (!validateCPF(cpf)) {
+        console.warn(`🔒 Invalid CPF attempted: ${cpf.substring(0, 3)}***`);
+        return res.status(400).json({ 
+          message: "CPF inválido" 
+        });
+      }
       
       const customer = await storage.getCustomerByCredentials(cpf, birthDate);
       
@@ -1034,8 +1114,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Process card payment with order creation (credit/debit)
-  app.post("/api/mercadopago/process-card-payment", async (req, res) => {
+  // Process card payment with order creation (credit/debit) - with rate limiting
+  app.post("/api/mercadopago/process-card-payment", paymentRateLimit, async (req, res) => {
     try {
       const { token, paymentMethodId, amount, email, customerName, cpf, orderData } = req.body;
       
@@ -1223,8 +1303,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create PIX payment
-  app.post("/api/mercadopago/create-pix-payment", async (req, res) => {
+  // Create PIX payment (with rate limiting)
+  app.post("/api/mercadopago/create-pix-payment", paymentRateLimit, async (req, res) => {
     try {
       const { orderId, amount, email, customerName, cpf } = req.body;
       
@@ -1366,9 +1446,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Webhook for MercadoPago notifications (optional but recommended)
+  // Webhook for MercadoPago notifications (secure with signature validation)
   app.post("/api/mercadopago/webhook", async (req, res) => {
     try {
+      // Security: Validate webhook signature
+      const signature = req.headers['x-signature'] as string;
+      const requestId = req.headers['x-request-id'] as string;
+      
+      if (!signature || !requestId) {
+        console.warn('🔒 Webhook rejected: Missing signature or request ID');
+        return res.status(401).json({ error: 'Unauthorized: Missing signature' });
+      }
+
+      // Validate webhook signature using MercadoPago's secret
+      const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+      if (!webhookSecret) {
+        console.error('🔒 Webhook secret not configured');
+        return res.status(500).json({ error: 'Webhook secret not configured' });
+      }
+
+      // Parse signature components
+      const signatureParts = signature.split(',');
+      let ts: string | undefined;
+      let v1: string | undefined;
+
+      for (const part of signatureParts) {
+        const [key, value] = part.split('=');
+        if (key === 'ts') ts = value;
+        if (key === 'v1') v1 = value;
+      }
+
+      if (!ts || !v1) {
+        console.warn('🔒 Webhook rejected: Invalid signature format');
+        return res.status(401).json({ error: 'Invalid signature format' });
+      }
+
+      // Verify signature using HMAC-SHA256
+      const crypto = require('crypto');
+      const manifest = `id:${requestId};request-id:${requestId};ts:${ts};`;
+      const expectedSignature = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(manifest)
+        .digest('hex');
+
+      if (expectedSignature !== v1) {
+        console.warn('🔒 Webhook rejected: Invalid signature');
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+
+      // Rate limiting: Check for excessive requests
+      const now = Date.now();
+      const timestampMs = parseInt(ts) * 1000;
+      
+      // Reject old requests (older than 5 minutes)
+      if (now - timestampMs > 5 * 60 * 1000) {
+        console.warn('🔒 Webhook rejected: Request too old');
+        return res.status(401).json({ error: 'Request too old' });
+      }
+
+      console.log('✅ Webhook signature validated successfully');
+
       const { action, data } = req.body;
       
       if (action === 'payment.updated' && data?.id) {

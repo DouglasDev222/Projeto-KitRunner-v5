@@ -42,21 +42,29 @@
 - **Prioridade**: MÉDIA
 - **Data**: 28/07/2025
 
-### ❌ 5. Falta de Rate Limiting
-- **Status**: PENDENTE
-- **Arquivo**: Todas as rotas de pagamento
+### ✅ 5. Falta de Rate Limiting
+- **Status**: CORRIGIDO ✓
+- **Arquivo**: `server/routes.ts` (linhas 17-50)
 - **Problema**: Sem limitação de tentativas por IP/usuário
 - **Risco**: Ataques de força bruta
-- **Ação**: Implementar rate limiting
+- **Ação**: Implementado rate limiting específico:
+  - Pagamentos: 5 tentativas por 15 minutos
+  - Identificação: 10 tentativas por 5 minutos
+  - API geral: 100 requisições por minuto
 - **Prioridade**: MÉDIA
+- **Data**: 28/07/2025
 
-### ❌ 6. Validação Inconsistente de CPF
-- **Status**: PENDENTE
-- **Arquivo**: `server/routes.ts` (linha 1070)
+### ✅ 6. Validação Inconsistente de CPF
+- **Status**: CORRIGIDO ✓
+- **Arquivo**: `server/routes.ts` (linhas 52-82, 134-139)
 - **Problema**: CPF só validado no frontend
 - **Risco**: Dados inválidos podem passar
-- **Ação**: Re-validar CPF no backend
+- **Ação**: Implementada validação de CPF no backend com:
+  - Função validateCPF() usando algoritmo completo
+  - Validação em rotas de identificação
+  - Logs de tentativas com CPF inválido
 - **Prioridade**: MÉDIA
+- **Data**: 28/07/2025
 
 ## 🟢 MELHORIAS TÉCNICAS (Prioridade 3)
 
