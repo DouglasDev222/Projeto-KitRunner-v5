@@ -81,23 +81,60 @@ export class MercadoPagoService {
         }
       });
 
-      console.log('MercadoPago payment result:', JSON.stringify(paymentResult, null, 2));
+      console.log('✅ Payment result status:', paymentResult.status);
+      console.log('✅ Payment result status_detail:', paymentResult.status_detail);
+      console.log('✅ Payment result ID:', paymentResult.id);
+      console.log('📋 Full Payment result:', JSON.stringify(paymentResult, null, 2));
 
-      if (paymentResult.status === 'approved' || paymentResult.status === 'pending') {
-        return {
-          success: true,
-          payment: paymentResult,
-          status: paymentResult.status,
-          id: paymentResult.id
-        };
-      } else {
-        return {
-          success: false,
-          payment: paymentResult,
-          status: paymentResult.status,
-          message: paymentResult.status_detail || 'Pagamento rejeitado',
-          id: paymentResult.id
-        };
+      // Handle different payment statuses
+      switch (paymentResult.status) {
+        case 'approved':
+          console.log('🟢 Payment APPROVED');
+          return {
+            success: true,
+            payment: paymentResult,
+            status: paymentResult.status,
+            id: paymentResult.id
+          };
+        
+        case 'pending':
+          console.log('🟡 Payment PENDING');
+          return {
+            success: true,
+            payment: paymentResult,
+            status: paymentResult.status,
+            id: paymentResult.id
+          };
+          
+        case 'rejected':
+          console.log('🔴 Payment REJECTED');
+          return {
+            success: false,
+            payment: paymentResult,
+            status: paymentResult.status,
+            message: `Pagamento rejeitado: ${paymentResult.status_detail || 'Motivo não especificado'}`,
+            id: paymentResult.id
+          };
+          
+        case 'cancelled':
+          console.log('⚫ Payment CANCELLED');
+          return {
+            success: false,
+            payment: paymentResult,
+            status: paymentResult.status,
+            message: `Pagamento cancelado: ${paymentResult.status_detail || 'Motivo não especificado'}`,
+            id: paymentResult.id
+          };
+          
+        default:
+          console.log(`❓ Payment status unknown: ${paymentResult.status}`);
+          return {
+            success: false,
+            payment: paymentResult,
+            status: paymentResult.status,
+            message: `Status desconhecido: ${paymentResult.status} - ${paymentResult.status_detail || 'Sem detalhes'}`,
+            id: paymentResult.id
+          };
       }
     } catch (error: any) {
       console.error('Card payment error:', error);

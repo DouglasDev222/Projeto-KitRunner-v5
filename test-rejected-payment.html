@@ -25,16 +25,16 @@
     <div class="test-cards">
         <h3>Cartões de Teste para Recusa</h3>
         <div class="card-info">
-            <strong>Fundos Insuficientes:</strong> 5031 4332 1540 6365 | CVV: 123 | Nome: OTHE | Validade: 11/30
+            <strong>Fundos Insuficientes:</strong> 5031 4332 1540 6365 | CVV: 123 | Nome: OTHE | Status: rejected
         </div>
         <div class="card-info">
-            <strong>Recusa Genérica:</strong> 4013 5406 8274 6260 | CVV: 123 | Nome: OTHE | Validade: 11/30
+            <strong>Recusa Genérica:</strong> 4013 5406 8274 6260 | CVV: 123 | Nome: OTHE | Status: rejected
         </div>
         <div class="card-info">
-            <strong>Cartão Expirado:</strong> 4509 9535 6623 3704 | CVV: 123 | Nome: OTHE | Validade: 11/30
+            <strong>Cartão Desabilitado:</strong> 4509 9535 6623 3704 | CVV: 123 | Nome: OTHE | Status: rejected
         </div>
         <div class="card-info">
-            <strong>Método Rejeitado:</strong> 5031 4332 1540 6357 | CVV: 123 | Nome: OTHE | Validade: 11/30
+            <strong>Pendente:</strong> 4009 1757 0100 8020 | CVV: 123 | Nome: CONT | Status: pending
         </div>
     </div>
 
@@ -42,6 +42,7 @@
         <div class="form-group">
             <label>Número do Cartão:</label>
             <input type="text" id="cardNumber" value="5031433215406365" placeholder="5031 4332 1540 6365" maxlength="19">
+            <small style="color: #666;">Este cartão deve gerar REJEIÇÃO por fundos insuficientes</small>
         </div>
         
         <div class="form-group">

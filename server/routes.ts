@@ -1080,23 +1080,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await MercadoPagoService.processCardPayment(paymentData);
       
-      if (result.success) {
-        // Update order status based on payment result
-        try {
-          if (result.status === 'approved') {
-            console.log(`✅ Payment approved for order ${orderId} - updating to confirmado`);
-            await storage.updateOrderStatus(order.id, 'confirmado', 'mercadopago', 'Mercado Pago', 'Pagamento aprovado automaticamente');
-            console.log(`✅ Order ${orderId} status successfully updated to confirmado`);
-          } else if (result.status === 'pending') {
-            console.log(`⏳ Payment pending for order ${orderId} - keeping aguardando_pagamento`);  
-          } else {
-            console.log(`❌ Payment failed for order ${orderId} - updating to cancelado`);
-            await storage.updateOrderStatus(order.id, 'cancelado', 'mercadopago', 'Mercado Pago', 'Pagamento rejeitado automaticamente');
-          }
-        } catch (error) {
-          console.error('Error updating order status:', error);
+      // Update order status based on payment result - handle both success and failure
+      try {
+        if (result.success && result.status === 'approved') {
+          console.log(`✅ Payment approved for order ${orderId} - updating to confirmado`);
+          await storage.updateOrderStatus(order.id, 'confirmado', 'mercadopago', 'Mercado Pago', 'Pagamento aprovado automaticamente');
+          console.log(`✅ Order ${orderId} status successfully updated to confirmado`);
+        } else if (result.success && result.status === 'pending') {
+          console.log(`⏳ Payment pending for order ${orderId} - keeping aguardando_pagamento`);  
+        } else if (!result.success && (result.status === 'rejected' || result.status === 'cancelled')) {
+          console.log(`❌ Payment rejected/cancelled for order ${orderId} - updating to cancelado`);
+          await storage.updateOrderStatus(order.id, 'cancelado', 'mercadopago', 'Mercado Pago', `Pagamento ${result.status}: ${result.message || 'Rejeitado pelo gateway'}`);
+          console.log(`❌ Order ${orderId} status successfully updated to cancelado`);
+        } else {
+          console.log(`❓ Unexpected payment result for order ${orderId} - success: ${result.success}, status: ${result.status}`);
         }
-        
+      } catch (error) {
+        console.error('Error updating order status:', error);
+      }
+      
+      if (result.success) {
         res.json({
           success: true,
           status: result.status,
@@ -1104,8 +1107,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: result.status === 'approved' ? 'Pagamento aprovado!' : 'Pagamento em processamento'
         });
       } else {
+        // For rejected payments, also update order status and return appropriate message
         res.status(400).json({
           success: false,
+          status: result.status,
+          paymentId: result.id,
           message: result.message || 'Erro ao processar pagamento'
         });
       }

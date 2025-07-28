@@ -377,14 +377,15 @@ Preferred communication style: Simple, everyday language.
 
 The application follows a progressive enhancement approach, starting with a solid server-side foundation and enhancing the user experience with modern client-side features.
 
-### Order Confirmation & Payment Status Enhancement (July 2025)
-- ✓ Updated order confirmation page delivery estimate text from static date to "Até o dia anterior do evento"
-- ✓ Enhanced automatic order status confirmation system when Mercado Pago payments are approved
-- ✓ Improved payment verification API to automatically update order status based on payment result
-- ✓ Added comprehensive logging for payment status tracking (approved → confirmado, rejected → cancelado)
-- ✓ Enhanced webhook functionality for real-time payment notifications from Mercado Pago
-- ✓ System now reliably updates order status when payments are processed successfully
-- ✓ Payment system fully operational with automatic status synchronization between Mercado Pago and order database
+### Payment Status & Test Cards Enhancement (July 2025)
+- ✓ Fixed payment processing logic to properly handle rejected payments (status: rejected/cancelled → cancelado)
+- ✓ Enhanced MercadoPago service with detailed status logging and proper switch-case handling
+- ✓ Created comprehensive test card documentation with exact Mercado Pago Brasil test numbers
+- ✓ Added specialized test page (/test-rejected-payment.html) for testing rejection scenarios
+- ✓ Updated order status handling to capture both success and failure cases correctly
+- ✓ Improved error messages with detailed payment rejection reasons
+- ✓ System now properly processes: approved → confirmado, rejected → cancelado, pending → aguardando_pagamento
+- ✓ Added comprehensive logging for payment status tracking with color-coded console output
 
 ### Final Replit Migration & Configuration Completion (July 2025)
 - ✓ Successfully completed migration from Replit Agent to standard Replit environment
