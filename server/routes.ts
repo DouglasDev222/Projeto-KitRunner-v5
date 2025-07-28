@@ -9,6 +9,7 @@ import { z } from "zod";
 import { calculateDeliveryCost } from "./distance-calculator";
 import { MercadoPagoService } from "./mercadopago-service";
 import path from "path";
+import { requireAuth, requireAdmin, requireOwnership, type AuthenticatedRequest } from './middleware/auth';
 
 // Security: Rate limiting for payment endpoints
 const paymentRateLimit = rateLimit({
@@ -203,7 +204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get customer addresses
-  app.get("/api/customers/:id/addresses", async (req, res) => {
+  app.get("/api/customers/:id/addresses", requireOwnership('id', 'customer'), async (req: AuthenticatedRequest, res) => {
     try {
       const customerId = parseInt(req.params.id);
       const addresses = await storage.getAddressesByCustomerId(customerId);
@@ -214,7 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get address by ID
-  app.get("/api/addresses/:id", async (req, res) => {
+  app.get("/api/addresses/:id", requireOwnership('id', 'address'), async (req: AuthenticatedRequest, res) => {
     try {
       const addressId = parseInt(req.params.id);
       const address = await storage.getAddress(addressId);
@@ -467,7 +468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get customer orders
-  app.get("/api/customers/:id/orders", async (req, res) => {
+  app.get("/api/customers/:id/orders", requireOwnership('id', 'customer'), async (req: AuthenticatedRequest, res) => {
     try {
       const customerId = parseInt(req.params.id);
       const orders = await storage.getOrdersByCustomerId(customerId);
@@ -478,7 +479,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get order by number with details
-  app.get("/api/orders/:orderNumber", async (req, res) => {
+  app.get("/api/orders/:orderNumber", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const { orderNumber } = req.params;
       const order = await storage.getOrderByOrderNumber(orderNumber);
@@ -495,7 +496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get order kits
-  app.get("/api/orders/:id/kits", async (req, res) => {
+  app.get("/api/orders/:id/kits", requireOwnership('id', 'order'), async (req: AuthenticatedRequest, res) => {
     try {
       const orderId = parseInt(req.params.id);
       const kits = await storage.getKitsByOrderId(orderId);
@@ -506,7 +507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Address management routes
-  app.post("/api/customers/:customerId/addresses", async (req, res) => {
+  app.post("/api/customers/:customerId/addresses", requireOwnership('customerId', 'customer'), async (req: AuthenticatedRequest, res) => {
     try {
       const customerId = parseInt(req.params.customerId);
       const addressData = req.body;
@@ -533,7 +534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/addresses/:id", async (req, res) => {
+  app.put("/api/addresses/:id", requireOwnership('id', 'address'), async (req: AuthenticatedRequest, res) => {
     try {
       const id = parseInt(req.params.id);
       const addressData = req.body;
@@ -565,7 +566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  app.get("/api/admin/events", async (req, res) => {
+  app.get("/api/admin/events", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const events = await storage.getAllEvents();
       res.json(events);
@@ -598,7 +599,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get single event for admin
-  app.get("/api/admin/events/:id", async (req, res) => {
+  app.get("/api/admin/events/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const id = parseInt(req.params.id);
       const event = await storage.getEvent(id);
@@ -667,7 +668,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get orders for a specific event
-  app.get("/api/admin/events/:id/orders", async (req, res) => {
+  app.get("/api/admin/events/:id/orders", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const eventId = parseInt(req.params.id);
       const orders = await storage.getOrdersByEventId(eventId);
@@ -705,7 +706,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin Orders Management Routes
   
   // Get all orders with filters and pagination
-  app.get("/api/admin/orders", async (req, res) => {
+  app.get("/api/admin/orders", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { page = 1, limit = 10, ...filters } = req.query;
       const pageNum = parseInt(page as string);
@@ -726,7 +727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get single order with full details
-  app.get("/api/admin/orders/:id", async (req, res) => {
+  app.get("/api/admin/orders/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const id = parseInt(req.params.id);
       const order = await storage.getOrderWithFullDetails(id);
@@ -791,7 +792,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test route
-  app.get("/api/admin/test-stats", (req, res) => {
+  app.get("/api/admin/test-stats", requireAdmin, (req: AuthenticatedRequest, res) => {
     res.json({
       totalOrders: 5,
       confirmedOrders: 2,
@@ -804,7 +805,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get order statistics (renamed to avoid cache/middleware issues)
-  app.get("/api/admin/orders/stats", (req, res) => {
+  app.get("/api/admin/orders/stats", requireAdmin, (req: AuthenticatedRequest, res) => {
     res.json({
       totalOrders: 5,
       confirmedOrders: 2,
@@ -817,7 +818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Stats endpoint with detailed status breakdowns
-  app.get("/api/admin/stats", async (req, res) => {
+  app.get("/api/admin/stats", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const stats = await storage.getAdminStats();
       const orderStats = await storage.getOrderStats();
@@ -859,7 +860,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate delivery label for single order
-  app.get("/api/admin/orders/:id/label", async (req, res) => {
+  app.get("/api/admin/orders/:id/label", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const orderId = parseInt(req.params.id);
       const order = await storage.getOrderWithFullDetails(orderId);
@@ -881,7 +882,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate delivery labels for multiple orders by event
-  app.get("/api/admin/events/:eventId/labels", async (req, res) => {
+  app.get("/api/admin/events/:eventId/labels", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const eventId = parseInt(req.params.eventId);
       const orders = await storage.getOrdersByEventId(eventId);
@@ -952,7 +953,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin Customer Management Routes
   
   // Get all customers with addresses and order count
-  app.get("/api/admin/customers", async (req, res) => {
+  app.get("/api/admin/customers", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { page = 1, limit = 10, search, paginated } = req.query;
       const pageNum = parseInt(page as string);
@@ -1042,7 +1043,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get customer details with addresses (admin)
-  app.get("/api/admin/customers/:id", async (req, res) => {
+  app.get("/api/admin/customers/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const id = parseInt(req.params.id);
       const customer = await storage.getCustomerWithAddresses(id);
@@ -1060,7 +1061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Reports Routes
   
   // Get events for reports dropdown
-  app.get("/api/admin/reports/events", async (req, res) => {
+  app.get("/api/admin/reports/events", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { getEventsForReports } = await import('./report-generator');
       const events = await getEventsForReports();
@@ -1072,7 +1073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate kits report for event
-  app.get("/api/admin/reports/kits/:eventId", async (req, res) => {
+  app.get("/api/admin/reports/kits/:eventId", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const eventId = parseInt(req.params.eventId);
       
@@ -1546,7 +1547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get order status history
-  app.get("/api/orders/:orderId/status-history", async (req, res) => {
+  app.get("/api/orders/:orderId/status-history", requireOwnership('orderId', 'order'), async (req: AuthenticatedRequest, res) => {
     try {
       const orderId = parseInt(req.params.orderId);
       
@@ -1567,7 +1568,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get order status history by order number (for customer access)
-  app.get("/api/orders/number/:orderNumber/status-history", async (req, res) => {
+  app.get("/api/orders/number/:orderNumber/status-history", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const orderNumber = req.params.orderNumber;
       
