@@ -119,7 +119,7 @@ export function PIXPayment({
       
       // Then create PIX payment with order info
       const paymentData = {
-        orderId: orderResult.order.id.toString(),
+        orderId: orderResult.order.orderNumber,
         amount,
         email: customerData.email,
         customerName: customerData.name,

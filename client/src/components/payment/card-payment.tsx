@@ -189,11 +189,11 @@ export function CardPayment({
         return;
       }
       
-      // Process payment with token and order ID
+      // Process payment with token and order number
       const paymentData = {
         token: response.id,
         paymentMethodId,
-        orderId: orderResult.order.id.toString(),
+        orderId: orderResult.order.orderNumber,
         amount,
         email: customerData.email,
         customerName: customerData.name,
