@@ -9,6 +9,7 @@ import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
 import { formatCPF } from "@/lib/cpf-validator";
 import { calculatePricing, formatPricingBreakdown } from "@/lib/pricing-calculator";
 import { getStatusBadge } from "@/lib/status-utils";
+import { OrderStatusHistory } from "@/components/order-status-history";
 import type { Order, Kit, Address, Event } from "@shared/schema";
 
 export default function OrderDetails() {
@@ -215,6 +216,9 @@ export default function OrderDetails() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Order Status History */}
+        <OrderStatusHistory orderNumber={order.orderNumber} />
       </div>
     </div>
   );

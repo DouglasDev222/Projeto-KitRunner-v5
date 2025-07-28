@@ -52,6 +52,17 @@ export const kits = pgTable("kits", {
   shirtSize: text("shirt_size").notNull(),
 });
 
+export const orderStatusHistory = pgTable("order_status_history", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").notNull().references(() => orders.id),
+  previousStatus: text("previous_status"),
+  newStatus: text("new_status").notNull(),
+  changedBy: text("changed_by").notNull(), // 'admin', 'mercadopago', 'system'
+  changedByName: text("changed_by_name"), // Nome do admin ou 'Mercado Pago'
+  reason: text("reason"), // Motivo da mudança
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   orderNumber: text("order_number").notNull().unique(),
@@ -292,6 +303,9 @@ export type InsertAddress = z.infer<typeof insertAddressSchema>;
 
 export type Kit = typeof kits.$inferSelect;
 export type InsertKit = z.infer<typeof insertKitSchema>;
+
+export type OrderStatusHistory = typeof orderStatusHistory.$inferSelect;
+export type InsertOrderStatusHistory = typeof orderStatusHistory.$inferInsert;
 
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;

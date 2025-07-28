@@ -11,13 +11,16 @@ import {
   InsertOrder,
   Coupon,
   InsertCoupon,
+  OrderStatusHistory,
+  InsertOrderStatusHistory,
   CustomerIdentification,
   events,
   customers,
   addresses,
   orders,
   kits,
-  coupons
+  coupons,
+  orderStatusHistory
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, count, sum, desc, ne, sql, like, or, asc } from "drizzle-orm";
@@ -547,7 +550,30 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async updateOrderStatus(orderId: number | string, status: string): Promise<Order | undefined> {
+  async addStatusHistory(orderId: number, previousStatus: string | null, newStatus: string, changedBy: string, changedByName?: string, reason?: string): Promise<OrderStatusHistory> {
+    const [history] = await db.insert(orderStatusHistory).values({
+      orderId,
+      previousStatus,
+      newStatus,
+      changedBy,
+      changedByName,
+      reason
+    }).returning();
+    
+    return history;
+  }
+
+  async getOrderStatusHistory(orderId: number): Promise<OrderStatusHistory[]> {
+    return await db.select()
+      .from(orderStatusHistory)
+      .where(eq(orderStatusHistory.orderId, orderId))
+      .orderBy(desc(orderStatusHistory.createdAt));
+  }
+
+  async updateOrderStatus(orderId: number | string, status: string, changedBy: string = 'system', changedByName?: string, reason?: string): Promise<Order | undefined> {
+    let targetOrderId: number;
+    let previousStatus: string | null = null;
+    
     // If orderId is a string (orderNumber), find the order by orderNumber first
     if (typeof orderId === 'string') {
       const existingOrder = await db.select()
@@ -559,20 +585,41 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`Order not found with orderNumber: ${orderId}`);
       }
       
-      const [order] = await db
-        .update(orders)
-        .set({ status })
-        .where(eq(orders.id, existingOrder[0].id))
-        .returning();
-      return order;
+      targetOrderId = existingOrder[0].id;
+      previousStatus = existingOrder[0].status;
     } else {
+      // Get current status first
+      const currentOrder = await db.select({ status: orders.status })
+        .from(orders)
+        .where(eq(orders.id, orderId))
+        .limit(1);
+      
+      if (currentOrder.length === 0) {
+        throw new Error(`Order not found with id: ${orderId}`);
+      }
+      
+      targetOrderId = orderId;
+      previousStatus = currentOrder[0].status;
+    }
+    
+    // Only update if status actually changed
+    if (previousStatus !== status) {
+      // Add to status history
+      await this.addStatusHistory(targetOrderId, previousStatus, status, changedBy, changedByName, reason);
+      
+      // Update order status
       const [order] = await db
         .update(orders)
         .set({ status })
-        .where(eq(orders.id, orderId))
+        .where(eq(orders.id, targetOrderId))
         .returning();
+      
       return order;
     }
+    
+    // Return current order if status didn't change
+    const [order] = await db.select().from(orders).where(eq(orders.id, targetOrderId)).limit(1);
+    return order;
   }
 
   async updateOrder(orderId: number, updateData: Partial<InsertOrder>): Promise<Order | undefined> {

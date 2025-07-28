@@ -657,7 +657,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/orders/:id/status", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { status } = req.body;
+      const { status, reason } = req.body;
       
       // Validate status - using Portuguese status names
       const validStatuses = ["confirmado", "aguardando_pagamento", "cancelado", "kits_sendo_retirados", "em_transito", "entregue"];
@@ -666,7 +666,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Status inválido", received: status, valid: validStatuses });
       }
       
-      const order = await storage.updateOrderStatus(id, status);
+      const order = await storage.updateOrderStatus(
+        id, 
+        status, 
+        'admin', 
+        'Administrador', 
+        reason || 'Status alterado pelo administrador'
+      );
       
       if (!order) {
         return res.status(404).json({ message: "Pedido não encontrado" });
@@ -1079,13 +1085,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           if (result.status === 'approved') {
             console.log(`✅ Payment approved for order ${orderId} - updating to confirmado`);
-            await storage.updateOrderStatus(order.id, 'confirmado');
+            await storage.updateOrderStatus(order.id, 'confirmado', 'mercadopago', 'Mercado Pago', 'Pagamento aprovado automaticamente');
             console.log(`✅ Order ${orderId} status successfully updated to confirmado`);
           } else if (result.status === 'pending') {
             console.log(`⏳ Payment pending for order ${orderId} - keeping aguardando_pagamento`);  
           } else {
             console.log(`❌ Payment failed for order ${orderId} - updating to cancelado`);
-            await storage.updateOrderStatus(order.id, 'cancelado');
+            await storage.updateOrderStatus(order.id, 'cancelado', 'mercadopago', 'Mercado Pago', 'Pagamento rejeitado automaticamente');
           }
         } catch (error) {
           console.error('Error updating order status:', error);
@@ -1213,11 +1219,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (order) {
               if (result.status === 'approved') {
                 console.log(`✅ Payment approved for order ${orderId} (ID: ${order.id}) - updating to confirmado`);
-                await storage.updateOrderStatus(order.id, 'confirmado');
+                await storage.updateOrderStatus(order.id, 'confirmado', 'mercadopago', 'Mercado Pago', 'Pagamento aprovado via verificação de status');
                 console.log(`✅ Order ${orderId} status successfully updated to confirmado`);
               } else if (result.status === 'cancelled' || result.status === 'rejected') {
                 console.log(`❌ Payment failed for order ${orderId} (ID: ${order.id}) - updating to cancelado`);
-                await storage.updateOrderStatus(order.id, 'cancelado');
+                await storage.updateOrderStatus(order.id, 'cancelado', 'mercadopago', 'Mercado Pago', 'Pagamento rejeitado via verificação de status');
                 console.log(`❌ Order ${orderId} status successfully updated to cancelado`);
               } else if (result.status === 'pending') {
                 console.log(`⏳ Payment pending for order ${orderId} - keeping aguardando_pagamento`);
@@ -1269,11 +1275,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (order) {
               if (result.status === 'approved') {
                 console.log(`✅ Webhook: Payment approved for order ${orderId} (ID: ${order.id}) - updating to confirmado`);
-                await storage.updateOrderStatus(order.id, 'confirmado');
+                await storage.updateOrderStatus(order.id, 'confirmado', 'mercadopago', 'Mercado Pago', 'Pagamento aprovado via webhook');
                 console.log(`✅ Webhook: Order ${orderId} status successfully updated to confirmado`);
               } else if (result.status === 'cancelled' || result.status === 'rejected') {
                 console.log(`❌ Webhook: Payment failed for order ${orderId} (ID: ${order.id}) - updating to cancelado`);
-                await storage.updateOrderStatus(order.id, 'cancelado');
+                await storage.updateOrderStatus(order.id, 'cancelado', 'mercadopago', 'Mercado Pago', 'Pagamento rejeitado via webhook');
                 console.log(`❌ Webhook: Order ${orderId} status successfully updated to cancelado`);
               } else if (result.status === 'pending') {
                 console.log(`⏳ Webhook: Payment pending for order ${orderId} - keeping aguardando_pagamento`);
@@ -1289,6 +1295,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Webhook error:', error);
       res.status(500).send('Error');
+    }
+  });
+
+  // Get order status history
+  app.get("/api/orders/:orderId/status-history", async (req, res) => {
+    try {
+      const orderId = parseInt(req.params.orderId);
+      
+      if (!orderId || isNaN(orderId)) {
+        return res.status(400).json({ message: "ID do pedido inválido" });
+      }
+
+      const history = await storage.getOrderStatusHistory(orderId);
+      
+      res.json({
+        success: true,
+        history
+      });
+    } catch (error) {
+      console.error('Error getting order status history:', error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Get order status history by order number (for customer access)
+  app.get("/api/orders/number/:orderNumber/status-history", async (req, res) => {
+    try {
+      const orderNumber = req.params.orderNumber;
+      
+      if (!orderNumber) {
+        return res.status(400).json({ message: "Número do pedido inválido" });
+      }
+
+      // First get the order to get its ID
+      const order = await storage.getOrderByNumber(orderNumber);
+      if (!order) {
+        return res.status(404).json({ message: "Pedido não encontrado" });
+      }
+
+      const history = await storage.getOrderStatusHistory(order.id);
+      
+      res.json({
+        success: true,
+        history
+      });
+    } catch (error) {
+      console.error('Error getting order status history:', error);
+      res.status(500).json({ message: "Erro interno do servidor" });
     }
   });
 

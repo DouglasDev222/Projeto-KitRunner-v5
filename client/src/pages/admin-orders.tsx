@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AdminLayout } from "@/components/admin-layout";
 import { AdminAuth } from "@/components/admin-auth";
+import { OrderStatusHistory } from "@/components/order-status-history";
 import { 
   Search, 
   Filter, 
@@ -829,6 +830,9 @@ export default function AdminOrders() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Order Status History */}
+              <OrderStatusHistory orderId={selectedOrder.id} showTitle={true} />
 
               {/* Action Buttons */}
               <div className="flex justify-end gap-4 pt-4 border-t">
