@@ -350,7 +350,14 @@ export default function Payment() {
               <CardPayment
                 amount={pricing.totalCost}
                 orderData={() => createOrderData(`${Date.now()}-${Math.random()}`)}
-                createOrder={createOrderMutation.mutate}
+                createOrder={async (orderData) => {
+                  return new Promise((resolve, reject) => {
+                    createOrderMutation.mutate(orderData, {
+                      onSuccess: (data) => resolve(data),
+                      onError: (error) => reject(error)
+                    });
+                  });
+                }}
                 customerData={{
                   name: customer.name,
                   email: customer.email,
@@ -367,7 +374,14 @@ export default function Payment() {
               <PIXPayment
                 amount={pricing.totalCost}
                 orderData={() => createOrderData(`${Date.now()}-${Math.random()}`)}
-                createOrder={createOrderMutation.mutate}
+                createOrder={async (orderData) => {
+                  return new Promise((resolve, reject) => {
+                    createOrderMutation.mutate(orderData, {
+                      onSuccess: (data) => resolve(data),
+                      onError: (error) => reject(error)
+                    });
+                  });
+                }}
                 customerData={{
                   name: customer.name,
                   email: customer.email,

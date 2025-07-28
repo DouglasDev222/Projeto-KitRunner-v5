@@ -17,7 +17,7 @@ declare global {
 interface CardPaymentProps {
   amount: number;
   orderData: () => any;
-  createOrder: (orderData: any) => void;
+  createOrder: (orderData: any) => Promise<any>;
   customerData: {
     name: string;
     email: string;
@@ -181,17 +181,23 @@ export function CardPayment({
 
       // First create the order with idempotency key
       const order = { ...orderData(), idempotencyKey };
-      createOrder(order);
+      const orderResult = await createOrder(order);
       
-      // Process payment with token
+      if (!orderResult?.order?.id) {
+        setIsProcessing(false);
+        onError('Erro ao criar pedido');
+        return;
+      }
+      
+      // Process payment with token and order ID
       const paymentData = {
         token: response.id,
         paymentMethodId,
+        orderId: orderResult.order.id.toString(),
         amount,
         email: customerData.email,
         customerName: customerData.name,
-        cpf: customerData.cpf,
-        orderNumber: order.orderNumber || `KR${Date.now()}`
+        cpf: customerData.cpf
       };
 
       processCardPaymentMutation.mutate(paymentData);

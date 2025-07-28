@@ -345,7 +345,7 @@ async function seedDatabase() {
         discountAmount: "0.00",
         totalCost: "47.00",
         paymentMethod: "pix",
-        status: "pendente",
+        status: "aguardando_pagamento",
         donationAmount: "6.00",
       },
       {
@@ -373,7 +373,7 @@ async function seedDatabase() {
         discountAmount: "10.00",
         totalCost: "47.00",
         paymentMethod: "debit",
-        status: "em_separacao",
+        status: "aguardando_pagamento",
         donationAmount: "0.00",
       },
     ];
