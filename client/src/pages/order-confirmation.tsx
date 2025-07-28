@@ -16,20 +16,26 @@ export default function OrderConfirmation() {
 
   // Try to get order number from sessionStorage or URL
   useEffect(() => {
+    console.log('OrderConfirmation useEffect:', { id, urlOrderNumber });
+    
     const confirmationData = sessionStorage.getItem("orderConfirmation");
     if (confirmationData) {
       const data = JSON.parse(confirmationData);
       setOrderData(data);
       setOrderNumber(data.order?.orderNumber);
+      console.log('Found sessionStorage data:', data);
     }
     
     // Always set order number from URL if available
     if (urlOrderNumber) {
+      console.log('Setting order number from URL:', urlOrderNumber);
       setOrderNumber(urlOrderNumber);
     } else if (id) {
       // Legacy route /events/:id/confirmation - try to use ID as order number
+      console.log('Using legacy route, setting order number from id:', id);
       setOrderNumber(id);
     } else if (!confirmationData) {
+      console.log('No data found, redirecting to home');
       setLocation("/");
     }
   }, [setLocation, id, urlOrderNumber]);
