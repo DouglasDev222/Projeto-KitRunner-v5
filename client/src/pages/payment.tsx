@@ -82,9 +82,9 @@ export default function Payment() {
       setPaymentError(null);
       // Store order confirmation data
       sessionStorage.setItem("orderConfirmation", JSON.stringify(data));
-      // Redirect to confirmation page after a short delay
+      // Redirect to confirmation page using order number after a short delay
       setTimeout(() => {
-        setLocation(`/events/${id}/confirmation`);
+        setLocation(`/order/${data.order.orderNumber}/confirmation`);
       }, 2000);
     },
     onError: (error: any) => {

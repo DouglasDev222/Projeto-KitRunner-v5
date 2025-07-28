@@ -5,23 +5,51 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, InfoIcon } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
 
 export default function OrderConfirmation() {
   const [, setLocation] = useLocation();
-  const { id } = useParams<{ id: string }>();
+  const { id, orderNumber: urlOrderNumber } = useParams<{ id?: string; orderNumber?: string }>();
   const [orderData, setOrderData] = useState<any>(null);
+  const [orderNumber, setOrderNumber] = useState<string | null>(null);
 
+  // Try to get order number from sessionStorage or URL
   useEffect(() => {
     const confirmationData = sessionStorage.getItem("orderConfirmation");
     if (confirmationData) {
-      setOrderData(JSON.parse(confirmationData));
+      const data = JSON.parse(confirmationData);
+      setOrderData(data);
+      setOrderNumber(data.order?.orderNumber);
+    } else if (urlOrderNumber) {
+      // Direct access via /order/:orderNumber/confirmation route
+      setOrderNumber(urlOrderNumber);
+    } else if (id) {
+      // Legacy route /events/:id/confirmation - try to use ID as order number
+      setOrderNumber(id);
     } else {
       setLocation("/");
     }
-  }, [setLocation]);
+  }, [setLocation, id, urlOrderNumber]);
 
-  if (!orderData) {
+  // Fetch order data from API as fallback
+  const { data: apiOrderData, isLoading } = useQuery({
+    queryKey: ["order-confirmation", orderNumber],
+    queryFn: async () => {
+      if (!orderNumber) return null;
+      const response = await fetch(`/api/orders/${orderNumber}`);
+      if (!response.ok) {
+        throw new Error("Pedido não encontrado");
+      }
+      return response.json();
+    },
+    enabled: !!orderNumber && !orderData,
+  });
+
+  // Use sessionStorage data if available, otherwise use API data
+  const displayData = orderData || apiOrderData;
+
+  if (isLoading || !displayData) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
         <Header />
@@ -62,15 +90,15 @@ export default function OrderConfirmation() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-neutral-600">Número do pedido:</span>
-                <span className="font-medium text-neutral-800">#{orderData.order.orderNumber}</span>
+                <span className="font-medium text-neutral-800">#{displayData.orderNumber || displayData.order?.orderNumber}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-600">Evento:</span>
-                <span className="font-medium text-neutral-800">{orderData.event?.name || 'Nome do evento'}</span>
+                <span className="font-medium text-neutral-800">{displayData.event?.name || 'Nome do evento'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-600">Data do evento:</span>
-                <span className="font-medium text-neutral-800">{orderData.event?.date ? formatDate(orderData.event.date) : 'Data do evento'}</span>
+                <span className="font-medium text-neutral-800">{displayData.event?.date ? formatDate(displayData.event.date) : 'Data do evento'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-600">Previsão de entrega:</span>
@@ -81,7 +109,7 @@ export default function OrderConfirmation() {
               <div className="flex justify-between">
                 <span className="text-neutral-600">Valor pago:</span>
                 <span className="font-medium text-primary">
-                  {formatCurrency(parseFloat(orderData.order.totalCost))}
+                  {formatCurrency(parseFloat(displayData.totalCost || displayData.order?.totalCost))}
                 </span>
               </div>
             </div>
