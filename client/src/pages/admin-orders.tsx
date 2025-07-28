@@ -602,31 +602,28 @@ export default function AdminOrders() {
                         <TableCell>{getStatusBadge(order.status)}</TableCell>
                         <TableCell className="text-sm">{formatDate(order.createdAt)}</TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleViewOrder(order.id)}
-                              className="gap-1"
+                              title="Ver detalhes do pedido"
                             >
                               <Eye className="h-4 w-4" />
-                              Detalhes
                             </Button>
 
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleGenerateLabel(order.id, order.orderNumber)}
-                              className="gap-1"
                               title="Gerar etiqueta de entrega"
                             >
                               <FileText className="h-4 w-4" />
-                              Etiqueta
                             </Button>
                             
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm">
+                                <Button variant="outline" size="sm" title="Alterar status do pedido">
                                   <Edit className="h-4 w-4" />
                                   <ChevronDown className="h-3 w-3 ml-1" />
                                 </Button>
