@@ -1034,6 +1034,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Get order to retrieve orderNumber
+      const order = await storage.getOrderWithFullDetails(parseInt(orderId));
+      if (!order) {
+        return res.status(404).json({ message: "Pedido não encontrado" });
+      }
+
       const [firstName, ...lastNameParts] = customerName.split(' ');
       const lastName = lastNameParts.join(' ') || '';
 
@@ -1042,8 +1048,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentMethodId,
         email,
         amount: parseFloat(amount),
-        description: `Pedido KitRunner #${orderId}`,
-        orderId,
+        description: `Pedido KitRunner #${order.orderNumber}`,
+        orderId: order.orderNumber, // Use orderNumber instead of numeric ID
         payer: {
           name: firstName,
           surname: lastName,
@@ -1101,6 +1107,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Dados obrigatórios não fornecidos" });
       }
 
+      // Get order to retrieve orderNumber
+      const order = await storage.getOrderWithFullDetails(parseInt(orderId));
+      if (!order) {
+        return res.status(404).json({ message: "Pedido não encontrado" });
+      }
+
       const [firstName, ...lastNameParts] = customerName.split(' ');
       const lastName = lastNameParts.join(' ') || '';
 
@@ -1108,8 +1120,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentMethodId: 'pix',
         email,
         amount: parseFloat(amount),
-        description: `Pedido KitRunner #${orderId}`,
-        orderId,
+        description: `Pedido KitRunner #${order.orderNumber}`,
+        orderId: order.orderNumber, // Use orderNumber instead of numeric ID
         payer: {
           name: firstName,
           surname: lastName,
