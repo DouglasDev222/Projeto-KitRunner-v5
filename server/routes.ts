@@ -1165,8 +1165,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get order by payment external reference
         const orderId = result.payment.external_reference;
         
-        // Log payment status for testing - order update temporarily disabled
-        console.log(`Payment ${paymentId} status: ${result.status} for order: ${orderId}`);
+        console.log(`🔍 Payment ${paymentId} status: ${result.status} for order: ${orderId}`);
+        
+        // Update order status based on payment status
+        if (orderId) {
+          try {
+            if (result.status === 'approved') {
+              console.log(`✅ Payment approved for order ${orderId} - updating to confirmado`);
+              await storage.updateOrderStatus(parseInt(orderId), 'confirmado');
+              console.log(`✅ Order ${orderId} status successfully updated to confirmado`);
+            } else if (result.status === 'cancelled' || result.status === 'rejected') {
+              console.log(`❌ Payment failed for order ${orderId} - updating to cancelado`);
+              await storage.updateOrderStatus(parseInt(orderId), 'cancelado');
+              console.log(`❌ Order ${orderId} status successfully updated to cancelado`);
+            } else if (result.status === 'pending') {
+              console.log(`⏳ Payment pending for order ${orderId} - keeping aguardando_pagamento`);
+            }
+          } catch (error) {
+            console.error('Error updating order status:', error);
+          }
+        }
         
         res.json({
           success: true,
@@ -1203,9 +1221,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Update order status based on payment status
           if (result.status === 'approved' && orderId) {
+            console.log(`✅ Webhook: Payment approved for order ${orderId} - updating to confirmado`);
             await storage.updateOrderStatus(parseInt(orderId), 'confirmado');
+            console.log(`✅ Webhook: Order ${orderId} status successfully updated to confirmado`);
           } else if ((result.status === 'cancelled' || result.status === 'rejected') && orderId) {
+            console.log(`❌ Webhook: Payment failed for order ${orderId} - updating to cancelado`);
             await storage.updateOrderStatus(parseInt(orderId), 'cancelado');
+            console.log(`❌ Webhook: Order ${orderId} status successfully updated to cancelado`);
+          } else if (result.status === 'pending' && orderId) {
+            console.log(`⏳ Webhook: Payment pending for order ${orderId} - keeping aguardando_pagamento`);
           }
         }
       }

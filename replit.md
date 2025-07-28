@@ -376,3 +376,12 @@ Preferred communication style: Simple, everyday language.
 - ✓ Maintained all existing API functionality with database backend
 
 The application follows a progressive enhancement approach, starting with a solid server-side foundation and enhancing the user experience with modern client-side features.
+
+### Order Confirmation & Payment Status Enhancement (July 2025)
+- ✓ Updated order confirmation page delivery estimate text from static date to "Até o dia anterior do evento"
+- ✓ Enhanced automatic order status confirmation system when Mercado Pago payments are approved
+- ✓ Improved payment verification API to automatically update order status based on payment result
+- ✓ Added comprehensive logging for payment status tracking (approved → confirmado, rejected → cancelado)
+- ✓ Enhanced webhook functionality for real-time payment notifications from Mercado Pago
+- ✓ System now reliably updates order status when payments are processed successfully
+- ✓ Payment system fully operational with automatic status synchronization between Mercado Pago and order database

@@ -75,9 +75,7 @@ export default function OrderConfirmation() {
               <div className="flex justify-between">
                 <span className="text-neutral-600">Previsão de entrega:</span>
                 <span className="font-medium text-neutral-800">
-                  {orderData.deliveryEstimate?.deliveryDate ? 
-                    `Até ${formatDate(orderData.deliveryEstimate.deliveryDate)}` : 
-                    'Até o dia anterior do evento'}
+                  Até o dia anterior do evento
                 </span>
               </div>
               <div className="flex justify-between">
