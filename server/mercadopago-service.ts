@@ -4,8 +4,7 @@ import { MercadoPagoConfig, Payment, Preference } from 'mercadopago';
 const client = new MercadoPagoConfig({
   accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
   options: {
-    timeout: 5000,
-    idempotencyKey: 'abc123'
+    timeout: 5000
   }
 });
 
@@ -60,21 +59,13 @@ export class MercadoPagoService {
         throw new Error('Token do cartão é obrigatório');
       }
       
-      // WORKAROUND: Force rejection for OTHE test cards since MercadoPago sandbox is not working correctly
-      if (paymentData.payer.name === 'OTHE' || paymentData.payer.surname === 'OTHE') {
-        console.log('🔴 FORCED REJECTION - OTHE test card detected (sandbox workaround)');
-        return {
-          success: false,
-          status: 'rejected',
-          message: 'Pagamento rejeitado: OTHE test card - erro geral simulado',
-          id: null,
-          payment: {
-            id: null,
-            status: 'rejected',
-            status_detail: 'cc_rejected_other_reason'
-          }
-        };
-      }
+      // Log the exact payer data being sent to MercadoPago for debugging
+      console.log('🔍 DEBUGGING - Payer data being sent to MercadoPago:', JSON.stringify({
+        name: paymentData.payer.name,
+        surname: paymentData.payer.surname,
+        email: paymentData.payer.email,
+        identification: paymentData.payer.identification
+      }, null, 2));
       
       const paymentResult = await payment.create({
         body: {
@@ -100,7 +91,18 @@ export class MercadoPagoService {
       console.log('✅ Payment result status:', paymentResult.status);
       console.log('✅ Payment result status_detail:', paymentResult.status_detail);
       console.log('✅ Payment result ID:', paymentResult.id);
-      console.log('📋 Full Payment result:', JSON.stringify(paymentResult, null, 2));
+      
+      // Check what MercadoPago actually received as cardholder name
+      console.log('🔍 IMPORTANT - Cardholder name in MercadoPago response:', paymentResult.card?.cardholder?.name);
+      console.log('🔍 IMPORTANT - CPF in MercadoPago response:', paymentResult.card?.cardholder?.identification?.number);
+      
+      console.log('📋 Full Payment result (truncated for debugging):', JSON.stringify({
+        id: paymentResult.id,
+        status: paymentResult.status,
+        status_detail: paymentResult.status_detail,
+        card: paymentResult.card,
+        payer: paymentResult.payer
+      }, null, 2));
 
       // Handle different payment statuses
       switch (paymentResult.status) {
