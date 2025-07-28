@@ -122,7 +122,7 @@ export function OrderStatusHistory({ orderId, orderNumber, showTitle = true }: O
   }
 
   return (
-    <Card>
+    <Card className="mt-[14px] mb-[14px] rounded-lg border bg-card text-card-foreground shadow-sm">
       <CardHeader>
         {showTitle && <CardTitle>Histórico de Status</CardTitle>}
       </CardHeader>
