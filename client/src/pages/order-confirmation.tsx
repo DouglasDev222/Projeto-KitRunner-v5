@@ -21,13 +21,15 @@ export default function OrderConfirmation() {
       const data = JSON.parse(confirmationData);
       setOrderData(data);
       setOrderNumber(data.order?.orderNumber);
-    } else if (urlOrderNumber) {
-      // Direct access via /order/:orderNumber/confirmation route
+    }
+    
+    // Always set order number from URL if available
+    if (urlOrderNumber) {
       setOrderNumber(urlOrderNumber);
     } else if (id) {
       // Legacy route /events/:id/confirmation - try to use ID as order number
       setOrderNumber(id);
-    } else {
+    } else if (!confirmationData) {
       setLocation("/");
     }
   }, [setLocation, id, urlOrderNumber]);
@@ -43,21 +45,13 @@ export default function OrderConfirmation() {
       }
       return response.json();
     },
-    enabled: !!orderNumber && !orderData,
+    enabled: !!orderNumber && (!orderData || !orderData.order?.orderNumber),
   });
 
-  // Use sessionStorage data if available, otherwise use API data
-  const displayData = orderData || apiOrderData;
+  // Prefer API data (complete) over sessionStorage data (incomplete)
+  const displayData = apiOrderData || orderData;
 
-  // Debug logging
-  console.log('Order Confirmation Debug:', {
-    orderData,
-    apiOrderData,
-    displayData,
-    orderNumber,
-    urlOrderNumber,
-    id
-  });
+
 
   if (isLoading || !displayData) {
     return (
@@ -100,7 +94,7 @@ export default function OrderConfirmation() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-neutral-600">Número do pedido:</span>
-                <span className="font-medium text-neutral-800">#{displayData.orderNumber || displayData.order?.orderNumber}</span>
+                <span className="font-medium text-neutral-800">#{displayData?.orderNumber || displayData?.order?.orderNumber || orderNumber}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-600">Evento:</span>
@@ -119,7 +113,7 @@ export default function OrderConfirmation() {
               <div className="flex justify-between">
                 <span className="text-neutral-600">Valor pago:</span>
                 <span className="font-medium text-primary">
-                  {displayData.totalCost || displayData.order?.totalCost ? 
+                  {displayData?.totalCost || displayData?.order?.totalCost ? 
                     formatCurrency(parseFloat(displayData.totalCost || displayData.order?.totalCost)) : 
                     'R$ 0,00'
                   }
