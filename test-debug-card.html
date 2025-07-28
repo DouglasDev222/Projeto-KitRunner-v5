@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug - Teste Cartão OTHE</title>
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 300px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        .result { margin-top: 20px; padding: 15px; border-radius: 4px; background: #f8f9fa; }
+        .debug { background: #fff3cd; padding: 10px; margin: 10px 0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🐛 Debug - Cartão OTHE para Rejeição</h1>
+    
+    <div class="debug">
+        <h3>Cartão que DEVE ser rejeitado:</h3>
+        <p><strong>Número:</strong> 5031433215406365</p>
+        <p><strong>Nome:</strong> OTHE</p>
+        <p><strong>Status Esperado:</strong> rejected (cc_rejected_insufficient_amount)</p>
+    </div>
+
+    <form id="debugForm">
+        <div class="form-group">
+            <label>Número do Cartão (SEM ESPAÇOS):</label>
+            <input type="text" id="cardNumber" value="5031433215406365" maxlength="16">
+            <div id="cardDebug" style="color: #666; font-size: 12px;"></div>
+        </div>
+        
+        <div class="form-group">
+            <label>Nome (DEVE SER EXATAMENTE "OTHE"):</label>
+            <input type="text" id="cardholderName" value="OTHE">
+        </div>
+        
+        <div class="form-group">
+            <label>CVV:</label>
+            <input type="text" id="securityCode" value="123" maxlength="3">
+        </div>
+        
+        <div class="form-group">
+            <label>Mês:</label>
+            <input type="text" id="expirationMonth" value="11" maxlength="2">
+        </div>
+        
+        <div class="form-group">
+            <label>Ano:</label>
+            <input type="text" id="expirationYear" value="2025" maxlength="4">
+        </div>
+        
+        <div class="form-group">
+            <label>CPF:</label>
+            <input type="text" id="cpf" value="11393441459">
+        </div>
+        
+        <button type="submit">🧪 Testar Rejeição com OTHE</button>
+    </form>
+    
+    <div id="result"></div>
+
+    <script>
+        const mp = new MercadoPago('TEST-7c14e81c-a2ab-4ee1-b91c-da31e0487725');
+
+        // Debug card number input
+        document.getElementById('cardNumber').addEventListener('input', function(e) {
+            const value = e.target.value.replace(/\s/g, '');
+            document.getElementById('cardDebug').textContent = `Números digitados: ${value} (${value.length} dígitos)`;
+        });
+
+        document.getElementById('debugForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
+            const cardholderName = document.getElementById('cardholderName').value;
+            const securityCode = document.getElementById('securityCode').value;
+            const expirationMonth = document.getElementById('expirationMonth').value;
+            const expirationYear = document.getElementById('expirationYear').value;
+            const cpf = document.getElementById('cpf').value;
+            
+            console.log('🐛 DEBUG - Card data being sent:');
+            console.log('  Card Number:', cardNumber);
+            console.log('  Card Number Length:', cardNumber.length);
+            console.log('  Cardholder Name:', cardholderName);
+            console.log('  Expiration Month:', expirationMonth);
+            console.log('  Expiration Year:', expirationYear);
+            console.log('  Security Code:', securityCode);
+            console.log('  CPF:', cpf);
+            
+            // Validate expected values
+            const expectedCardNumber = '5031433215406365';
+            const expectedName = 'OTHE';
+            
+            let warnings = [];
+            if (cardNumber !== expectedCardNumber) {
+                warnings.push(`❌ Número do cartão incorreto! Esperado: ${expectedCardNumber}, Atual: ${cardNumber}`);
+            }
+            if (cardholderName !== expectedName) {
+                warnings.push(`❌ Nome incorreto! Esperado: ${expectedName}, Atual: ${cardholderName}`);
+            }
+            
+            if (warnings.length > 0) {
+                document.getElementById('result').innerHTML = `
+                    <div class="result" style="background: #f8d7da; color: #721c24;">
+                        <h3>⚠️ Dados Incorretos para Teste</h3>
+                        ${warnings.map(w => `<p>${w}</p>`).join('')}
+                        <p><strong>Corrija os valores antes de testar!</strong></p>
+                    </div>
+                `;
+                return;
+            }
+            
+            document.getElementById('result').innerHTML = '<div class="result">⏳ Criando token e testando rejeição...</div>';
+            
+            try {
+                // Create card token
+                const tokenData = {
+                    cardNumber: cardNumber,
+                    cardholderName: cardholderName,
+                    cardExpirationMonth: expirationMonth,
+                    cardExpirationYear: expirationYear,
+                    securityCode: securityCode,
+                    identificationType: 'CPF',
+                    identificationNumber: cpf
+                };
+                
+                console.log('🎫 Creating token with exact data:', tokenData);
+                
+                const tokenResponse = await mp.createCardToken(tokenData);
+                
+                console.log('🎫 Token response:', tokenResponse);
+                
+                if (tokenResponse.error) {
+                    throw new Error('Erro no token: ' + tokenResponse.error.message);
+                }
+                
+                // Process payment
+                const orderId = 'DEBUG-REJECT-' + Date.now();
+                const paymentData = {
+                    token: tokenResponse.id,
+                    paymentMethodId: 'master', // Mastercard for 5031
+                    orderId,
+                    amount: 50.00,
+                    email: 'test@test.com',
+                    customerName: 'Test User',
+                    cpf: cpf
+                };
+                
+                console.log('💳 Processing payment with data:', paymentData);
+                
+                const response = await fetch('/api/mercadopago/process-card-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(paymentData)
+                });
+                
+                const result = await response.json();
+                
+                console.log('🎯 Final payment result:', result);
+                
+                let statusDisplay = '';
+                let bgColor = '';
+                
+                if (result.success && result.status === 'approved') {
+                    statusDisplay = '⚠️ APROVADO (PROBLEMA! Deveria ser rejeitado)';
+                    bgColor = '#f8d7da';
+                } else if (!result.success && result.status === 'rejected') {
+                    statusDisplay = '✅ REJEITADO (Correto!)';
+                    bgColor = '#d1edff';
+                } else {
+                    statusDisplay = `❓ Status: ${result.status}`;
+                    bgColor = '#fff3cd';
+                }
+                
+                document.getElementById('result').innerHTML = `
+                    <div class="result" style="background: ${bgColor};">
+                        <h3>${statusDisplay}</h3>
+                        <p><strong>Status:</strong> ${result.status}</p>
+                        <p><strong>Payment ID:</strong> ${result.paymentId}</p>
+                        <p><strong>Mensagem:</strong> ${result.message}</p>
+                        <p><strong>Order ID:</strong> ${orderId}</p>
+                        <hr>
+                        <p><small>Token ID: ${tokenResponse.id}</small></p>
+                        <p><small>Token Card Digits: ${tokenResponse.first_six_digits}****${tokenResponse.last_four_digits}</small></p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Debug test error:', error);
+                document.getElementById('result').innerHTML = `
+                    <div class="result" style="background: #f8d7da;">
+                        <h3>❌ Erro no Debug</h3>
+                        <p><strong>Erro:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        });
+        
+        // Initialize debug info
+        document.getElementById('cardDebug').textContent = 'Números digitados: 5031433215406365 (16 dígitos)';
+    </script>
+</body>
+</html>
