@@ -1123,7 +1123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           totalCost = baseCost + deliveryCost + additionalCost + donationAmount - (validatedOrderData.discountAmount || 0);
 
-          // Create the order with proper InsertOrder structure
+          // Create the order with status "aguardando_pagamento" first
           const order = await storage.createOrder({
             eventId: validatedOrderData.eventId,
             customerId: validatedOrderData.customerId,
@@ -1133,7 +1133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             extraKitsCost: additionalCost.toString(),
             donationCost: donationAmount.toString(),
             totalCost: totalCost.toString(),
-            status: result.status === 'approved' ? 'confirmado' : 'aguardando_pagamento',
+            status: 'aguardando_pagamento', // Always start with awaiting payment
             paymentMethod: paymentMethodId === 'master' ? 'credit' : paymentMethodId,
             // paymentProcessorOrderId: result.id?.toString() || null, // Field not in schema
             donationAmount: donationAmount.toString(),
@@ -1153,7 +1153,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
-          console.log(`✅ Order ${orderNumber} created successfully with status: ${order.status}`);
+          console.log(`✅ Order ${order.orderNumber} created successfully with status: ${order.status}`);
+
+          // If payment was approved, update status to "confirmado" with proper history
+          if (result.status === 'approved') {
+            await storage.updateOrderStatus(
+              order.id, 
+              'confirmado', 
+              'mercadopago', 
+              'Mercado Pago', 
+              'Pagamento aprovado'
+            );
+            console.log(`✅ Order ${order.orderNumber} status updated to confirmado - payment approved`);
+          }
 
           res.json({
             success: true,
