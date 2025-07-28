@@ -54,7 +54,8 @@ export default function OrderConfirmation() {
   // Prefer API data (complete) over sessionStorage data (incomplete)
   const displayData = apiOrderData || orderData;
 
-
+  // Debug log to see what data we have
+  console.log('Order confirmation displayData:', displayData);
 
   if (isLoading || !displayData) {
     return (
