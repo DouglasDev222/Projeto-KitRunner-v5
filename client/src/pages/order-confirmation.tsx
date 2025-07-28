@@ -67,17 +67,20 @@ export default function OrderConfirmation() {
     );
   }
 
-  const handleNewOrder = () => {
-    // Clear session storage
+  const handleViewOrderDetails = () => {
+    // Navigate to order details page
+    const finalOrderNumber = displayData?.orderNumber || orderNumber;
+    if (finalOrderNumber) {
+      setLocation(`/orders/${finalOrderNumber}`);
+    }
+  };
+
+  const handleBackToHome = () => {
+    // Clear session storage and go to home
     sessionStorage.removeItem("customerData");
     sessionStorage.removeItem("kitData");
     sessionStorage.removeItem("orderConfirmation");
     setLocation("/");
-  };
-
-  const handleTrackOrder = () => {
-    // In a real app, this would navigate to order tracking
-    alert("Funcionalidade de rastreamento será implementada em breve!");
   };
 
   return (
@@ -143,18 +146,18 @@ export default function OrderConfirmation() {
           <Button 
             className="w-full bg-primary text-white hover:bg-primary/90" 
             size="lg"
-            onClick={handleNewOrder}
+            onClick={handleViewOrderDetails}
           >
-            Fazer Novo Pedido
+            Ver Detalhes do Pedido
           </Button>
           
           <Button 
             variant="outline" 
             className="w-full" 
             size="lg"
-            onClick={handleTrackOrder}
+            onClick={handleBackToHome}
           >
-            Acompanhar Pedido
+            Voltar ao Início
           </Button>
         </div>
       </div>
