@@ -37,7 +37,7 @@ export default function OrderConfirmation() {
     }
   }, [setLocation, id, urlOrderNumber]);
 
-  // Fetch order data from API as fallback
+  // Always fetch complete order data from API when we have orderNumber
   const { data: apiOrderData, isLoading } = useQuery({
     queryKey: ["order-confirmation", orderNumber],
     queryFn: async () => {
@@ -48,14 +48,16 @@ export default function OrderConfirmation() {
       }
       return response.json();
     },
-    enabled: !!orderNumber && (!orderData || !orderData.order?.orderNumber),
+    enabled: !!orderNumber, // Always fetch if we have orderNumber
   });
 
-  // Prefer API data (complete) over sessionStorage data (incomplete)
+  // Always prefer API data when available (complete), fallback to sessionStorage (incomplete)
   const displayData = apiOrderData || orderData;
 
   // Debug log to see what data we have
   console.log('Order confirmation displayData:', displayData);
+  console.log('API data:', apiOrderData);
+  console.log('Session data:', orderData);
 
   if (isLoading || !displayData) {
     return (
