@@ -1034,8 +1034,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Validate and parse orderId
+      const orderIdNum = parseInt(orderId);
+      if (isNaN(orderIdNum)) {
+        console.error(`Invalid orderId received for card payment: ${orderId}`);
+        return res.status(400).json({ message: "ID do pedido inválido" });
+      }
+
       // Get order to retrieve orderNumber
-      const order = await storage.getOrderWithFullDetails(parseInt(orderId));
+      const order = await storage.getOrderWithFullDetails(orderIdNum);
       if (!order) {
         return res.status(404).json({ message: "Pedido não encontrado" });
       }
@@ -1103,12 +1110,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { orderId, amount, email, customerName, cpf } = req.body;
       
+      console.log('PIX payment request data:', { orderId, amount, email, customerName, cpf });
+      
       if (!orderId || !amount || !email || !customerName || !cpf) {
         return res.status(400).json({ message: "Dados obrigatórios não fornecidos" });
       }
 
+      // Validate and parse orderId
+      const orderIdNum = parseInt(orderId);
+      if (isNaN(orderIdNum)) {
+        console.error(`Invalid orderId received for PIX: ${orderId}`);
+        return res.status(400).json({ message: "ID do pedido inválido" });
+      }
+
       // Get order to retrieve orderNumber
-      const order = await storage.getOrderWithFullDetails(parseInt(orderId));
+      const order = await storage.getOrderWithFullDetails(orderIdNum);
       if (!order) {
         return res.status(404).json({ message: "Pedido não encontrado" });
       }
@@ -1136,9 +1152,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await MercadoPagoService.createPIXPayment(paymentData);
       
       if (result) {
+        console.log(`💳 PIX payment created for order ${orderId} (${order.orderNumber}) - Payment ID: ${result.id}`);
+        
         // Update order status to awaiting payment
         try {
-          console.log(`💳 PIX payment created for order ${orderId} - status: aguardando_pagamento`);
+          console.log(`Status: aguardando_pagamento`);
         } catch (error) {
           console.log('Note: Order status update temporarily disabled for testing');
         }

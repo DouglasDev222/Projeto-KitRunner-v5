@@ -128,23 +128,36 @@ export class MercadoPagoService {
    */
   static async createPIXPayment(paymentData: PaymentData): Promise<PIXPaymentResponse | null> {
     try {
-      const paymentResult = await payment.create({
-        body: {
-          transaction_amount: paymentData.amount,
-          description: paymentData.description,
-          payment_method_id: 'pix',
-          payer: {
-            email: paymentData.payer.email,
-            first_name: paymentData.payer.name,
-            last_name: paymentData.payer.surname,
-            identification: {
-              type: paymentData.payer.identification.type,
-              number: paymentData.payer.identification.number,
-            },
+      console.log('🚀 Creating PIX payment with orderId:', paymentData.orderId);
+      
+      const paymentBody = {
+        transaction_amount: paymentData.amount,
+        description: paymentData.description,
+        payment_method_id: 'pix',
+        payer: {
+          email: paymentData.payer.email,
+          first_name: paymentData.payer.name,
+          last_name: paymentData.payer.surname,
+          identification: {
+            type: paymentData.payer.identification.type,
+            number: paymentData.payer.identification.number,
           },
-          external_reference: paymentData.orderId,
-        }
+        },
+        external_reference: paymentData.orderId,
+      };
+      
+      console.log('📦 PIX payment body:', JSON.stringify(paymentBody, null, 2));
+      
+      const paymentResult = await payment.create({
+        body: paymentBody
       });
+
+      console.log('✅ PIX payment result:', JSON.stringify({
+        id: paymentResult.id,
+        status: paymentResult.status,
+        external_reference: paymentResult.external_reference,
+        description: paymentResult.description
+      }, null, 2));
 
       return {
         id: paymentResult.id!,
