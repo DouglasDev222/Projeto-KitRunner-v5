@@ -1039,13 +1039,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { token, paymentMethodId, amount, email, customerName, cpf, orderData } = req.body;
       
-      console.log('Card payment request data:', { token, paymentMethodId, amount, email, customerName, cpf, hasOrderData: !!orderData });
+      console.log('Card payment request data:', { 
+        token: token ? '[MASKED_TOKEN]' : 'NO_TOKEN', 
+        paymentMethodId, 
+        amount, 
+        email, 
+        customerName, 
+        cpf: cpf ? '[MASKED_CPF]' : 'NO_CPF', 
+        hasOrderData: !!orderData 
+      });
       
       if (!token || !paymentMethodId || !amount || !orderData) {
         return res.status(400).json({ 
           message: "Dados obrigatórios não fornecidos",
           missing: { token: !token, paymentMethodId: !paymentMethodId, amount: !amount, orderData: !orderData }
         });
+      }
+
+      // Critical Security Fix: Validate idempotency to prevent duplicate payments
+      if (orderData.idempotencyKey) {
+        const existingOrder = await storage.getOrderByIdempotencyKey(orderData.idempotencyKey);
+        if (existingOrder) {
+          console.log(`🛡️ SECURITY: Duplicate payment attempt blocked - idempotency key already used: ${orderData.idempotencyKey}`);
+          return res.status(409).json({
+            success: false,
+            message: "Pagamento já processado",
+            orderNumber: existingOrder.orderNumber,
+            isDuplicate: true
+          });
+        }
       }
 
       const [firstName, ...lastNameParts] = customerName.split(' ');

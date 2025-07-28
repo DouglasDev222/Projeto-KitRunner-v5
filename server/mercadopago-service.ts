@@ -1,10 +1,10 @@
 import { MercadoPagoConfig, Payment, Preference } from 'mercadopago';
 
-// Initialize MercadoPago client with access token
+// Initialize MercadoPago client with access token and secure timeout
 const client = new MercadoPagoConfig({
   accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
   options: {
-    timeout: 5000
+    timeout: 30000 // Increased from 5s to 30s for payment stability
   }
 });
 
@@ -50,21 +50,38 @@ export class MercadoPagoService {
    */
   static async processCardPayment(paymentData: PaymentData) {
     try {
+      // Masked logging for security - never log sensitive data in production
       console.log('Processing card payment with data:', JSON.stringify({
-        ...paymentData,
-        token: paymentData.token ? '[TOKEN_PROVIDED]' : 'NO_TOKEN'
+        paymentMethodId: paymentData.paymentMethodId,
+        email: paymentData.email,
+        amount: paymentData.amount,
+        description: paymentData.description,
+        orderId: paymentData.orderId,
+        token: paymentData.token ? '[MASKED_TOKEN]' : 'NO_TOKEN',
+        payer: {
+          name: paymentData.payer.name,
+          surname: paymentData.payer.surname,
+          email: paymentData.payer.email,
+          identification: {
+            type: paymentData.payer.identification.type,
+            number: paymentData.payer.identification.number ? '[MASKED_CPF]' : 'NO_CPF'
+          }
+        }
       }, null, 2));
       
       if (!paymentData.token) {
         throw new Error('Token do cartão é obrigatório');
       }
       
-      // Log the exact payer data being sent to MercadoPago for debugging
-      console.log('🔍 DEBUGGING - Payer data being sent to MercadoPago:', JSON.stringify({
+      // Masked payer data logging for security
+      console.log('🔍 DEBUGGING - Payer data being sent to MercadoPago (MASKED):', JSON.stringify({
         name: paymentData.payer.name,
         surname: paymentData.payer.surname,
         email: paymentData.payer.email,
-        identification: paymentData.payer.identification
+        identification: {
+          type: paymentData.payer.identification.type,
+          number: '[MASKED_CPF]'
+        }
       }, null, 2));
       
       const paymentResult = await payment.create({
@@ -92,16 +109,31 @@ export class MercadoPagoService {
       console.log('✅ Payment result status_detail:', paymentResult.status_detail);
       console.log('✅ Payment result ID:', paymentResult.id);
       
-      // Check what MercadoPago actually received as cardholder name
+      // Check what MercadoPago actually received as cardholder name (masked for security)
       console.log('🔍 IMPORTANT - Cardholder name in MercadoPago response:', paymentResult.card?.cardholder?.name);
-      console.log('🔍 IMPORTANT - CPF in MercadoPago response:', paymentResult.card?.cardholder?.identification?.number);
+      console.log('🔍 IMPORTANT - CPF in MercadoPago response: [MASKED_CPF]');
       
-      console.log('📋 Full Payment result (truncated for debugging):', JSON.stringify({
+      console.log('📋 Payment result (MASKED):', JSON.stringify({
         id: paymentResult.id,
         status: paymentResult.status,
         status_detail: paymentResult.status_detail,
-        card: paymentResult.card,
-        payer: paymentResult.payer
+        card: paymentResult.card ? {
+          ...paymentResult.card,
+          cardholder: paymentResult.card.cardholder ? {
+            name: paymentResult.card.cardholder.name,
+            identification: {
+              type: paymentResult.card.cardholder.identification?.type,
+              number: '[MASKED_CPF]'
+            }
+          } : null
+        } : null,
+        payer: paymentResult.payer ? {
+          ...paymentResult.payer,
+          identification: paymentResult.payer.identification ? {
+            type: paymentResult.payer.identification.type,
+            number: '[MASKED_ID]'
+          } : null
+        } : null
       }, null, 2));
 
       // Handle different payment statuses
