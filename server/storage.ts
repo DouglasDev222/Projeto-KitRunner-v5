@@ -419,6 +419,66 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  async getOrderByOrderNumber(orderNumber: string): Promise<any | undefined> {
+    const [order] = await db.select({
+      id: orders.id,
+      orderNumber: orders.orderNumber,
+      eventId: orders.eventId,
+      customerId: orders.customerId,
+      addressId: orders.addressId,
+      kitQuantity: orders.kitQuantity,
+      deliveryCost: orders.deliveryCost,
+      extraKitsCost: orders.extraKitsCost,
+      donationCost: orders.donationCost,
+      discountAmount: orders.discountAmount,
+      couponCode: orders.couponCode,
+      totalCost: orders.totalCost,
+      paymentMethod: orders.paymentMethod,
+      status: orders.status,
+      donationAmount: orders.donationAmount,
+      createdAt: orders.createdAt,
+      customer: {
+        id: customers.id,
+        name: customers.name,
+        cpf: customers.cpf,
+        email: customers.email,
+        phone: customers.phone,
+      },
+      event: {
+        id: events.id,
+        name: events.name,
+        date: events.date,
+        location: events.location,
+        city: events.city,
+        state: events.state,
+        pickupZipCode: events.pickupZipCode,
+        fixedPrice: events.fixedPrice,
+        extraKitPrice: events.extraKitPrice,
+        donationRequired: events.donationRequired,
+        donationAmount: events.donationAmount,
+        donationDescription: events.donationDescription,
+      },
+      address: {
+        id: addresses.id,
+        label: addresses.label,
+        street: addresses.street,
+        number: addresses.number,
+        complement: addresses.complement,
+        neighborhood: addresses.neighborhood,
+        city: addresses.city,
+        state: addresses.state,
+        zipCode: addresses.zipCode,
+      },
+    })
+    .from(orders)
+    .leftJoin(customers, eq(orders.customerId, customers.id))
+    .leftJoin(events, eq(orders.eventId, events.id))
+    .leftJoin(addresses, eq(orders.addressId, addresses.id))
+    .where(eq(orders.orderNumber, orderNumber));
+    
+    return order;
+  }
+
   async getOrderWithFullDetails(orderId: number): Promise<any | undefined> {
     const [order] = await db.select({
       id: orders.id,

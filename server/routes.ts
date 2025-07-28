@@ -1034,15 +1034,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Validate and parse orderId
+      // Check if orderId is numeric ID or orderNumber string
+      let order;
       const orderIdNum = parseInt(orderId);
+      
       if (isNaN(orderIdNum)) {
-        console.error(`Invalid orderId received for card payment: ${orderId}`);
-        return res.status(400).json({ message: "ID do pedido inválido" });
+        // If not a number, assume it's an orderNumber (like "KR2025575306")
+        console.log(`Looking up order by orderNumber: ${orderId}`);
+        order = await storage.getOrderByOrderNumber(orderId);
+      } else {
+        // If it's a number, use it as ID
+        console.log(`Looking up order by ID: ${orderIdNum}`);
+        order = await storage.getOrderWithFullDetails(orderIdNum);
       }
-
-      // Get order to retrieve orderNumber
-      const order = await storage.getOrderWithFullDetails(orderIdNum);
       if (!order) {
         return res.status(404).json({ message: "Pedido não encontrado" });
       }
@@ -1075,13 +1079,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           if (result.status === 'approved') {
             console.log(`✅ Payment approved for order ${orderId} - updating to confirmado`);
-            await storage.updateOrderStatus(parseInt(orderId), 'confirmado');
+            await storage.updateOrderStatus(order.id, 'confirmado');
             console.log(`✅ Order ${orderId} status successfully updated to confirmado`);
           } else if (result.status === 'pending') {
             console.log(`⏳ Payment pending for order ${orderId} - keeping aguardando_pagamento`);  
           } else {
             console.log(`❌ Payment failed for order ${orderId} - updating to cancelado`);
-            await storage.updateOrderStatus(parseInt(orderId), 'cancelado');
+            await storage.updateOrderStatus(order.id, 'cancelado');
           }
         } catch (error) {
           console.error('Error updating order status:', error);
@@ -1116,15 +1120,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Dados obrigatórios não fornecidos" });
       }
 
-      // Validate and parse orderId
+      // Check if orderId is numeric ID or orderNumber string
+      let order;
       const orderIdNum = parseInt(orderId);
+      
       if (isNaN(orderIdNum)) {
-        console.error(`Invalid orderId received for PIX: ${orderId}`);
-        return res.status(400).json({ message: "ID do pedido inválido" });
+        // If not a number, assume it's an orderNumber (like "KR2025575306")
+        console.log(`Looking up PIX order by orderNumber: ${orderId}`);
+        order = await storage.getOrderByOrderNumber(orderId);
+      } else {
+        // If it's a number, use it as ID
+        console.log(`Looking up PIX order by ID: ${orderIdNum}`);
+        order = await storage.getOrderWithFullDetails(orderIdNum);
       }
-
-      // Get order to retrieve orderNumber
-      const order = await storage.getOrderWithFullDetails(orderIdNum);
       if (!order) {
         return res.status(404).json({ message: "Pedido não encontrado" });
       }
