@@ -14,13 +14,18 @@
 - **Prioridade**: CRÍTICA
 - **Data**: 28/07/2025
 
-### ❌ 2. Webhook sem Validação de Assinatura
-- **Status**: PENDENTE
-- **Arquivo**: `server/routes.ts` (linha 1350+)
+### ✅ 2. Webhook sem Validação de Assinatura
+- **Status**: CORRIGIDO ✓
+- **Arquivo**: `server/routes.ts` (linhas 1375-1430)
 - **Problema**: Webhook aceita qualquer requisição sem validar origem
 - **Risco**: Manipulação maliciosa de status de pedidos
-- **Ação**: Implementar validação de assinatura do MercadoPago
+- **Ação**: Implementada validação completa de assinatura:
+  - Validação de headers x-signature e x-request-id
+  - Verificação HMAC-SHA256 com secret do MercadoPago
+  - Validação de timestamp (rejeita requisições antigas)
+  - Logs de segurança para tentativas não autorizadas
 - **Prioridade**: CRÍTICA
+- **Data**: 28/07/2025
 
 ### ✅ 3. Falta de Validação de Idempotência
 - **Status**: CORRIGIDO ✓
