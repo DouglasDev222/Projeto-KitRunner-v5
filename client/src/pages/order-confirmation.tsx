@@ -97,7 +97,7 @@ export default function OrderConfirmation() {
             <ul className="text-sm space-y-1">
               <li>• Você receberá um e-mail com os detalhes do pedido</li>
               <li>• Acompanhe o status pelo número do pedido</li>
-              <li>• Seu kit será retirado no dia do evento</li>
+              <li className="text-[14px]">• Seu kit será retirado no dia de retirada do evento</li>
               <li>• Entrega em até o dia anterior do evento</li>
             </ul>
           </AlertDescription>
