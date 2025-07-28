@@ -39,7 +39,7 @@
             <form id="aproForm">
                 <div class="form-group">
                     <label>Número do Cartão:</label>
-                    <input type="text" id="aproCardNumber" value="5031 4332 1540 6365" readonly class="readonly">
+                    <input type="text" id="aproCardNumber" value="5031 4332 1540 6351" readonly class="readonly">
                 </div>
                 
                 <div class="form-group">
@@ -100,7 +100,7 @@
             <form id="otheForm">
                 <div class="form-group">
                     <label>Número do Cartão:</label>
-                    <input type="text" id="otheCardNumber" value="5031 4332 1540 6365" readonly class="readonly">
+                    <input type="text" id="otheCardNumber" value="4013 5406 8274 6260" readonly class="readonly">
                 </div>
                 
                 <div class="form-group">
@@ -228,7 +228,7 @@
                 // Process payment with new flow
                 const paymentData = {
                     token: tokenResponse.id,
-                    paymentMethodId: 'master', // Mastercard for 5031
+                    paymentMethodId: cardNumber.startsWith('4') ? 'visa' : 'master', // Auto-detect brand
                     amount: amount,
                     email: email,
                     customerName: customerName,
