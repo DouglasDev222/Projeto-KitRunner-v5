@@ -49,6 +49,16 @@ export default function OrderConfirmation() {
   // Use sessionStorage data if available, otherwise use API data
   const displayData = orderData || apiOrderData;
 
+  // Debug logging
+  console.log('Order Confirmation Debug:', {
+    orderData,
+    apiOrderData,
+    displayData,
+    orderNumber,
+    urlOrderNumber,
+    id
+  });
+
   if (isLoading || !displayData) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
@@ -109,7 +119,10 @@ export default function OrderConfirmation() {
               <div className="flex justify-between">
                 <span className="text-neutral-600">Valor pago:</span>
                 <span className="font-medium text-primary">
-                  {formatCurrency(parseFloat(displayData.totalCost || displayData.order?.totalCost))}
+                  {displayData.totalCost || displayData.order?.totalCost ? 
+                    formatCurrency(parseFloat(displayData.totalCost || displayData.order?.totalCost)) : 
+                    'R$ 0,00'
+                  }
                 </span>
               </div>
             </div>
