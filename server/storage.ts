@@ -239,14 +239,20 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     // Add initial status history record
-    await this.addStatusHistory(
-      order.id, 
-      null, // No previous status for new orders
-      order.status, 
-      'system', 
-      'Sistema', 
-      'Pedido criado'
-    );
+    try {
+      console.log(`📋 Adding status history for order ${order.id} with status: ${order.status}`);
+      await this.addStatusHistory(
+        order.id, 
+        null, // No previous status for new orders
+        order.status, 
+        'system', 
+        'Sistema', 
+        'Pedido criado'
+      );
+      console.log(`✅ Status history added successfully for order ${order.id}`);
+    } catch (error) {
+      console.error(`❌ Error adding status history for order ${order.id}:`, error);
+    }
     
     return order;
   }

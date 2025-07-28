@@ -401,22 +401,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/orders/:orderNumber", async (req, res) => {
     try {
       const { orderNumber } = req.params;
-      const order = await storage.getOrderByNumber(orderNumber);
+      const order = await storage.getOrderByOrderNumber(orderNumber);
       
       if (!order) {
         return res.status(404).json({ message: "Pedido não encontrado" });
       }
       
-      // Get related data
-      const event = await storage.getEvent(order.eventId);
-      const address = await storage.getAddress(order.addressId);
-      
-      res.json({
-        ...order,
-        event,
-        address
-      });
+      res.json(order);
     } catch (error) {
+      console.error('Error fetching order:', error);
       res.status(500).json({ message: "Erro ao buscar pedido" });
     }
   });
