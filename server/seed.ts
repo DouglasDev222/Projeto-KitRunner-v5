@@ -4,31 +4,59 @@ import { events, customers, addresses, orders, kits } from "@shared/schema";
 // Function to generate valid CPF using Brazilian algorithm
 function generateValidCPF(): string {
   // Generate first 9 digits
-  const firstNine = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
-  
+  const firstNine = Array.from({ length: 9 }, () =>
+    Math.floor(Math.random() * 10),
+  );
+
   // Calculate first check digit
-  let sum = firstNine.reduce((acc, digit, index) => acc + digit * (10 - index), 0);
+  let sum = firstNine.reduce(
+    (acc, digit, index) => acc + digit * (10 - index),
+    0,
+  );
   let checkDigit1 = ((sum * 10) % 11) % 10;
-  
+
   // Calculate second check digit
   const firstTen = [...firstNine, checkDigit1];
   sum = firstTen.reduce((acc, digit, index) => acc + digit * (11 - index), 0);
   let checkDigit2 = ((sum * 10) % 11) % 10;
-  
-  return [...firstNine, checkDigit1, checkDigit2].join('');
+
+  return [...firstNine, checkDigit1, checkDigit2].join("");
 }
 
 function isValidCPF(cpf: string): boolean {
-  cpf = cpf.replace(/[^\d]+/g, '');
+  cpf = cpf.replace(/[^\d]+/g, "");
   if (cpf.length !== 11 || !!cpf.match(/(\d)\1{10}/)) return false;
-  const cpfArray = cpf.split('').map(el => +el);
-  const rest = (count: number) => (cpfArray.slice(0, count).reduce((sum, el, i) => sum + el * (count + 1 - i), 0) * 10) % 11 % 10;
-  return rest(9) === cpfArray[9] && rest(10) === cpfArray[10];
+
+  let numbers = cpf.split("").map(Number);
+
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += numbers[i] * (10 - i);
+  }
+  let remainder = (sum * 10) % 11;
+  let digit10 = remainder === 10 || remainder === 11 ? 0 : remainder;
+
+  if (digit10 !== numbers[9]) {
+    return false;
+  }
+
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += numbers[i] * (11 - i);
+  }
+  remainder = (sum * 10) % 11;
+  let digit11 = remainder === 10 || remainder === 11 ? 0 : remainder;
+
+  if (digit11 !== numbers[10]) {
+    return false;
+  }
+
+  return true;
 }
 
 async function seedDatabase() {
   console.log("Seeding database...");
-  
+
   try {
     // Generate valid CPFs
     const cpf1 = generateValidCPF();
@@ -37,207 +65,216 @@ async function seedDatabase() {
     const cpf4 = "11393441450"; // Valid CPF
     const cpf5 = generateValidCPF();
     const cpf6 = generateValidCPF();
-    
+
     // Clear existing data first
     await db.delete(kits);
     await db.delete(orders);
     await db.delete(addresses);
     await db.delete(customers);
     await db.delete(events);
-    
+
     // Seed events
-    const eventsData = await db.insert(events).values([
-      {
-        name: "Maratona de João Pessoa 2025",
-        date: "2025-02-15",
-        location: "Orla de Tambaú",
-        city: "João Pessoa",
-        state: "PB",
-        pickupZipCode: "58039000",
-        fixedPrice: null,
-        extraKitPrice: "12.00",
-        donationRequired: true,
-        donationAmount: "5.00",
-        donationDescription: "1 kg de alimento não perecível",
-        available: true,
-      },
-      {
-        name: "Corrida Solidária do Cabo Branco",
-        date: "2025-03-08",
-        location: "Farol do Cabo Branco",
-        city: "João Pessoa",
-        state: "PB",
-        pickupZipCode: "58045000",
-        fixedPrice: "35.00",
-        extraKitPrice: "15.00",
-        donationRequired: false,
-        donationAmount: null,
-        donationDescription: null,
-        available: true,
-      },
-      {
-        name: "Meia Maratona de Campina Grande",
-        date: "2025-04-12",
-        location: "Parque da Criança",
-        city: "Campina Grande",
-        state: "PB",
-        pickupZipCode: "58400000",
-        fixedPrice: null,
-        extraKitPrice: "10.00",
-        donationRequired: false,
-        donationAmount: null,
-        donationDescription: null,
-        available: true,
-      },
-      {
-        name: "Corrida de Rua de Patos",
-        date: "2025-05-20",
-        location: "Centro da Cidade",
-        city: "Patos",
-        state: "PB",
-        pickupZipCode: "58700000",
-        fixedPrice: "25.00",
-        extraKitPrice: "8.00",
-        donationRequired: true,
-        donationAmount: "3.00",
-        donationDescription: "Doação para Casa de Apoio",
-        available: false,
-      },
-    ]).returning();
+    const eventsData = await db
+      .insert(events)
+      .values([
+        {
+          name: "Maratona de João Pessoa 2025",
+          date: "2025-02-15",
+          location: "Orla de Tambaú",
+          city: "João Pessoa",
+          state: "PB",
+          pickupZipCode: "58039000",
+          fixedPrice: null,
+          extraKitPrice: "12.00",
+          donationRequired: true,
+          donationAmount: "5.00",
+          donationDescription: "1 kg de alimento não perecível",
+          available: true,
+        },
+        {
+          name: "Corrida Solidária do Cabo Branco",
+          date: "2025-03-08",
+          location: "Farol do Cabo Branco",
+          city: "João Pessoa",
+          state: "PB",
+          pickupZipCode: "58045000",
+          fixedPrice: "35.00",
+          extraKitPrice: "15.00",
+          donationRequired: false,
+          donationAmount: null,
+          donationDescription: null,
+          available: true,
+        },
+        {
+          name: "Meia Maratona de Campina Grande",
+          date: "2025-04-12",
+          location: "Parque da Criança",
+          city: "Campina Grande",
+          state: "PB",
+          pickupZipCode: "58400000",
+          fixedPrice: null,
+          extraKitPrice: "10.00",
+          donationRequired: false,
+          donationAmount: null,
+          donationDescription: null,
+          available: true,
+        },
+        {
+          name: "Corrida de Rua de Patos",
+          date: "2025-05-20",
+          location: "Centro da Cidade",
+          city: "Patos",
+          state: "PB",
+          pickupZipCode: "58700000",
+          fixedPrice: "25.00",
+          extraKitPrice: "8.00",
+          donationRequired: true,
+          donationAmount: "3.00",
+          donationDescription: "Doação para Casa de Apoio",
+          available: false,
+        },
+      ])
+      .returning();
 
     // Seed customers with valid CPFs
-    const customersData = await db.insert(customers).values([
-      {
-        name: "João Silva Santos",
-        cpf: cpf1,
-        birthDate: "1990-05-15",
-        email: "joao.silva@email.com",
-        phone: "(83) 99999-1234",
-      },
-      {
-        name: "Maria Oliveira Costa",
-        cpf: cpf2,
-        birthDate: "1985-03-20",
-        email: "maria.oliveira@email.com",
-        phone: "(83) 98888-5678",
-      },
-      {
-        name: "Pedro Lima Ferreira",
-        cpf: cpf3,
-        birthDate: "1992-11-08",
-        email: "pedro.lima@email.com",
-        phone: "(83) 97777-9012",
-      },
-      {
-        name: "Ana Paula",
-        cpf: cpf4,
-        birthDate: "2002-12-05",
-        email: "ana.paula@email.com",
-        phone: "(83) 99999-1234",
-      },
-      {
-        name: "José Santos",
-        cpf: cpf5,
-        birthDate: "1970-01-01",
-        email: "jose.santos@email.com",
-        phone: "(83) 98888-5678",
-      },
-       {
-        name: "Carla Pereita",
-        cpf: cpf6,
-        birthDate: "1982-07-18",
-        email: "carla.pereira@email.com",
-        phone: "(83) 97777-9012",
-      },
-    ]).returning();
+    const customersData = await db
+      .insert(customers)
+      .values([
+        {
+          name: "João Silva Santos",
+          cpf: cpf1,
+          birthDate: "1990-05-15",
+          email: "joao.silva@email.com",
+          phone: "(83) 99999-1234",
+        },
+        {
+          name: "Maria Oliveira Costa",
+          cpf: cpf2,
+          birthDate: "1985-03-20",
+          email: "maria.oliveira@email.com",
+          phone: "(83) 98888-5678",
+        },
+        {
+          name: "Pedro Lima Ferreira",
+          cpf: cpf3,
+          birthDate: "1992-11-08",
+          email: "pedro.lima@email.com",
+          phone: "(83) 97777-9012",
+        },
+        {
+          name: "Ana Paula",
+          cpf: cpf4,
+          birthDate: "2002-12-05",
+          email: "ana.paula@email.com",
+          phone: "(83) 99999-1234",
+        },
+        {
+          name: "José Santos",
+          cpf: cpf5,
+          birthDate: "1970-01-01",
+          email: "jose.santos@email.com",
+          phone: "(83) 98888-5678",
+        },
+        {
+          name: "Carla Pereita",
+          cpf: cpf6,
+          birthDate: "1982-07-18",
+          email: "carla.pereira@email.com",
+          phone: "(83) 97777-9012",
+        },
+      ])
+      .returning();
 
     // Seed addresses
-    const addressesData = await db.insert(addresses).values([
-      {
-        customerId: customersData[0].id,
-        label: "Casa",
-        street: "Rua das Flores",
-        number: "123",
-        complement: "Apto 45",
-        neighborhood: "Centro",
-        city: "João Pessoa",
-        state: "PB",
-        zipCode: "58013420",
-        isDefault: true,
-      },
-      {
-        customerId: customersData[0].id,
-        label: "Trabalho",
-        street: "Av. Epitácio Pessoa",
-        number: "500",
-        complement: null,
-        neighborhood: "Tambaú",
-        city: "João Pessoa",
-        state: "PB",
-        zipCode: "58039000",
-        isDefault: false,
-      },
-      {
-        customerId: customersData[1].id,
-        label: "Casa",
-        street: "Rua do Sol",
-        number: "789",
-        complement: "Casa 2",
-        neighborhood: "Manaíra",
-        city: "João Pessoa",
-        state: "PB",
-        zipCode: "58038000",
-        isDefault: true,
-      },
-      {
-        customerId: customersData[2].id,
-        label: "Casa",
-        street: "Av. João Machado",
-        number: "456",
-        complement: null,
-        neighborhood: "Centro",
-        city: "Campina Grande",
-        state: "PB",
-        zipCode: "58400100",
-        isDefault: true,
-      },
-      {
-        customerId: customersData[3].id,
-        label: "Casa",
-        street: "Rua da Praia",
-        number: "789",
-        complement: null,
-        neighborhood: "Cabo Branco",
-        city: "João Pessoa",
-        state: "PB",
-        zipCode: "58045230",
-        isDefault: true,
-      },
-      {
-        customerId: customersData[4].id,
-        label: "Trabalho",
-        street: "Av. Getúlio Vargas",
-        number: "159",
-        complement: "Sala 303",
-        neighborhood: "Centro",
-        city: "Campina Grande",
-        state: "PB",
-        zipCode: "58400700",
-        isDefault: false,
-      },
-       {
-        customerId: customersData[5].id,
-        label: "Casa",
-        street: "Rua da Esperança",
-        number: "1010",
-        complement: null,
-        neighborhood: "Alto Branco",
-        city: "Campina Grande",
-        state: "PB",
-        zipCode: "58406500",
-        isDefault: true,
-      },
-    ]).returning();
+    const addressesData = await db
+      .insert(addresses)
+      .values([
+        {
+          customerId: customersData[0].id,
+          label: "Casa",
+          street: "Rua das Flores",
+          number: "123",
+          complement: "Apto 45",
+          neighborhood: "Centro",
+          city: "João Pessoa",
+          state: "PB",
+          zipCode: "58013420",
+          isDefault: true,
+        },
+        {
+          customerId: customersData[0].id,
+          label: "Trabalho",
+          street: "Av. Epitácio Pessoa",
+          number: "500",
+          complement: null,
+          neighborhood: "Tambaú",
+          city: "João Pessoa",
+          state: "PB",
+          zipCode: "58039000",
+          isDefault: false,
+        },
+        {
+          customerId: customersData[1].id,
+          label: "Casa",
+          street: "Rua do Sol",
+          number: "789",
+          complement: "Casa 2",
+          neighborhood: "Manaíra",
+          city: "João Pessoa",
+          state: "PB",
+          zipCode: "58038000",
+          isDefault: true,
+        },
+        {
+          customerId: customersData[2].id,
+          label: "Casa",
+          street: "Av. João Machado",
+          number: "456",
+          complement: null,
+          neighborhood: "Centro",
+          city: "Campina Grande",
+          state: "PB",
+          zipCode: "58400100",
+          isDefault: true,
+        },
+        {
+          customerId: customersData[3].id,
+          label: "Casa",
+          street: "Rua da Praia",
+          number: "789",
+          complement: null,
+          neighborhood: "Cabo Branco",
+          city: "João Pessoa",
+          state: "PB",
+          zipCode: "58045230",
+          isDefault: true,
+        },
+        {
+          customerId: customersData[4].id,
+          label: "Trabalho",
+          street: "Av. Getúlio Vargas",
+          number: "159",
+          complement: "Sala 303",
+          neighborhood: "Centro",
+          city: "Campina Grande",
+          state: "PB",
+          zipCode: "58400700",
+          isDefault: false,
+        },
+        {
+          customerId: customersData[5].id,
+          label: "Casa",
+          street: "Rua da Esperança",
+          number: "1010",
+          complement: null,
+          neighborhood: "Alto Branco",
+          city: "Campina Grande",
+          state: "PB",
+          zipCode: "58406500",
+          isDefault: true,
+        },
+      ])
+      .returning();
 
     // Seed orders with different statuses
     const orderData = [
@@ -325,7 +362,7 @@ async function seedDatabase() {
         status: "confirmado",
         donationAmount: "0.00",
       },
-       {
+      {
         eventId: eventsData[2].id,
         customerId: customersData[5].id,
         addressId: addressesData[6].id,
@@ -344,11 +381,14 @@ async function seedDatabase() {
     for (let i = 0; i < orderData.length; i++) {
       const order = orderData[i];
       const orderNumber = `KR${new Date().getFullYear()}${String(Date.now() + i + Math.random() * 1000).slice(-6)}`;
-      
-      const [createdOrder] = await db.insert(orders).values({
-        ...order,
-        orderNumber,
-      }).returning();
+
+      const [createdOrder] = await db
+        .insert(orders)
+        .values({
+          ...order,
+          orderNumber,
+        })
+        .returning();
 
       if (createdOrder) {
         // Create kits for each order
@@ -362,7 +402,7 @@ async function seedDatabase() {
           { name: "José Santos", cpf: cpf5, size: "M" },
           { name: "Carla Pereira", cpf: cpf6, size: "G" },
         ];
-        
+
         for (let j = 0; j < order.kitQuantity; j++) {
           const kit = kitData[j % kitData.length];
           await db.insert(kits).values({
@@ -382,3 +422,4 @@ async function seedDatabase() {
 }
 
 // Run seed function
+seedDatabase();
