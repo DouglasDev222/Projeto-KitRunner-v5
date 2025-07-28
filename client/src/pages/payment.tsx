@@ -97,14 +97,19 @@ export default function Payment() {
   const handlePaymentSuccess = (paymentResult: any) => {
     setPaymentCompleted(true);
     setPaymentError(null);
-    // Store payment result data but don't redirect here
-    // The createOrderMutation.onSuccess already handles the redirect
+    setOrderNumber(paymentResult.orderNumber);
+    
+    // Store payment result data
     const confirmationData = {
-      order: { orderNumber: paymentResult.orderNumber || orderNumber },
+      order: { orderNumber: paymentResult.orderNumber },
       payment: paymentResult
     };
     sessionStorage.setItem("orderConfirmation", JSON.stringify(confirmationData));
-    // Note: No redirect here - createOrderMutation.onSuccess handles it
+    
+    // Redirect to confirmation page after payment success
+    setTimeout(() => {
+      setLocation(`/order/${paymentResult.orderNumber}/confirmation`);
+    }, 2000);
   };
 
   // Payment error handler

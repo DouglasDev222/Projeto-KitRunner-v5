@@ -237,6 +237,17 @@ export class DatabaseStorage implements IStorage {
         orderNumber,
       })
       .returning();
+    
+    // Add initial status history record
+    await this.addStatusHistory(
+      order.id, 
+      null, // No previous status for new orders
+      order.status, 
+      'system', 
+      'Sistema', 
+      'Pedido criado'
+    );
+    
     return order;
   }
 
