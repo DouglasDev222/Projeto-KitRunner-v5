@@ -18,14 +18,25 @@ function generateValidCPF(): string {
   return [...firstNine, checkDigit1, checkDigit2].join('');
 }
 
+function isValidCPF(cpf: string): boolean {
+  cpf = cpf.replace(/[^\d]+/g, '');
+  if (cpf.length !== 11 || !!cpf.match(/(\d)\1{10}/)) return false;
+  const cpfArray = cpf.split('').map(el => +el);
+  const rest = (count: number) => (cpfArray.slice(0, count).reduce((sum, el, i) => sum + el * (count + 1 - i), 0) * 10) % 11 % 10;
+  return rest(9) === cpfArray[9] && rest(10) === cpfArray[10];
+}
+
 async function seedDatabase() {
   console.log("Seeding database...");
   
   try {
     // Generate valid CPFs
-    const cpf1 = "11144477735"; // Valid CPF
-    const cpf2 = "22233344456"; // Valid CPF  
-    const cpf3 = "33322211109"; // Valid CPF
+    const cpf1 = generateValidCPF();
+    const cpf2 = generateValidCPF();
+    const cpf3 = generateValidCPF();
+    const cpf4 = "11393441450"; // Valid CPF
+    const cpf5 = generateValidCPF();
+    const cpf6 = generateValidCPF();
     
     // Clear existing data first
     await db.delete(kits);
@@ -117,6 +128,27 @@ async function seedDatabase() {
         email: "pedro.lima@email.com",
         phone: "(83) 97777-9012",
       },
+      {
+        name: "Ana Paula",
+        cpf: cpf4,
+        birthDate: "2002-12-05",
+        email: "ana.paula@email.com",
+        phone: "(83) 99999-1234",
+      },
+      {
+        name: "José Santos",
+        cpf: cpf5,
+        birthDate: "1970-01-01",
+        email: "jose.santos@email.com",
+        phone: "(83) 98888-5678",
+      },
+       {
+        name: "Carla Pereita",
+        cpf: cpf6,
+        birthDate: "1982-07-18",
+        email: "carla.pereira@email.com",
+        phone: "(83) 97777-9012",
+      },
     ]).returning();
 
     // Seed addresses
@@ -167,6 +199,42 @@ async function seedDatabase() {
         city: "Campina Grande",
         state: "PB",
         zipCode: "58400100",
+        isDefault: true,
+      },
+      {
+        customerId: customersData[3].id,
+        label: "Casa",
+        street: "Rua da Praia",
+        number: "789",
+        complement: null,
+        neighborhood: "Cabo Branco",
+        city: "João Pessoa",
+        state: "PB",
+        zipCode: "58045230",
+        isDefault: true,
+      },
+      {
+        customerId: customersData[4].id,
+        label: "Trabalho",
+        street: "Av. Getúlio Vargas",
+        number: "159",
+        complement: "Sala 303",
+        neighborhood: "Centro",
+        city: "Campina Grande",
+        state: "PB",
+        zipCode: "58400700",
+        isDefault: false,
+      },
+       {
+        customerId: customersData[5].id,
+        label: "Casa",
+        street: "Rua da Esperança",
+        number: "1010",
+        complement: null,
+        neighborhood: "Alto Branco",
+        city: "Campina Grande",
+        state: "PB",
+        zipCode: "58406500",
         isDefault: true,
       },
     ]).returning();
@@ -229,6 +297,48 @@ async function seedDatabase() {
         status: "entregue",
         donationAmount: "0.00",
       },
+      {
+        eventId: eventsData[3].id,
+        customerId: customersData[3].id,
+        addressId: addressesData[4].id,
+        kitQuantity: 2,
+        deliveryCost: "25.00",
+        extraKitsCost: "16.00",
+        donationCost: "6.00",
+        discountAmount: "0.00",
+        totalCost: "47.00",
+        paymentMethod: "pix",
+        status: "pendente",
+        donationAmount: "6.00",
+      },
+      {
+        eventId: eventsData[1].id,
+        customerId: customersData[4].id,
+        addressId: addressesData[5].id,
+        kitQuantity: 1,
+        deliveryCost: "15.00",
+        extraKitsCost: "0.00",
+        donationCost: "0.00",
+        discountAmount: "2.00",
+        totalCost: "13.00",
+        paymentMethod: "credit",
+        status: "confirmado",
+        donationAmount: "0.00",
+      },
+       {
+        eventId: eventsData[2].id,
+        customerId: customersData[5].id,
+        addressId: addressesData[6].id,
+        kitQuantity: 3,
+        deliveryCost: "33.00",
+        extraKitsCost: "24.00",
+        donationCost: "0.00",
+        discountAmount: "10.00",
+        totalCost: "47.00",
+        paymentMethod: "debit",
+        status: "em_separacao",
+        donationAmount: "0.00",
+      },
     ];
 
     for (let i = 0; i < orderData.length; i++) {
@@ -249,6 +359,8 @@ async function seedDatabase() {
           { name: "Maria Oliveira Costa", cpf: cpf2, size: "M" },
           { name: "Pedro Lima Ferreira", cpf: cpf3, size: "G" },
           { name: "Ana Lima Ferreira", cpf: cpf3, size: "P" },
+          { name: "José Santos", cpf: cpf5, size: "M" },
+          { name: "Carla Pereira", cpf: cpf6, size: "G" },
         ];
         
         for (let j = 0; j < order.kitQuantity; j++) {
@@ -270,4 +382,3 @@ async function seedDatabase() {
 }
 
 // Run seed function
-seedDatabase().catch(console.error);
