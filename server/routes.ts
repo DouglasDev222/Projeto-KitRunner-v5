@@ -7,8 +7,19 @@ import { customerIdentificationSchema, customerRegistrationSchema, orderCreation
 import { z } from "zod";
 import { calculateDeliveryCost } from "./distance-calculator";
 import { MercadoPagoService } from "./mercadopago-service";
+import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Serve test HTML files
+  app.get("/test-rejected-payment.html", (req, res) => {
+    res.sendFile(path.resolve(process.cwd(), "test-rejected-payment.html"));
+  });
+  
+  app.get("/test-debug-card.html", (req, res) => {
+    res.sendFile(path.resolve(process.cwd(), "test-debug-card.html"));
+  });
+
   // Get all events
   app.get("/api/events", async (req, res) => {
     try {
@@ -1026,47 +1037,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Process card payment (credit/debit)
+  // Process card payment with order creation (credit/debit)
   app.post("/api/mercadopago/process-card-payment", async (req, res) => {
     try {
-      const { token, paymentMethodId, orderId, amount, email, customerName, cpf } = req.body;
+      const { token, paymentMethodId, amount, email, customerName, cpf, orderData } = req.body;
       
-      console.log('Card payment request data:', { token, paymentMethodId, orderId, amount, email, customerName, cpf });
+      console.log('Card payment request data:', { token, paymentMethodId, amount, email, customerName, cpf, hasOrderData: !!orderData });
       
-      if (!token || !paymentMethodId || !orderId || !amount) {
+      if (!token || !paymentMethodId || !amount || !orderData) {
         return res.status(400).json({ 
           message: "Dados obrigatórios não fornecidos",
-          missing: { token: !token, paymentMethodId: !paymentMethodId, orderId: !orderId, amount: !amount }
+          missing: { token: !token, paymentMethodId: !paymentMethodId, amount: !amount, orderData: !orderData }
         });
-      }
-
-      // Check if orderId is numeric ID or orderNumber string
-      let order;
-      const orderIdNum = parseInt(orderId);
-      
-      if (isNaN(orderIdNum)) {
-        // If not a number, assume it's an orderNumber (like "KR2025575306")
-        console.log(`Looking up order by orderNumber: ${orderId}`);
-        order = await storage.getOrderByOrderNumber(orderId);
-      } else {
-        // If it's a number, use it as ID
-        console.log(`Looking up order by ID: ${orderIdNum}`);
-        order = await storage.getOrderWithFullDetails(orderIdNum);
-      }
-      if (!order) {
-        return res.status(404).json({ message: "Pedido não encontrado" });
       }
 
       const [firstName, ...lastNameParts] = customerName.split(' ');
       const lastName = lastNameParts.join(' ') || '';
+
+      // Generate a temporary order reference for the payment
+      const tempOrderReference = `TEMP-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
       const paymentData = {
         token,
         paymentMethodId,
         email,
         amount: parseFloat(amount),
-        description: `Pedido KitRunner #${order.orderNumber}`,
-        orderId: order.orderNumber, // Use orderNumber instead of numeric ID
+        description: `Pedido KitRunner - Processamento`,
+        orderId: tempOrderReference,
         payer: {
           name: firstName,
           surname: lastName,
@@ -1078,41 +1075,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       };
 
+      console.log(`🧪 Processing payment FIRST - temp reference: ${tempOrderReference}`);
       const result = await MercadoPagoService.processCardPayment(paymentData);
       
-      // Update order status based on payment result - handle both success and failure
-      try {
-        if (result.success && result.status === 'approved') {
-          console.log(`✅ Payment approved for order ${orderId} - updating to confirmado`);
-          await storage.updateOrderStatus(order.id, 'confirmado', 'mercadopago', 'Mercado Pago', 'Pagamento aprovado automaticamente');
-          console.log(`✅ Order ${orderId} status successfully updated to confirmado`);
-        } else if (result.success && result.status === 'pending') {
-          console.log(`⏳ Payment pending for order ${orderId} - keeping aguardando_pagamento`);  
-        } else if (!result.success && (result.status === 'rejected' || result.status === 'cancelled')) {
-          console.log(`❌ Payment rejected/cancelled for order ${orderId} - updating to cancelado`);
-          await storage.updateOrderStatus(order.id, 'cancelado', 'mercadopago', 'Mercado Pago', `Pagamento ${result.status}: ${result.message || 'Rejeitado pelo gateway'}`);
-          console.log(`❌ Order ${orderId} status successfully updated to cancelado`);
-        } else {
-          console.log(`❓ Unexpected payment result for order ${orderId} - success: ${result.success}, status: ${result.status}`);
+      console.log(`💳 Payment result: success=${result.success}, status=${result.status}`);
+
+      // ONLY create order if payment is approved or pending
+      if (result.success && (result.status === 'approved' || result.status === 'pending')) {
+        console.log(`✅ Payment ${result.status} - creating order now`);
+        
+        try {
+          // Parse and validate order data
+          const validatedOrderData = orderCreationSchema.parse(orderData);
+          
+          // Create the order now that payment is confirmed
+          const orderNumber = `KR${new Date().getFullYear()}${String(Date.now() + Math.random() * 1000).slice(-6)}`;
+          
+          const selectedEvent = await storage.getEvent(validatedOrderData.eventId);
+          if (!selectedEvent) {
+            return res.status(404).json({ message: "Evento não encontrado" });
+          }
+
+          let totalCost = 0;
+          let baseCost = 0;
+          let deliveryCost = 0;
+          let additionalCost = 0;
+          let donationAmount = 0;
+
+          // Get customer address for delivery calculation
+          const customerAddress = await storage.getAddress(validatedOrderData.addressId);
+          
+          if (selectedEvent.fixedPrice) {
+            baseCost = Number(selectedEvent.fixedPrice);
+            deliveryCost = 0;
+          } else {
+            const deliveryCalculation = calculateDeliveryCost(
+              selectedEvent.pickupZipCode || '58000000',
+              customerAddress?.zipCode || '58030000'
+            );
+            deliveryCost = deliveryCalculation.deliveryCost;
+          }
+
+          if (validatedOrderData.kitQuantity > 1 && selectedEvent.extraKitPrice) {
+            additionalCost = (validatedOrderData.kitQuantity - 1) * Number(selectedEvent.extraKitPrice);
+          }
+
+          if (selectedEvent.donationRequired && selectedEvent.donationAmount) {
+            donationAmount = Number(selectedEvent.donationAmount) * validatedOrderData.kitQuantity;
+          }
+
+          totalCost = baseCost + deliveryCost + additionalCost + donationAmount - (validatedOrderData.discountAmount || 0);
+
+          // Create the order with proper InsertOrder structure
+          const order = await storage.createOrder({
+            eventId: validatedOrderData.eventId,
+            customerId: validatedOrderData.customerId,
+            addressId: validatedOrderData.addressId,
+            kitQuantity: validatedOrderData.kitQuantity,
+            deliveryCost: deliveryCost.toString(),
+            extraKitsCost: additionalCost.toString(),
+            donationCost: donationAmount.toString(),
+            totalCost: totalCost.toString(),
+            status: result.status === 'approved' ? 'confirmado' : 'aguardando_pagamento',
+            paymentMethod: paymentMethodId === 'master' ? 'credit' : paymentMethodId,
+            paymentProcessorOrderId: result.id?.toString() || null,
+            donationAmount: donationAmount.toString(),
+            discountAmount: (validatedOrderData.discountAmount || 0).toString(),
+            idempotencyKey: validatedOrderData.idempotencyKey || null,
+          });
+
+          // Create kits
+          if (validatedOrderData.kits && validatedOrderData.kits.length > 0) {
+            for (const kit of validatedOrderData.kits) {
+              await storage.createKit({
+                orderId: order.id,
+                name: kit.name,
+                cpf: kit.cpf,
+                shirtSize: kit.shirtSize,
+              });
+            }
+          }
+
+          console.log(`✅ Order ${orderNumber} created successfully with status: ${order.status}`);
+
+          res.json({
+            success: true,
+            status: result.status,
+            paymentId: result.id,
+            orderNumber: order.orderNumber,
+            orderId: order.id,
+            message: result.status === 'approved' ? 'Pagamento aprovado e pedido criado!' : 'Pagamento em processamento - aguardando confirmação'
+          });
+
+        } catch (orderError) {
+          console.error('Error creating order after payment approval:', orderError);
+          res.status(500).json({ 
+            success: false,
+            message: "Pagamento aprovado mas erro ao criar pedido. Entre em contato com o suporte.",
+            paymentId: result.id 
+          });
         }
-      } catch (error) {
-        console.error('Error updating order status:', error);
-      }
-      
-      if (result.success) {
-        res.json({
-          success: true,
-          status: result.status,
-          paymentId: result.id,
-          message: result.status === 'approved' ? 'Pagamento aprovado!' : 'Pagamento em processamento'
-        });
+        
       } else {
-        // For rejected payments, also update order status and return appropriate message
+        // Payment rejected or failed - do NOT create order
+        console.log(`❌ Payment ${result.status} - NOT creating order`);
         res.status(400).json({
           success: false,
           status: result.status,
           paymentId: result.id,
-          message: result.message || 'Erro ao processar pagamento'
+          message: result.message || 'Pagamento rejeitado. Tente novamente com outro cartão.'
         });
       }
     } catch (error) {

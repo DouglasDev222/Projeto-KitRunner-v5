@@ -179,27 +179,18 @@ export function CardPayment({
       // Detect payment method from card number
       const paymentMethodId = detectCardBrand(formData.cardNumber);
 
-      // First create the order with idempotency key
-      const order = { ...orderData(), idempotencyKey };
-      const orderResult = await createOrder(order);
-      
-      if (!orderResult?.order?.id) {
-        setIsProcessing(false);
-        onError('Erro ao criar pedido');
-        return;
-      }
-      
-      // Process payment with token and order number
+      // Process payment FIRST with order data (do NOT create order yet)
       const paymentData = {
         token: response.id,
         paymentMethodId,
-        orderId: orderResult.order.orderNumber,
         amount,
         email: customerData.email,
         customerName: customerData.name,
-        cpf: customerData.cpf
+        cpf: customerData.cpf,
+        orderData: { ...orderData(), idempotencyKey } // Send order data for creation after payment approval
       };
 
+      console.log('🧪 Sending payment FIRST approach - order will be created only if payment is approved');
       processCardPaymentMutation.mutate(paymentData);
     } catch (error) {
       setIsProcessing(false);
