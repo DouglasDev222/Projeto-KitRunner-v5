@@ -98,7 +98,7 @@ export default function OrderConfirmation() {
               <li>• Você receberá um e-mail com os detalhes do pedido</li>
               <li>• Acompanhe o status pelo número do pedido</li>
               <li>• Seu kit será retirado no dia do evento</li>
-              <li>• Entrega em até 2 dias úteis após o evento</li>
+              <li>• Entrega em até o dia anterior do evento</li>
             </ul>
           </AlertDescription>
         </Alert>
