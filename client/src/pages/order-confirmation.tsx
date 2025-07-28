@@ -66,16 +66,18 @@ export default function OrderConfirmation() {
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-600">Evento:</span>
-                <span className="font-medium text-neutral-800">{orderData.event.name}</span>
+                <span className="font-medium text-neutral-800">{orderData.event?.name || 'Nome do evento'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-600">Data do evento:</span>
-                <span className="font-medium text-neutral-800">{formatDate(orderData.event.date)}</span>
+                <span className="font-medium text-neutral-800">{orderData.event?.date ? formatDate(orderData.event.date) : 'Data do evento'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-600">Previsão de entrega:</span>
                 <span className="font-medium text-neutral-800">
-                  Até {formatDate(orderData.deliveryEstimate.deliveryDate)}
+                  {orderData.deliveryEstimate?.deliveryDate ? 
+                    `Até ${formatDate(orderData.deliveryEstimate.deliveryDate)}` : 
+                    'Até 2 dias úteis após o evento'}
                 </span>
               </div>
               <div className="flex justify-between">

@@ -1035,13 +1035,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           if (result.status === 'approved') {
             console.log(`✅ Payment approved for order ${orderId} - updating to confirmado`);
+            await storage.updateOrderStatus(orderId, 'confirmado');
+            console.log(`✅ Order ${orderId} status successfully updated to confirmado`);
           } else if (result.status === 'pending') {
             console.log(`⏳ Payment pending for order ${orderId} - keeping aguardando_pagamento`);  
           } else {
             console.log(`❌ Payment failed for order ${orderId} - updating to cancelado`);
+            await storage.updateOrderStatus(orderId, 'cancelado');
           }
         } catch (error) {
-          console.log('Note: Order status update temporarily disabled for testing');
+          console.error('Error updating order status:', error);
         }
         
         res.json({
