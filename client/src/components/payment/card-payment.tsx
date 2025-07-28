@@ -16,7 +16,8 @@ declare global {
 
 interface CardPaymentProps {
   amount: number;
-  orderId: string;
+  orderData: () => any;
+  createOrder: (orderData: any) => void;
   customerData: {
     name: string;
     email: string;
@@ -30,7 +31,8 @@ interface CardPaymentProps {
 
 export function CardPayment({ 
   amount, 
-  orderId, 
+  orderData,
+  createOrder,
   customerData, 
   onSuccess, 
   onError, 
@@ -47,6 +49,9 @@ export function CardPayment({
     cardholderName: '',
     installments: '1'
   });
+  
+  // Generate unique idempotency key for this payment attempt
+  const [idempotencyKey] = useState(() => `card_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
   // Initialize MercadoPago
   useEffect(() => {
@@ -174,15 +179,19 @@ export function CardPayment({
       // Detect payment method from card number
       const paymentMethodId = detectCardBrand(formData.cardNumber);
 
+      // First create the order with idempotency key
+      const order = { ...orderData(), idempotencyKey };
+      createOrder(order);
+      
       // Process payment with token
       const paymentData = {
         token: response.id,
         paymentMethodId,
-        orderId,
         amount,
         email: customerData.email,
         customerName: customerData.name,
-        cpf: customerData.cpf
+        cpf: customerData.cpf,
+        orderNumber: order.orderNumber || `KR${Date.now()}`
       };
 
       processCardPaymentMutation.mutate(paymentData);

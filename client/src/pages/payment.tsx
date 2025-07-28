@@ -25,6 +25,13 @@ type OrderCreation = {
   kitQuantity: number;
   kits: { name: string; cpf: string; shirtSize: string }[];
   paymentMethod: "credit" | "debit" | "pix";
+  totalCost: number;
+  deliveryCost: number;
+  extraKitsCost: number;
+  donationCost: number;
+  discountAmount: number;
+  donationAmount: number;
+  idempotencyKey?: string;
   couponCode?: string;
 };
 
@@ -71,16 +78,19 @@ export default function Payment() {
     },
     onSuccess: (data) => {
       setOrderNumber(data.order.orderNumber);
-      // Don't redirect immediately for secure payment methods
-      if (paymentMethod === 'pix' || paymentMethod === 'credit' || paymentMethod === 'debit') {
-        // Order created successfully, now handle payment
-        return data;
-      } else {
-        // For other payment methods, go to confirmation
-        sessionStorage.setItem("orderConfirmation", JSON.stringify(data));
+      setPaymentCompleted(true);
+      setPaymentError(null);
+      // Store order confirmation data
+      sessionStorage.setItem("orderConfirmation", JSON.stringify(data));
+      // Redirect to confirmation page after a short delay
+      setTimeout(() => {
         setLocation(`/events/${id}/confirmation`);
-      }
+      }, 2000);
     },
+    onError: (error: any) => {
+      setPaymentError(error.message || "Erro ao criar pedido");
+      setIsProcessing(false);
+    }
   });
 
   // Payment success handler
@@ -129,22 +139,27 @@ export default function Payment() {
   
   const pricingBreakdown = formatPricingBreakdown(pricing, event, kitData.kitQuantity);
 
-  const handleFinishOrder = () => {
+  // Create order data function to be used by payment components
+  const createOrderData = (idempotencyKey: string): OrderCreation => {
     if (!selectedAddress) {
-      alert("Endereço não selecionado. Por favor, volte e selecione um endereço.");
-      return;
+      throw new Error("Endereço não selecionado");
     }
     
-    const orderData: OrderCreation = {
+    return {
       eventId: parseInt(id!),
       customerId: customer.id,
       addressId: selectedAddress.id,
       kitQuantity: kitData.kitQuantity,
       kits: kitData.kits,
       paymentMethod,
+      totalCost: pricing.totalCost,
+      deliveryCost: pricing.deliveryCost,
+      extraKitsCost: pricing.extraKitsCost,
+      donationCost: pricing.donationAmount,
+      discountAmount: pricing.discountAmount,
+      donationAmount: pricing.donationAmount,
+      idempotencyKey,
     };
-
-    createOrderMutation.mutate(orderData);
   };
 
   // Show payment completed state
@@ -264,50 +279,48 @@ export default function Payment() {
         </Card>
         
         {/* Payment Methods Selection */}
-        {!orderNumber && (
-          <Card className="mb-6">
-            <CardContent className="p-4">
-              <h3 className="font-semibold text-lg text-neutral-800 mb-4">Forma de Pagamento</h3>
-              
-              <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "credit" | "debit" | "pix")}>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-neutral-50">
-                    <RadioGroupItem value="credit" id="credit" />
-                    <Label htmlFor="credit" className="flex items-center gap-3 cursor-pointer w-full">
-                      <CreditCard className="h-5 w-5 text-blue-600" />
-                      <div>
-                        <div className="font-medium">Cartão de Crédito</div>
-                        <div className="text-sm text-neutral-600">Visa, Mastercard, Elo</div>
-                      </div>
-                    </Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-neutral-50">
-                    <RadioGroupItem value="debit" id="debit" />
-                    <Label htmlFor="debit" className="flex items-center gap-3 cursor-pointer w-full">
-                      <Landmark className="h-5 w-5 text-green-600" />
-                      <div>
-                        <div className="font-medium">Cartão de Débito</div>
-                        <div className="text-sm text-neutral-600">Débito à vista</div>
-                      </div>
-                    </Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-neutral-50">
-                    <RadioGroupItem value="pix" id="pix" />
-                    <Label htmlFor="pix" className="flex items-center gap-3 cursor-pointer w-full">
-                      <QrCode className="h-5 w-5 text-purple-600" />
-                      <div>
-                        <div className="font-medium">PIX</div>
-                        <div className="text-sm text-neutral-600">Pagamento instantâneo</div>
-                      </div>
-                    </Label>
-                  </div>
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <h3 className="font-semibold text-lg text-neutral-800 mb-4">Forma de Pagamento</h3>
+            
+            <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "credit" | "debit" | "pix")}>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-neutral-50">
+                  <RadioGroupItem value="credit" id="credit" />
+                  <Label htmlFor="credit" className="flex items-center gap-3 cursor-pointer w-full">
+                    <CreditCard className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <div className="font-medium">Cartão de Crédito</div>
+                      <div className="text-sm text-neutral-600">Visa, Mastercard, Elo</div>
+                    </div>
+                  </Label>
                 </div>
-              </RadioGroup>
-            </CardContent>
-          </Card>
-        )}
+                
+                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-neutral-50">
+                  <RadioGroupItem value="debit" id="debit" />
+                  <Label htmlFor="debit" className="flex items-center gap-3 cursor-pointer w-full">
+                    <Landmark className="h-5 w-5 text-green-600" />
+                    <div>
+                      <div className="font-medium">Cartão de Débito</div>
+                      <div className="text-sm text-neutral-600">Débito à vista</div>
+                    </div>
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-neutral-50">
+                  <RadioGroupItem value="pix" id="pix" />
+                  <Label htmlFor="pix" className="flex items-center gap-3 cursor-pointer w-full">
+                    <QrCode className="h-5 w-5 text-purple-600" />
+                    <div>
+                      <div className="font-medium">PIX</div>
+                      <div className="text-sm text-neutral-600">Pagamento instantâneo - Expira em 30 min</div>
+                    </div>
+                  </Label>
+                </div>
+              </div>
+            </RadioGroup>
+          </CardContent>
+        </Card>
 
         {/* Payment Error */}
         {paymentError && (
@@ -318,67 +331,56 @@ export default function Payment() {
           </Alert>
         )}
 
-        {/* Payment Processing Section */}
-        {orderNumber ? (
-          <Card className="mb-6">
-            <CardContent className="p-4">
-              <h3 className="font-semibold text-lg text-neutral-800 mb-4">
-                {paymentMethod === 'pix' ? 'Pagamento PIX' : 'Pagamento com Cartão'}
-              </h3>
-              
-              {(paymentMethod === 'credit' || paymentMethod === 'debit') && (
-                <CardPayment
-                  amount={pricing.totalCost}
-                  orderId={orderNumber}
-                  customerData={{
-                    name: customer.name,
-                    email: customer.email,
-                    cpf: customer.cpf
-                  }}
-                  onSuccess={handlePaymentSuccess}
-                  onError={handlePaymentError}
-                  isProcessing={isProcessing}
-                  setIsProcessing={setIsProcessing}
-                />
-              )}
-              
-              {paymentMethod === 'pix' && (
-                <PIXPayment
-                  amount={pricing.totalCost}
-                  orderId={orderNumber}
-                  customerData={{
-                    name: customer.name,
-                    email: customer.email,
-                    cpf: customer.cpf
-                  }}
-                  onSuccess={handlePaymentSuccess}
-                  onError={handlePaymentError}
-                  isProcessing={isProcessing}
-                  setIsProcessing={setIsProcessing}
-                />
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            {/* Security Notice */}
-            <Alert className="mb-6">
-              <Shield className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Pagamento Seguro:</strong> Seus dados são protegidos por criptografia SSL e processados pelo Mercado Pago.
-              </AlertDescription>
-            </Alert>
+        {/* Security Notice */}
+        <Alert className="mb-6">
+          <Shield className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Pagamento Seguro:</strong> Seus dados são protegidos por criptografia SSL e processados pelo Mercado Pago.
+          </AlertDescription>
+        </Alert>
 
-            <Button 
-              onClick={handleFinishOrder} 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-              disabled={createOrderMutation.isPending || isProcessing}
-            >
-              <Lock className="h-4 w-4 mr-2" />
-              {createOrderMutation.isPending ? "Criando Pedido..." : "Continuar para Pagamento"}
-            </Button>
-          </>
-        )}
+        {/* Payment Processing Section */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <h3 className="font-semibold text-lg text-neutral-800 mb-4">
+              {paymentMethod === 'pix' ? 'Pagamento PIX' : 'Pagamento com Cartão'}
+            </h3>
+            
+            {(paymentMethod === 'credit' || paymentMethod === 'debit') && (
+              <CardPayment
+                amount={pricing.totalCost}
+                orderData={() => createOrderData(`${Date.now()}-${Math.random()}`)}
+                createOrder={createOrderMutation.mutate}
+                customerData={{
+                  name: customer.name,
+                  email: customer.email,
+                  cpf: customer.cpf
+                }}
+                onSuccess={handlePaymentSuccess}
+                onError={handlePaymentError}
+                isProcessing={isProcessing}
+                setIsProcessing={setIsProcessing}
+              />
+            )}
+            
+            {paymentMethod === 'pix' && (
+              <PIXPayment
+                amount={pricing.totalCost}
+                orderData={() => createOrderData(`${Date.now()}-${Math.random()}`)}
+                createOrder={createOrderMutation.mutate}
+                customerData={{
+                  name: customer.name,
+                  email: customer.email,
+                  cpf: customer.cpf
+                }}
+                onSuccess={handlePaymentSuccess}
+                onError={handlePaymentError}
+                isProcessing={isProcessing}
+                setIsProcessing={setIsProcessing}
+              />
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

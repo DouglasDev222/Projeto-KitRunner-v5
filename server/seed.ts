@@ -62,7 +62,7 @@ async function seedDatabase() {
     const cpf1 = generateValidCPF();
     const cpf2 = generateValidCPF();
     const cpf3 = generateValidCPF();
-    const cpf4 = "11393441450"; // Valid CPF
+    const cpf4 = "11393441459"; // Valid CPF
     const cpf5 = generateValidCPF();
     const cpf6 = generateValidCPF();
 

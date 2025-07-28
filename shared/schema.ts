@@ -68,6 +68,7 @@ export const orders = pgTable("orders", {
   paymentMethod: text("payment_method").notNull(),
   status: text("status").notNull().default("confirmado"), // "confirmado", "aguardando_pagamento", "cancelado", "kits_sendo_retirados", "em_transito", "entregue"
   donationAmount: decimal("donation_amount", { precision: 10, scale: 2 }).notNull().default("0"), // Valor da doação
+  idempotencyKey: text("idempotency_key").unique(), // Chave para evitar duplicação
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -240,6 +241,13 @@ export const orderCreationSchema = z.object({
   kitQuantity: z.number().min(1).max(5),
   kits: z.array(kitInformationSchema),
   paymentMethod: z.enum(["credit", "debit", "pix"]),
+  totalCost: z.number(),
+  deliveryCost: z.number(),
+  extraKitsCost: z.number(),
+  donationCost: z.number(),
+  discountAmount: z.number(),
+  donationAmount: z.number(),
+  idempotencyKey: z.string().optional(),
   couponCode: z.string().optional(),
 });
 

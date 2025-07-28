@@ -8,7 +8,8 @@ import { apiRequest } from "@/lib/queryClient";
 
 interface PIXPaymentProps {
   amount: number;
-  orderId: string;
+  orderData: () => any;
+  createOrder: (orderData: any) => void;
   customerData: {
     name: string;
     email: string;
@@ -22,7 +23,8 @@ interface PIXPaymentProps {
 
 export function PIXPayment({ 
   amount, 
-  orderId, 
+  orderData,
+  createOrder,
   customerData, 
   onSuccess, 
   onError, 
@@ -33,6 +35,9 @@ export function PIXPayment({
   const [paymentId, setPaymentId] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(false);
+  
+  // Generate unique idempotency key for this payment attempt
+  const [idempotencyKey] = useState(() => `pix_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
   const createPIXPaymentMutation = useMutation({
     mutationFn: async (paymentData: any) => {
@@ -101,15 +106,25 @@ export function PIXPayment({
   const handleCreatePIXPayment = () => {
     setIsProcessing(true);
     
-    const paymentData = {
-      orderId,
-      amount,
-      email: customerData.email,
-      customerName: customerData.name,
-      cpf: customerData.cpf
-    };
+    try {
+      // First create the order with idempotency key
+      const order = { ...orderData(), idempotencyKey };
+      createOrder(order);
+      
+      // Then create PIX payment with order info
+      const paymentData = {
+        amount,
+        email: customerData.email,
+        customerName: customerData.name,
+        cpf: customerData.cpf,
+        orderNumber: order.orderNumber || `KR${Date.now()}`
+      };
 
-    createPIXPaymentMutation.mutate(paymentData);
+      createPIXPaymentMutation.mutate(paymentData);
+    } catch (error) {
+      setIsProcessing(false);
+      onError(error instanceof Error ? error.message : "Erro ao processar pedido");
+    }
   };
 
   const copyPixCode = async () => {

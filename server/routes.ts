@@ -228,6 +228,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/orders", async (req, res) => {
     try {
       const orderData = orderCreationSchema.parse(req.body);
+      
+      // Check for existing order with same idempotency key
+      if (orderData.idempotencyKey) {
+        const existingOrder = await storage.getOrderByIdempotencyKey(orderData.idempotencyKey);
+        if (existingOrder) {
+          // Return existing order instead of creating a new one
+          const kits = await storage.getKitsByOrderId(existingOrder.id);
+          const event = await storage.getEvent(existingOrder.eventId);
+          return res.json({
+            order: existingOrder,
+            kits,
+            event,
+            deliveryEstimate: {
+              eventDate: event?.date,
+              deliveryDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+            }
+          });
+        }
+      }
+      
       const selectedEvent = await storage.getEvent(orderData.eventId);
       if (!selectedEvent) {
         return res.status(404).json({ message: "Evento não encontrado" });
@@ -266,20 +286,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       totalCost = baseCost + deliveryCost + additionalCost + donationAmount;
       
+      // Use provided costs or calculate them
+      const finalDeliveryCost = orderData.deliveryCost || deliveryCost;
+      const finalExtraKitsCost = orderData.extraKitsCost || additionalCost;
+      const finalDonationAmount = orderData.donationAmount || donationAmount;
+      const finalTotalCost = orderData.totalCost || totalCost;
+
       // Create order with proper pricing breakdown
       const order = await storage.createOrder({
         eventId: orderData.eventId,
         customerId: orderData.customerId,
         addressId: orderData.addressId,
         kitQuantity: orderData.kitQuantity,
-        deliveryCost: deliveryCost.toString(),
-        extraKitsCost: additionalCost.toString(),
-        donationCost: donationAmount.toString(),
-        discountAmount: "0",
-        totalCost: totalCost.toString(),
+        deliveryCost: finalDeliveryCost.toString(),
+        extraKitsCost: finalExtraKitsCost.toString(),
+        donationCost: finalDonationAmount.toString(),
+        discountAmount: orderData.discountAmount.toString(),
+        totalCost: finalTotalCost.toString(),
         paymentMethod: orderData.paymentMethod,
         status: "aguardando_pagamento", // Order starts awaiting payment
-        donationAmount: donationAmount.toString(),
+        donationAmount: finalDonationAmount.toString(),
+        idempotencyKey: orderData.idempotencyKey,
       });
       
       // Create kits

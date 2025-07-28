@@ -42,6 +42,7 @@ export interface IStorage {
   // Orders
   createOrder(order: InsertOrder): Promise<Order>;
   getOrderByNumber(orderNumber: string): Promise<Order | undefined>;
+  getOrderByIdempotencyKey(idempotencyKey: string): Promise<Order | undefined>;
   getOrdersByCustomerId(customerId: number): Promise<Order[]>;
 
   // Kits
@@ -241,6 +242,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(orders)
       .where(eq(orders.orderNumber, orderNumber));
+    return order || undefined;
+  }
+
+  async getOrderByIdempotencyKey(idempotencyKey: string): Promise<Order | undefined> {
+    const [order] = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.idempotencyKey, idempotencyKey));
     return order || undefined;
   }
 
@@ -653,8 +662,8 @@ export class DatabaseStorage implements IStorage {
     const baseQuery = db.select().from(customers);
     const baseCountQuery = db.select({ count: count() }).from(customers);
     
-    let query = baseQuery;
-    let countQuery = baseCountQuery;
+    let query: any = baseQuery;
+    let countQuery: any = baseCountQuery;
     
     if (search && search.trim()) {
       const searchCondition = or(
@@ -845,6 +854,10 @@ class MockStorage implements IStorage {
 
   async getOrderByNumber(orderNumber: string): Promise<Order | undefined> {
     return this.orders.find(o => o.orderNumber === orderNumber);
+  }
+
+  async getOrderByIdempotencyKey(idempotencyKey: string): Promise<Order | undefined> {
+    return this.orders.find(o => (o as any).idempotencyKey === idempotencyKey);
   }
 
   async getOrdersByCustomerId(customerId: number): Promise<Order[]> {
