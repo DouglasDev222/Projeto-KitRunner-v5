@@ -142,33 +142,26 @@ export function OrderStatusHistory({ orderId, orderNumber, showTitle = true }: O
                 </div>
                 
                 {/* Content */}
-                <div className="flex-1 min-w-0 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      {entry.previousStatus && (
-                        <>
-                          {getStatusBadge(entry.previousStatus)}
-                          <span className="text-gray-400">→</span>
-                        </>
-                      )}
-                      {getStatusBadge(entry.newStatus)}
-                    </div>
-                    
-                    <span className="text-xs text-gray-500">
-                      {format(new Date(entry.createdAt), 'dd/MM/yyyy HH:mm')}
-                    </span>
+                <div className="flex-1 min-w-0 space-y-3">
+                  <div className="flex items-center space-x-2">
+                    {entry.previousStatus && (
+                      <>
+                        {getStatusBadge(entry.previousStatus)}
+                        <span className="text-gray-400">→</span>
+                      </>
+                    )}
+                    {getStatusBadge(entry.newStatus)}
                   </div>
                   
-                  <div className="text-sm">
-                    <span className="font-medium text-gray-900">
-                      {getChangerName(entry.changedBy, entry.changedByName)}
-                    </span>
-                    {entry.reason && (
-                      <span className="text-gray-600 ml-1">
-                        - {entry.reason}
-                      </span>
-                    )}
+                  <div className="text-xs text-gray-500">
+                    {format(new Date(entry.createdAt), 'dd/MM/yyyy HH:mm')}
                   </div>
+                  
+                  {entry.reason && entry.reason.toLowerCase().includes('pagamento') && (
+                    <div className="text-sm text-green-600 font-medium">
+                      Pagamento aprovado
+                    </div>
+                  )}
                 </div>
               </div>
               
