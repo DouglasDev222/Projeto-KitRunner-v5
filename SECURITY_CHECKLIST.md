@@ -71,23 +71,37 @@
 - **Prioridade**: MÉDIA
 - **Data**: 28/07/2025
 
+### ✅ 7. Headers de Segurança HTTP Ausentes
+- **Status**: CORRIGIDO ✓
+- **Arquivo**: `server/index.ts` (linhas 13-21)
+- **Problema**: Sem headers de segurança básicos
+- **Risco**: Vulnerabilidades XSS, clickjacking
+- **Ação**: Implementados headers de segurança:
+  - X-Content-Type-Options: nosniff
+  - X-Frame-Options: DENY
+  - X-XSS-Protection: 1; mode=block
+  - Referrer-Policy: strict-origin-when-cross-origin
+  - Content-Security-Policy com permissões específicas para MercadoPago
+- **Prioridade**: MÉDIA
+- **Data**: 28/07/2025
+
 ## 🟢 MELHORIAS TÉCNICAS (Prioridade 3)
 
-### ❌ 7. Status de Pagamento Inconsistente
+### ❌ 8. Status de Pagamento Inconsistente
 - **Status**: PENDENTE
 - **Arquivo**: `server/mercadopago-service.ts`
 - **Problema**: Mapeamento pode ficar desatualizado
 - **Ação**: Implementar sincronização de status
 - **Prioridade**: BAIXA
 
-### ❌ 8. Falta de Retry Logic
+### ❌ 9. Falta de Retry Logic
 - **Status**: PENDENTE
 - **Arquivo**: Todas as chamadas à API
 - **Problema**: Sem tentativas automáticas em falhas de rede
 - **Ação**: Implementar retry com backoff exponencial
 - **Prioridade**: BAIXA
 
-### ❌ 9. Detecção de Bandeira Limitada
+### ❌ 10. Detecção de Bandeira Limitada
 - **Status**: PENDENTE
 - **Arquivo**: `client/src/components/payment/card-payment.tsx`
 - **Problema**: Não cobre todas as bandeiras brasileiras
