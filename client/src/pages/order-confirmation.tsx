@@ -77,7 +77,7 @@ export default function OrderConfirmation() {
                 <span className="font-medium text-neutral-800">
                   {orderData.deliveryEstimate?.deliveryDate ? 
                     `Até ${formatDate(orderData.deliveryEstimate.deliveryDate)}` : 
-                    'Até 2 dias úteis após o evento'}
+                    'Até o dia anterior do evento'}
                 </span>
               </div>
               <div className="flex justify-between">
