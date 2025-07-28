@@ -19,6 +19,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/test-debug-card.html", (req, res) => {
     res.sendFile(path.resolve(process.cwd(), "test-debug-card.html"));
   });
+  
+  app.get("/test-apro-vs-othe.html", (req, res) => {
+    res.sendFile(path.resolve(process.cwd(), "test-apro-vs-othe.html"));
+  });
 
   // Get all events
   app.get("/api/events", async (req, res) => {

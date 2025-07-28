@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste - APRO vs OTHE - MercadoPago</title>
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .test-section { margin-bottom: 30px; padding: 20px; border: 2px solid #ddd; border-radius: 8px; }
+        .apro-section { border-color: #28a745; background: #f8fff9; }
+        .othe-section { border-color: #dc3545; background: #fff8f8; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .btn-apro { background: #28a745; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 20px; }
+        .btn-othe { background: #dc3545; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 20px; }
+        .btn-apro:hover { background: #218838; }
+        .btn-othe:hover { background: #c82333; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .result { margin-top: 20px; padding: 15px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #cce7ff; color: #004085; border: 1px solid #b3d7ff; }
+        h1 { color: #495057; text-align: center; }
+        h2 { color: #495057; }
+        .loading { display: none; text-align: center; color: #007bff; }
+        .readonly { background: #f8f9fa !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste Comparativo: APRO vs OTHE</h1>
+        
+        <div class="test-section apro-section">
+            <h2>✅ TESTE APRO (Deve Ser Aprovado)</h2>
+            <p><strong>Resultado Esperado:</strong> Pagamento aprovado e pedido criado</p>
+            
+            <form id="aproForm">
+                <div class="form-group">
+                    <label>Número do Cartão:</label>
+                    <input type="text" id="aproCardNumber" value="5031 4332 1540 6365" readonly class="readonly">
+                </div>
+                
+                <div class="form-group">
+                    <label>Nome no Cartão (DEVE SER "APRO"):</label>
+                    <input type="text" id="aproCardholderName" value="APRO" readonly class="readonly">
+                </div>
+                
+                <div class="form-group">
+                    <label>CPF (Obrigatório: 12345678909):</label>
+                    <input type="text" id="aproCpf" value="12345678909" readonly class="readonly">
+                </div>
+                
+                <div class="form-group">
+                    <label>CVV:</label>
+                    <input type="text" id="aproSecurityCode" value="123" maxlength="3">
+                </div>
+                
+                <div class="form-group">
+                    <label>Mês de Validade:</label>
+                    <select id="aproExpirationMonth">
+                        <option value="11" selected>11</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Ano de Validade:</label>
+                    <select id="aproExpirationYear">
+                        <option value="2025" selected>2025</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="aproEmail" value="test@test.com">
+                </div>
+                
+                <div class="form-group">
+                    <label>Nome do Cliente:</label>
+                    <input type="text" id="aproCustomerName" value="Test User">
+                </div>
+                
+                <div class="form-group">
+                    <label>Valor (R$):</label>
+                    <input type="number" id="aproAmount" value="50.00" step="0.01">
+                </div>
+                
+                <button type="submit" class="btn-apro" id="aproSubmitBtn">✅ Testar APRO (Aprovação)</button>
+            </form>
+            
+            <div class="loading" id="aproLoading">⏳ Processando pagamento APRO...</div>
+            <div id="aproResult"></div>
+        </div>
+
+        <div class="test-section othe-section">
+            <h2>❌ TESTE OTHE (Deve Ser Rejeitado)</h2>
+            <p><strong>Resultado Esperado:</strong> Pagamento rejeitado e NENHUM pedido criado</p>
+            
+            <form id="otheForm">
+                <div class="form-group">
+                    <label>Número do Cartão:</label>
+                    <input type="text" id="otheCardNumber" value="5031 4332 1540 6365" readonly class="readonly">
+                </div>
+                
+                <div class="form-group">
+                    <label>Nome no Cartão (DEVE SER "OTHE"):</label>
+                    <input type="text" id="otheCardholderName" value="OTHE" readonly class="readonly">
+                </div>
+                
+                <div class="form-group">
+                    <label>CPF (Obrigatório: 12345678909):</label>
+                    <input type="text" id="otheCpf" value="12345678909" readonly class="readonly">
+                </div>
+                
+                <div class="form-group">
+                    <label>CVV:</label>
+                    <input type="text" id="otheSecurityCode" value="123" maxlength="3">
+                </div>
+                
+                <div class="form-group">
+                    <label>Mês de Validade:</label>
+                    <select id="otheExpirationMonth">
+                        <option value="11" selected>11</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Ano de Validade:</label>
+                    <select id="otheExpirationYear">
+                        <option value="2025" selected>2025</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="otheEmail" value="test@test.com">
+                </div>
+                
+                <div class="form-group">
+                    <label>Nome do Cliente:</label>
+                    <input type="text" id="otheCustomerName" value="Test User">
+                </div>
+                
+                <div class="form-group">
+                    <label>Valor (R$):</label>
+                    <input type="number" id="otheAmount" value="50.00" step="0.01">
+                </div>
+                
+                <button type="submit" class="btn-othe" id="otheSubmitBtn">❌ Testar OTHE (Rejeição)</button>
+            </form>
+            
+            <div class="loading" id="otheLoading">⏳ Processando pagamento OTHE...</div>
+            <div id="otheResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const mp = new MercadoPago('TEST-7c14e81c-a2ab-4ee1-b91c-da31e0487725');
+        
+        async function processPayment(prefix, expectedStatus) {
+            const form = document.getElementById(prefix + 'Form');
+            const submitBtn = document.getElementById(prefix + 'SubmitBtn');
+            const loading = document.getElementById(prefix + 'Loading');
+            const resultDiv = document.getElementById(prefix + 'Result');
+            
+            // Disable form and show loading
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+            resultDiv.innerHTML = '';
+            
+            const cardNumber = document.getElementById(prefix + 'CardNumber').value.replace(/\s/g, '');
+            const cardholderName = document.getElementById(prefix + 'CardholderName').value;
+            const securityCode = document.getElementById(prefix + 'SecurityCode').value;
+            const expirationMonth = document.getElementById(prefix + 'ExpirationMonth').value;
+            const expirationYear = document.getElementById(prefix + 'ExpirationYear').value;
+            const cpf = document.getElementById(prefix + 'Cpf').value;
+            const email = document.getElementById(prefix + 'Email').value;
+            const customerName = document.getElementById(prefix + 'CustomerName').value;
+            const amount = parseFloat(document.getElementById(prefix + 'Amount').value);
+            
+            console.log(`🧪 TESTE ${prefix.toUpperCase()} - Card data:`, {
+                cardNumber, cardholderName, expirationMonth, expirationYear, securityCode, cpf
+            });
+            
+            try {
+                // Create card token
+                const tokenData = {
+                    cardNumber: cardNumber,
+                    cardholderName: cardholderName,
+                    cardExpirationMonth: expirationMonth,
+                    cardExpirationYear: expirationYear,
+                    securityCode: securityCode,
+                    identificationType: 'CPF',
+                    identificationNumber: cpf
+                };
+                
+                console.log(`🎫 Creating ${prefix} token...`, tokenData);
+                const tokenResponse = await mp.createCardToken(tokenData);
+                
+                if (tokenResponse.error) {
+                    throw new Error('Erro no token: ' + tokenResponse.error.message);
+                }
+                
+                console.log(`🎫 ${prefix} Token created:`, tokenResponse.id);
+                
+                // Mock order data para o teste
+                const mockOrderData = {
+                    eventId: 1,
+                    customerId: 1,
+                    addressId: 1,
+                    kitQuantity: 1,
+                    kits: [{
+                        name: customerName,
+                        cpf: cpf,
+                        shirtSize: "M"
+                    }],
+                    paymentMethod: "credit",
+                    totalCost: amount,
+                    deliveryCost: 0,
+                    extraKitsCost: 0,
+                    donationCost: 0,
+                    discountAmount: 0,
+                    donationAmount: 0,
+                    idempotencyKey: prefix.toUpperCase() + '-' + Date.now()
+                };
+                
+                // Process payment with new flow
+                const paymentData = {
+                    token: tokenResponse.id,
+                    paymentMethodId: 'master', // Mastercard for 5031
+                    amount: amount,
+                    email: email,
+                    customerName: customerName,
+                    cpf: cpf,
+                    orderData: mockOrderData
+                };
+                
+                console.log(`💳 Processing ${prefix} payment with NEW FLOW...`, paymentData);
+                
+                const response = await fetch('/api/mercadopago/process-card-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(paymentData)
+                });
+                
+                const result = await response.json();
+                
+                console.log(`🎯 ${prefix} Payment result:`, result);
+                
+                // Show result based on response
+                let resultHtml = '';
+                let resultClass = '';
+                
+                if (expectedStatus === 'approved') {
+                    if (result.success && result.status === 'approved') {
+                        resultClass = 'success';
+                        resultHtml = `
+                            <h3>✅ CORRETO! APRO Aprovado Como Esperado</h3>
+                            <p><strong>Status:</strong> ${result.status}</p>
+                            <p><strong>Payment ID:</strong> ${result.paymentId}</p>
+                            <p><strong>Order Number:</strong> ${result.orderNumber}</p>
+                            <p><strong>Order ID:</strong> ${result.orderId}</p>
+                            <p><strong>Resultado:</strong> Pagamento APRO foi aprovado e criou pedido corretamente!</p>
+                        `;
+                    } else {
+                        resultClass = 'error';
+                        resultHtml = `
+                            <h3>⚠️ PROBLEMA! APRO Não Foi Aprovado</h3>
+                            <p><strong>Status:</strong> ${result.status}</p>
+                            <p><strong>Payment ID:</strong> ${result.paymentId || 'N/A'}</p>
+                            <p><strong>Mensagem:</strong> ${result.message}</p>
+                            <p><strong>Problema:</strong> APRO deveria ser aprovado mas não foi!</p>
+                        `;
+                    }
+                } else { // expectedStatus === 'rejected'
+                    if (!result.success && (result.status === 'rejected' || result.status === 'cancelled')) {
+                        resultClass = 'success';
+                        resultHtml = `
+                            <h3>✅ CORRETO! OTHE Rejeitado Como Esperado</h3>
+                            <p><strong>Status:</strong> ${result.status}</p>
+                            <p><strong>Payment ID:</strong> ${result.paymentId || 'N/A'}</p>
+                            <p><strong>Mensagem:</strong> ${result.message}</p>
+                            <p><strong>Order Created:</strong> ❌ Não (correto!)</p>
+                            <p><strong>Resultado:</strong> OTHE rejeitado e NENHUM pedido criado. Funcionando perfeitamente!</p>
+                        `;
+                    } else {
+                        resultClass = 'error';
+                        resultHtml = `
+                            <h3>⚠️ PROBLEMA! OTHE Aprovado (Deveria Ser Rejeitado)</h3>
+                            <p><strong>Status:</strong> ${result.status}</p>
+                            <p><strong>Payment ID:</strong> ${result.paymentId}</p>
+                            <p><strong>Order Number:</strong> ${result.orderNumber || 'N/A'}</p>
+                            <p><strong>Order ID:</strong> ${result.orderId || 'N/A'}</p>
+                            <p><strong>Problema:</strong> OTHE deveria ser rejeitado mas foi aprovado e criou pedido!</p>
+                        `;
+                    }
+                }
+                
+                resultDiv.innerHTML = `<div class="result ${resultClass}">${resultHtml}</div>`;
+                
+            } catch (error) {
+                console.error(`❌ ${prefix} test error:`, error);
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h3>❌ Erro no Teste ${prefix.toUpperCase()}</h3>
+                        <p><strong>Erro:</strong> ${error.message}</p>
+                    </div>
+                `;
+            } finally {
+                // Re-enable form
+                submitBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+        
+        document.getElementById('aproForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            processPayment('apro', 'approved');
+        });
+        
+        document.getElementById('otheForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            processPayment('othe', 'rejected');
+        });
+    </script>
+</body>
+</html>
