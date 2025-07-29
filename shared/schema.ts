@@ -341,3 +341,29 @@ export const adminUserUpdateSchema = z.object({
   role: z.enum(["super_admin", "admin"]).optional(),
   isActive: z.boolean().optional(),
 });
+
+// Address schema for frontend forms
+export const addressSchema = z.object({
+  street: z.string().min(1, "Rua é obrigatória"),
+  number: z.string().min(1, "Número é obrigatório"),
+  complement: z.string().optional(),
+  neighborhood: z.string().min(1, "Bairro é obrigatório"),
+  city: z.string().min(1, "Cidade é obrigatória"),
+  state: z.string().min(2, "Estado é obrigatório").max(2, "Estado deve ter 2 caracteres"),
+  zipCode: z.string().min(8, "CEP deve ter 8 dígitos").max(8, "CEP deve ter 8 dígitos"),
+  label: z.string().min(1, "Identificação do endereço é obrigatória"),
+});
+
+export type AddressData = z.infer<typeof addressSchema>;
+
+// AuditLogFilters schema  
+export const auditLogFiltersSchema = z.object({
+  adminUserId: z.number().optional(),
+  action: z.string().optional(),
+  resourceType: z.string().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  limit: z.number().optional(),
+  offset: z.number().optional(),
+  page: z.number().optional(),
+});
