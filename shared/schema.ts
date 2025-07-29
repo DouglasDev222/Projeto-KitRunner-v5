@@ -44,25 +44,6 @@ export const addresses = pgTable("addresses", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const kits = pgTable("kits", {
-  id: serial("id").primaryKey(),
-  orderId: integer("order_id").notNull(),
-  name: text("name").notNull(),
-  cpf: text("cpf").notNull(),
-  shirtSize: text("shirt_size").notNull(),
-});
-
-export const orderStatusHistory = pgTable("order_status_history", {
-  id: serial("id").primaryKey(),
-  orderId: integer("order_id").notNull().references(() => orders.id),
-  previousStatus: text("previous_status"),
-  newStatus: text("new_status").notNull(),
-  changedBy: text("changed_by").notNull(), // 'admin', 'mercadopago', 'system'
-  changedByName: text("changed_by_name"), // Nome do admin ou 'Mercado Pago'
-  reason: text("reason"), // Motivo da mudança
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   orderNumber: text("order_number").notNull().unique(),
@@ -80,6 +61,25 @@ export const orders = pgTable("orders", {
   status: text("status").notNull().default("confirmado"), // "confirmado", "aguardando_pagamento", "cancelado", "kits_sendo_retirados", "em_transito", "entregue"
   donationAmount: decimal("donation_amount", { precision: 10, scale: 2 }).notNull().default("0"), // Valor da doação
   idempotencyKey: text("idempotency_key").unique(), // Chave para evitar duplicação
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const kits = pgTable("kits", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").notNull().references(() => orders.id),
+  name: text("name").notNull(),
+  cpf: text("cpf").notNull(),
+  shirtSize: text("shirt_size").notNull(),
+});
+
+export const orderStatusHistory = pgTable("order_status_history", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").notNull().references(() => orders.id),
+  previousStatus: text("previous_status"),
+  newStatus: text("new_status").notNull(),
+  changedBy: text("changed_by").notNull(), // 'admin', 'mercadopago', 'system'
+  changedByName: text("changed_by_name"), // Nome do admin ou 'Mercado Pago'
+  reason: text("reason"), // Motivo da mudança
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -144,203 +144,73 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertEventSchema = createInsertSchema(events).omit({
-  id: true,
-  createdAt: true,
-});
+// Validation schemas
+export const insertEventSchema = createInsertSchema(events).omit({ id: true, createdAt: true });
+export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true });
+export const insertAddressSchema = createInsertSchema(addresses).omit({ id: true, createdAt: true });
+export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
+export const insertKitSchema = createInsertSchema(kits).omit({ id: true });
+export const insertCouponSchema = createInsertSchema(coupons).omit({ id: true, createdAt: true });
+export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAdminSessionSchema = createInsertSchema(adminSessions).omit({ id: true, createdAt: true });
+export const insertAdminAuditLogSchema = createInsertSchema(adminAuditLog).omit({ id: true, createdAt: true });
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({ id: true, createdAt: true });
 
-export const insertCustomerSchema = createInsertSchema(customers).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertAddressSchema = createInsertSchema(addresses).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertKitSchema = createInsertSchema(kits).omit({
-  id: true,
-});
-
-export const insertOrderSchema = createInsertSchema(orders).omit({
-  id: true,
-  orderNumber: true,
-  createdAt: true,
-});
-
-export const insertCouponSchema = createInsertSchema(coupons).omit({
-  id: true,
-  usageCount: true,
-  createdAt: true,
-});
-
-// Admin user schemas
-export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  lastLogin: true,
-});
-
-export const insertAdminSessionSchema = createInsertSchema(adminSessions).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertAdminAuditLogSchema = createInsertSchema(adminAuditLog).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({
-  id: true,
-  createdAt: true,
-  usedAt: true,
-});
-
+// Customer identification validation
 export const customerIdentificationSchema = z.object({
-  cpf: z.string().length(11, "CPF deve ter 11 dígitos numéricos").refine((cpf) => {
-    // CPF validation algorithm
-    if (cpf.length !== 11) return false;
-    
-    // Check if all digits are the same
-    if (/^(\d)\1{10}$/.test(cpf)) return false;
-    
-    // Validate first check digit
-    let sum = 0;
-    for (let i = 0; i < 9; i++) {
-      sum += parseInt(cpf.charAt(i)) * (10 - i);
-    }
-    let remainder = (sum * 10) % 11;
-    if (remainder === 10 || remainder === 11) remainder = 0;
-    if (remainder !== parseInt(cpf.charAt(9))) return false;
-    
-    // Validate second check digit
-    sum = 0;
-    for (let i = 0; i < 10; i++) {
-      sum += parseInt(cpf.charAt(i)) * (11 - i);
-    }
-    remainder = (sum * 10) % 11;
-    if (remainder === 10 || remainder === 11) remainder = 0;
-    if (remainder !== parseInt(cpf.charAt(10))) return false;
-    
-    return true;
-  }, "CPF inválido"),
-  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de nascimento deve estar no formato YYYY-MM-DD"),
+  cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(11, "CPF deve ter 11 dígitos"),
+  birthDate: z.string().min(10, "Data de nascimento é obrigatória").max(10, "Data inválida"),
 });
 
-export const addressSchema = z.object({
-  label: z.string().min(1, "Rótulo é obrigatório"),
-  street: z.string().min(1, "Rua é obrigatória"),
-  number: z.string().min(1, "Número é obrigatório"),
-  complement: z.string().optional(),
-  neighborhood: z.string().min(1, "Bairro é obrigatório"),
-  city: z.string().min(1, "Cidade é obrigatória"),
-  state: z.string().default("PB"),
-  zipCode: z.string().min(8, "CEP deve ter 8 dígitos"),
-  isDefault: z.boolean().default(false),
+// Kit information validation
+export const kitInformationSchema = z.object({
+  kits: z.array(z.object({
+    name: z.string().min(1, "Nome é obrigatório"),
+    cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(11, "CPF deve ter 11 dígitos"),
+    shirtSize: z.enum(["PP", "P", "M", "G", "GG", "XGG"], { required_error: "Tamanho da camisa é obrigatório" }),
+  })).min(1, "Pelo menos um kit deve ser configurado"),
 });
 
+// Order creation validation
+export const orderCreationSchema = z.object({
+  eventId: z.number().min(1, "Evento é obrigatório"),
+  customerId: z.number().min(1, "Cliente é obrigatório"),
+  addressId: z.number().min(1, "Endereço é obrigatório"),
+  kitQuantity: z.number().min(1, "Quantidade de kits deve ser pelo menos 1"),
+  deliveryCost: z.string().min(1, "Custo de entrega é obrigatório"),
+  extraKitsCost: z.string().default("0"),
+  donationCost: z.string().default("0"),
+  discountAmount: z.string().default("0"),
+  couponCode: z.string().optional(),
+  totalCost: z.string().min(1, "Custo total é obrigatório"),
+  paymentMethod: z.enum(["credit", "debit", "pix"], { required_error: "Método de pagamento é obrigatório" }),
+  kits: z.array(z.object({
+    name: z.string().min(1, "Nome é obrigatório"),
+    cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(11, "CPF deve ter 11 dígitos"),
+    shirtSize: z.enum(["PP", "P", "M", "G", "GG", "XGG"], { required_error: "Tamanho da camisa é obrigatório" }),
+  })),
+  donationAmount: z.string().default("0"),
+  idempotencyKey: z.string().optional(),
+});
+
+// Customer registration validation
 export const customerRegistrationSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
-  cpf: z.string().min(11, "CPF deve ter pelo menos 11 dígitos").refine((cpf) => {
-    // Remove formatting characters and validate
-    const cleanCPF = cpf.replace(/\D/g, "");
-    
-    // CPF validation algorithm
-    if (cleanCPF.length !== 11) return false;
-    
-    // Check if all digits are the same
-    if (/^(\d)\1{10}$/.test(cleanCPF)) return false;
-    
-    // Validate first check digit
-    let sum = 0;
-    for (let i = 0; i < 9; i++) {
-      sum += parseInt(cleanCPF.charAt(i)) * (10 - i);
-    }
-    let remainder = (sum * 10) % 11;
-    if (remainder === 10 || remainder === 11) remainder = 0;
-    if (remainder !== parseInt(cleanCPF.charAt(9))) return false;
-    
-    // Validate second check digit
-    sum = 0;
-    for (let i = 0; i < 10; i++) {
-      sum += parseInt(cleanCPF.charAt(i)) * (11 - i);
-    }
-    remainder = (sum * 10) % 11;
-    if (remainder === 10 || remainder === 11) remainder = 0;
-    if (remainder !== parseInt(cleanCPF.charAt(10))) return false;
-    
-    return true;
-  }, "CPF inválido"),
-  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de nascimento deve estar no formato YYYY-MM-DD"),
+  cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(11, "CPF deve ter 11 dígitos"),
+  birthDate: z.string().min(10, "Data de nascimento é obrigatória").max(10, "Data inválida"),
   email: z.string().email("Email inválido"),
-  phone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos").refine((phone) => {
-    const cleanPhone = phone.replace(/\D/g, "");
-    return cleanPhone.length >= 10 && cleanPhone.length <= 11;
-  }, "Telefone deve ter 10 ou 11 dígitos"),
-  addresses: z.array(addressSchema).min(1, "Pelo menos um endereço é obrigatório"),
+  phone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos"),
 });
 
-export const kitInformationSchema = z.object({
-  name: z.string().min(1, "Nome é obrigatório"),
-  cpf: z.string().length(11, "CPF deve ter 11 dígitos numéricos").refine((cpf) => {
-    // CPF validation algorithm
-    if (cpf.length !== 11) return false;
-    
-    // Check if all digits are the same
-    if (/^(\d)\1{10}$/.test(cpf)) return false;
-    
-    // Validate first check digit
-    let sum = 0;
-    for (let i = 0; i < 9; i++) {
-      sum += parseInt(cpf.charAt(i)) * (10 - i);
-    }
-    let remainder = (sum * 10) % 11;
-    if (remainder === 10 || remainder === 11) remainder = 0;
-    if (remainder !== parseInt(cpf.charAt(9))) return false;
-    
-    // Validate second check digit
-    sum = 0;
-    for (let i = 0; i < 10; i++) {
-      sum += parseInt(cpf.charAt(i)) * (11 - i);
-    }
-    remainder = (sum * 10) % 11;
-    if (remainder === 10 || remainder === 11) remainder = 0;
-    if (remainder !== parseInt(cpf.charAt(10))) return false;
-    
-    return true;
-  }, "CPF inválido"),
-  shirtSize: z.string().min(1, "Tamanho da camiseta é obrigatório"),
-});
-
-export const orderCreationSchema = z.object({
-  eventId: z.number(),
-  customerId: z.number(),
-  addressId: z.number(),
-  kitQuantity: z.number().min(1).max(5),
-  kits: z.array(kitInformationSchema),
-  paymentMethod: z.enum(["credit", "debit", "pix"]),
-  totalCost: z.number(),
-  deliveryCost: z.number(),
-  extraKitsCost: z.number(),
-  donationCost: z.number(),
-  discountAmount: z.number(),
-  donationAmount: z.number(),
-  idempotencyKey: z.string().optional(),
-  couponCode: z.string().optional(),
-});
-
-// Admin schemas
+// Admin event creation validation
 export const adminEventCreationSchema = z.object({
   name: z.string().min(1, "Nome do evento é obrigatório"),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data deve estar no formato YYYY-MM-DD"),
-  location: z.string().min(1, "Local é obrigatório"),
+  date: z.string().min(1, "Data do evento é obrigatória"),
+  location: z.string().min(1, "Local do evento é obrigatório"),
   city: z.string().min(1, "Cidade é obrigatória"),
-  state: z.string().length(2, "Estado deve ter 2 caracteres"),
-  pickupZipCode: z.string().length(8, "CEP deve ter 8 dígitos"),
-  pricingType: z.enum(["distance", "fixed"]).default("distance"),
+  state: z.string().min(1, "Estado é obrigatório"),
+  pickupZipCode: z.string().min(8, "CEP deve ter 8 dígitos").max(8, "CEP deve ter 8 dígitos"),
+  pricingType: z.enum(["fixed", "distance"], { required_error: "Tipo de precificação é obrigatório" }),
   fixedPrice: z.string().optional(),
   extraKitPrice: z.string().default("8.00"),
   donationRequired: z.boolean().default(false),
@@ -393,6 +263,15 @@ export type InsertAdminAuditLog = z.infer<typeof insertAdminAuditLogSchema>;
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
 
+export type OrderStatusHistory = typeof orderStatusHistory.$inferSelect;
+export type InsertOrderStatusHistory = typeof orderStatusHistory.$inferInsert;
+
+export type CustomerIdentification = z.infer<typeof customerIdentificationSchema>;
+export type KitInformation = z.infer<typeof kitInformationSchema>;
+export type OrderCreation = z.infer<typeof orderCreationSchema>;
+export type CustomerRegistration = z.infer<typeof customerRegistrationSchema>;
+export type AdminEventCreation = z.infer<typeof adminEventCreationSchema>;
+
 // Auth types
 export interface AuthResult {
   success: boolean;
@@ -428,28 +307,13 @@ export interface AuditLogFilters {
   page?: number;
 }
 
-export type OrderStatusHistory = typeof orderStatusHistory.$inferSelect;
-export type InsertOrderStatusHistory = typeof orderStatusHistory.$inferInsert;
-
-export type Order = typeof orders.$inferSelect;
-export type InsertOrder = z.infer<typeof insertOrderSchema>;
-
-export type Coupon = typeof coupons.$inferSelect;
-export type InsertCoupon = z.infer<typeof insertCouponSchema>;
-
-export type CustomerIdentification = z.infer<typeof customerIdentificationSchema>;
-export type KitInformation = z.infer<typeof kitInformationSchema>;
-export type OrderCreation = z.infer<typeof orderCreationSchema>;
-export type CustomerRegistration = z.infer<typeof customerRegistrationSchema>;
-export type AdminEventCreation = z.infer<typeof adminEventCreationSchema>;
-
-// Admin order management schemas
+// Admin schemas
 export const orderStatusUpdateSchema = z.object({
-  status: z.enum(["confirmed", "awaiting_payment", "cancelled", "kits_being_prepared", "kits_ready", "in_transit", "delivered"]),
+  status: z.enum(["confirmado", "aguardando_pagamento", "cancelado", "kits_sendo_retirados", "em_transito", "entregue"]),
 });
 
 export const orderSearchFiltersSchema = z.object({
-  status: z.enum(["all", "confirmed", "awaiting_payment", "cancelled", "kits_being_prepared", "kits_ready", "in_transit", "delivered"]).default("all"),
+  status: z.enum(["all", "confirmado", "aguardando_pagamento", "cancelado", "kits_sendo_retirados", "em_transito", "entregue"]).default("all"),
   eventId: z.number().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
@@ -457,7 +321,6 @@ export const orderSearchFiltersSchema = z.object({
   orderNumber: z.string().optional(),
 });
 
-// Admin authentication schemas
 export const adminLoginSchema = z.object({
   username: z.string().min(1, "Nome de usuário é obrigatório"),
   password: z.string().min(1, "Senha é obrigatória"),
@@ -478,54 +341,3 @@ export const adminUserUpdateSchema = z.object({
   role: z.enum(["super_admin", "admin"]).optional(),
   isActive: z.boolean().optional(),
 });
-
-export const passwordResetRequestSchema = z.object({
-  email: z.string().email("Email inválido"),
-});
-
-export const passwordResetSchema = z.object({
-  token: z.string().min(1, "Token é obrigatório"),
-  newPassword: z.string().min(8, "Nova senha deve ter pelo menos 8 caracteres"),
-});
-
-export const auditLogFiltersSchema = z.object({
-  adminUserId: z.number().optional(),
-  action: z.string().optional(),
-  resourceType: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  page: z.number().min(1).default(1),
-  limit: z.number().min(1).max(100).default(50),
-});
-
-export type OrderStatusUpdate = z.infer<typeof orderStatusUpdateSchema>;
-export type OrderSearchFilters = z.infer<typeof orderSearchFiltersSchema>;
-
-// Admin user types
-export type AdminUser = typeof adminUsers.$inferSelect;
-export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
-export type CreateAdminUser = z.infer<typeof adminUserCreationSchema>;
-export type UpdateAdminUser = z.infer<typeof adminUserUpdateSchema>;
-
-export type AdminSession = typeof adminSessions.$inferSelect;
-export type InsertAdminSession = z.infer<typeof insertAdminSessionSchema>;
-
-export type AdminAuditLog = typeof adminAuditLog.$inferSelect;
-export type InsertAdminAuditLog = z.infer<typeof insertAdminAuditLogSchema>;
-
-export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
-export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
-
-// Admin authentication types
-export type AdminLogin = z.infer<typeof adminLoginSchema>;
-export type PasswordResetRequest = z.infer<typeof passwordResetRequestSchema>;
-export type PasswordReset = z.infer<typeof passwordResetSchema>;
-export type AuditLogFilters = z.infer<typeof auditLogFiltersSchema>;
-
-// Authentication result types
-export type AuthResult = {
-  success: boolean;
-  token?: string;
-  user?: AdminUser;
-  error?: string;
-};
