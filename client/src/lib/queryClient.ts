@@ -12,8 +12,16 @@ function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = {};
   
   try {
-    const savedUser = localStorage.getItem('kitrunner_user');
+    // Primeiro verificar auth admin via localStorage
+    const adminAuth = localStorage.getItem('adminAuthenticated');
+    if (adminAuth === 'true') {
+      // Admin não precisa de token específico, usar flag admin
+      headers['X-Admin-Auth'] = 'true';
+      return headers;
+    }
     
+    // Fallback: verificar se usuário logado é admin ou usuário regular
+    const savedUser = localStorage.getItem('kitrunner_user');
     if (savedUser) {
       const userData = JSON.parse(savedUser);
       

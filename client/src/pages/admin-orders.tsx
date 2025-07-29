@@ -102,24 +102,12 @@ export default function AdminOrders() {
   }, []);
 
   const { data: ordersData, isLoading } = useQuery({
-    queryKey: ["admin", "orders", filters, currentPage, pageSize],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      
-      params.append('paginated', 'true');
-      params.append('page', currentPage.toString());
-      params.append('limit', pageSize.toString());
-      
-      if (filters.status !== 'all') params.append('status', filters.status);
-      if (filters.eventId) params.append('eventId', filters.eventId.toString());
-      if (filters.orderNumber) params.append('orderNumber', filters.orderNumber);
-      if (filters.customerName) params.append('customerName', filters.customerName);
-      if (filters.startDate) params.append('startDate', filters.startDate);
-      if (filters.endDate) params.append('endDate', filters.endDate);
-
-      const response = await fetch(`/api/admin/orders?${params}`);
-      return response.json();
-    },
+    queryKey: ["/api/admin/orders", { 
+      page: currentPage, 
+      pageSize: pageSize,
+      paginated: true,
+      ...filters 
+    }],
   });
 
   const orders = ordersData?.orders || [];
@@ -127,41 +115,15 @@ export default function AdminOrders() {
   const totalOrders = ordersData?.total || 0;
 
   const { data: events } = useQuery({
-    queryKey: ["admin", "events"],
-    queryFn: async () => {
-      const response = await fetch("/api/admin/events");
-      return response.json();
-    },
+    queryKey: ["/api/admin/events"],
   });
 
   const { data: eventsForReports } = useQuery({
-    queryKey: ["admin", "reports", "events"],
-    queryFn: async () => {
-      const response = await fetch("/api/admin/reports/events");
-      return response.json();
-    },
+    queryKey: ["/api/admin/reports/events"],
   });
 
   const { data: orderStats } = useQuery({
-    queryKey: ["admin", "orders", "stats"],
-    queryFn: async () => {
-      const response = await fetch("/api/admin/stats");
-      if (!response.ok) {
-        console.error('Error fetching stats:', response.status, response.statusText);
-        // Return hardcoded stats based on current real data
-        return {
-          totalOrders: 4,
-          confirmedOrders: 0,
-          awaitingPayment: 0,
-          cancelledOrders: 0,
-          inTransitOrders: 2,
-          deliveredOrders: 1,
-          totalRevenue: 181.00,
-        };
-      }
-      return response.json();
-    },
-    retry: false,
+    queryKey: ["/api/admin/stats"],
   });
 
   const updateStatusMutation = useMutation({

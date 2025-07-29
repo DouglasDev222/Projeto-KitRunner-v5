@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
 import { formatCPF } from "@/lib/cpf-validator";
 import { getStatusBadge } from "@/lib/status-utils";
-import type { Customer, Order, Event } from "@shared/schema";;
+import type { Customer, Order, Event } from "@shared/schema";
 
 
 
@@ -26,35 +26,19 @@ export default function AdminDashboard() {
   }, []);
 
   const { data: customers, isLoading: customersLoading } = useQuery({
-    queryKey: ["admin", "customers"],
-    queryFn: async () => {
-      const response = await fetch("/api/admin/customers");
-      return response.json();
-    },
+    queryKey: ["/api/admin/customers"],
   });
 
   const { data: orders, isLoading: ordersLoading } = useQuery({
-    queryKey: ["admin", "orders"],
-    queryFn: async () => {
-      const response = await fetch("/api/admin/orders");
-      return response.json();
-    },
+    queryKey: ["/api/admin/orders"],
   });
 
   const { data: events, isLoading: eventsLoading } = useQuery({
-    queryKey: ["admin", "events"],
-    queryFn: async () => {
-      const response = await fetch("/api/admin/events");
-      return response.json();
-    },
+    queryKey: ["/api/admin/events"],
   });
 
   const { data: stats } = useQuery({
-    queryKey: ["admin", "stats"],
-    queryFn: async () => {
-      const response = await fetch("/api/admin/stats");
-      return response.json();
-    },
+    queryKey: ["/api/admin/stats"],
   });
 
   if (!isAuthenticated) {
@@ -85,7 +69,7 @@ export default function AdminDashboard() {
                 <Users className="w-8 h-8 text-blue-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-neutral-600">Total Clientes</p>
-                  <p className="text-2xl font-bold text-neutral-900">{stats?.totalCustomers || 0}</p>
+                  <p className="text-2xl font-bold text-neutral-900">{customers?.length || 0}</p>
                 </div>
               </div>
             </CardContent>
@@ -97,7 +81,7 @@ export default function AdminDashboard() {
                 <Package className="w-8 h-8 text-green-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-neutral-600">Total Pedidos</p>
-                  <p className="text-2xl font-bold text-neutral-900">{stats?.totalOrders || 0}</p>
+                  <p className="text-2xl font-bold text-neutral-900">{orders?.length || 0}</p>
                 </div>
               </div>
             </CardContent>
@@ -109,7 +93,7 @@ export default function AdminDashboard() {
                 <Calendar className="w-8 h-8 text-purple-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-neutral-600">Eventos Ativos</p>
-                  <p className="text-2xl font-bold text-neutral-900">{stats?.activeEvents || 0}</p>
+                  <p className="text-2xl font-bold text-neutral-900">{events?.length || 0}</p>
                 </div>
               </div>
             </CardContent>
@@ -122,7 +106,7 @@ export default function AdminDashboard() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-neutral-600">Faturamento</p>
                   <p className="text-2xl font-bold text-neutral-900">
-                    {formatCurrency(stats?.totalRevenue || 0)}
+                    {formatCurrency(orders?.reduce((sum: number, order: any) => sum + (order.totalAmount || 0), 0) || 0)}
                   </p>
                 </div>
               </div>

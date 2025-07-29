@@ -78,18 +78,12 @@ export default function AdminCustomers() {
 
   // Fetch customers with addresses (paginated)
   const { data: customersData, isLoading: customersLoading } = useQuery({
-    queryKey: ["admin", "customers", currentPage, pageSize, debouncedSearchTerm],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      params.append('paginated', 'true');
-      params.append('page', currentPage.toString());
-      params.append('limit', pageSize.toString());
-      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
-
-      const response = await fetch(`/api/admin/customers?${params}`);
-      if (!response.ok) throw new Error("Erro ao carregar clientes");
-      return response.json();
-    },
+    queryKey: ["/api/admin/customers", { 
+      page: currentPage, 
+      pageSize: pageSize,
+      paginated: true,
+      search: debouncedSearchTerm 
+    }],
   });
 
   const customers = customersData?.customers || [];
