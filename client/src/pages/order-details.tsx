@@ -17,23 +17,12 @@ export default function OrderDetails() {
   const { orderNumber } = useParams<{ orderNumber: string }>();
 
   const { data: order, isLoading } = useQuery({
-    queryKey: ["order", orderNumber],
-    queryFn: async () => {
-      const response = await fetch(`/api/orders/${orderNumber}`);
-      if (!response.ok) {
-        throw new Error("Pedido não encontrado");
-      }
-      return response.json();
-    },
+    queryKey: ["/api/orders", orderNumber],
     enabled: !!orderNumber,
   });
 
   const { data: kits } = useQuery({
-    queryKey: ["order-kits", order?.id],
-    queryFn: async () => {
-      const response = await fetch(`/api/orders/${order.id}/kits`);
-      return response.json();
-    },
+    queryKey: ["/api/orders", order?.id, "kits"],
     enabled: !!order?.id,
   });
 

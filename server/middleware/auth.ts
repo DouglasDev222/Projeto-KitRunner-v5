@@ -95,7 +95,11 @@ export function requireOwnership(resourceIdParam: string = 'id', resourceType: '
         
         switch (resourceType) {
           case 'order':
-            const order = await storage.getOrderByNumber(resourceId.toString()) || await storage.getOrderByIdempotencyKey(resourceId.toString());
+            // Try to get order by ID first, then by number if resourceId is not a number
+            let order = await storage.getOrderById(resourceId);
+            if (!order && isNaN(resourceId)) {
+              order = await storage.getOrderByNumber(resourceId.toString()) || await storage.getOrderByIdempotencyKey(resourceId.toString());
+            }
             isOwner = order?.customerId === userId;
             break;
           case 'address':

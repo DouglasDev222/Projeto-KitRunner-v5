@@ -25,20 +25,7 @@ interface OrderStatusHistoryProps {
 
 export function OrderStatusHistory({ orderId, orderNumber, showTitle = true }: OrderStatusHistoryProps) {
   const { data: historyData, isLoading, error } = useQuery({
-    queryKey: orderId ? ['order-status-history', orderId] : ['order-status-history-by-number', orderNumber],
-    queryFn: async () => {
-      const endpoint = orderId 
-        ? `/api/orders/${orderId}/status-history`
-        : `/api/orders/number/${orderNumber}/status-history`;
-      
-      const response = await fetch(endpoint);
-      
-      if (!response.ok) {
-        throw new Error('Erro ao carregar histórico de status');
-      }
-      
-      return response.json();
-    },
+    queryKey: orderId ? ['/api/orders', orderId, 'status-history'] : ['/api/orders/number', orderNumber, 'status-history'],
     enabled: Boolean(orderId || orderNumber),
   });
 

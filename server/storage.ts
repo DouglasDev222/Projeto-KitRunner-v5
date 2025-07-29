@@ -44,6 +44,7 @@ export interface IStorage {
 
   // Orders
   createOrder(order: InsertOrder): Promise<Order>;
+  getOrderById(id: number): Promise<Order | undefined>;
   getOrderByNumber(orderNumber: string): Promise<Order | undefined>;
   getOrderByIdempotencyKey(idempotencyKey: string): Promise<Order | undefined>;
   getOrdersByCustomerId(customerId: number): Promise<Order[]>;
@@ -255,6 +256,14 @@ export class DatabaseStorage implements IStorage {
     }
     
     return order;
+  }
+
+  async getOrderById(id: number): Promise<Order | undefined> {
+    const [order] = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, id));
+    return order || undefined;
   }
 
   async getOrderByNumber(orderNumber: string): Promise<Order | undefined> {
@@ -974,6 +983,10 @@ class MockStorage implements IStorage {
 
     this.orders.push({ ...newOrder, customer, event } as Order & { customer: Customer; event: Event });
     return newOrder;
+  }
+
+  async getOrderById(id: number): Promise<Order | undefined> {
+    return this.orders.find(o => o.id === id);
   }
 
   async getOrderByNumber(orderNumber: string): Promise<Order | undefined> {
