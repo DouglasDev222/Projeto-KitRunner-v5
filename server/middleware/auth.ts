@@ -40,6 +40,15 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
     const token = authHeader.replace('Bearer ', '');
     console.log(`🔍 DEBUG AUTH: Extracted token:`, token.substring(0, 50) + '...');
     
+    // Check if it's a JWT token (admin) - JWT has 3 parts separated by dots
+    if (token.includes('.') && token.split('.').length === 3) {
+      console.log(`🔍 DEBUG AUTH: Token appears to be JWT (admin token), skipping user auth`);
+      return res.status(401).json({ 
+        error: 'Token inválido',
+        message: 'Token de administrador não pode ser usado em endpoints de usuário'
+      });
+    }
+    
     const decodedData = Buffer.from(token, 'base64').toString('utf-8');
     console.log(`🔍 DEBUG AUTH: Decoded data:`, decodedData);
     
