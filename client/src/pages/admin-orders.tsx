@@ -695,10 +695,10 @@ export default function AdminOrders() {
                       Cliente
                     </h3>
                     <div className="space-y-2 text-sm">
-                      <p><span className="font-medium">Nome:</span> {selectedOrder.customer.name}</p>
-                      <p><span className="font-medium">CPF:</span> {formatCPF(selectedOrder.customer.cpf)}</p>
-                      <p><span className="font-medium">Email:</span> {selectedOrder.customer.email}</p>
-                      <p><span className="font-medium">Telefone:</span> {selectedOrder.customer.phone}</p>
+                      <p><span className="font-medium">Nome:</span> {selectedOrder.customer?.name || 'N/A'}</p>
+                      <p><span className="font-medium">CPF:</span> {selectedOrder.customer?.cpf ? formatCPF(selectedOrder.customer.cpf) : 'N/A'}</p>
+                      <p><span className="font-medium">Email:</span> {selectedOrder.customer?.email || 'N/A'}</p>
+                      <p><span className="font-medium">Telefone:</span> {selectedOrder.customer?.phone || 'N/A'}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -728,10 +728,10 @@ export default function AdminOrders() {
                       Evento
                     </h3>
                     <div className="space-y-2 text-sm">
-                      <p><span className="font-medium">Nome:</span> {selectedOrder.event.name}</p>
-                      <p><span className="font-medium">Data:</span> {formatDate(selectedOrder.event.date)}</p>
-                      <p><span className="font-medium">Local:</span> {selectedOrder.event.location}</p>
-                      <p><span className="font-medium">Cidade:</span> {selectedOrder.event.city}, {selectedOrder.event.state}</p>
+                      <p><span className="font-medium">Nome:</span> {selectedOrder.event?.name || 'N/A'}</p>
+                      <p><span className="font-medium">Data:</span> {selectedOrder.event?.date ? formatDate(selectedOrder.event.date) : 'N/A'}</p>
+                      <p><span className="font-medium">Local:</span> {selectedOrder.event?.location || 'N/A'}</p>
+                      <p><span className="font-medium">Cidade:</span> {selectedOrder.event?.city ? `${selectedOrder.event.city}, ${selectedOrder.event?.state}` : 'N/A'}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -743,13 +743,13 @@ export default function AdminOrders() {
                       Endereço de Entrega
                     </h3>
                     <div className="space-y-2 text-sm">
-                      <p><span className="font-medium">Endereço:</span> {selectedOrder.address.street}, {selectedOrder.address.number}</p>
-                      {selectedOrder.address.complement && (
+                      <p><span className="font-medium">Endereço:</span> {selectedOrder.address?.street ? `${selectedOrder.address.street}, ${selectedOrder.address.number}` : 'N/A'}</p>
+                      {selectedOrder.address?.complement && (
                         <p><span className="font-medium">Complemento:</span> {selectedOrder.address.complement}</p>
                       )}
-                      <p><span className="font-medium">Bairro:</span> {selectedOrder.address.neighborhood}</p>
-                      <p><span className="font-medium">Cidade:</span> {selectedOrder.address.city}, {selectedOrder.address.state}</p>
-                      <p><span className="font-medium">CEP:</span> {selectedOrder.address.zipCode.replace(/(\d{5})(\d{3})/, '$1-$2')}</p>
+                      <p><span className="font-medium">Bairro:</span> {selectedOrder.address?.neighborhood || 'N/A'}</p>
+                      <p><span className="font-medium">Cidade:</span> {selectedOrder.address?.city ? `${selectedOrder.address.city}, ${selectedOrder.address?.state}` : 'N/A'}</p>
+                      <p><span className="font-medium">CEP:</span> {selectedOrder.address?.zipCode ? selectedOrder.address.zipCode.replace(/(\d{5})(\d{3})/, '$1-$2') : 'N/A'}</p>
                     </div>
                   </CardContent>
                 </Card>
