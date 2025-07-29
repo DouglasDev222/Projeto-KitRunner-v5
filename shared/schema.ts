@@ -162,13 +162,17 @@ export const customerIdentificationSchema = z.object({
   birthDate: z.string().min(10, "Data de nascimento é obrigatória").max(10, "Data inválida"),
 });
 
+// Individual kit validation
+export const kitSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(11, "CPF deve ter 11 dígitos"),
+  shirtSize: z.enum(["PP", "P", "M", "G", "GG", "XGG"], { required_error: "Tamanho da camisa é obrigatório" }),
+});
+
 // Kit information validation
 export const kitInformationSchema = z.object({
-  kits: z.array(z.object({
-    name: z.string().min(1, "Nome é obrigatório"),
-    cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(11, "CPF deve ter 11 dígitos"),
-    shirtSize: z.enum(["PP", "P", "M", "G", "GG", "XGG"], { required_error: "Tamanho da camisa é obrigatório" }),
-  })).min(1, "Pelo menos um kit deve ser configurado"),
+  kitQuantity: z.number().min(1).max(5),
+  kits: z.array(kitSchema).min(1, "Pelo menos um kit deve ser configurado"),
 });
 
 // Order creation validation

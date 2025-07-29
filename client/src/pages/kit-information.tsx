@@ -13,17 +13,12 @@ import { useLocation, useParams } from "wouter";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import { kitInformationSchema, type KitInformation } from "@shared/schema";
+import { kitInformationSchema, kitSchema, type KitInformation } from "@shared/schema";
 import { formatCPF } from "@/lib/cpf-validator";
 import { formatCurrency } from "@/lib/brazilian-formatter";
 import { calculatePricing, formatPricingBreakdown } from "@/lib/pricing-calculator";
 
-const kitFormSchema = z.object({
-  kitQuantity: z.number().min(1).max(5),
-  kits: z.array(kitInformationSchema),
-});
-
-type KitFormData = z.infer<typeof kitFormSchema>;
+type KitFormData = z.infer<typeof kitInformationSchema>;
 
 export default function KitInformation() {
   const [, setLocation] = useLocation();
@@ -31,10 +26,10 @@ export default function KitInformation() {
   const [selectedQuantity, setSelectedQuantity] = useState(1);
 
   const form = useForm<KitFormData>({
-    resolver: zodResolver(kitFormSchema),
+    resolver: zodResolver(kitInformationSchema),
     defaultValues: {
       kitQuantity: 1,
-      kits: [{ name: "", cpf: "", shirtSize: "" as any }],
+      kits: [{ name: "", cpf: "", shirtSize: "M" as const }],
     },
   });
 
@@ -47,7 +42,7 @@ export default function KitInformation() {
     const newKits = Array.from({ length: selectedQuantity }, () => ({
       name: "",
       cpf: "",
-      shirtSize: "" as any,
+      shirtSize: "M" as const,
     }));
     replace(newKits);
     form.setValue("kitQuantity", selectedQuantity);
