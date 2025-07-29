@@ -7,14 +7,42 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Helper function to get auth headers
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  
+  try {
+    const savedUser = localStorage.getItem('kitrunner_user');
+    if (savedUser) {
+      const userData = JSON.parse(savedUser);
+      if (userData && userData.id && userData.cpf && userData.name) {
+        // Create base64 encoded token
+        const token = btoa(JSON.stringify(userData));
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to get auth token:', error);
+  }
+  
+  return headers;
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const authHeaders = getAuthHeaders();
+  const headers: Record<string, string> = { ...authHeaders };
+  
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+  
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -29,7 +57,10 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const authHeaders = getAuthHeaders();
+    
     const res = await fetch(queryKey.join("/") as string, {
+      headers: authHeaders,
       credentials: "include",
     });
 
