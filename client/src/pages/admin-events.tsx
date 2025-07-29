@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
 import { useToast } from "@/hooks/use-toast";
 import type { Event, Order } from "@shared/schema";
@@ -45,38 +46,22 @@ export default function AdminEvents() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: events, isLoading: eventsLoading } = useQuery({
-    queryKey: ["admin", "events"],
-    queryFn: async () => {
-      const response = await fetch("/api/admin/events");
-      if (!response.ok) throw new Error("Erro ao carregar eventos");
-      return response.json();
-    },
+  const { data: events = [], isLoading: eventsLoading } = useQuery<Event[]>({
+    queryKey: ["/api/admin/events"],
   });
 
-  const { data: eventOrders, isLoading: ordersLoading } = useQuery({
-    queryKey: ["admin", "event-orders", selectedEvent?.id],
-    queryFn: async () => {
-      if (!selectedEvent?.id) return [];
-      const response = await fetch(`/api/admin/events/${selectedEvent.id}/orders`);
-      if (!response.ok) throw new Error("Erro ao carregar pedidos do evento");
-      return response.json();
-    },
+  const { data: eventOrders = [], isLoading: ordersLoading } = useQuery<Order[]>({
+    queryKey: ["/api/admin/events", selectedEvent?.id, "orders"],
     enabled: !!selectedEvent?.id && showOrdersDialog,
   });
 
   const toggleEventMutation = useMutation({
     mutationFn: async ({ eventId, available }: { eventId: number; available: boolean }) => {
-      const response = await fetch(`/api/admin/events/${eventId}/toggle`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ available }),
-      });
-      if (!response.ok) throw new Error("Erro ao alterar status do evento");
+      const response = await apiRequest("PATCH", `/api/admin/events/${eventId}/toggle`, { available });
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
       toast({
         title: "Sucesso",
         description: "Status do evento alterado com sucesso!",
@@ -104,7 +89,7 @@ export default function AdminEvents() {
   };
 
   const getEventStats = (event: Event) => {
-    const orders = eventOrders || [];
+    const orders = eventOrders;
     const totalOrders = orders.length;
     const totalRevenue = orders.reduce((sum: number, order: any) => sum + Number(order.totalCost), 0);
     const totalKits = orders.reduce((sum: number, order: any) => sum + order.kitQuantity, 0);

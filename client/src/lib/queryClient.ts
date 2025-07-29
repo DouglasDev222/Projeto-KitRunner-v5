@@ -13,7 +13,7 @@ function getAuthHeaders(): Record<string, string> {
   
   try {
     // Novo Sistema: Admin JWT Token
-    const adminToken = localStorage.getItem('admin_token');
+    const adminToken = localStorage.getItem('adminToken');
     if (adminToken) {
       headers['Authorization'] = `Bearer ${adminToken}`;
       return headers;
@@ -68,7 +68,27 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     const authHeaders = getAuthHeaders();
     
-    const res = await fetch(queryKey.join("/") as string, {
+    // Build URL properly from queryKey
+    let url = queryKey[0] as string;
+    
+    // If there are additional parameters, add them as query string
+    if (queryKey.length > 1 && queryKey[1] && typeof queryKey[1] === 'object') {
+      const params = new URLSearchParams();
+      const queryParams = queryKey[1] as Record<string, any>;
+      for (const [key, value] of Object.entries(queryParams)) {
+        if (value !== undefined && value !== null) {
+          params.append(key, String(value));
+        }
+      }
+      if (params.toString()) {
+        url += '?' + params.toString();
+      }
+    } else if (queryKey.length > 1) {
+      // Handle path segments
+      url = queryKey.join("/");
+    }
+    
+    const res = await fetch(url, {
       headers: authHeaders,
       credentials: "include",
     });
