@@ -14,6 +14,8 @@ export interface AuthenticatedRequest extends Request {
 export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   
+  console.log(`🔍 DEBUG AUTH: Request to ${req.path}, Auth header:`, authHeader ? 'Present' : 'Missing');
+  
   if (!authHeader) {
     console.warn(`🔒 SECURITY: Unauthorized access attempt to ${req.path} from IP: ${req.ip}`);
     return res.status(401).json({ 
@@ -25,11 +27,17 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
   try {
     // Extrair dados do token (formato: "Bearer base64_encoded_user_data")
     const token = authHeader.replace('Bearer ', '');
+    console.log(`🔍 DEBUG AUTH: Extracted token:`, token.substring(0, 50) + '...');
+    
     const decodedData = Buffer.from(token, 'base64').toString('utf-8');
+    console.log(`🔍 DEBUG AUTH: Decoded data:`, decodedData);
+    
     const userData = JSON.parse(decodedData);
+    console.log(`🔍 DEBUG AUTH: Parsed user data:`, userData);
     
     // Validar estrutura dos dados
     if (!userData.id || !userData.cpf || !userData.name) {
+      console.error(`🔍 DEBUG AUTH: Missing required fields - ID: ${userData.id}, CPF: ${userData.cpf}, Name: ${userData.name}`);
       throw new Error('Token inválido');
     }
     
@@ -39,7 +47,7 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
     console.log(`🔓 Authenticated user: ${userData.name} (ID: ${userData.id})`);
     next();
   } catch (error) {
-    console.warn(`🔒 SECURITY: Invalid token attempt to ${req.path} from IP: ${req.ip}`);
+    console.warn(`🔒 SECURITY: Invalid token attempt to ${req.path} from IP: ${req.ip}`, error);
     return res.status(401).json({ 
       error: 'Token inválido',
       message: 'Token de acesso inválido ou expirado'
