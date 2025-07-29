@@ -18,11 +18,7 @@ export default function Profile() {
   const { user, logout, isAuthenticated, isLoading } = useAuth();
 
   const { data: addresses } = useQuery({
-    queryKey: ["addresses", user?.id],
-    queryFn: async () => {
-      const response = await fetch(`/api/customers/${user?.id}/addresses`);
-      return response.json();
-    },
+    queryKey: ["/api/customers", user?.id, "addresses"],
     enabled: !!user?.id,
   });
 

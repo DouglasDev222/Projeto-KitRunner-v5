@@ -37,11 +37,7 @@ export default function MyOrders() {
   const effectiveCustomer = user || customer;
 
   const { data: orders, isLoading: ordersLoading } = useQuery({
-    queryKey: ["orders", effectiveCustomer?.id],
-    queryFn: async () => {
-      const response = await fetch(`/api/customers/${effectiveCustomer!.id}/orders`);
-      return response.json();
-    },
+    queryKey: ["/api/customers", effectiveCustomer?.id, "orders"],
     enabled: !!effectiveCustomer?.id && (isAuthenticated || showOrders),
   });
 
@@ -127,7 +123,7 @@ export default function MyOrders() {
                 <div key={i} className="h-24 bg-gray-200 rounded-lg animate-pulse" />
               ))}
             </div>
-          ) : orders && orders.length > 0 ? (
+          ) : orders && Array.isArray(orders) && orders.length > 0 ? (
             <div className="space-y-4">
               {orders.map((order: Order) => (
                 <Card 
