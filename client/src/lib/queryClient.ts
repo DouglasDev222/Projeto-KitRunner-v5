@@ -7,19 +7,21 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-// Helper function to get auth headers
-function getAuthHeaders(): Record<string, string> {
+// Helper function to get auth headers based on request context
+function getAuthHeaders(requestUrl?: string): Record<string, string> {
   const headers: Record<string, string> = {};
   
   try {
-    // Novo Sistema: Admin JWT Token
-    const adminToken = localStorage.getItem('adminToken');
-    if (adminToken) {
-      headers['Authorization'] = `Bearer ${adminToken}`;
-      return headers;
+    // If it's an admin request, use admin token
+    if (requestUrl && requestUrl.includes('/api/admin/')) {
+      const adminToken = localStorage.getItem('adminToken');
+      if (adminToken) {
+        headers['Authorization'] = `Bearer ${adminToken}`;
+        return headers;
+      }
     }
     
-    // Sistema cliente: verificar se usuário logado é admin ou usuário regular
+    // For all other requests, use regular user token
     const savedUser = localStorage.getItem('kitrunner_user');
     if (savedUser) {
       const userData = JSON.parse(savedUser);
@@ -42,7 +44,7 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const authHeaders = getAuthHeaders();
+  const authHeaders = getAuthHeaders(url);
   const headers: Record<string, string> = { ...authHeaders };
   
   if (data) {
@@ -66,7 +68,8 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const authHeaders = getAuthHeaders();
+    const requestUrl = queryKey[0] as string;
+    const authHeaders = getAuthHeaders(requestUrl);
     
     // Build URL properly from queryKey
     let url = queryKey[0] as string;
