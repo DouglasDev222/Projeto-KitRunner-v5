@@ -1,82 +1,59 @@
-import { db } from './db';
-import { adminUsers } from '@shared/schema';
-import { PasswordUtils } from './auth/password-utils';
-import { eq } from 'drizzle-orm';
+import { db } from "./db";
+import { adminUsers } from "@shared/schema";
+import { PasswordUtils } from "./auth/password-utils";
+import { eq } from "drizzle-orm";
 
-async function seedSuperAdmin() {
+// Criar usuário super admin inicial
+async function seedAdminUser() {
+  console.log("Creating initial super admin user...");
+
   try {
-    console.log('🌱 Iniciando seed do super administrador...');
-    
     // Verificar se já existe um super admin
-    const existingSuperAdminResult = await db
+    const existingAdmin = await db
       .select()
       .from(adminUsers)
-      .where(eq(adminUsers.role, 'super_admin'));
-    
-    const existingSuperAdmin = existingSuperAdminResult[0];
-    
-    if (existingSuperAdmin) {
-      console.log('✅ Super administrador já existe:', existingSuperAdmin.username);
+      .where(eq(adminUsers.username, 'superadmin'));
+
+    if (existingAdmin.length > 0) {
+      console.log("Super admin already exists, skipping creation");
       return;
     }
-    
-    // Dados do super admin inicial
-    const superAdminData = {
-      username: 'superadmin',
-      email: 'admin@kitrunner.com',
-      password: 'KitRunner2025!@#',
-      fullName: 'Super Administrador',
-      role: 'super_admin' as const,
-    };
-    
-    // Hash da senha
-    const passwordHash = await PasswordUtils.hashPassword(superAdminData.password);
-    
+
+    // Hash da senha inicial
+    const passwordHash = await PasswordUtils.hashPassword('KitRunner2025!@#');
+
     // Criar super admin
-    const [newSuperAdmin] = await db
-      .insert(adminUsers)
-      .values({
-        username: superAdminData.username,
-        email: superAdminData.email,
-        passwordHash,
-        fullName: superAdminData.fullName,
-        role: superAdminData.role,
-        isActive: true,
-      })
-      .returning();
-    
-    console.log('✅ Super administrador criado com sucesso!');
-    console.log('📝 Credenciais de acesso:');
-    console.log(`   Username: ${superAdminData.username}`);
-    console.log(`   Email: ${superAdminData.email}`);
-    console.log(`   Senha: ${superAdminData.password}`);
-    console.log('⚠️  IMPORTANTE: Altere a senha após o primeiro login!');
-    
-    return newSuperAdmin;
-    
+    await db.insert(adminUsers).values({
+      username: 'superadmin',
+      email: 'admin@kitrunner.com.br',
+      passwordHash,
+      fullName: 'Super Administrador',
+      role: 'super_admin',
+      isActive: true,
+    });
+
+    console.log("✅ Super admin created successfully!");
+    console.log("Username: superadmin");
+    console.log("Password: KitRunner2025!@# (change after first login)");
+    console.log("Email: admin@kitrunner.com.br");
+
   } catch (error) {
-    console.error('❌ Erro ao criar super administrador:', error);
+    console.error("Error creating super admin:", error);
     throw error;
   }
 }
 
-// Executar seed se este arquivo for chamado diretamente
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
+// Executar se chamado diretamente
 if (import.meta.url === `file://${process.argv[1]}`) {
-  seedSuperAdmin()
+  seedAdminUser()
     .then(() => {
-      console.log('🎉 Seed do super administrador concluído!');
+      console.log("Admin seeding completed successfully!");
       process.exit(0);
     })
     .catch((error) => {
-      console.error('💥 Erro no seed:', error);
+      console.error("Admin seeding failed:", error);
       process.exit(1);
     });
 }
 
-export { seedSuperAdmin };
+export { seedAdminUser };

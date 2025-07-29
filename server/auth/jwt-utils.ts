@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import crypto from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'kitrunner-super-secret-key-2025';
@@ -20,9 +20,11 @@ export class JWTUtils {
       role,
     };
 
-    return jwt.sign(payload, JWT_SECRET, {
-      expiresIn: JWT_EXPIRES_IN as string,
-    });
+    const options: SignOptions = {
+      expiresIn: JWT_EXPIRES_IN,
+    };
+
+    return jwt.sign(payload, JWT_SECRET, options);
   }
 
   static verifyToken(token: string): JWTPayload | null {

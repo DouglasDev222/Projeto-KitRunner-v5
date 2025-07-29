@@ -1,45 +1,74 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import type { AdminUser } from '@shared/schema';
+import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { apiRequest } from '@/lib/queryClient';
+
+interface AdminUser {
+  id: number;
+  username: string;
+  email: string;
+  fullName: string;
+  role: string;
+  isActive: boolean;
+  lastLogin?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface AdminAuthContextType {
   admin: AdminUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
-const ADMIN_TOKEN_KEY = 'admin_auth_token';
-const ADMIN_USER_KEY = 'admin_user_data';
+interface AdminAuthProviderProps {
+  children: ReactNode;
+}
 
-export function AdminAuthProvider({ children }: { children: ReactNode }) {
+export function AdminAuthProvider({ children }: AdminAuthProviderProps) {
   const [admin, setAdmin] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Verificar token armazenado ao inicializar
   useEffect(() => {
-    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
-    const userData = localStorage.getItem(ADMIN_USER_KEY);
-    
-    if (token && userData) {
-      try {
-        const user = JSON.parse(userData);
-        setAdmin(user);
-      } catch (error) {
-        console.error('Error parsing stored admin user data:', error);
-        localStorage.removeItem(ADMIN_TOKEN_KEY);
-        localStorage.removeItem(ADMIN_USER_KEY);
-      }
+    // Verificar se há token armazenado e validá-lo
+    const token = localStorage.getItem('adminToken');
+    if (token) {
+      verifyCurrentToken(token);
+    } else {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   }, []);
 
-  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const verifyCurrentToken = async (token: string) => {
     try {
+      const response = await fetch('/api/admin/auth/verify', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAdmin(data.user);
+      } else {
+        // Token inválido, remover do storage
+        localStorage.removeItem('adminToken');
+      }
+    } catch (error) {
+      console.error('Error verifying token:', error);
+      localStorage.removeItem('adminToken');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const login = async (username: string, password: string) => {
+    try {
+      setIsLoading(true);
+      
       const response = await fetch('/api/admin/auth/login', {
         method: 'POST',
         headers: {
@@ -50,23 +79,24 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
 
-      if (data.success && data.token && data.user) {
-        localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
-        localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(data.user));
+      if (data.success) {
+        localStorage.setItem('adminToken', data.token);
         setAdmin(data.user);
         return { success: true };
       } else {
-        return { success: false, error: data.error || 'Erro de login' };
+        return { success: false, error: data.error };
       }
     } catch (error) {
       console.error('Login error:', error);
       return { success: false, error: 'Erro de conexão' };
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const logout = async () => {
     try {
-      const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+      const token = localStorage.getItem('adminToken');
       if (token) {
         await fetch('/api/admin/auth/logout', {
           method: 'POST',
@@ -78,40 +108,19 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      localStorage.removeItem(ADMIN_TOKEN_KEY);
-      localStorage.removeItem(ADMIN_USER_KEY);
+      localStorage.removeItem('adminToken');
       setAdmin(null);
     }
   };
 
   const refreshToken = async () => {
-    try {
-      const token = localStorage.getItem(ADMIN_TOKEN_KEY);
-      if (!token) return;
-
-      const response = await fetch('/api/admin/auth/refresh', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (data.success && data.token && data.user) {
-        localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
-        localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(data.user));
-        setAdmin(data.user);
-      } else {
-        logout();
-      }
-    } catch (error) {
-      console.error('Token refresh error:', error);
-      logout();
+    const token = localStorage.getItem('adminToken');
+    if (token) {
+      await verifyCurrentToken(token);
     }
   };
 
-  const value = {
+  const value: AdminAuthContextType = {
     admin,
     isAuthenticated: !!admin,
     isLoading,

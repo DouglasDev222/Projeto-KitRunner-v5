@@ -414,8 +414,8 @@ export class AdminAuthService {
         .leftJoin(adminUsers, eq(adminAuditLog.adminUserId, adminUsers.id))
         .where(whereClause)
         .orderBy(desc(adminAuditLog.createdAt))
-        .limit(filters.limit)
-        .offset((filters.page - 1) * filters.limit);
+        .limit(filters.limit || 50)
+        .offset(((filters.page || 1) - 1) * (filters.limit || 50));
 
       return { logs, total: count };
 

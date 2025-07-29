@@ -73,14 +73,15 @@ router.post('/logout', requireAdminAuth, async (req: AuthenticatedRequest, res) 
 });
 
 // Verificar token atual
-router.get('/me', requireAdminAuth, async (req: AuthenticatedRequest, res) => {
+router.get('/verify', requireAdminAuth, async (req: AuthenticatedRequest, res) => {
   try {
+    // Se chegou até aqui, o token é válido (middleware verificou)
     res.json({
       success: true,
       user: req.admin,
     });
   } catch (error) {
-    console.error('Get current admin error:', error);
+    console.error('Token verification error:', error);
     res.status(500).json({
       success: false,
       error: 'Erro interno do servidor',
@@ -88,22 +89,27 @@ router.get('/me', requireAdminAuth, async (req: AuthenticatedRequest, res) => {
   }
 });
 
-// Atualizar token (refresh)
-router.post('/refresh', requireAdminAuth, async (req: AuthenticatedRequest, res) => {
+// Criar usuário admin (apenas super_admin)
+router.post('/users', requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const admin = req.admin!;
+    const body = adminUserCreationSchema.parse(req.body);
     
-    // Gerar novo token
-    const { JWTUtils } = await import('../auth/jwt-utils');
-    const newToken = JWTUtils.generateToken(admin.id, admin.username, admin.role);
+    const user = await adminAuthService.createAdminUser(body, req.admin!.id);
     
     res.json({
       success: true,
-      token: newToken,
-      user: admin,
+      user,
     });
   } catch (error) {
-    console.error('Token refresh error:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        success: false,
+        error: 'Dados inválidos',
+        details: error.errors,
+      });
+    }
+    
+    console.error('Create user error:', error);
     res.status(500).json({
       success: false,
       error: 'Erro interno do servidor',
@@ -111,9 +117,7 @@ router.post('/refresh', requireAdminAuth, async (req: AuthenticatedRequest, res)
   }
 });
 
-// Gestão de usuários administrativos
-
-// Listar todos os administradores
+// Listar usuários admin (apenas super_admin)
 router.get('/users', requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const users = await adminAuthService.getAllAdminUsers();
@@ -123,7 +127,7 @@ router.get('/users', requireSuperAdmin, async (req: AuthenticatedRequest, res) =
       users,
     });
   } catch (error) {
-    console.error('Get admin users error:', error);
+    console.error('Get users error:', error);
     res.status(500).json({
       success: false,
       error: 'Erro interno do servidor',
@@ -131,45 +135,17 @@ router.get('/users', requireSuperAdmin, async (req: AuthenticatedRequest, res) =
   }
 });
 
-// Criar novo administrador
-router.post('/users', requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
-  try {
-    const body = adminUserCreationSchema.parse(req.body);
-    
-    const newUser = await adminAuthService.createAdminUser(body, req.admin!.id);
-    
-    res.status(201).json({
-      success: true,
-      user: newUser,
-    });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        success: false,
-        error: 'Dados inválidos',
-        details: error.errors,
-      });
-    }
-    
-    console.error('Create admin user error:', error);
-    res.status(400).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Erro interno do servidor',
-    });
-  }
-});
-
-// Atualizar administrador
+// Atualizar usuário admin (apenas super_admin)
 router.put('/users/:id', requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const userId = parseInt(req.params.id);
     const body = adminUserUpdateSchema.parse(req.body);
     
-    const updatedUser = await adminAuthService.updateAdminUser(id, body, req.admin!.id);
+    const user = await adminAuthService.updateAdminUser(userId, body);
     
     res.json({
       success: true,
-      user: updatedUser,
+      user,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -180,42 +156,48 @@ router.put('/users/:id', requireSuperAdmin, async (req: AuthenticatedRequest, re
       });
     }
     
-    console.error('Update admin user error:', error);
-    res.status(400).json({
+    console.error('Update user error:', error);
+    res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Erro interno do servidor',
+      error: 'Erro interno do servidor',
     });
   }
 });
 
-// Desativar administrador
+// Deletar usuário admin (apenas super_admin)
 router.delete('/users/:id', requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const userId = parseInt(req.params.id);
     
-    await adminAuthService.deleteAdminUser(id, req.admin!.id);
+    // Não permitir deletar próprio usuário
+    if (userId === req.admin!.id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Não é possível deletar seu próprio usuário',
+      });
+    }
+    
+    await adminAuthService.deleteAdminUser(userId);
     
     res.json({
       success: true,
-      message: 'Usuário desativado com sucesso',
+      message: 'Usuário deletado com sucesso',
     });
   } catch (error) {
-    console.error('Delete admin user error:', error);
-    res.status(400).json({
+    console.error('Delete user error:', error);
+    res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Erro interno do servidor',
+      error: 'Erro interno do servidor',
     });
   }
 });
 
-// Auditoria
-
-// Buscar logs de auditoria
-router.get('/audit', requireAdminAuth, async (req: AuthenticatedRequest, res) => {
+// Logs de auditoria
+router.get('/audit-logs', requireAdminAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const filters = auditLogFiltersSchema.parse(req.query);
     
-    // Administradores regulares só podem ver seus próprios logs
+    // Se não for super_admin, só pode ver próprios logs
     if (req.admin!.role !== 'super_admin') {
       filters.adminUserId = req.admin!.id;
     }
@@ -224,40 +206,18 @@ router.get('/audit', requireAdminAuth, async (req: AuthenticatedRequest, res) =>
     
     res.json({
       success: true,
-      logs: result.logs,
-      total: result.total,
-      page: filters.page,
-      limit: filters.limit,
-      totalPages: Math.ceil(result.total / filters.limit),
+      ...result,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        error: 'Parâmetros inválidos',
+        error: 'Filtros inválidos',
         details: error.errors,
       });
     }
     
-    console.error('Get audit log error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erro interno do servidor',
-    });
-  }
-});
-
-// Limpar sessões expiradas (endpoint de manutenção)
-router.post('/cleanup', requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
-  try {
-    await adminAuthService.cleanupExpiredSessions();
-    
-    res.json({
-      success: true,
-      message: 'Sessões expiradas removidas com sucesso',
-    });
-  } catch (error) {
-    console.error('Cleanup sessions error:', error);
+    console.error('Get audit logs error:', error);
     res.status(500).json({
       success: false,
       error: 'Erro interno do servidor',

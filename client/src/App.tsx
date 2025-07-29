@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth-context";
 import { AdminAuthProvider } from "@/contexts/admin-auth-context";
+import { AdminRouteGuard } from "@/components/admin-auth/admin-route-guard";
 import Events from "@/pages/events";
 import EventDetails from "@/pages/event-details";
 import CustomerIdentification from "@/pages/customer-identification";
@@ -26,7 +27,7 @@ import AdminEventEdit from "@/pages/admin-event-edit";
 import AdminOrders from "@/pages/admin-orders";
 import AdminCustomers from "@/pages/admin-customers";
 import AdminReports from "@/pages/admin-reports";
-import AdminLogin from "@/pages/admin-login";
+import { AdminLogin } from "@/components/admin-auth/admin-login";
 import AdminUsers from "@/pages/admin-users";
 
 function Router() {
@@ -50,15 +51,65 @@ function Router() {
       <Route path="/profile/address/:id/edit" component={NewAddress} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={CustomerRegistration} />
-      <Route path="/admin" component={AdminDashboard} />
-      <Route path="/admin/events" component={AdminEvents} />
-      <Route path="/admin/events/new" component={AdminEventForm} />
-      <Route path="/admin/events/:id/edit" component={AdminEventEdit} />
-      <Route path="/admin/orders" component={AdminOrders} />
-      <Route path="/admin/customers" component={AdminCustomers} />
-      <Route path="/admin/reports" component={AdminReports} />
-      <Route path="/admin/login" component={AdminLogin} />
-      <Route path="/admin/users" component={AdminUsers} />
+      <Route path="/admin/login" >
+        {() => <AdminLogin />}
+      </Route>
+      <Route path="/admin" >
+        {() => (
+          <AdminRouteGuard>
+            <AdminDashboard />
+          </AdminRouteGuard>
+        )}
+      </Route>
+      <Route path="/admin/events" >
+        {() => (
+          <AdminRouteGuard>
+            <AdminEvents />
+          </AdminRouteGuard>
+        )}
+      </Route>
+      <Route path="/admin/events/new" >
+        {() => (
+          <AdminRouteGuard>
+            <AdminEventForm />
+          </AdminRouteGuard>
+        )}
+      </Route>
+      <Route path="/admin/events/:id/edit" >
+        {() => (
+          <AdminRouteGuard>
+            <AdminEventEdit />
+          </AdminRouteGuard>
+        )}
+      </Route>
+      <Route path="/admin/orders" >
+        {() => (
+          <AdminRouteGuard>
+            <AdminOrders />
+          </AdminRouteGuard>
+        )}
+      </Route>
+      <Route path="/admin/customers" >
+        {() => (
+          <AdminRouteGuard>
+            <AdminCustomers />
+          </AdminRouteGuard>
+        )}
+      </Route>
+      <Route path="/admin/reports" >
+        {() => (
+          <AdminRouteGuard>
+            <AdminReports />
+          </AdminRouteGuard>
+        )}
+      </Route>
+      <Route path="/admin/users" >
+        {() => (
+          <AdminRouteGuard requiredRole="super_admin">
+            <AdminUsers />
+          </AdminRouteGuard>
+        )}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

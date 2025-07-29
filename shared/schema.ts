@@ -374,6 +374,60 @@ export type InsertAddress = z.infer<typeof insertAddressSchema>;
 export type Kit = typeof kits.$inferSelect;
 export type InsertKit = z.infer<typeof insertKitSchema>;
 
+export type Order = typeof orders.$inferSelect;
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
+
+export type Coupon = typeof coupons.$inferSelect;
+export type InsertCoupon = z.infer<typeof insertCouponSchema>;
+
+// Admin types
+export type AdminUser = typeof adminUsers.$inferSelect;
+export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
+
+export type AdminSession = typeof adminSessions.$inferSelect;
+export type InsertAdminSession = z.infer<typeof insertAdminSessionSchema>;
+
+export type AdminAuditLog = typeof adminAuditLog.$inferSelect;
+export type InsertAdminAuditLog = z.infer<typeof insertAdminAuditLogSchema>;
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
+
+// Auth types
+export interface AuthResult {
+  success: boolean;
+  token?: string;
+  user?: Omit<AdminUser, 'passwordHash'>;
+  error?: string;
+}
+
+export interface CreateAdminUser {
+  username: string;
+  email: string;
+  password: string;
+  fullName: string;
+  role?: string;
+}
+
+export interface UpdateAdminUser {
+  username?: string;
+  email?: string;
+  fullName?: string;
+  role?: string;
+  isActive?: boolean;
+}
+
+export interface AuditLogFilters {
+  adminUserId?: number;
+  action?: string;
+  resourceType?: string;
+  startDate?: Date;
+  endDate?: Date;
+  limit?: number;
+  offset?: number;
+  page?: number;
+}
+
 export type OrderStatusHistory = typeof orderStatusHistory.$inferSelect;
 export type InsertOrderStatusHistory = typeof orderStatusHistory.$inferInsert;
 
