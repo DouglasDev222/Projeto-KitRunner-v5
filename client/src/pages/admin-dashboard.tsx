@@ -1,11 +1,9 @@
-import { useState, useEffect } from "react";
-import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminLayout } from "@/components/admin-layout";
-import { AdminAuth } from "@/components/admin-auth";
+import { AdminProtectedRoute } from "@/components/admin-protected-route";
 import { Users, Package, Calendar, Plus, DollarSign } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -14,39 +12,28 @@ import { formatCPF } from "@/lib/cpf-validator";
 import { getStatusBadge } from "@/lib/status-utils";
 import type { Customer, Order, Event } from "@shared/schema";
 
-
-
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(() => {
-    const authStatus = localStorage.getItem("adminAuthenticated");
-    setIsAuthenticated(authStatus === "true");
-  }, []);
-
-  const { data: customers, isLoading: customersLoading } = useQuery({
+  const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
     queryKey: ["/api/admin/customers"],
   });
 
-  const { data: orders, isLoading: ordersLoading } = useQuery({
+  const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ["/api/admin/orders"],
   });
 
-  const { data: events, isLoading: eventsLoading } = useQuery({
+  const { data: events = [], isLoading: eventsLoading } = useQuery<Event[]>({
     queryKey: ["/api/admin/events"],
   });
 
-  const { data: stats } = useQuery({
+  const { data: stats = {} } = useQuery({
     queryKey: ["/api/admin/stats"],
   });
 
-  if (!isAuthenticated) {
-    return <AdminAuth onAuthenticated={() => setIsAuthenticated(true)} />;
-  }
-
   return (
-    <AdminLayout>
+    <AdminProtectedRoute>
+      <AdminLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-neutral-800">Dashboard</h1>
@@ -275,6 +262,7 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
         </Tabs>
-    </AdminLayout>
+      </AdminLayout>
+    </AdminProtectedRoute>
   );
 }

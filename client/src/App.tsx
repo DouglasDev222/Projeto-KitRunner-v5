@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth-context";
+import { AdminAuthProvider } from "@/contexts/admin-auth-context";
 import Events from "@/pages/events";
 import EventDetails from "@/pages/event-details";
 import CustomerIdentification from "@/pages/customer-identification";
@@ -25,6 +26,8 @@ import AdminEventEdit from "@/pages/admin-event-edit";
 import AdminOrders from "@/pages/admin-orders";
 import AdminCustomers from "@/pages/admin-customers";
 import AdminReports from "@/pages/admin-reports";
+import AdminLogin from "@/pages/admin-login";
+import AdminUsers from "@/pages/admin-users";
 
 function Router() {
   return (
@@ -54,6 +57,8 @@ function Router() {
       <Route path="/admin/orders" component={AdminOrders} />
       <Route path="/admin/customers" component={AdminCustomers} />
       <Route path="/admin/reports" component={AdminReports} />
+      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin/users" component={AdminUsers} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -63,10 +68,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <AdminAuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </AdminAuthProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
+import { useAdminAuth } from "@/contexts/admin-auth-context";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
 import { 
   Menu, 
   Home, 
@@ -9,7 +11,9 @@ import {
   Calendar, 
   Package, 
   BarChart3,
-  LogOut 
+  LogOut,
+  Settings,
+  Shield
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -19,6 +23,7 @@ interface AdminLayoutProps {
 export function AdminLayout({ children }: AdminLayoutProps) {
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { admin, logout } = useAdminAuth();
 
   const menuItems = [
     { icon: Home, label: "Dashboard", href: "/admin" },
@@ -26,12 +31,35 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { icon: Users, label: "Clientes", href: "/admin/customers" },
     { icon: Package, label: "Pedidos", href: "/admin/orders" },
     { icon: BarChart3, label: "Relatórios", href: "/admin/reports" },
+    ...(admin?.role === 'super_admin' ? [
+      { icon: Settings, label: "Usuários", href: "/admin/users" },
+    ] : []),
   ];
+
+  const handleLogout = async () => {
+    await logout();
+    window.location.href = '/admin/login';
+  };
 
   const Sidebar = ({ mobile = false }: { mobile?: boolean }) => (
     <div className={`${mobile ? 'w-full' : 'w-64'} bg-white border-r border-gray-200 h-full flex flex-col`}>
       <div className="p-6 border-b border-gray-200">
         <h2 className="text-xl font-bold text-gray-800">Painel Admin</h2>
+        {admin && (
+          <div className="mt-4 space-y-2">
+            <p className="text-sm text-gray-600">Bem-vindo, {admin.fullName}</p>
+            <Badge variant={admin.role === 'super_admin' ? 'default' : 'secondary'}>
+              {admin.role === 'super_admin' ? (
+                <>
+                  <Shield className="mr-1 h-3 w-3" />
+                  Super Admin
+                </>
+              ) : (
+                'Administrador'
+              )}
+            </Badge>
+          </div>
+        )}
       </div>
       
       <nav className="flex-1 p-4">
@@ -61,10 +89,18 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </ul>
       </nav>
       
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-gray-200 space-y-2">
+        <Button 
+          variant="outline" 
+          className="w-full justify-start"
+          onClick={handleLogout}
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          Fazer Logout
+        </Button>
         <Link href="/">
-          <Button variant="outline" className="w-full justify-start">
-            <LogOut className="w-4 h-4 mr-2" />
+          <Button variant="ghost" className="w-full justify-start">
+            <Home className="w-4 h-4 mr-2" />
             Voltar ao Site
           </Button>
         </Link>

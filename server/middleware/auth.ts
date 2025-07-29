@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { AdminAuthService } from '../auth/admin-auth';
 
 // Interface para estender o Request com dados do usuário
 export interface AuthenticatedRequest extends Request {
@@ -8,7 +9,17 @@ export interface AuthenticatedRequest extends Request {
     name: string;
     isAdmin?: boolean;
   };
+  admin?: {
+    id: number;
+    username: string;
+    fullName: string;
+    role: string;
+    email: string;
+    isActive: boolean;
+  };
 }
+
+const adminAuthService = new AdminAuthService();
 
 // Middleware para verificar se usuário está autenticado
 export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
@@ -55,28 +66,108 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
   }
 }
 
-// Middleware para verificar se usuário é administrador
-export function requireAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  // Método 1: Header X-Admin-Auth para autenticação direta admin
-  const adminHeader = req.headers['x-admin-auth'];
-  if (adminHeader === 'true') {
-    req.user = { id: 0, cpf: '', name: 'Admin', isAdmin: true };
-    console.log(`🔑 Admin access granted via header for ${req.path}`);
-    return next();
-  }
-  
-  // Método 2: Token com isAdmin flag
-  requireAuth(req, res, () => {
-    if (!req.user?.isAdmin) {
-      console.warn(`🔒 SECURITY: Non-admin access attempt to ${req.path} by user ${req.user?.id} from IP: ${req.ip}`);
-      return res.status(403).json({ 
-        error: 'Acesso negado',
-        message: 'Apenas administradores podem acessar este recurso'
+// Middleware para verificar autenticação de administrador com JWT
+export async function requireAdminAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    // Método de compatibilidade: Header X-Admin-Auth (temporário durante migração)
+    const adminHeader = req.headers['x-admin-auth'];
+    if (adminHeader === 'true') {
+      req.user = { id: 0, cpf: '', name: 'Admin', isAdmin: true };
+      console.log(`🔑 Admin access granted via header for ${req.path}`);
+      return next();
+    }
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.warn(`🔒 SECURITY: Missing admin token for ${req.path} from IP: ${req.ip}`);
+      return res.status(401).json({ 
+        error: 'Token de administrador requerido',
+        message: 'Acesso restrito a administradores autenticados'
       });
     }
     
-    console.log(`🔑 Admin access granted to ${req.user.name} for ${req.path}`);
+    const token = authHeader.substring(7); // Remove 'Bearer '
+    const admin = await adminAuthService.verifyToken(token);
+    
+    if (!admin) {
+      console.warn(`🔒 SECURITY: Invalid admin token for ${req.path} from IP: ${req.ip}`);
+      return res.status(401).json({ 
+        error: 'Token de administrador inválido',
+        message: 'Token expirado ou inválido'
+      });
+    }
+    
+    // Anexar dados do admin à requisição
+    req.admin = admin;
+    
+    // Log da ação automaticamente
+    await adminAuthService.logAction(
+      admin.id, 
+      `access_${req.method.toLowerCase()}`, 
+      'api_endpoint', 
+      req.path,
+      { method: req.method, params: req.params, query: req.query },
+      req.ip,
+      req.get('User-Agent')
+    );
+    
+    console.log(`🔑 Admin authenticated: ${admin.fullName} (${admin.role}) for ${req.path}`);
     next();
+  } catch (error) {
+    console.error('Admin auth error:', error);
+    return res.status(500).json({ 
+      error: 'Erro de autenticação',
+      message: 'Erro interno do servidor'
+    });
+  }
+}
+
+// Middleware para verificar papel de super administrador
+export function requireSuperAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  requireAdminAuth(req, res, () => {
+    if (req.admin?.role !== 'super_admin') {
+      console.warn(`🔒 SECURITY: Non-super-admin access attempt to ${req.path} by ${req.admin?.username} from IP: ${req.ip}`);
+      return res.status(403).json({ 
+        error: 'Acesso negado',
+        message: 'Apenas super administradores podem acessar este recurso'
+      });
+    }
+    
+    console.log(`🔑 Super admin access granted to ${req.admin.fullName} for ${req.path}`);
+    next();
+  });
+}
+
+// Middleware legado para verificar se usuário é administrador (manter compatibilidade)
+export function requireAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  // Tentar novo sistema primeiro
+  requireAdminAuth(req, res, (error?: any) => {
+    if (!error && req.admin) {
+      return; // Sucesso com novo sistema
+    }
+    
+    // Fallback para sistema antigo
+    const adminHeader = req.headers['x-admin-auth'];
+    if (adminHeader === 'true') {
+      req.user = { id: 0, cpf: '', name: 'Admin', isAdmin: true };
+      console.log(`🔑 Admin access granted via header for ${req.path}`);
+      return next();
+    }
+    
+    // Token com isAdmin flag (sistema cliente)
+    requireAuth(req, res, () => {
+      if (!req.user?.isAdmin) {
+        console.warn(`🔒 SECURITY: Non-admin access attempt to ${req.path} by user ${req.user?.id} from IP: ${req.ip}`);
+        return res.status(403).json({ 
+          error: 'Acesso negado',
+          message: 'Apenas administradores podem acessar este recurso'
+        });
+      }
+      
+      console.log(`🔑 Admin access granted to ${req.user.name} for ${req.path}`);
+      next();
+    });
   });
 }
 

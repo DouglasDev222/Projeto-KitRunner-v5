@@ -254,7 +254,7 @@ RATE_LIMIT_WINDOW_MINUTES=15
 // Dados do primeiro super admin (será criado automaticamente)
 const INITIAL_SUPER_ADMIN = {
   username: 'superadmin',
-  email: 'admin@kitrunner.com',
+  email: 'admin@kitrunner.com.br',
   password: 'KitRunner2025!@#', // Mudar após primeiro login
   fullName: 'Super Administrador',
   role: 'super_admin'

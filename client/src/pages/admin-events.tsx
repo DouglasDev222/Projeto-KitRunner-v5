@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AdminLayout } from "@/components/admin-layout";
-import { AdminAuth } from "@/components/admin-auth";
+import { AdminProtectedRoute } from "@/components/admin-protected-route";
 import { 
   Plus, 
   Edit, 
@@ -40,16 +40,10 @@ import {
 
 export default function AdminEvents() {
   const [, setLocation] = useLocation();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showOrdersDialog, setShowOrdersDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const authStatus = localStorage.getItem("adminAuthenticated");
-    setIsAuthenticated(authStatus === "true");
-  }, []);
 
   const { data: events, isLoading: eventsLoading } = useQuery({
     queryKey: ["admin", "events"],
@@ -118,12 +112,9 @@ export default function AdminEvents() {
     return { totalOrders, totalRevenue, totalKits };
   };
 
-  if (!isAuthenticated) {
-    return <AdminAuth onAuthenticated={() => setIsAuthenticated(true)} />;
-  }
-
   return (
-    <AdminLayout>
+    <AdminProtectedRoute>
+      <AdminLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-neutral-800">Administração de Eventos</h1>
@@ -331,7 +322,8 @@ export default function AdminEvents() {
           )}
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+      </AdminLayout>
+    </AdminProtectedRoute>
   );
 }
 

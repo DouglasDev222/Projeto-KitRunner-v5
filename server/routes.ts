@@ -10,6 +10,7 @@ import { calculateDeliveryCost } from "./distance-calculator";
 import { MercadoPagoService } from "./mercadopago-service";
 import path from "path";
 import { requireAuth, requireAdmin, requireOwnership, type AuthenticatedRequest } from './middleware/auth';
+import adminAuthRoutes from './routes/admin-auth';
 
 // Security: Rate limiting for payment endpoints
 const paymentRateLimit = rateLimit({
@@ -83,6 +84,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Apply general rate limiting to all API routes
   app.use('/api', generalRateLimit);
+  
+  // Admin authentication routes
+  app.use('/api/admin/auth', adminAuthRoutes);
   
   // Serve test HTML files
   app.get("/test-rejected-payment.html", (req, res) => {
