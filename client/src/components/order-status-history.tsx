@@ -21,11 +21,16 @@ interface OrderStatusHistoryProps {
   orderId?: number;
   orderNumber?: string;
   showTitle?: boolean;
+  isAdminContext?: boolean;
 }
 
-export function OrderStatusHistory({ orderId, orderNumber, showTitle = true }: OrderStatusHistoryProps) {
+export function OrderStatusHistory({ orderId, orderNumber, showTitle = true, isAdminContext = false }: OrderStatusHistoryProps) {
   const { data: historyData, isLoading, error } = useQuery({
-    queryKey: orderId ? ['/api/orders', orderId, 'status-history'] : ['/api/orders/number', orderNumber, 'status-history'],
+    queryKey: isAdminContext && orderId 
+      ? [`/api/admin/orders/${orderId}/status-history`]
+      : orderId 
+        ? ['/api/orders', orderId, 'status-history'] 
+        : ['/api/orders/number', orderNumber, 'status-history'],
     enabled: Boolean(orderId || orderNumber),
   });
 

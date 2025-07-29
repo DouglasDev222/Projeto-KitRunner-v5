@@ -795,7 +795,7 @@ export default function AdminOrders() {
               </Card>
 
               {/* Order Status History */}
-              <OrderStatusHistory orderId={selectedOrder.id} showTitle={true} />
+              <OrderStatusHistory orderId={selectedOrder.id} showTitle={true} isAdminContext={true} />
 
               {/* Action Buttons */}
               <div className="flex justify-end gap-4 pt-4 border-t">

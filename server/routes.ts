@@ -777,6 +777,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get order status history (admin endpoint)
+  app.get("/api/admin/orders/:id/status-history", requireAdmin, async (req, res) => {
+    try {
+      const orderId = parseInt(req.params.id);
+      
+      if (!orderId || isNaN(orderId)) {
+        return res.status(400).json({ message: "ID do pedido inválido" });
+      }
+
+      const history = await storage.getOrderStatusHistory(orderId);
+      
+      res.json({
+        success: true,
+        history
+      });
+    } catch (error) {
+      console.error('Error getting order status history:', error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   // Update order details (admin can edit order)
   app.put("/api/admin/orders/:id", async (req, res) => {
     try {
