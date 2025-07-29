@@ -380,7 +380,7 @@ async function seedDatabase() {
 
     for (let i = 0; i < orderData.length; i++) {
       const order = orderData[i];
-      const orderNumber = `KR${new Date().getFullYear()}${String(Date.now() + i + Math.random() * 1000).slice(-6)}`;
+      const orderNumber = `KR${new Date().getFullYear()}${String(Date.now() + i + Math.random() * 1000).replace('.', '').slice(-6)}`;
 
       const [createdOrder] = await db
         .insert(orders)
