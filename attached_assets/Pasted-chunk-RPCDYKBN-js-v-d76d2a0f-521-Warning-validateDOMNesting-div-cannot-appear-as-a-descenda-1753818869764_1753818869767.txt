@@ -1,0 +1,49 @@
+chunk-RPCDYKBN.js?v=d76d2a0f:521 Warning: validateDOMNesting(...): <div> cannot appear as a descendant of <p>.
+    at div
+    at Badge (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.dev/src/components/ui/badge.tsx:35:18)
+    at p
+    at div
+    at div
+    at _c9 (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.dev/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.dev/src/components/ui/card.tsx:20:11)
+    at div
+    at div
+    at div
+    at https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…kspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=d76d2a0f:244:13
+    at https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…rkspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=d76d2a0f:273:7
+    at https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…kspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=d76d2a0f:154:13
+    at https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…kspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=d76d2a0f:131:13
+    at https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…kspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=d76d2a0f:244:13
+    at https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…rkspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=d76d2a0f:472:5
+    at https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…space/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=d76d2a0f:1001:13
+    at https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…kspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=d76d2a0f:924:58
+    at Presence (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…kspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=d76d2a0f:693:11)
+    at https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…kspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=d76d2a0f:915:64
+    at https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…kspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=d76d2a0f:154:13
+    at https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…kspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=d76d2a0f:131:13
+    at https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…kspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=d76d2a0f:244:13
+    at https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…kspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=d76d2a0f:675:22
+    at Presence (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…kspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=d76d2a0f:693:11)
+    at Provider (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…unner/workspace/node_modules/.vite/deps/chunk-54LY3QNH.js?v=d76d2a0f:38:15)
+    at DialogPortal (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…kspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=d76d2a0f:877:11)
+    at _c3 (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.dev/src/components/ui/dialog.tsx:52:12)
+    at Provider (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…unner/workspace/node_modules/.vite/deps/chunk-54LY3QNH.js?v=d76d2a0f:38:15)
+    at Dialog (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…rkspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=d76d2a0f:817:5)
+    at main
+    at div
+    at div
+    at div
+    at AdminLayout (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.dev/src/components/admin-layout.tsx:35:31)
+    at AdminOrders (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.dev/src/pages/admin-orders.tsx:88:45)
+    at AdminRouteGuard (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.dev/src/components/admin-auth/admin-route-guard.tsx:21:35)
+    at Route (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=d76d2a0f:323:16)
+    at Switch (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=d76d2a0f:379:17)
+    at Router
+    at Provider (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…unner/workspace/node_modules/.vite/deps/chunk-54LY3QNH.js?v=d76d2a0f:38:15)
+    at TooltipProvider (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…rkspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=d76d2a0f:64:5)
+    at AdminAuthProvider (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.dev/src/contexts/admin-auth-context.tsx:20:37)
+    at AuthProvider (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.dev/src/lib/auth-context.tsx:20:32)
+    at QueryClientProvider (https://50719c5c-1402-4d1c-bb6b-d1117e9cbd92-00-3pedg54n7zrm5.riker.replit.…rkspace/node_modules/.vite/deps/@tanstack_react-query.js?v=d76d2a0f:2805:3)
+    at App
+﻿

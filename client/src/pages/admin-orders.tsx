@@ -86,6 +86,7 @@ const paymentMethodLabels: { [key: string]: string } = {
 export default function AdminOrders() {
   // Sistema novo: AdminRouteGuard já protege
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [showOrderDialog, setShowOrderDialog] = useState(false);
   const [filters, setFilters] = useState<OrderFilters>({
     status: 'all'
@@ -125,9 +126,13 @@ export default function AdminOrders() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ orderId, status }: { orderId: number; status: string }) => {
+      const adminToken = localStorage.getItem('adminToken');
       const response = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        },
         body: JSON.stringify({ status }),
       });
       if (!response.ok) throw new Error('Erro ao atualizar status');
@@ -150,15 +155,19 @@ export default function AdminOrders() {
     },
   });
 
-  const fetchOrderDetails = async (orderId: number) => {
-    const response = await fetch(`/api/admin/orders/${orderId}`);
-    return response.json();
-  };
+  // Query for individual order details
+  const { data: selectedOrderData, refetch: refetchOrderDetails } = useQuery({
+    queryKey: [`/api/admin/orders/${selectedOrderId}`],
+    enabled: false, // Only fetch when explicitly called
+  });
 
   const handleViewOrder = async (orderId: number) => {
     try {
-      const orderDetails = await fetchOrderDetails(orderId);
-      setSelectedOrder(orderDetails);
+      setSelectedOrderId(orderId);
+      const result = await queryClient.fetchQuery({
+        queryKey: [`/api/admin/orders/${orderId}`],
+      });
+      setSelectedOrder(result);
       setShowOrderDialog(true);
     } catch (error) {
       toast({
@@ -680,7 +689,7 @@ export default function AdminOrders() {
                     </h3>
                     <div className="space-y-2 text-sm">
                       <p><span className="font-medium">Número:</span> {selectedOrder.orderNumber}</p>
-                      <p><span className="font-medium">Status:</span> {getStatusBadge(selectedOrder.status)}</p>
+                      <div><span className="font-medium">Status:</span> {getStatusBadge(selectedOrder.status)}</div>
                       <p><span className="font-medium">Data:</span> {formatDate(selectedOrder.createdAt)}</p>
                       <p><span className="font-medium">Kits:</span> {selectedOrder.kitQuantity}</p>
                       <p><span className="font-medium">Pagamento:</span> {paymentMethodLabels[selectedOrder.paymentMethod]}</p>
