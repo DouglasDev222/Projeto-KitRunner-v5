@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AdminLayout } from "@/components/admin-layout";
-import { AdminAuth } from "@/components/admin-auth";
+// Sistema novo: AdminRouteGuard protege esta página
 import { OrderStatusHistory } from "@/components/order-status-history";
 import { 
   Search, 
@@ -84,7 +84,7 @@ const paymentMethodLabels: { [key: string]: string } = {
 };
 
 export default function AdminOrders() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Sistema novo: AdminRouteGuard já protege
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showOrderDialog, setShowOrderDialog] = useState(false);
   const [filters, setFilters] = useState<OrderFilters>({
@@ -96,10 +96,7 @@ export default function AdminOrders() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const authStatus = localStorage.getItem("adminAuthenticated");
-    setIsAuthenticated(authStatus === "true");
-  }, []);
+  // Sistema novo: AdminRouteGuard já protege - não precisa de verificação
 
   const { data: ordersData, isLoading } = useQuery({
     queryKey: ["/api/admin/orders", { 
@@ -286,9 +283,7 @@ export default function AdminOrders() {
     }
   };
 
-  if (!isAuthenticated) {
-    return <AdminAuth onAuthenticated={() => setIsAuthenticated(true)} />;
-  }
+  // Sistema novo: AdminRouteGuard já protege - não precisa de verificação
 
   return (
     <AdminLayout>

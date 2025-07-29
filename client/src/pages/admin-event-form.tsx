@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/header";
 import { AdminLayout } from "@/components/admin-layout";
-import { AdminAuth } from "@/components/admin-auth";
+// Sistema novo: AdminRouteGuard protege esta página
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,12 +28,9 @@ export default function AdminEventForm() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Sistema novo: AdminRouteGuard já protege
 
-  useEffect(() => {
-    const authStatus = localStorage.getItem("adminAuthenticated");
-    setIsAuthenticated(authStatus === "true");
-  }, []);
+  // Sistema novo: AdminRouteGuard já protege - não precisa de verificação
 
   const form = useForm<AdminEventCreation>({
     resolver: zodResolver(adminEventCreationSchema),
@@ -83,9 +80,7 @@ export default function AdminEventForm() {
   const watchDonationRequired = form.watch("donationRequired");
   const watchPricingType = form.watch("pricingType");
 
-  if (!isAuthenticated) {
-    return <AdminAuth onAuthenticated={() => setIsAuthenticated(true)} />;
-  }
+  // Sistema novo: AdminRouteGuard já protege - não precisa de verificação
 
   return (
     <AdminLayout>

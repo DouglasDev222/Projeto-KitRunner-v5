@@ -71,13 +71,7 @@ export async function requireAdminAuth(req: AuthenticatedRequest, res: Response,
   try {
     const authHeader = req.headers.authorization;
     
-    // Método de compatibilidade: Header X-Admin-Auth (temporário durante migração)
-    const adminHeader = req.headers['x-admin-auth'];
-    if (adminHeader === 'true') {
-      req.user = { id: 0, cpf: '', name: 'Admin', isAdmin: true };
-      console.log(`🔑 Admin access granted via header for ${req.path}`);
-      return next();
-    }
+    // Removido sistema antigo - apenas JWT
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.warn(`🔒 SECURITY: Missing admin token for ${req.path} from IP: ${req.ip}`);
@@ -139,36 +133,10 @@ export function requireSuperAdmin(req: AuthenticatedRequest, res: Response, next
   });
 }
 
-// Middleware legado para verificar se usuário é administrador (manter compatibilidade)
+// Middleware para verificar se usuário é administrador (usando apenas novo sistema JWT)
 export function requireAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  // Tentar novo sistema primeiro
-  requireAdminAuth(req, res, (error?: any) => {
-    if (!error && req.admin) {
-      return; // Sucesso com novo sistema
-    }
-    
-    // Fallback para sistema antigo
-    const adminHeader = req.headers['x-admin-auth'];
-    if (adminHeader === 'true') {
-      req.user = { id: 0, cpf: '', name: 'Admin', isAdmin: true };
-      console.log(`🔑 Admin access granted via header for ${req.path}`);
-      return next();
-    }
-    
-    // Token com isAdmin flag (sistema cliente)
-    requireAuth(req, res, () => {
-      if (!req.user?.isAdmin) {
-        console.warn(`🔒 SECURITY: Non-admin access attempt to ${req.path} by user ${req.user?.id} from IP: ${req.ip}`);
-        return res.status(403).json({ 
-          error: 'Acesso negado',
-          message: 'Apenas administradores podem acessar este recurso'
-        });
-      }
-      
-      console.log(`🔑 Admin access granted to ${req.user.name} for ${req.path}`);
-      next();
-    });
-  });
+  // Usar apenas novo sistema JWT
+  requireAdminAuth(req, res, next);
 }
 
 // Middleware para verificar se usuário pode acessar recurso específico

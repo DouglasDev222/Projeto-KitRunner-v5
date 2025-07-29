@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AdminLayout } from "@/components/admin-layout";
-import { AdminProtectedRoute } from "@/components/admin-protected-route";
+// Sistema novo: AdminRouteGuard já protege esta página
 import { 
   Plus, 
   Edit, 
@@ -113,8 +113,7 @@ export default function AdminEvents() {
   };
 
   return (
-    <AdminProtectedRoute>
-      <AdminLayout>
+    <AdminLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-neutral-800">Administração de Eventos</h1>
@@ -323,7 +322,6 @@ export default function AdminEvents() {
         </DialogContent>
       </Dialog>
       </AdminLayout>
-    </AdminProtectedRoute>
   );
 }
 

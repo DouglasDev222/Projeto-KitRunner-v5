@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminLayout } from "@/components/admin-layout";
-import { AdminAuth } from "@/components/admin-auth";
+// Sistema novo: AdminRouteGuard já protege esta página
 import { ArrowLeft, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Event } from "@shared/schema";
@@ -50,14 +50,11 @@ type EventFormData = z.infer<typeof eventSchema>;
 export default function AdminEventEdit() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Sistema novo: sem necessidade de autenticação aqui (AdminRouteGuard protege)
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const authStatus = localStorage.getItem("adminAuthenticated");
-    setIsAuthenticated(authStatus === "true");
-  }, []);
+  // Sistema novo: AdminRouteGuard já protege - não precisa de verificação
 
   const { data: event, isLoading } = useQuery({
     queryKey: ["admin", "event", id],
@@ -160,9 +157,7 @@ export default function AdminEventEdit() {
     updateEventMutation.mutate(data);
   };
 
-  if (!isAuthenticated) {
-    return <AdminAuth onAuthenticated={() => setIsAuthenticated(true)} />;
-  }
+  // Sistema novo: autenticação removida (AdminRouteGuard já protege)
 
   if (isLoading) {
     return (

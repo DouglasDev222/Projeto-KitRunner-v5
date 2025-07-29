@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminLayout } from "@/components/admin-layout";
-import { AdminProtectedRoute } from "@/components/admin-protected-route";
+// Sistema novo: usar AdminRouteGuard em vez de AdminProtectedRoute
 import { Users, Package, Calendar, Plus, DollarSign } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -32,7 +32,7 @@ export default function AdminDashboard() {
   });
 
   return (
-    <AdminProtectedRoute>
+    <div>
       <AdminLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -160,7 +160,7 @@ export default function AdminDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {(orders || []).map((order: Order & { customer: Customer; event: Event }) => (
+                    {(orders || []).map((order: any) => (
                       <div key={order.id} className="p-4 border rounded-lg">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-3">
@@ -263,6 +263,6 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </AdminLayout>
-    </AdminProtectedRoute>
+    </div>
   );
 }

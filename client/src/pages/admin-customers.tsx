@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { AdminLayout } from "@/components/admin-layout";
-import { AdminAuth } from "@/components/admin-auth";
+// Sistema novo: AdminRouteGuard protege esta página
 import { Users, Plus, Search, Eye, Edit, Trash2, MapPin, Phone, Mail, Calendar } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -45,7 +45,7 @@ interface CustomerWithAddresses extends Customer {
 }
 
 export default function AdminCustomers() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Sistema novo: AdminRouteGuard já protege
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithAddresses | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -61,10 +61,7 @@ export default function AdminCustomers() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const authStatus = localStorage.getItem("adminAuthenticated");
-    setIsAuthenticated(authStatus === "true");
-  }, []);
+  // Sistema novo: AdminRouteGuard já protege - não precisa de verificação
 
   // Debounce search term
   useEffect(() => {
@@ -382,9 +379,7 @@ export default function AdminCustomers() {
     setCurrentPage(page);
   };
 
-  if (!isAuthenticated) {
-    return <AdminAuth onAuthenticated={() => setIsAuthenticated(true)} />;
-  }
+  // Sistema novo: AdminRouteGuard já protege - não precisa de verificação
 
   return (
     <AdminLayout>
