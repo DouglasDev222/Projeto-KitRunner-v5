@@ -13,18 +13,28 @@ function getAuthHeaders(): Record<string, string> {
   
   try {
     const savedUser = localStorage.getItem('kitrunner_user');
+    console.log('🔍 DEBUG: savedUser from localStorage:', savedUser);
+    
     if (savedUser) {
       const userData = JSON.parse(savedUser);
+      console.log('🔍 DEBUG: parsed userData:', userData);
+      
       if (userData && userData.id && userData.cpf && userData.name) {
         // Create base64 encoded token
         const token = btoa(JSON.stringify(userData));
         headers['Authorization'] = `Bearer ${token}`;
+        console.log('🔍 DEBUG: Created auth token for user:', userData.name, 'ID:', userData.id);
+      } else {
+        console.warn('🚨 User data missing required fields:', userData);
       }
+    } else {
+      console.log('🔍 DEBUG: No user found in localStorage');
     }
   } catch (error) {
     console.warn('Failed to get auth token:', error);
   }
   
+  console.log('🔍 DEBUG: Final headers:', headers);
   return headers;
 }
 
