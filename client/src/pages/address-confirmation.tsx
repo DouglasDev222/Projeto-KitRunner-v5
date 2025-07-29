@@ -46,11 +46,7 @@ export default function AddressConfirmation() {
   
   // Fetch customer addresses
   const { data: addresses, isLoading } = useQuery({
-    queryKey: ["addresses", customer?.id],
-    queryFn: async () => {
-      const response = await fetch(`/api/customers/${customer.id}/addresses`);
-      return response.json();
-    },
+    queryKey: [`/api/customers/${customer?.id}/addresses`],
     enabled: !!customer?.id,
   });
   
