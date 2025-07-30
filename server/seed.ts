@@ -1,5 +1,6 @@
 import { db } from "./db";
-import { events, customers, addresses, orders, kits } from "@shared/schema";
+import { events, customers, addresses, orders, kits, adminUsers, adminSessions, adminAuditLog, passwordResetTokens } from "@shared/schema";
+import bcrypt from 'bcryptjs';
 
 // Function to generate valid CPF using Brazilian algorithm
 function generateValidCPF(): string {
@@ -66,12 +67,22 @@ async function seedDatabase() {
     const cpf5 = generateValidCPF();
     const cpf6 = generateValidCPF();
 
-    // Clear existing data first
+    // Clear existing data first (respecting foreign key constraints)
     await db.delete(kits);
     await db.delete(orders);
     await db.delete(addresses);
     await db.delete(customers);
     await db.delete(events);
+    
+    // Clear admin related tables
+    try {
+      await db.delete(adminAuditLog);
+      await db.delete(adminSessions);
+      await db.delete(passwordResetTokens);
+      await db.delete(adminUsers);
+    } catch (error) {
+      console.log("Admin tables may not exist yet, continuing...");
+    }
 
     // Seed events
     const eventsData = await db
@@ -378,6 +389,10 @@ async function seedDatabase() {
       },
     ];
 
+    // Seed orders
+    const ordersData = [];
+    const kitsData = [];
+    
     for (let i = 0; i < orderData.length; i++) {
       const order = orderData[i];
       const orderNumber = `KR${new Date().getFullYear()}${String(Date.now() + Math.random() * 1000).slice(-6)}`;
@@ -389,6 +404,8 @@ async function seedDatabase() {
           orderNumber,
         })
         .returning();
+      
+      ordersData.push(createdOrder);
 
       if (createdOrder) {
         // Create kits for each order
@@ -405,17 +422,39 @@ async function seedDatabase() {
 
         for (let j = 0; j < order.kitQuantity; j++) {
           const kit = kitData[j % kitData.length];
-          await db.insert(kits).values({
+          const [createdKit] = await db.insert(kits).values({
             orderId: createdOrder.id,
             name: kit.name,
             cpf: kit.cpf,
             shirtSize: kit.size,
-          });
+          }).returning();
+          kitsData.push(createdKit);
         }
       }
     }
 
+    // Create superadmin user
+    const passwordHash = await bcrypt.hash('KitRunner2025!@#', 10);
+    
+    const [adminUser] = await db
+      .insert(adminUsers)
+      .values({
+        username: 'superadmin',
+        email: 'admin@kitrunner.com.br',
+        passwordHash: passwordHash,
+        fullName: 'Super Administrador',
+        role: 'super_admin',
+        isActive: true,
+      })
+      .returning();
+
     console.log("Database seeded successfully!");
+    console.log("✅ Events:", eventsData.length);
+    console.log("✅ Customers:", customersData.length);
+    console.log("✅ Addresses:", addressesData.length);
+    console.log("✅ Orders:", ordersData.length);
+    console.log("✅ Kits:", kitsData.length);
+    console.log("✅ Admin User:", adminUser.username, "- senha: KitRunner2025!@#");
   } catch (error) {
     console.error("Error seeding database:", error);
   }
