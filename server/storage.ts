@@ -20,7 +20,9 @@ import {
   orders,
   kits,
   coupons,
-  orderStatusHistory
+  orderStatusHistory,
+  emailLogs,
+  insertEmailLogSchema
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, count, sum, desc, ne, sql, like, or, asc } from "drizzle-orm";
@@ -107,6 +109,10 @@ export interface IStorage {
     totalPages: number;
     currentPage: number;
   }>;
+
+  // Email logs
+  createEmailLog(emailData: any): Promise<any>;
+  getEmailLogs(filters?: any): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1290,6 +1296,32 @@ class MockStorage implements IStorage {
       ...customer,
       addresses: customerAddresses,
     };
+  }
+
+  // Email logs implementation
+  async createEmailLog(emailData: any): Promise<any> {
+    try {
+      const [emailLog] = await db.insert(emailLogs).values(emailData).returning();
+      return emailLog;
+    } catch (error) {
+      console.error('Error creating email log:', error);
+      throw error;
+    }
+  }
+
+  async getEmailLogs(filters?: any): Promise<any[]> {
+    try {
+      let query = db.select().from(emailLogs);
+      
+      if (filters?.orderId) {
+        query = query.where(eq(emailLogs.orderId, filters.orderId));
+      }
+      
+      return await query.orderBy(desc(emailLogs.sentAt));
+    } catch (error) {
+      console.error('Error getting email logs:', error);
+      return [];
+    }
   }
 }
 
