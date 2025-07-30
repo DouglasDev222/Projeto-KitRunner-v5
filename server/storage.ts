@@ -961,6 +961,24 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
+  // Email logs method for EmailService integration  
+  async logEmail(log: Omit<any, 'id' | 'sentAt'>): Promise<void> {
+    try {
+      await this.createEmailLog({
+        orderId: log.orderId,
+        customerId: log.customerId,
+        emailType: log.emailType,
+        recipientEmail: log.recipientEmail,
+        subject: log.subject,
+        status: log.status,
+        sendgridMessageId: log.sendgridMessageId,
+        errorMessage: log.errorMessage
+      });
+    } catch (error) {
+      console.error('Error logging email:', error);
+    }
+  }
+
   async updateEmailLogStatus(id: number, status: string, deliveredAt?: Date, openedAt?: Date, clickedAt?: Date): Promise<any> {
     const updateData: any = { status };
     if (deliveredAt) updateData.deliveredAt = deliveredAt;

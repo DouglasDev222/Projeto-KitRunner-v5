@@ -1,6 +1,6 @@
 import { OrderConfirmationData, StatusUpdateData, EmailTemplate } from './email-types';
 
-const KITRUNNER_LOGO = 'https://via.placeholder.com/200x60/3B82F6/FFFFFF?text=KitRunner';
+const KITRUNNER_LOGO = 'https://assets.replit.app/attached_assets/Orange-Blue-Express-Delivery-Logistic-Logo1-1%20(1)_1753898762911.webp';
 
 const baseStyles = `
   <style>

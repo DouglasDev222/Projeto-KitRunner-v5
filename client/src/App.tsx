@@ -29,6 +29,8 @@ import AdminCustomers from "@/pages/admin-customers";
 import AdminReports from "@/pages/admin-reports";
 import { AdminLogin } from "@/components/admin-auth/admin-login";
 import AdminUsers from "@/pages/admin-users";
+import { AdminEmailLogs } from "@/pages/admin-email-logs";
+import { AdminEmailTest } from "@/pages/admin-email-test";
 
 function Router() {
   return (
@@ -107,6 +109,20 @@ function Router() {
         {() => (
           <AdminRouteGuard requiredRole="super_admin">
             <AdminUsers />
+          </AdminRouteGuard>
+        )}
+      </Route>
+      <Route path="/admin/email-logs" >
+        {() => (
+          <AdminRouteGuard>
+            <AdminEmailLogs />
+          </AdminRouteGuard>
+        )}
+      </Route>
+      <Route path="/admin/email-test" >
+        {() => (
+          <AdminRouteGuard>
+            <AdminEmailTest />
           </AdminRouteGuard>
         )}
       </Route>
