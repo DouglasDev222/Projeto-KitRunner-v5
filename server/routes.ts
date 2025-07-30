@@ -433,7 +433,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         kits.push(kit);
       }
       
-      // Get event details for response
+      // Send order confirmation email (async, don't wait for completion)
+      const customer = await storage.getCustomer(orderData.customerId);
+      const address = await storage.getAddress(orderData.addressId);
+      
+      if (customer && customer.email) {
+        const emailService = new EmailService(storage);
+        
+        // Prepare order confirmation data
+        const orderConfirmationData = {
+          orderNumber: order.orderNumber,
+          customerName: customer.name,
+          eventName: selectedEvent.name,
+          eventDate: selectedEvent.date,
+          eventLocation: selectedEvent.location,
+          eventCity: selectedEvent.city,
+          kits: kits.map(kit => ({
+            name: kit.name,
+            cpf: kit.cpf,
+            shirtSize: kit.shirtSize
+          })),
+          deliveryAddress: {
+            street: address?.street || '',
+            number: address?.number || '',
+            complement: address?.complement || '',
+            neighborhood: address?.neighborhood || '',
+            city: address?.city || '',
+            state: address?.state || '',
+            zipCode: address?.zipCode || ''
+          },
+          pricing: {
+            deliveryCost: parseFloat(order.deliveryCost),
+            extraKitsCost: parseFloat(order.extraKitsCost),
+            donationAmount: parseFloat(order.donationAmount),
+            totalCost: parseFloat(order.totalCost)
+          },
+          paymentMethod: order.paymentMethod,
+          orderStatus: order.status
+        };
+        
+        // Send email asynchronously (don't block the response)
+        emailService.sendOrderConfirmation(
+          orderConfirmationData, 
+          customer.email, 
+          order.id, 
+          customer.id
+        ).catch(error => {
+          console.error('❌ Failed to send order confirmation email:', error);
+        });
+      }
       
       res.json({
         order,
@@ -771,6 +819,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Status inválido", received: status, valid: validStatuses });
       }
       
+      // Get current order to capture old status for email notification
+      const currentOrder = await storage.getOrderWithFullDetails(id);
+      const oldStatus = currentOrder?.status;
+      
       const order = await storage.updateOrderStatus(
         id, 
         status, 
@@ -781,6 +833,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!order) {
         return res.status(404).json({ message: "Pedido não encontrado" });
+      }
+      
+      // Send status update email notification (async, don't block response)
+      if (currentOrder && oldStatus !== status) {
+        const emailService = new EmailService(storage);
+        
+        // Prepare status update data
+        const statusUpdateData = {
+          orderNumber: currentOrder.orderNumber,
+          customerName: currentOrder.customer.name,
+          eventName: currentOrder.event.name,
+          eventDate: currentOrder.event.date,
+          oldStatus: oldStatus,
+          newStatus: status,
+          statusReason: reason || 'Status alterado pelo administrador',
+          trackingInfo: {
+            estimatedDelivery: currentOrder.event.date,
+            currentLocation: currentOrder.address.city
+          }
+        };
+        
+        // Send email asynchronously (don't block the response)
+        emailService.sendStatusUpdateEmail(
+          statusUpdateData,
+          currentOrder.customer.email,
+          currentOrder.id,
+          currentOrder.customer.id
+        ).catch(error => {
+          console.error('❌ Failed to send status update email:', error);
+        });
       }
       
       res.json(order);
@@ -825,6 +907,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(order);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Test email system (admin only)
+  app.post("/api/admin/test-email", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email é obrigatório" });
+      }
+      
+      const emailService = new EmailService(storage);
+      const success = await emailService.sendTestEmail(email);
+      
+      if (success) {
+        res.json({ 
+          message: "Email de teste enviado com sucesso", 
+          email,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(500).json({ message: "Falha ao enviar email de teste" });
+      }
+    } catch (error) {
+      console.error('Error sending test email:', error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Get email logs (admin only)
+  app.get("/api/admin/email-logs", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { page = 1, limit = 50, orderId, customerId, emailType, status } = req.query;
+      
+      const filters: any = {
+        limit: parseInt(limit as string),
+        offset: (parseInt(page as string) - 1) * parseInt(limit as string)
+      };
+      
+      if (orderId) filters.orderId = parseInt(orderId as string);
+      if (customerId) filters.customerId = parseInt(customerId as string);
+      if (emailType) filters.emailType = emailType as string;
+      if (status) filters.status = status as string;
+      
+      const emailLogs = await storage.getEmailLogs(filters);
+      
+      res.json({
+        success: true,
+        logs: emailLogs,
+        pagination: {
+          page: parseInt(page as string),
+          limit: parseInt(limit as string),
+          total: emailLogs.length
+        }
+      });
+    } catch (error) {
+      console.error('Error getting email logs:', error);
+      res.status(500).json({ message: "Erro ao buscar logs de email" });
     }
   });
 

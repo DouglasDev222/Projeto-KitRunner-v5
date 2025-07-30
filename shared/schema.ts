@@ -294,6 +294,10 @@ export type OrderCreation = z.infer<typeof orderCreationSchema>;
 export type CustomerRegistration = z.infer<typeof customerRegistrationSchema>;
 export type AdminEventCreation = z.infer<typeof adminEventCreationSchema>;
 
+// Email Log types
+export type EmailLog = typeof emailLogs.$inferSelect;
+export type InsertEmailLog = z.infer<typeof insertEmailLogSchema>;
+
 // Auth types
 export interface AuthResult {
   success: boolean;

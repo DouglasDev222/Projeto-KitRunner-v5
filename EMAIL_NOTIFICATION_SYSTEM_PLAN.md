@@ -211,13 +211,15 @@ await emailService.sendStatusUpdateEmail(updatedOrder, customer, oldStatus, newS
 
 ## Cronograma de Implementação
 
-### Sprint 1 (Estimativa: 4-6 horas) - ✅ INICIADO
+### Sprint 1 (Estimativa: 4-6 horas) - ✅ **CONCLUÍDO**
 - [x] Solicitar chave da API SendGrid
 - [x] Criar schema de banco (email_logs) - Tabela criada e aplicada ao banco
 - [x] Criar tipos TypeScript (email-types.ts) - Interfaces definidas
 - [x] Implementar templates HTML responsivos (email-templates.ts) - Templates profissionais criados
-- [ ] Implementar EmailService básico - **EM PROGRESSO**
-- [ ] Integração com criação de pedidos - **PRÓXIMO**
+- [x] Implementar EmailService básico - **CONCLUÍDO**
+- [x] Integração com criação de pedidos - **CONCLUÍDO**
+- [x] Integração com atualizações de status - **CONCLUÍDO**
+- [x] APIs de teste e logs de email - **CONCLUÍDO**
 
 ### Sprint 2 (Estimativa: 4-6 horas)
 - [ ] Templates HTML profissionais

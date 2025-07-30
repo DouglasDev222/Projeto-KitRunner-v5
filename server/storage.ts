@@ -901,6 +901,78 @@ export class DatabaseStorage implements IStorage {
       currentPage: page
     };
   }
+
+  // Email log methods
+  async createEmailLog(emailData: {
+    orderId?: number;
+    customerId?: number;
+    emailType: string;
+    recipientEmail: string;
+    subject: string;
+    status: 'sent' | 'failed' | 'delivered' | 'bounced';
+    sendgridMessageId?: string;
+    errorMessage?: string;
+  }): Promise<any> {
+    const [emailLog] = await db.insert(emailLogs).values({
+      orderId: emailData.orderId || null,
+      customerId: emailData.customerId || null,
+      emailType: emailData.emailType,
+      recipientEmail: emailData.recipientEmail,
+      subject: emailData.subject,
+      status: emailData.status,
+      sendgridMessageId: emailData.sendgridMessageId || null,
+      errorMessage: emailData.errorMessage || null,
+    }).returning();
+    return emailLog;
+  }
+
+  async getEmailLogs(filters?: {
+    orderId?: number;
+    customerId?: number;
+    emailType?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<any[]> {
+    let query = db.select().from(emailLogs);
+    
+    if (filters?.orderId) {
+      query = query.where(eq(emailLogs.orderId, filters.orderId)) as any;
+    }
+    if (filters?.customerId) {
+      query = query.where(eq(emailLogs.customerId, filters.customerId)) as any;
+    }
+    if (filters?.emailType) {
+      query = query.where(eq(emailLogs.emailType, filters.emailType)) as any;
+    }
+    if (filters?.status) {
+      query = query.where(eq(emailLogs.status, filters.status)) as any;
+    }
+    
+    if (filters?.limit) {
+      query = query.limit(filters.limit) as any;
+    }
+    if (filters?.offset) {
+      query = query.offset(filters.offset) as any;
+    }
+    
+    query = query.orderBy(desc(emailLogs.sentAt)) as any;
+    
+    return await query;
+  }
+
+  async updateEmailLogStatus(id: number, status: string, deliveredAt?: Date, openedAt?: Date, clickedAt?: Date): Promise<any> {
+    const updateData: any = { status };
+    if (deliveredAt) updateData.deliveredAt = deliveredAt;
+    if (openedAt) updateData.openedAt = openedAt;
+    if (clickedAt) updateData.clickedAt = clickedAt;
+    
+    const [emailLog] = await db.update(emailLogs)
+      .set(updateData)
+      .where(eq(emailLogs.id, id))
+      .returning();
+    return emailLog;
+  }
 }
 
 // Mock implementation for development without database
