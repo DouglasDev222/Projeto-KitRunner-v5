@@ -125,7 +125,9 @@ export default function MyOrders() {
             </div>
           ) : orders && Array.isArray(orders) && orders.length > 0 ? (
             <div className="space-y-4">
-              {orders.map((order: Order) => (
+              {orders
+                .sort((a: Order, b: Order) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .map((order: Order) => (
                 <Card 
                   key={order.id} 
                   className="cursor-pointer hover:shadow-md transition-shadow"
@@ -138,6 +140,12 @@ export default function MyOrders() {
                           <p className="font-semibold text-neutral-800">#{order.orderNumber}</p>
                           {getStatusBadge(order.status)}
                         </div>
+                        {order.event?.name && (
+                          <div className="flex items-center text-sm text-neutral-600 mb-1">
+                            <MapPin className="w-4 h-4 mr-2" />
+                            {order.event.name}
+                          </div>
+                        )}
                         <div className="flex items-center text-sm text-neutral-600 mb-1">
                           <Package className="w-4 h-4 mr-2" />
                           {order.kitQuantity} kit{order.kitQuantity > 1 ? 's' : ''}
