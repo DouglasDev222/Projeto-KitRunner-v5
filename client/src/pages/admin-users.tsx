@@ -18,6 +18,7 @@ import type { AdminUser, CreateAdminUser } from '@shared/schema';
 
 export default function AdminUsers() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [newUser, setNewUser] = useState<CreateAdminUser>({
     username: '',
@@ -89,9 +90,52 @@ export default function AdminUsers() {
     },
   });
 
+  // Editar usuário
+  const editUserMutation = useMutation({
+    mutationFn: async (data: { userId: number; userData: Partial<AdminUser> }) => {
+      return apiRequest('PUT', `/api/admin/auth/users/${data.userId}`, data.userData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/auth/users'] });
+      setIsEditDialogOpen(false);
+      setEditingUser(null);
+      toast({
+        title: "Usuário atualizado",
+        description: "Usuário atualizado com sucesso",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao atualizar usuário",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
     createUserMutation.mutate(newUser);
+  };
+
+  const handleEditUser = (user: AdminUser) => {
+    setEditingUser(user);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    
+    editUserMutation.mutate({
+      userId: editingUser.id,
+      userData: {
+        fullName: editingUser.fullName,
+        email: editingUser.email,
+        role: editingUser.role,
+        isActive: editingUser.isActive,
+      }
+    });
   };
 
   const handleDeleteUser = (user: AdminUser) => {
@@ -237,6 +281,98 @@ export default function AdminUsers() {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Dialog de Edição */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Editar Usuário</DialogTitle>
+              <DialogDescription>
+                Edite as informações do administrador
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-fullName">Nome Completo</Label>
+                <Input
+                  id="edit-fullName"
+                  value={editingUser?.fullName || ''}
+                  onChange={(e) => setEditingUser(prev => prev ? {...prev, fullName: e.target.value} : null)}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editingUser?.email || ''}
+                  onChange={(e) => setEditingUser(prev => prev ? {...prev, email: e.target.value} : null)}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-role">Função</Label>
+                <Select 
+                  value={editingUser?.role || 'admin'} 
+                  onValueChange={(value) => setEditingUser(prev => prev ? {...prev, role: value as 'admin' | 'super_admin'} : null)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a função" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                    <SelectItem value="super_admin">Super Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-status">Status</Label>
+                <Select 
+                  value={editingUser?.isActive ? 'true' : 'false'} 
+                  onValueChange={(value) => setEditingUser(prev => prev ? {...prev, isActive: value === 'true'} : null)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Ativo</SelectItem>
+                    <SelectItem value="false">Inativo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  type="submit" 
+                  disabled={editUserMutation.isPending}
+                >
+                  {editUserMutation.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  {editUserMutation.isPending ? (
+                    'Atualizando...'
+                  ) : (
+                    'Salvar Alterações'
+                  )}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsEditDialogOpen(false);
+                    setEditingUser(null);
+                  }}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {isLoading ? (
@@ -301,7 +437,7 @@ export default function AdminUsers() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setEditingUser(user)}
+                          onClick={() => handleEditUser(user)}
                           disabled={!user.isActive}
                         >
                           <Edit className="h-4 w-4" />

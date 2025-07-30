@@ -141,7 +141,7 @@ router.put('/users/:id', requireSuperAdmin, async (req: AuthenticatedRequest, re
     const userId = parseInt(req.params.id);
     const body = adminUserUpdateSchema.parse(req.body);
     
-    const user = await adminAuthService.updateAdminUser(userId, body);
+    const user = await adminAuthService.updateAdminUser(userId, body, req.admin!.id);
     
     res.json({
       success: true,
@@ -177,7 +177,7 @@ router.delete('/users/:id', requireSuperAdmin, async (req: AuthenticatedRequest,
       });
     }
     
-    await adminAuthService.deleteAdminUser(userId);
+    await adminAuthService.deleteAdminUser(userId, req.admin!.id);
     
     res.json({
       success: true,
