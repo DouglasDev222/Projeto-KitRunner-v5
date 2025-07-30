@@ -283,40 +283,42 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getOrdersByCustomerId(customerId: number): Promise<any[]> {
-    const result = await db
-      .select({
-        id: orders.id,
-        orderNumber: orders.orderNumber,
-        eventId: orders.eventId,
-        customerId: orders.customerId,
-        addressId: orders.addressId,
-        kitQuantity: orders.kitQuantity,
-        deliveryCost: orders.deliveryCost,
-        extraKitsCost: orders.extraKitsCost,
-        donationCost: orders.donationCost,
-        discountAmount: orders.discountAmount,
-        couponCode: orders.couponCode,
-        totalCost: orders.totalCost,
-        paymentMethod: orders.paymentMethod,
-        status: orders.status,
-        donationAmount: orders.donationAmount,
-        createdAt: orders.createdAt,
-        updatedAt: orders.updatedAt,
-        idempotencyKey: orders.idempotencyKey,
-        event: {
-          id: events.id,
-          name: events.name,
-          date: events.date,
-          location: events.location,
-          city: events.city,
-          state: events.state,
-        }
-      })
-      .from(orders)
-      .leftJoin(events, eq(orders.eventId, events.id))
-      .where(eq(orders.customerId, customerId))
-      .orderBy(desc(orders.createdAt));
-    return result;
+    try {
+      // First get orders
+      const ordersList = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.customerId, customerId))
+        .orderBy(desc(orders.createdAt));
+      
+      // Then get event details for each order
+      const result = [];
+      for (const order of ordersList) {
+        const [event] = await db
+          .select({
+            id: events.id,
+            name: events.name,
+            date: events.date,
+            location: events.location,
+            city: events.city,
+            state: events.state,
+          })
+          .from(events)
+          .where(eq(events.id, order.eventId))
+          .limit(1);
+        
+        result.push({
+          ...order,
+          event: event || null
+        });
+      }
+      
+      console.log(`✅ Found ${result.length} orders for customer ${customerId}`);
+      return result;
+    } catch (error) {
+      console.error(`❌ Error getting orders for customer ${customerId}:`, error);
+      throw error;
+    }
   }
 
   async createKit(insertKit: InsertKit): Promise<Kit> {
