@@ -142,11 +142,11 @@ export default function MyOrders() {
                         </div>
                         
                         {/* Event name - more prominent */}
-                        {order.event?.name && (
-                          <div className="mb-2">
-                            <p className="font-medium text-neutral-800 text-sm">{order.event.name}</p>
-                          </div>
-                        )}
+                        <div className="mb-2">
+                          <p className="font-medium text-neutral-800 text-sm">
+                            {order.event?.name || `Evento ID: ${order.eventId}` || 'Evento não identificado'}
+                          </p>
+                        </div>
                         
                         {/* Kit quantity and date on same line */}
                         <div className="flex items-center justify-between text-sm text-neutral-600 mb-2">
