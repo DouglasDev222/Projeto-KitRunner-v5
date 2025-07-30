@@ -24,6 +24,7 @@ import {
   FileSpreadsheet
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
 import { formatCPF } from "@/lib/cpf-validator";
 import { useToast } from "@/hooks/use-toast";
@@ -204,7 +205,7 @@ export default function AdminOrders() {
   // Label generation functions
   const handleGenerateLabel = async (orderId: number, orderNumber: string) => {
     try {
-      const response = await fetch(`/api/admin/orders/${orderId}/label`);
+      const response = await apiRequest('GET', `/api/admin/orders/${orderId}/label`);
       if (!response.ok) {
         throw new Error('Erro ao gerar etiqueta');
       }
@@ -234,7 +235,7 @@ export default function AdminOrders() {
 
   const handleGenerateEventLabels = async (eventId: number, eventName: string) => {
     try {
-      const response = await fetch(`/api/admin/events/${eventId}/labels`);
+      const response = await apiRequest('GET', `/api/admin/events/${eventId}/labels`);
       if (!response.ok) {
         throw new Error('Erro ao gerar etiquetas');
       }
@@ -264,7 +265,7 @@ export default function AdminOrders() {
 
   const handleGenerateKitsReport = async (eventId: number, eventName: string) => {
     try {
-      const response = await fetch(`/api/admin/reports/kits/${eventId}`);
+      const response = await apiRequest('GET', `/api/admin/reports/kits/${eventId}`);
       if (!response.ok) {
         throw new Error('Erro ao gerar relatório');
       }
