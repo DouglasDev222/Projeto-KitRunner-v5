@@ -54,6 +54,38 @@ Melhorar os emails enviados ao cliente pela aplicação KitRunner, tornando-os m
 - [ ]  Verificar se o campo status está sendo passado corretamente para o template.
 - [ ] Validar se há algum erro de digitação, key incorreta, ou formatação do JSON.
 
+### 4. Fluxo de Emails por Tipo de Pagamento
+
+#### 💳 Pagamento com Cartão
+- [ ] Garantir que, ao realizar o pedido com cartão, os emails sejam enviados corretamente.
+- [ ] Mesmo que o pagamento seja aprovado de forma instantânea:
+  - [ ] Enviar o email de confirmação de pedido (status: aguardando pagamento)
+  - [ ] Em seguida, enviar o email de confirmação de pagamento (status: confirmado), se o pagamento já estiver aprovado
+- [ ] Isso significa que dois emails devem ser enviados para pedidos com cartão, se o retorno do gateway já indicar aprovação.
+
+#### 🧾 Pagamento com PIX
+- [ ] Validar que o mesmo comportamento se aplica:
+  - [ ] Enviar confirmação de pedido (status: aguardando pagamento)
+  - [ ] Quando o PIX for compensado (status mudar para confirmado), enviar o email de confirmação de pagamento
+- [ ] Se o PIX for aprovado imediatamente, ambos os emails devem ser enviados juntos
+
+### 5. Email de Pedido Entregue (Status: "entregue")
+
+#### Objetivo
+Enviar uma mensagem especial de agradecimento ao cliente após o status do pedido mudar para `entregue`. Este email **não deve seguir o fluxo de atualização de status padrão**.
+
+#### Título do Email
+- "Seu kit foi entregue com sucesso! 🎉"
+- Ou: "Agradecemos por correr com a gente, [NOME]! 💛"
+
+#### Conteúdo
+- Nome do cliente (ex: “Olá, Pablo Ferreira 😊”)
+- Confirmação de entrega no endereço informado
+- Mensagem calorosa de agradecimento
+- Incentivo para marcar a marca no Instagram: `@kitrunner_`
+- Reforço de contato aberto para dúvidas
+- Hashtag final: `#BoraCorrer 💨`
+
 ## Entrega Final
 - Todos os emails devem estar visualmente padronizados com a identidade visual KitRunner.
 - Templates testados e funcionando
