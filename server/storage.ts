@@ -282,12 +282,40 @@ export class DatabaseStorage implements IStorage {
     return order || undefined;
   }
 
-  async getOrdersByCustomerId(customerId: number): Promise<Order[]> {
+  async getOrdersByCustomerId(customerId: number): Promise<any[]> {
     const result = await db
-      .select()
+      .select({
+        id: orders.id,
+        orderNumber: orders.orderNumber,
+        eventId: orders.eventId,
+        customerId: orders.customerId,
+        addressId: orders.addressId,
+        kitQuantity: orders.kitQuantity,
+        deliveryCost: orders.deliveryCost,
+        extraKitsCost: orders.extraKitsCost,
+        donationCost: orders.donationCost,
+        discountAmount: orders.discountAmount,
+        couponCode: orders.couponCode,
+        totalCost: orders.totalCost,
+        paymentMethod: orders.paymentMethod,
+        status: orders.status,
+        donationAmount: orders.donationAmount,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt,
+        idempotencyKey: orders.idempotencyKey,
+        event: {
+          id: events.id,
+          name: events.name,
+          date: events.date,
+          location: events.location,
+          city: events.city,
+          state: events.state,
+        }
+      })
       .from(orders)
+      .leftJoin(events, eq(orders.eventId, events.id))
       .where(eq(orders.customerId, customerId))
-      .orderBy(orders.createdAt);
+      .orderBy(desc(orders.createdAt));
     return result;
   }
 
