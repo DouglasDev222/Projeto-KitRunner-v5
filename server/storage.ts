@@ -47,7 +47,7 @@ export interface IStorage {
   getOrderById(id: number): Promise<Order | undefined>;
   getOrderByNumber(orderNumber: string): Promise<Order | undefined>;
   getOrderByIdempotencyKey(idempotencyKey: string): Promise<Order | undefined>;
-  getOrdersByCustomerId(customerId: number): Promise<(Order & { event?: Event })[]>;
+  getOrdersByCustomerId(customerId: number): Promise<Order[]>;
 
   // Kits
   createKit(kit: InsertKit): Promise<Kit>;
@@ -67,7 +67,7 @@ export interface IStorage {
   // Coupons
   getCouponByCode(code: string): Promise<Coupon | undefined>;
   createCoupon(coupon: InsertCoupon): Promise<Coupon>;
-
+  
   // Price calculation
   calculateDeliveryPrice(fromZipCode: string, toZipCode: string): Promise<number>;
 
@@ -75,7 +75,7 @@ export interface IStorage {
   updateEvent(id: number, eventData: Partial<InsertEvent>): Promise<Event | undefined>;
   deleteEvent(id: number): Promise<boolean>;
   getOrdersByEventId(eventId: number): Promise<(Order & { customer: Customer })[]>;
-
+  
   // Order statistics
   getOrderStats(): Promise<{
     totalOrders: number;
@@ -169,7 +169,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(customers, eq(orders.customerId, customers.id))
       .where(eq(orders.eventId, eventId))
       .orderBy(desc(orders.createdAt));
-
+      
     return result as (Order & { customer: Customer })[];
   }
 
@@ -238,7 +238,7 @@ export class DatabaseStorage implements IStorage {
         orderNumber,
       })
       .returning();
-
+    
     // Add initial status history record
     try {
       console.log(`📋 Adding initial status history for order ${order.id} with status: ${order.status}`);
@@ -254,7 +254,7 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error(`❌ Error adding initial status history for order ${order.id}:`, error);
     }
-
+    
     return order;
   }
 
@@ -282,33 +282,13 @@ export class DatabaseStorage implements IStorage {
     return order || undefined;
   }
 
-  async getOrdersByCustomerId(customerId: number): Promise<(Order & { event?: Event })[]> {
+  async getOrdersByCustomerId(customerId: number): Promise<Order[]> {
     const result = await db
-      .select({
-        id: orders.id,
-        orderNumber: orders.orderNumber,
-        eventId: orders.eventId,
-        customerId: orders.customerId,
-        addressId: orders.addressId,
-        kitQuantity: orders.kitQuantity,
-        deliveryCost: orders.deliveryCost,
-        extraKitsCost: orders.extraKitsCost,
-        donationCost: orders.donationCost,
-        discountAmount: orders.discountAmount,
-        couponCode: orders.couponCode,
-        totalCost: orders.totalCost,
-        paymentMethod: orders.paymentMethod,
-        status: orders.status,
-        donationAmount: orders.donationAmount,
-        idempotencyKey: orders.idempotencyKey,
-        createdAt: orders.createdAt,
-        event: events,
-      })
+      .select()
       .from(orders)
-      .leftJoin(events, eq(orders.eventId, events.id))
       .where(eq(orders.customerId, customerId))
-      .orderBy(desc(orders.createdAt));
-    return result as (Order & { event?: Event })[];
+      .orderBy(orders.createdAt);
+    return result;
   }
 
   async createKit(insertKit: InsertKit): Promise<Kit> {
@@ -357,7 +337,7 @@ export class DatabaseStorage implements IStorage {
     .leftJoin(customers, eq(orders.customerId, customers.id))
     .leftJoin(events, eq(orders.eventId, events.id))
     .orderBy(desc(orders.createdAt));
-
+    
     return result as (Order & { customer: Customer; event: Event })[];
   }
 
@@ -458,7 +438,7 @@ export class DatabaseStorage implements IStorage {
     if (filters.orderNumber) {
       conditions.push(eq(orders.orderNumber, filters.orderNumber));
     }
-
+    
     let result;
     if (conditions.length > 0) {
       result = await query.where(and(...conditions)).orderBy(desc(orders.createdAt));
@@ -524,7 +504,7 @@ export class DatabaseStorage implements IStorage {
     .leftJoin(events, eq(orders.eventId, events.id))
     .leftJoin(addresses, eq(orders.addressId, addresses.id))
     .where(eq(orders.orderNumber, orderNumber));
-
+    
     return order;
   }
 
@@ -605,7 +585,7 @@ export class DatabaseStorage implements IStorage {
       changedByName,
       reason
     }).returning();
-
+    
     return history;
   }
 
@@ -619,18 +599,18 @@ export class DatabaseStorage implements IStorage {
   async updateOrderStatus(orderId: number | string, status: string, changedBy: string = 'system', changedByName?: string, reason?: string): Promise<Order | undefined> {
     let targetOrderId: number;
     let previousStatus: string | null = null;
-
+    
     // If orderId is a string (orderNumber), find the order by orderNumber first
     if (typeof orderId === 'string') {
       const existingOrder = await db.select()
         .from(orders)
         .where(eq(orders.orderNumber, orderId))
         .limit(1);
-
+      
       if (existingOrder.length === 0) {
         throw new Error(`Order not found with orderNumber: ${orderId}`);
       }
-
+      
       targetOrderId = existingOrder[0].id;
       previousStatus = existingOrder[0].status;
     } else {
@@ -639,30 +619,30 @@ export class DatabaseStorage implements IStorage {
         .from(orders)
         .where(eq(orders.id, orderId))
         .limit(1);
-
+      
       if (currentOrder.length === 0) {
         throw new Error(`Order not found with id: ${orderId}`);
       }
-
+      
       targetOrderId = orderId;
       previousStatus = currentOrder[0].status;
     }
-
+    
     // Only update if status actually changed
     if (previousStatus !== status) {
       // Add to status history
       await this.addStatusHistory(targetOrderId, previousStatus, status, changedBy, changedByName, reason);
-
+      
       // Update order status
       const [order] = await db
         .update(orders)
         .set({ status })
         .where(eq(orders.id, targetOrderId))
         .returning();
-
+      
       return order;
     }
-
+    
     // Return current order if status didn't change
     const [order] = await db.select().from(orders).where(eq(orders.id, targetOrderId)).limit(1);
     return order;
@@ -688,18 +668,18 @@ export class DatabaseStorage implements IStorage {
   }> {
     // Get total orders count
     const [totalOrdersResult] = await db.select({ count: count() }).from(orders);
-
+    
     // Get order counts by status
     const [confirmedResult] = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'confirmado'));
     const [awaitingResult] = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'aguardando_pagamento'));
     const [cancelledResult] = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'cancelado'));
     const [deliveredResult] = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'entregue'));
-
+    
     // In transit includes both "em_transito" and "kits_sendo_retirados"
     const [inTransitResult] = await db.select({ count: count() }).from(orders).where(
       sql`${orders.status} IN ('em_transito', 'kits_sendo_retirados')`
     );
-
+    
     // Get total revenue (excluding cancelled orders)
     const [revenueResult] = await db.select({ 
       total: sum(orders.totalCost) 
@@ -722,11 +702,11 @@ export class DatabaseStorage implements IStorage {
     const from = parseInt(fromZipCode.substring(0, 5));
     const to = parseInt(toZipCode.substring(0, 5));
     const distance = Math.abs(from - to);
-
+    
     // Preço base + valor por distância (simulação)
     const basePrice = 15.00;
     const pricePerKm = 0.05;
-
+    
     return basePrice + (distance * pricePerKm);
   }
 
@@ -735,31 +715,31 @@ export class DatabaseStorage implements IStorage {
     console.log("🔍 Getting all customers with addresses...");
     const customersData = await db.select().from(customers).orderBy(desc(customers.createdAt));
     console.log(`Found ${customersData.length} customers`);
-
+    
     const result = [];
     for (const customer of customersData) {
       const customerAddresses = await db.select().from(addresses).where(eq(addresses.customerId, customer.id));
       const [orderCountResult] = await db.select({ count: count() }).from(orders).where(eq(orders.customerId, customer.id));
-
+      
       console.log(`Customer ${customer.name}: ${customerAddresses.length} addresses, ${orderCountResult.count} orders`);
-
+      
       result.push({
         ...customer,
         addresses: customerAddresses,
         orderCount: Number(orderCountResult.count)
       });
     }
-
+    
     console.log("✅ Customer data prepared, sample:", JSON.stringify(result[0], null, 2));
     return result;
   }
 
   async createCustomerWithAddresses(customerData: any): Promise<{ customer: Customer; addresses: Address[] }> {
     const { addresses: addressesData, ...customerInfo } = customerData;
-
+    
     // Create customer first
     const [customer] = await db.insert(customers).values(customerInfo).returning();
-
+    
     // Create addresses for the customer
     const createdAddresses = [];
     for (const addressData of addressesData) {
@@ -769,7 +749,7 @@ export class DatabaseStorage implements IStorage {
       }).returning();
       createdAddresses.push(address);
     }
-
+    
     return { customer, addresses: createdAddresses };
   }
 
@@ -785,7 +765,7 @@ export class DatabaseStorage implements IStorage {
   async deleteCustomer(id: number): Promise<boolean> {
     // First delete all addresses for this customer
     await db.delete(addresses).where(eq(addresses.customerId, id));
-
+    
     // Then delete the customer
     const result = await db.delete(customers).where(eq(customers.id, id));
     return (result.rowCount || 0) > 0;
@@ -794,9 +774,9 @@ export class DatabaseStorage implements IStorage {
   async getCustomerWithAddresses(id: number): Promise<(Customer & { addresses: Address[] }) | undefined> {
     const [customer] = await db.select().from(customers).where(eq(customers.id, id));
     if (!customer) return undefined;
-
+    
     const customerAddresses = await db.select().from(addresses).where(eq(addresses.customerId, id));
-
+    
     return {
       ...customer,
       addresses: customerAddresses
@@ -810,14 +790,14 @@ export class DatabaseStorage implements IStorage {
     currentPage: number;
   }> {
     const offset_value = (page - 1) * pageLimit;
-
+    
     // Build search conditions
     const baseQuery = db.select().from(customers);
     const baseCountQuery = db.select({ count: count() }).from(customers);
-
+    
     let query: any = baseQuery;
     let countQuery: any = baseCountQuery;
-
+    
     if (search && search.trim()) {
       const searchCondition = or(
         like(customers.name, `%${search}%`),
@@ -827,32 +807,32 @@ export class DatabaseStorage implements IStorage {
       query = baseQuery.where(searchCondition);
       countQuery = baseCountQuery.where(searchCondition);
     }
-
+    
     // Get total count
     const [totalResult] = await countQuery;
     const total = totalResult.count;
-
+    
     // Get paginated customers
     const customersData = await query
       .orderBy(desc(customers.createdAt))
       .limit(pageLimit)
       .offset(offset_value);
-
+    
     // Get addresses and order count for each customer
     const result = [];
     for (const customer of customersData) {
       const customerAddresses = await db.select().from(addresses).where(eq(addresses.customerId, customer.id));
       const [orderCountResult] = await db.select({ count: count() }).from(orders).where(eq(orders.customerId, customer.id));
-
+      
       result.push({
         ...customer,
         addresses: customerAddresses,
         orderCount: Number(orderCountResult.count)
       });
     }
-
+    
     const totalPages = Math.ceil(total / pageLimit);
-
+    
     return {
       customers: result,
       total,
@@ -870,14 +850,14 @@ export class DatabaseStorage implements IStorage {
     // Use the existing getAllOrdersWithDetails method and paginate in memory
     // This is more reliable than complex Drizzle queries with pagination issues
     const allOrders = await this.getAllOrdersWithDetails(filters);
-
+    
     const total = allOrders.length;
     const startIndex = (page - 1) * pageLimit;
     const endIndex = startIndex + pageLimit;
     const paginatedOrders = allOrders.slice(startIndex, endIndex);
-
+    
     const totalPages = Math.ceil(total / pageLimit);
-
+    
     return {
       orders: paginatedOrders,
       total,
@@ -907,10 +887,10 @@ class MockStorage implements IStorage {
       createdAt: new Date("2024-01-15T10:00:00Z")
     }
   ];
-
+  
   private customers: Customer[] = [];
   private addresses: Address[] = [];
-  private orders: (Order & { customer: Customer; event: Event })[]Refactor: Modified `getOrdersByCustomerId` to include event data and corrected a potential type issue. = [];
+  private orders: (Order & { customer: Customer; event: Event })[] = [];
   private kits: Kit[] = [];
 
   async getEvents(): Promise<Event[]> {
@@ -930,7 +910,7 @@ class MockStorage implements IStorage {
   async updateEvent(id: number, eventData: Partial<InsertEvent>): Promise<Event | undefined> {
     const index = this.events.findIndex(e => e.id === id);
     if (index === -1) return undefined;
-
+    
     this.events[index] = { ...this.events[index], ...eventData };
     return this.events[index];
   }
@@ -938,7 +918,7 @@ class MockStorage implements IStorage {
   async deleteEvent(id: number): Promise<boolean> {
     const index = this.events.findIndex(e => e.id === id);
     if (index === -1) return false;
-
+    
     this.events.splice(index, 1);
     return true;
   }
@@ -982,7 +962,7 @@ class MockStorage implements IStorage {
   async updateAddress(id: number, addressData: Partial<InsertAddress>): Promise<Address> {
     const index = this.addresses.findIndex(a => a.id === id);
     if (index === -1) throw new Error("Address not found");
-
+    
     this.addresses[index] = { ...this.addresses[index], ...addressData };
     return this.addresses[index];
   }
@@ -996,7 +976,7 @@ class MockStorage implements IStorage {
       createdAt: new Date(), 
       updatedAt: new Date() 
     } as Order;
-
+    
     // Para a MockStorage, precisamos simular a adição de customer e event
     const customer = await this.getCustomer(newOrder.customerId);
     const event = await this.getEvent(newOrder.eventId);
@@ -1050,7 +1030,7 @@ class MockStorage implements IStorage {
     currentPage: number;
   }> {
     let filteredCustomers = this.customers;
-
+    
     if (search && search.trim()) {
       const searchLower = search.toLowerCase();
       filteredCustomers = this.customers.filter(customer => 
@@ -1059,18 +1039,18 @@ class MockStorage implements IStorage {
         customer.email.toLowerCase().includes(searchLower)
       );
     }
-
+    
     const total = filteredCustomers.length;
     const totalPages = Math.ceil(total / pageLimit);
     const offset = (page - 1) * pageLimit;
     const paginatedCustomers = filteredCustomers.slice(offset, offset + pageLimit);
-
+    
     const result = paginatedCustomers.map(customer => ({
       ...customer,
       addresses: this.addresses.filter(a => a.customerId === customer.id),
       orderCount: this.orders.filter(o => o.customerId === customer.id).length
     }));
-
+    
     return {
       customers: result,
       total,
@@ -1086,7 +1066,7 @@ class MockStorage implements IStorage {
     currentPage: number;
   }> {
     let filteredOrders = this.orders;
-
+    
     // Apply filters
     if (filters?.status && filters.status !== 'all') {
       filteredOrders = filteredOrders.filter(order => order.status === filters.status);
@@ -1104,18 +1084,18 @@ class MockStorage implements IStorage {
         order.customer.name.toLowerCase().includes(filters.customerName.toLowerCase())
       );
     }
-
+    
     const total = filteredOrders.length;
     const totalPages = Math.ceil(total / pageLimit);
     const offset = (page - 1) * pageLimit;
     const paginatedOrders = filteredOrders.slice(offset, offset + pageLimit);
-
+    
     // Add kits to each order
     const ordersWithKits = paginatedOrders.map(order => ({
       ...order,
       kits: this.kits.filter(kit => kit.orderId === order.id)
     }));
-
+    
     return {
       orders: ordersWithKits,
       total,
@@ -1209,7 +1189,7 @@ class MockStorage implements IStorage {
   async createCustomerWithAddresses(customerData: any): Promise<{ customer: Customer; addresses: Address[] }> {
     // Start a transaction to ensure data consistency
     const { name, cpf, birthDate, email, phone, addresses: addressesData } = customerData;
-
+    
     // Create customer
     const [customer] = await db
       .insert(customers)
@@ -1221,7 +1201,7 @@ class MockStorage implements IStorage {
         phone,
       })
       .returning();
-
+    
     // Create addresses
     const createdAddresses = await Promise.all(
       addressesData.map(async (addressData: any) => {
@@ -1235,7 +1215,7 @@ class MockStorage implements IStorage {
         return address;
       })
     );
-
+    
     return {
       customer,
       addresses: createdAddresses,
@@ -1248,34 +1228,34 @@ class MockStorage implements IStorage {
       .set(customerData)
       .where(eq(customers.id, id))
       .returning();
-
+    
     return customer || undefined;
   }
 
   async deleteCustomer(id: number): Promise<boolean> {
     // First delete all addresses
     await db.delete(addresses).where(eq(addresses.customerId, id));
-
+    
     // Then delete customer
     const result = await db.delete(customers).where(eq(customers.id, id));
-
+    
     return (result.rowCount || 0) > 0;
   }
 
   async getCustomerWithAddresses(id: number): Promise<(Customer & { addresses: Address[] }) | undefined> {
     // Get customer
     const [customer] = await db.select().from(customers).where(eq(customers.id, id));
-
+    
     if (!customer) {
       return undefined;
     }
-
+    
     // Get addresses for this customer
     const customerAddresses = await db
       .select()
       .from(addresses)
       .where(eq(addresses.customerId, id));
-
+    
     return {
       ...customer,
       addresses: customerAddresses,
@@ -1284,3 +1264,4 @@ class MockStorage implements IStorage {
 }
 
 export const storage = new DatabaseStorage();
+
