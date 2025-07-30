@@ -39,20 +39,18 @@ export default function OrderConfirmation() {
 
   // Always fetch complete order data from API when we have orderNumber
   const { data: apiOrderData, isLoading } = useQuery({
-    queryKey: ["order-confirmation", orderNumber],
-    queryFn: async () => {
-      if (!orderNumber) return null;
-      const response = await fetch(`/api/orders/${orderNumber}`);
-      if (!response.ok) {
-        throw new Error("Pedido não encontrado");
-      }
-      return response.json();
-    },
+    queryKey: [`/api/orders/${orderNumber}`],
     enabled: !!orderNumber, // Always fetch if we have orderNumber
   });
 
   // Always prefer API data when available (complete), fallback to sessionStorage (incomplete)
   const displayData = apiOrderData || orderData;
+  
+  // Extract order and payment data correctly
+  const order = displayData?.id ? displayData : displayData?.order;
+  const event = displayData?.event;
+  const address = displayData?.address;
+  const customer = displayData?.customer;
 
   // Debug log to see what data we have
   console.log('Order confirmation displayData:', displayData);
@@ -72,7 +70,7 @@ export default function OrderConfirmation() {
 
   const handleViewOrderDetails = () => {
     // Navigate to order details page
-    const finalOrderNumber = displayData?.orderNumber || orderNumber;
+    const finalOrderNumber = order?.orderNumber || orderNumber;
     if (finalOrderNumber) {
       setLocation(`/orders/${finalOrderNumber}`);
     }
@@ -103,29 +101,26 @@ export default function OrderConfirmation() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-neutral-600">Número do pedido:</span>
-                <span className="font-medium text-neutral-800">#{displayData?.orderNumber || displayData?.order?.orderNumber || orderNumber}</span>
+                <span className="font-medium text-neutral-800">#{order?.orderNumber || orderNumber}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-600">Evento:</span>
-                <span className="font-medium text-neutral-800">{displayData.event?.name || 'Nome do evento'}</span>
+                <span className="font-medium text-neutral-800">{event?.name || 'Nome do evento'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-600">Data do evento:</span>
-                <span className="font-medium text-neutral-800">{displayData.event?.date ? formatDate(displayData.event.date) : 'Data do evento'}</span>
+                <span className="font-medium text-neutral-800">{event?.date ? formatDate(event.date) : 'Data do evento'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-600">Previsão de entrega:</span>
                 <span className="font-medium text-neutral-800">
-                  Até o dia anterior do evento
+                  {event?.date ? `Até ${formatDate(new Date(new Date(event.date).getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0])}` : 'Até o dia anterior do evento'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-600">Valor pago:</span>
                 <span className="font-medium text-primary">
-                  {displayData?.totalCost || displayData?.order?.totalCost ? 
-                    formatCurrency(parseFloat(displayData.totalCost || displayData.order?.totalCost)) : 
-                    'R$ 0,00'
-                  }
+                  {order?.totalCost ? formatCurrency(parseFloat(order.totalCost)) : 'R$ 0,00'}
                 </span>
               </div>
             </div>
