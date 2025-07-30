@@ -36,6 +36,7 @@ export interface IStorage {
   // Customers
   getCustomerByCredentials(cpf: string, birthDate: string): Promise<Customer | undefined>;
   getCustomerByCPF(cpf: string): Promise<Customer | undefined>;
+  getCustomerById(id: number): Promise<Customer | undefined>;
   createCustomer(customer: InsertCustomer): Promise<Customer>;
 
   // Addresses
@@ -195,6 +196,14 @@ export class DatabaseStorage implements IStorage {
       .from(customers)
       .where(eq(customers.cpf, cleanCpf));
     return result[0] || undefined;
+  }
+
+  async getCustomerById(id: number): Promise<Customer | undefined> {
+    const [customer] = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.id, id));
+    return customer || undefined;
   }
 
   async createCustomer(insertCustomer: InsertCustomer): Promise<Customer> {
@@ -1061,7 +1070,7 @@ class MockStorage implements IStorage {
     return this.customers.find(c => c.cpf === cpf);
   }
 
-  async getCustomer(id: number): Promise<Customer | undefined> {
+  async getCustomerById(id: number): Promise<Customer | undefined> {
     return this.customers.find(c => c.id === id);
   }
 

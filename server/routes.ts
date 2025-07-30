@@ -434,7 +434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Send order confirmation email (async, don't wait for completion)
-      const customer = await storage.getCustomer(orderData.customerId);
+      const customer = await storage.getCustomerById(orderData.customerId);
       const address = await storage.getAddress(orderData.addressId);
       
       if (customer && customer.email) {
@@ -444,6 +444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const orderConfirmationData = {
           orderNumber: order.orderNumber,
           customerName: customer.name,
+          customerCPF: customer.cpf,
           eventName: selectedEvent.name,
           eventDate: selectedEvent.date,
           eventLocation: selectedEvent.location,
@@ -453,7 +454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             cpf: kit.cpf,
             shirtSize: kit.shirtSize
           })),
-          deliveryAddress: {
+          address: {
             street: address?.street || '',
             number: address?.number || '',
             complement: address?.complement || '',
@@ -463,13 +464,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             zipCode: address?.zipCode || ''
           },
           pricing: {
-            deliveryCost: parseFloat(order.deliveryCost),
-            extraKitsCost: parseFloat(order.extraKitsCost),
-            donationAmount: parseFloat(order.donationAmount),
-            totalCost: parseFloat(order.totalCost)
+            deliveryCost: order.deliveryCost,
+            extraKitsCost: order.extraKitsCost,
+            donationCost: order.donationCost,
+            totalCost: order.totalCost
           },
           paymentMethod: order.paymentMethod,
-          orderStatus: order.status
+          status: order.status
         };
         
         // Send email asynchronously (don't block the response)
@@ -493,13 +494,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
     } catch (error) {
+      console.error('❌ Error creating order:', error);
       if (error instanceof z.ZodError) {
+        console.error('❌ Zod validation errors:', error.errors);
         return res.status(400).json({ 
           message: "Dados inválidos",
           errors: error.errors 
         });
       }
-      res.status(500).json({ message: "Erro ao criar pedido" });
+      res.status(500).json({ message: "Erro ao criar pedido", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
