@@ -327,7 +327,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create order
   app.post("/api/orders", async (req, res) => {
     try {
-      const orderData = orderCreationSchema.parse(req.body);
+      // Convert numeric values to strings for schema validation
+      const orderDataForValidation = {
+        ...req.body,
+        deliveryCost: typeof req.body.deliveryCost === 'number' ? req.body.deliveryCost.toString() : req.body.deliveryCost,
+        extraKitsCost: typeof req.body.extraKitsCost === 'number' ? req.body.extraKitsCost.toString() : req.body.extraKitsCost,
+        donationCost: typeof req.body.donationCost === 'number' ? req.body.donationCost.toString() : req.body.donationCost,
+        discountAmount: typeof req.body.discountAmount === 'number' ? req.body.discountAmount.toString() : req.body.discountAmount,
+        totalCost: typeof req.body.totalCost === 'number' ? req.body.totalCost.toString() : req.body.totalCost,
+        donationAmount: typeof req.body.donationAmount === 'number' ? req.body.donationAmount.toString() : req.body.donationAmount,
+      };
+      
+      const orderData = orderCreationSchema.parse(orderDataForValidation);
       
       // Check for existing order with same idempotency key
       if (orderData.idempotencyKey) {
