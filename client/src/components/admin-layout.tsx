@@ -42,7 +42,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   };
 
   const Sidebar = ({ mobile = false }: { mobile?: boolean }) => (
-    <div className={`${mobile ? 'w-full' : 'w-64'} bg-white border-r border-gray-200 h-full flex flex-col`}>
+    <div className={`${mobile ? 'w-full h-full' : 'w-64 h-screen'} bg-white border-r border-gray-200 flex flex-col`}>
       <div className="p-6 border-b border-gray-200">
         <h2 className="text-xl font-bold text-gray-800">Painel Admin</h2>
         {admin && (
@@ -62,7 +62,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         )}
       </div>
       
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-4 overflow-y-auto">
         <ul className="space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -89,7 +89,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </ul>
       </nav>
       
-      <div className="p-4 border-t border-gray-200 space-y-2">
+      <div className="p-4 border-t border-gray-200 space-y-2 mt-auto">
         <Button 
           variant="outline" 
           className="w-full justify-start"
@@ -129,12 +129,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
       <div className="flex">
         {/* Desktop Sidebar */}
-        <div className="hidden lg:block">
+        <div className="hidden lg:block fixed left-0 top-0 z-40">
           <Sidebar />
         </div>
         
         {/* Main Content */}
-        <div className="flex-1 lg:ml-0">
+        <div className="flex-1 lg:ml-64">
           <main className="p-6">
             {children}
           </main>
