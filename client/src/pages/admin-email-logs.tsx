@@ -43,6 +43,11 @@ export function AdminEmailLogs() {
   const { data: emailLogs, isLoading, error, refetch } = useQuery<EmailLogsResponse>({
     queryKey: ['/api/admin/email-logs', { page, searchTerm, statusFilter, typeFilter }],
     queryFn: async () => {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        throw new Error('Token de administrador não encontrado');
+      }
+
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '20'
@@ -52,7 +57,12 @@ export function AdminEmailLogs() {
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (typeFilter !== 'all') params.append('emailType', typeFilter);
       
-      const response = await fetch(`/api/admin/email-logs?${params}`);
+      const response = await fetch(`/api/admin/email-logs?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+        },
+      });
+      
       if (!response.ok) throw new Error('Erro ao buscar logs');
       return response.json();
     }

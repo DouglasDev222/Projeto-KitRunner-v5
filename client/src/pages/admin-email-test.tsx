@@ -36,10 +36,17 @@ export function AdminEmailTest() {
 
   const testEmailMutation = useMutation({
     mutationFn: async (data: TestEmailForm): Promise<TestEmailResponse> => {
+      // Get admin token from localStorage
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        throw new Error('Token de administrador não encontrado');
+      }
+
       const response = await fetch('/api/admin/test-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`,
         },
         body: JSON.stringify(data),
       });
