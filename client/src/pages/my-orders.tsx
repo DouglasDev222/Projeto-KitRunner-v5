@@ -140,32 +140,38 @@ export default function MyOrders() {
                           <p className="font-semibold text-neutral-800">#{order.orderNumber}</p>
                           {getStatusBadge(order.status)}
                         </div>
+                        
+                        {/* Event name - more prominent */}
                         {order.event?.name && (
-                          <div className="flex items-center text-sm text-neutral-600 mb-1">
-                            <MapPin className="w-4 h-4 mr-2" />
-                            {order.event.name}
+                          <div className="mb-2">
+                            <p className="font-medium text-neutral-800 text-sm">{order.event.name}</p>
                           </div>
                         )}
-                        <div className="flex items-center text-sm text-neutral-600 mb-1">
-                          <Package className="w-4 h-4 mr-2" />
-                          {order.kitQuantity} kit{order.kitQuantity > 1 ? 's' : ''}
+                        
+                        {/* Kit quantity and date on same line */}
+                        <div className="flex items-center justify-between text-sm text-neutral-600 mb-2">
+                          <div className="flex items-center">
+                            <Package className="w-4 h-4 mr-1" />
+                            {order.kitQuantity} kit{order.kitQuantity > 1 ? 's' : ''}
+                          </div>
+                          <div className="flex items-center">
+                            <Calendar className="w-4 h-4 mr-1" />
+                            {(() => {
+                              try {
+                                const dateStr = order.createdAt ? 
+                                  (typeof order.createdAt === 'string' ? 
+                                    order.createdAt : 
+                                    new Date(order.createdAt).toISOString()
+                                  ).split('T')[0] : 
+                                  new Date().toISOString().split('T')[0];
+                                return formatDate(dateStr);
+                              } catch {
+                                return formatDate(new Date().toISOString().split('T')[0]);
+                              }
+                            })()}
+                          </div>
                         </div>
-                        <div className="flex items-center text-sm text-neutral-600 mb-2">
-                          <Calendar className="w-4 h-4 mr-2" />
-                          {(() => {
-                            try {
-                              const dateStr = order.createdAt ? 
-                                (typeof order.createdAt === 'string' ? 
-                                  order.createdAt : 
-                                  new Date(order.createdAt).toISOString()
-                                ).split('T')[0] : 
-                                new Date().toISOString().split('T')[0];
-                              return formatDate(dateStr);
-                            } catch {
-                              return formatDate(new Date().toISOString().split('T')[0]);
-                            }
-                          })()}
-                        </div>
+                        
                         <p className="text-lg font-bold text-primary">
                           {formatCurrency(parseFloat(order.totalCost))}
                         </p>
