@@ -3,12 +3,15 @@ import { DatabaseStorage } from '../storage';
 import { generateOrderConfirmationTemplate, generateStatusUpdateTemplate } from './email-templates';
 import { OrderConfirmationData, StatusUpdateData, EmailType, EmailLog } from './email-types';
 
-// Configure SendGrid
-if (!process.env.SENDGRID_API_KEY) {
-  throw new Error('SENDGRID_API_KEY environment variable is required');
-}
+// Configure SendGrid (optional - will log if not configured)
+const SENDGRID_ENABLED = !!process.env.SENDGRID_API_KEY;
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+if (SENDGRID_ENABLED) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+  console.log('📧 SendGrid configured successfully');
+} else {
+  console.log('⚠️ SendGrid not configured - email notifications disabled');
+}
 
 export class EmailService {
   private storage: DatabaseStorage;
@@ -26,6 +29,11 @@ export class EmailService {
    */
   async sendOrderConfirmation(data: OrderConfirmationData, recipientEmail: string, orderId?: number, customerId?: number): Promise<boolean> {
     try {
+      if (!SENDGRID_ENABLED) {
+        console.log('📧 Email service disabled - would send order confirmation to:', recipientEmail);
+        return false;
+      }
+
       const template = generateOrderConfirmationTemplate(data);
       
       const msg = {
@@ -78,6 +86,11 @@ export class EmailService {
    */
   async sendStatusUpdateEmail(data: StatusUpdateData, recipientEmail: string, orderId?: number, customerId?: number): Promise<boolean> {
     try {
+      if (!SENDGRID_ENABLED) {
+        console.log('📧 Email service disabled - would send status update to:', recipientEmail);
+        return false;
+      }
+
       const template = generateStatusUpdateTemplate(data);
       
       const msg = {
@@ -130,6 +143,10 @@ export class EmailService {
    */
   async sendTestEmail(recipientEmail: string): Promise<boolean> {
     try {
+      if (!SENDGRID_ENABLED) {
+        console.log('📧 Email service disabled - would send test email to:', recipientEmail);
+        return false;
+      }
       const msg = {
         to: recipientEmail,
         from: {
