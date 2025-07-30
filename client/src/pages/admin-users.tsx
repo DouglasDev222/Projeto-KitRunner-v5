@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, UserPlus, Edit, Trash2, Shield, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 import type { AdminUser, CreateAdminUser } from '@shared/schema';
 
 export default function AdminUsers() {
@@ -31,39 +32,17 @@ export default function AdminUsers() {
   const queryClient = useQueryClient();
 
   // Buscar lista de usuários
-  const { data: users, isLoading } = useQuery({
+  const { data: usersData, isLoading } = useQuery({
     queryKey: ['/api/admin/auth/users'],
-    queryFn: async () => {
-      const token = localStorage.getItem('admin_auth_token');
-      const response = await fetch('/api/admin/auth/users', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) throw new Error('Erro ao buscar usuários');
-      const data = await response.json();
-      return data.users as AdminUser[];
-    },
     enabled: admin?.role === 'super_admin',
   });
+
+  const users = (usersData as any)?.users || [];
 
   // Criar usuário
   const createUserMutation = useMutation({
     mutationFn: async (userData: CreateAdminUser) => {
-      const token = localStorage.getItem('admin_auth_token');
-      const response = await fetch('/api/admin/auth/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(userData),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Erro ao criar usuário');
-      }
-      return response.json();
+      return apiRequest('POST', '/api/admin/auth/users', userData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/auth/users'] });
@@ -92,15 +71,7 @@ export default function AdminUsers() {
   // Desativar usuário
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: number) => {
-      const token = localStorage.getItem('admin_auth_token');
-      const response = await fetch(`/api/admin/auth/users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) throw new Error('Erro ao desativar usuário');
-      return response.json();
+      return apiRequest('DELETE', `/api/admin/auth/users/${userId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/auth/users'] });
