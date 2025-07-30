@@ -29,7 +29,7 @@ export default function KitInformation() {
     resolver: zodResolver(kitInformationSchema),
     defaultValues: {
       kitQuantity: 1,
-      kits: [{ name: "", cpf: "", shirtSize: "M" as const }],
+      kits: [{ name: "", cpf: "", shirtSize: "" as any }],
     },
   });
 
@@ -42,7 +42,7 @@ export default function KitInformation() {
     const newKits = Array.from({ length: selectedQuantity }, () => ({
       name: "",
       cpf: "",
-      shirtSize: "M" as const,
+      shirtSize: "" as any,
     }));
     replace(newKits);
     form.setValue("kitQuantity", selectedQuantity);
@@ -170,7 +170,11 @@ export default function KitInformation() {
                             <FormControl>
                               <Input
                                 placeholder="Ex: M, G, GG, XGG, etc."
+                                className="uppercase"
                                 {...field}
+                                onChange={(e) => {
+                                  field.onChange(e.target.value.toUpperCase());
+                                }}
                               />
                             </FormControl>
                             <FormMessage />
