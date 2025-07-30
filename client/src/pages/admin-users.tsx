@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, UserPlus, Edit, Trash2, Shield, User } from 'lucide-react';
+import { Loader2, UserPlus, Edit, UserX, UserCheck, Shield, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import type { AdminUser, CreateAdminUser } from '@shared/schema';
@@ -69,27 +69,6 @@ export default function AdminUsers() {
     },
   });
 
-  // Desativar usuário
-  const deleteUserMutation = useMutation({
-    mutationFn: async (userId: number) => {
-      return apiRequest('DELETE', `/api/admin/auth/users/${userId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/auth/users'] });
-      toast({
-        title: "Usuário desativado",
-        description: "Usuário desativado com sucesso",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro ao desativar usuário",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   // Editar usuário
   const editUserMutation = useMutation({
     mutationFn: async (data: { userId: number; userData: Partial<AdminUser> }) => {
@@ -138,18 +117,24 @@ export default function AdminUsers() {
     });
   };
 
-  const handleDeleteUser = (user: AdminUser) => {
+  const handleToggleUserStatus = (user: AdminUser) => {
     if (user.id === admin?.id) {
       toast({
         title: "Ação não permitida",
-        description: "Não é possível desativar seu próprio usuário",
+        description: "Não é possível alterar o status do seu próprio usuário",
         variant: "destructive",
       });
       return;
     }
 
-    if (confirm(`Tem certeza que deseja desativar o usuário ${user.fullName}?`)) {
-      deleteUserMutation.mutate(user.id);
+    const action = user.isActive ? 'desativar' : 'ativar';
+    const confirmMessage = `Tem certeza que deseja ${action} o usuário ${user.fullName}?`;
+    
+    if (confirm(confirmMessage)) {
+      editUserMutation.mutate({
+        userId: user.id,
+        userData: { isActive: !user.isActive }
+      });
     }
   };
 
@@ -438,17 +423,21 @@ export default function AdminUsers() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEditUser(user)}
-                          disabled={!user.isActive}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDeleteUser(user)}
-                          disabled={user.id === admin?.id || !user.isActive}
+                          onClick={() => handleToggleUserStatus(user)}
+                          disabled={user.id === admin?.id}
+                          title={user.isActive ? 'Desativar usuário' : 'Ativar usuário'}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          {user.isActive ? (
+                            <UserX className="h-4 w-4 text-red-500" />
+                          ) : (
+                            <UserCheck className="h-4 w-4 text-green-500" />
+                          )}
                         </Button>
                       </div>
                     </TableCell>
