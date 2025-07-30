@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAdminAuth } from '@/contexts/admin-auth-context';
+import { AdminLayout } from '@/components/admin-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -139,20 +140,23 @@ export default function AdminUsers() {
 
   if (admin?.role !== 'super_admin') {
     return (
-      <div className="container mx-auto p-6">
-        <Alert>
-          <Shield className="h-4 w-4" />
-          <AlertDescription>
-            Acesso negado. Apenas super administradores podem gerenciar usuários.
-          </AlertDescription>
-        </Alert>
-      </div>
+      <AdminLayout>
+        <div className="container mx-auto p-6">
+          <Alert>
+            <Shield className="h-4 w-4" />
+            <AlertDescription>
+              Acesso negado. Apenas super administradores podem gerenciar usuários.
+            </AlertDescription>
+          </Alert>
+        </div>
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
+    <AdminLayout>
+      <div className="container mx-auto p-6">
+        <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">Gestão de Usuários</h1>
           <p className="text-muted-foreground">
@@ -348,6 +352,7 @@ export default function AdminUsers() {
           </CardContent>
         </Card>
       )}
-    </div>
+      </div>
+    </AdminLayout>
   );
 }

@@ -32,8 +32,7 @@ export default function AdminDashboard() {
   });
 
   return (
-    <div>
-      <AdminLayout>
+    <AdminLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-neutral-800">Dashboard</h1>
@@ -262,7 +261,6 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
         </Tabs>
-      </AdminLayout>
-    </div>
+    </AdminLayout>
   );
 }
