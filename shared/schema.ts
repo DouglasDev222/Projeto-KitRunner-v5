@@ -166,7 +166,7 @@ export const customerIdentificationSchema = z.object({
 export const kitSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(11, "CPF deve ter 11 dígitos"),
-  shirtSize: z.enum(["PP", "P", "M", "G", "GG", "XGG"], { required_error: "Tamanho da camisa é obrigatório" }),
+  shirtSize: z.string().min(1, "Tamanho da camisa é obrigatório"),
 });
 
 // Kit information validation
@@ -191,7 +191,7 @@ export const orderCreationSchema = z.object({
   kits: z.array(z.object({
     name: z.string().min(1, "Nome é obrigatório"),
     cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(11, "CPF deve ter 11 dígitos"),
-    shirtSize: z.enum(["PP", "P", "M", "G", "GG", "XGG"], { required_error: "Tamanho da camisa é obrigatório" }),
+    shirtSize: z.string().min(1, "Tamanho da camisa é obrigatório"),
   })),
   donationAmount: z.string().default("0"),
   idempotencyKey: z.string().optional(),

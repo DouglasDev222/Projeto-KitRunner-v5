@@ -29,7 +29,7 @@ export default function KitInformation() {
     resolver: zodResolver(kitInformationSchema),
     defaultValues: {
       kitQuantity: 1,
-      kits: [{ name: "", cpf: "", shirtSize: "" as any }],
+      kits: [{ name: "", cpf: "", shirtSize: "" }],
     },
   });
 
@@ -42,7 +42,7 @@ export default function KitInformation() {
     const newKits = Array.from({ length: selectedQuantity }, () => ({
       name: "",
       cpf: "",
-      shirtSize: "" as any,
+      shirtSize: "",
     }));
     replace(newKits);
     form.setValue("kitQuantity", selectedQuantity);
