@@ -17,7 +17,7 @@ export class EmailService {
 
   constructor(storage: DatabaseStorage) {
     this.storage = storage;
-    this.fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@kitrunner.com';
+    this.fromEmail = process.env.SENDGRID_FROM_EMAIL || 'contato@kitrunner.com.br';
     this.fromName = process.env.SENDGRID_FROM_NAME || 'KitRunner';
   }
 

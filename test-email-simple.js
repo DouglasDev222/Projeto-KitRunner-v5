@@ -18,7 +18,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const msg = {
   to: 'test@example.com', // SUBSTITUA pelo seu email real
-  from: 'noreply@kitrunner.com', // Verifique se este domínio está verificado no SendGrid
+  from: 'contato@kitrunner.com.br', // Email verificado no SendGrid
   subject: '🧪 Teste SendGrid - KitRunner',
   text: 'Este é um teste da integração SendGrid com o KitRunner.',
   html: `
