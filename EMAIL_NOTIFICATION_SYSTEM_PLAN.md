@@ -211,12 +211,13 @@ await emailService.sendStatusUpdateEmail(updatedOrder, customer, oldStatus, newS
 
 ## Cronograma de Implementação
 
-### Sprint 1 (Estimativa: 4-6 horas)
+### Sprint 1 (Estimativa: 4-6 horas) - ✅ INICIADO
 - [x] Solicitar chave da API SendGrid
-- [ ] Criar schema de banco (email_logs)
-- [ ] Implementar EmailService básico
-- [ ] Template simples de confirmação
-- [ ] Integração com criação de pedidos
+- [x] Criar schema de banco (email_logs) - Tabela criada e aplicada ao banco
+- [x] Criar tipos TypeScript (email-types.ts) - Interfaces definidas
+- [x] Implementar templates HTML responsivos (email-templates.ts) - Templates profissionais criados
+- [ ] Implementar EmailService básico - **EM PROGRESSO**
+- [ ] Integração com criação de pedidos - **PRÓXIMO**
 
 ### Sprint 2 (Estimativa: 4-6 horas)
 - [ ] Templates HTML profissionais
@@ -324,6 +325,66 @@ await emailService.sendStatusUpdateEmail(updatedOrder, customer, oldStatus, newS
 3. **Iniciar implementação Sprint 1**
 4. **Configurar ambiente de desenvolvimento**
 5. **Criar primeiro template e teste**
+
+---
+
+## Status de Implementação - ATUALIZADO (30/07/2025)
+
+### ✅ CONCLUÍDO (Sprint 1 - Parcial)
+1. **Configuração de Ambiente**
+   - [x] SENDGRID_API_KEY configurada no Replit Secrets
+   - [x] Ambiente pronto para desenvolvimento
+
+2. **Banco de Dados**
+   - [x] Tabela `email_logs` criada com todos os campos necessários
+   - [x] Schema aplicado ao banco PostgreSQL com sucesso (`npm run db:push`)
+   - [x] Tipos TypeScript gerados automaticamente
+
+3. **Estrutura Base**
+   - [x] Tipos TypeScript definidos (`server/email/email-types.ts`)
+   - [x] Templates HTML profissionais criados (`server/email/email-templates.ts`)
+   - [x] Design responsivo com cores da marca KitRunner (#3B82F6, #10B981)
+   - [x] Template de confirmação de pedido completo com todos os dados
+   - [x] Template de atualização de status implementado
+
+### 🔄 EM PROGRESSO (Sprint 1 - Continuação)
+4. **EmailService**
+   - [ ] Implementar classe EmailService principal (`server/email/email-service.ts`)
+   - [ ] Integração com SendGrid API usando @sendgrid/mail
+   - [ ] Sistema de logs de email no banco
+   - [ ] Tratamento de erros robusto
+
+5. **Integração com Sistema**
+   - [ ] Hook de envio após criação de pedido (routes.ts)
+   - [ ] Hook de envio após mudança de status (admin-auth.ts)
+   - [ ] Atualizar storage.ts para incluir métodos de email logs
+   - [ ] Testes funcionais
+
+### 📋 PRÓXIMAS ETAPAS (Ordem de Implementação)
+1. Implementar EmailService com métodos:
+   - `sendOrderConfirmation(order, customer, kits, address)`
+   - `sendStatusUpdateEmail(order, customer, oldStatus, newStatus)`
+   - `logEmail(emailData)` para registrar no banco
+2. Integrar hooks nos pontos de criação e atualização de pedidos
+3. Testar envio real de emails com conta SendGrid
+4. Adicionar tratamento de erros e retry automático
+
+### 📊 PROGRESSO GERAL
+- **Sprint 1**: 60% concluído
+- **Arquivos criados**: 3/5 planejados
+- **Banco de dados**: 100% configurado
+- **Templates**: 100% implementados
+- **Serviço**: 0% implementado
+- **Integração**: 0% implementada
+
+### 📂 Arquivos Criados
+- `shared/schema.ts` - Tabela email_logs adicionada
+- `server/email/email-types.ts` - Interfaces TypeScript
+- `server/email/email-templates.ts` - Templates HTML responsivos
+
+### 📂 Arquivos Pendentes
+- `server/email/email-service.ts` - Serviço principal (próximo)
+- Integrações em `server/routes.ts` e `server/routes/admin-auth.ts`
 
 ---
 

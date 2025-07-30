@@ -144,6 +144,23 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Email system tables
+export const emailLogs = pgTable("email_logs", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").references(() => orders.id),
+  customerId: integer("customer_id").references(() => customers.id),
+  emailType: varchar("email_type", { length: 50 }).notNull(), // 'order_confirmation', 'status_update', etc.
+  recipientEmail: varchar("recipient_email", { length: 255 }).notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull(), // 'sent', 'failed', 'delivered', 'bounced'
+  sendgridMessageId: varchar("sendgrid_message_id", { length: 255 }),
+  errorMessage: text("error_message"),
+  sentAt: timestamp("sent_at").notNull().defaultNow(),
+  deliveredAt: timestamp("delivered_at"),
+  openedAt: timestamp("opened_at"),
+  clickedAt: timestamp("clicked_at"),
+});
+
 // Validation schemas
 export const insertEventSchema = createInsertSchema(events).omit({ id: true, createdAt: true });
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true });
@@ -155,6 +172,7 @@ export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({ id: t
 export const insertAdminSessionSchema = createInsertSchema(adminSessions).omit({ id: true, createdAt: true });
 export const insertAdminAuditLogSchema = createInsertSchema(adminAuditLog).omit({ id: true, createdAt: true });
 export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({ id: true, createdAt: true });
+export const insertEmailLogSchema = createInsertSchema(emailLogs).omit({ id: true, sentAt: true });
 
 // Customer identification validation
 export const customerIdentificationSchema = z.object({
