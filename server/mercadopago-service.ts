@@ -11,6 +11,11 @@ const client = new MercadoPagoConfig({
 const payment = new Payment(client);
 const preference = new Preference(client);
 
+// Helper function to get public key
+export function getPublicKey(): string {
+  return process.env.MERCADOPAGO_PUBLIC_KEY || '';
+}
+
 export interface PaymentData {
   token?: string; // For credit/debit cards
   paymentMethodId: string; // credit_card, debit_card, pix
@@ -84,6 +89,15 @@ export class MercadoPagoService {
         }
       }, null, 2));
       
+      // Validate required fields before sending to MercadoPago
+      if (!paymentData.token || paymentData.token.length < 10) {
+        throw new Error('Token do cartão inválido ou muito curto');
+      }
+      
+      if (!paymentData.payer.identification.number || paymentData.payer.identification.number.length < 11) {
+        throw new Error('CPF inválido - deve ter 11 dígitos');
+      }
+
       const paymentResult = await payment.create({
         body: {
           transaction_amount: paymentData.amount,
@@ -189,6 +203,15 @@ export class MercadoPagoService {
     } catch (error: any) {
       console.error('Card payment error:', error);
       
+      // Enhanced error logging for debugging
+      console.log('🔍 DEBUGGING - Full error details:', JSON.stringify({
+        message: error.message,
+        status: error.status,
+        statusText: error.statusText,
+        cause: error.cause,
+        stack: error.stack?.substring(0, 200)
+      }, null, 2));
+      
       // Better error handling for common errors
       let errorMessage = 'Erro ao processar pagamento com cartão';
       
@@ -196,6 +219,8 @@ export class MercadoPagoService {
         errorMessage = 'Número do cartão inválido. Use um cartão de teste válido.';
       } else if (error.message?.includes('invalid_card')) {
         errorMessage = 'Dados do cartão inválidos. Verifique número, data de validade e CVV.';
+      } else if (error.message?.includes('internal_error')) {
+        errorMessage = 'Erro interno do Mercado Pago. Verifique as credenciais e tente novamente.';
       } else if (error.cause?.length > 0) {
         errorMessage = error.cause[0].description || errorMessage;
       } else if (error.message) {
