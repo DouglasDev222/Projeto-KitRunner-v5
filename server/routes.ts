@@ -543,7 +543,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get order by number with details
-  app.get("/api/orders/:orderNumber", requireAuth, async (req: AuthenticatedRequest, res) => {
+  app.get("/api/orders/:orderNumber", requireOwnership('orderNumber', 'order'), async (req: AuthenticatedRequest, res) => {
     try {
       const { orderNumber } = req.params;
       const order = await storage.getOrderByOrderNumber(orderNumber);

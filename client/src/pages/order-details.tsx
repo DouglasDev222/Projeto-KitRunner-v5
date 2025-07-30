@@ -17,7 +17,7 @@ export default function OrderDetails() {
   const { orderNumber } = useParams<{ orderNumber: string }>();
 
   const { data: order, isLoading } = useQuery({
-    queryKey: ["/api/orders", orderNumber],
+    queryKey: ["/api/orders/" + orderNumber],
     enabled: !!orderNumber,
   });
 
