@@ -1210,8 +1210,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`✅ Payment ${result.status} - creating order now`);
         
         try {
+          // Convert numeric values to strings for schema validation
+          const orderDataForValidation = {
+            ...orderData,
+            deliveryCost: typeof orderData.deliveryCost === 'number' ? orderData.deliveryCost.toString() : orderData.deliveryCost,
+            extraKitsCost: typeof orderData.extraKitsCost === 'number' ? orderData.extraKitsCost.toString() : orderData.extraKitsCost,
+            donationCost: typeof orderData.donationCost === 'number' ? orderData.donationCost.toString() : orderData.donationCost,
+            discountAmount: typeof orderData.discountAmount === 'number' ? orderData.discountAmount.toString() : orderData.discountAmount,
+            totalCost: typeof orderData.totalCost === 'number' ? orderData.totalCost.toString() : orderData.totalCost,
+            donationAmount: typeof orderData.donationAmount === 'number' ? orderData.donationAmount.toString() : orderData.donationAmount,
+          };
+          
           // Parse and validate order data
-          const validatedOrderData = orderCreationSchema.parse(orderData);
+          const validatedOrderData = orderCreationSchema.parse(orderDataForValidation);
           
           // Create the order now that payment is confirmed
           const orderNumber = `KR${new Date().getFullYear()}${String(Date.now() + Math.random() * 1000).slice(-6)}`;
