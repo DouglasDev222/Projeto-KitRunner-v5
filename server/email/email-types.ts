@@ -9,7 +9,8 @@ export type EmailType =
   | 'order_confirmation'
   | 'status_update' 
   | 'payment_confirmation'
-  | 'delivery_notification';
+  | 'delivery_notification'
+  | 'delivery_completed';
 
 export interface OrderConfirmationData {
   orderNumber: string;
@@ -42,6 +43,29 @@ export interface OrderConfirmationData {
   status: string;
 }
 
+export interface PaymentConfirmationData {
+  orderNumber: string;
+  customerName: string;
+  customerCPF: string;
+  eventName: string;
+  eventDate: string;
+  eventLocation: string;
+  address: {
+    street: string;
+    number: string;
+    complement?: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
+  kits: Array<{
+    name: string;
+    cpf: string;
+    shirtSize: string;
+  }>;
+}
+
 export interface StatusUpdateData {
   orderNumber: string;
   customerName: string;
@@ -50,6 +74,21 @@ export interface StatusUpdateData {
   newStatus: string;
   statusDescription: string;
   estimatedTime?: string;
+}
+
+export interface DeliveryCompletedData {
+  orderNumber: string;
+  customerName: string;
+  eventName: string;
+  address: {
+    street: string;
+    number: string;
+    complement?: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
 }
 
 export interface EmailLog {

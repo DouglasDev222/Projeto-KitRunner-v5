@@ -1,7 +1,7 @@
 import sgMail from '@sendgrid/mail';
 import { DatabaseStorage } from '../storage';
-import { generateOrderConfirmationTemplate, generateStatusUpdateTemplate } from './email-templates';
-import { OrderConfirmationData, StatusUpdateData, EmailType, EmailLog } from './email-types';
+import { generateOrderConfirmationTemplate, generateStatusUpdateTemplate, generatePaymentConfirmationTemplate } from './email-templates';
+import { OrderConfirmationData, StatusUpdateData, PaymentConfirmationData, DeliveryCompletedData, EmailType, EmailLog } from './email-types';
 
 // Configure SendGrid (optional - will log if not configured)
 const SENDGRID_ENABLED = !!process.env.SENDGRID_API_KEY;
@@ -73,6 +73,63 @@ export class EmailService {
         emailType: 'order_confirmation',
         recipientEmail,
         subject: `Pedido ${data.orderNumber} confirmado - KitRunner`,
+        status: 'failed',
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+
+      return false;
+    }
+  }
+
+  /**
+   * Send payment confirmation email
+   */
+  async sendPaymentConfirmation(data: PaymentConfirmationData, recipientEmail: string, orderId?: number, customerId?: number): Promise<boolean> {
+    try {
+      if (!SENDGRID_ENABLED) {
+        console.log('📧 Email service disabled - would send payment confirmation to:', recipientEmail);
+        return false;
+      }
+
+      const template = generatePaymentConfirmationTemplate(data);
+      
+      const msg = {
+        to: recipientEmail,
+        from: {
+          email: this.fromEmail,
+          name: this.fromName
+        },
+        subject: template.subject,
+        text: template.text,
+        html: template.html,
+      };
+
+      console.log('📧 Sending payment confirmation email to:', recipientEmail);
+      const response = await sgMail.send(msg);
+      
+      // Log success
+      await this.logEmail({
+        orderId,
+        customerId,
+        emailType: 'payment_confirmation',
+        recipientEmail,
+        subject: template.subject,
+        status: 'sent',
+        sendgridMessageId: response[0].headers['x-message-id'] || undefined,
+      });
+
+      console.log('✅ Payment confirmation email sent successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Error sending payment confirmation email:', error);
+      
+      // Log failure
+      await this.logEmail({
+        orderId,
+        customerId,
+        emailType: 'payment_confirmation',
+        recipientEmail,
+        subject: `🎉 Pagamento confirmado - Pedido ${data.orderNumber} - KitRunner`,
         status: 'failed',
         errorMessage: error instanceof Error ? error.message : String(error),
       });
