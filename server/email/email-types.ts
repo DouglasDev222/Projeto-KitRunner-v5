@@ -1,159 +1,184 @@
-// Email Types - KitRunner
-// Sistema de tipos TypeScript para templates de email modernos e responsivos
+// Email Types for KitRunner - Kit Pickup and Delivery Service
 
 export interface EmailTheme {
-  primaryColor: string;      // #5e17eb (roxo KitRunner)
-  secondaryColor: string;    // #077d2e (verde para confirmações)
-  accentColor: string;       // #10b981 (verde claro)
-  backgroundColor: string;   // #f8fafc (cinza claro)
-  textColor: string;         // #1f2937 (cinza escuro)
-  companyName: string;       // KitRunner
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  backgroundColor: string;
+  textColor: string;
+  borderColor: string;
+  fontFamily: string;
+  companyName: string;
   logoUrl?: string;
   supportEmail: string;
   supportPhone: string;
-  instagramHandle: string;   // @kitrunner_
   websiteUrl: string;
+  instagramHandle: string;
+  address: string;
 }
 
 export const DEFAULT_THEME: EmailTheme = {
   primaryColor: '#5e17eb',
   secondaryColor: '#077d2e', 
-  accentColor: '#10b981',
+  accentColor: '#7c3aed',
   backgroundColor: '#f8fafc',
   textColor: '#1f2937',
+  borderColor: '#e5e7eb',
+  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   companyName: 'KitRunner',
-  logoUrl: undefined,
+  logoUrl: '/kitrunner-logo.png',
   supportEmail: 'contato@kitrunner.com.br',
-  supportPhone: '(83) 99999-9999',
+  supportPhone: '(11) 99999-9999',
+  websiteUrl: 'https://kitrunner.com.br',
   instagramHandle: '@kitrunner_',
-  websiteUrl: 'https://kitrunner.com.br'
+  address: 'João Pessoa, PB - Brasil'
 };
 
-// Dados para confirmação de serviço/pedido
-export interface OrderConfirmationData {
+export interface KitItem {
+  name: string;
+  cpf: string;
+  shirtSize: 'PP' | 'P' | 'M' | 'G' | 'GG' | 'XG' | 'XXG';
+  category: string;
+  ticketNumber?: string;
+}
+
+export interface DeliveryAddress {
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  reference?: string;
+}
+
+export interface PricingInfo {
+  deliveryCost: string;
+  extraKitsCost: string;
+  donationCost?: string;
+  totalCost: string;
+}
+
+export type OrderStatus = 
+  | 'aguardando_pagamento'
+  | 'pagamento_confirmado'
+  | 'retirada_confirmada'
+  | 'em_transito'
+  | 'saiu_para_entrega'
+  | 'entregue'
+  | 'cancelado';
+
+export type PaymentMethod = 'pix' | 'cartao' | 'boleto';
+
+// Base interface for all email templates
+export interface BaseEmailData {
   customerName: string;
   customerEmail: string;
-  customerCPF: string;
   orderNumber: string;
+  theme?: Partial<EmailTheme>;
+}
+
+// Service Confirmation Email
+export interface ServiceConfirmationData extends BaseEmailData {
+  customerCPF: string;
   eventName: string;
   eventDate: string;
   eventLocation: string;
-  kits: Array<{
-    name: string;
-    cpf: string;
-    shirtSize: string;
-  }>;
-  address: {
-    street: string;
-    number: string;
-    complement?: string;
-    neighborhood: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  pricing: {
-    deliveryCost: string;
-    extraKitsCost: string;
-    donationCost: string;
-    totalCost: string;
-  };
-  paymentMethod: string;
-  status: string;
-  theme?: Partial<EmailTheme>;
+  pickupLocation: string;
+  kits: KitItem[];
+  address: DeliveryAddress;
+  pricing: PricingInfo;
+  paymentMethod: PaymentMethod;
+  status: OrderStatus;
+  estimatedDelivery?: string;
 }
 
-// Dados para atualização de status
-export interface StatusUpdateData {
-  customerName: string;
-  customerEmail: string;
-  orderNumber: string;
+// Kit En Route Email
+export interface KitEnRouteData extends BaseEmailData {
   eventName: string;
-  oldStatus: string;
-  newStatus: string;
+  kits: KitItem[];
+  address: DeliveryAddress;
+  estimatedDelivery: string;
+  trackingCode?: string;
+  driverName?: string;
+  driverPhone?: string;
+}
+
+// Delivery Confirmation Email
+export interface DeliveryConfirmationData extends BaseEmailData {
+  eventName: string;
+  kits: KitItem[];
+  deliveredAt: string;
+  receivedBy?: string;
+  feedbackUrl?: string;
+  shareMessage?: string;
+}
+
+// Status Update Email
+export interface StatusUpdateData extends BaseEmailData {
+  previousStatus: OrderStatus;
+  newStatus: OrderStatus;
+  eventName: string;
+  kits: KitItem[];
   statusDescription: string;
-  estimatedNextStep?: string;
-  trackingUrl?: string;
-  theme?: Partial<EmailTheme>;
+  nextSteps?: string;
+  estimatedTime?: string;
+  trackingCode?: string;
 }
 
-// Dados para confirmação de entrega
-export interface DeliveryConfirmationData {
-  customerName: string;
-  customerEmail: string;
-  orderNumber: string;
-  eventName: string;
-  deliveryDate: string;
-  deliveryTime: string;
-  address: {
-    street: string;
-    number: string;
-    neighborhood: string;
-    city: string;
-    state: string;
-  };
-  theme?: Partial<EmailTheme>;
+// Welcome Email
+export interface WelcomeData extends BaseEmailData {
+  // Welcome email is simpler, just basic info
 }
 
-// Template de email gerado
+// Password Reset Email
+export interface PasswordResetData extends BaseEmailData {
+  resetToken: string;
+  resetUrl: string;
+  expirationTime: string;
+}
+
+// Promotional Email
+export interface PromotionalData extends BaseEmailData {
+  promoTitle: string;
+  promoDescription: string;
+  discountPercentage?: number;
+  discountCode?: string;
+  validUntil: string;
+  ctaText: string;
+  ctaUrl: string;
+  features?: string[];
+}
+
+// Email template result
 export interface EmailTemplate {
   subject: string;
   html: string;
   text: string;
 }
 
-// Tipos de email disponíveis
-export type EmailType = 
-  | 'order_confirmation'     // Confirmação de serviço
-  | 'status_update'         // Atualização de status
-  | 'kit_on_way'           // Kit a caminho
-  | 'delivery_completed'    // Entrega concluída
-  | 'welcome'              // Boas-vindas
-  | 'promotional';         // Promocional
-
-// Status de pedidos com descrições amigáveis
-export interface StatusInfo {
+// Status display information
+export interface StatusDisplay {
   text: string;
-  description: string;
   color: string;
   class: string;
+  description: string;
 }
 
-export const STATUS_MAPPINGS: Record<string, StatusInfo> = {
-  'confirmado': {
-    text: 'Serviço Confirmado',
-    description: 'Seu pedido de retirada foi confirmado e nossa equipe está se preparando.',
-    color: '#077d2e',
-    class: 'status-confirmado'
-  },
-  'aguardando_pagamento': {
-    text: 'Aguardando Pagamento',
-    description: 'Aguardando confirmação do pagamento para prosseguir com o serviço.',
-    color: '#f59e0b',
-    class: 'status-aguardando'
-  },
-  'kits_sendo_retirados': {
-    text: 'Retirando seus Kits',
-    description: 'Nossa equipe está no local do evento retirando seus kits.',
-    color: '#3b82f6',
-    class: 'status-retirando'
-  },
-  'em_transito': {
-    text: 'A Caminho da sua Casa',
-    description: 'Seus kits foram retirados e estão a caminho do endereço de entrega.',
-    color: '#f97316',
-    class: 'status-transito'
-  },
-  'entregue': {
-    text: 'Entregue com Sucesso',
-    description: 'Seus kits foram entregues no endereço informado. Obrigado pela confiança!',
-    color: '#10b981',
-    class: 'status-entregue'
-  },
-  'cancelado': {
-    text: 'Cancelado',
-    description: 'Este pedido foi cancelado.',
-    color: '#ef4444',
-    class: 'status-cancelado'
-  }
-};
+// Utility type for email type identification
+export type EmailType = 
+  | 'service_confirmation'
+  | 'kit_en_route'
+  | 'delivery_confirmation'
+  | 'status_update'
+  | 'welcome'
+  | 'password_reset'
+  | 'promotional';
+
+export interface EmailMetadata {
+  type: EmailType;
+  version: string;
+  timestamp: string;
+  locale: string;
+}

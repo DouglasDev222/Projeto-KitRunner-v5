@@ -641,6 +641,77 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(orderStatusHistory.createdAt));
   }
 
+  async getOrderByIdWithDetails(orderId: number): Promise<any> {
+    const [order] = await db.select({
+      id: orders.id,
+      orderNumber: orders.orderNumber,
+      eventId: orders.eventId,
+      customerId: orders.customerId,
+      addressId: orders.addressId,
+      kitQuantity: orders.kitQuantity,
+      deliveryCost: orders.deliveryCost,
+      extraKitsCost: orders.extraKitsCost,
+      donationCost: orders.donationCost,
+      discountAmount: orders.discountAmount,
+      couponCode: orders.couponCode,
+      totalCost: orders.totalCost,
+      paymentMethod: orders.paymentMethod,
+      status: orders.status,
+      donationAmount: orders.donationAmount,
+      createdAt: orders.createdAt,
+      customer: {
+        id: customers.id,
+        name: customers.name,
+        cpf: customers.cpf,
+        email: customers.email,
+        phone: customers.phone,
+      },
+      event: {
+        id: events.id,
+        name: events.name,
+        date: events.date,
+        location: events.location,
+        city: events.city,
+        state: events.state,
+        pickupZipCode: events.pickupZipCode,
+        fixedPrice: events.fixedPrice,
+        extraKitPrice: events.extraKitPrice,
+        donationRequired: events.donationRequired,
+        donationAmount: events.donationAmount,
+        donationDescription: events.donationDescription,
+      },
+      address: {
+        id: addresses.id,
+        label: addresses.label,
+        street: addresses.street,
+        number: addresses.number,
+        complement: addresses.complement,
+        neighborhood: addresses.neighborhood,
+        city: addresses.city,
+        state: addresses.state,
+        zipCode: addresses.zipCode,
+      },
+    })
+    .from(orders)
+    .leftJoin(customers, eq(orders.customerId, customers.id))
+    .leftJoin(events, eq(orders.eventId, events.id))
+    .leftJoin(addresses, eq(orders.addressId, addresses.id))
+    .where(eq(orders.id, orderId));
+
+    if (!order) return null;
+
+    // Get kits for this order
+    const orderKits = await db
+      .select()
+      .from(kits)
+      .where(eq(kits.orderId, orderId));
+
+    return {
+      ...order,
+      kits: orderKits
+    };
+  }
+
   async updateOrderStatus(orderId: number | string, status: string, changedBy: string = 'system', changedByName?: string, reason?: string): Promise<Order | undefined> {
     let targetOrderId: number;
     let previousStatus: string | null = null;
@@ -684,6 +755,11 @@ export class DatabaseStorage implements IStorage {
         .set({ status })
         .where(eq(orders.id, targetOrderId))
         .returning();
+
+      // Send email notification based on the new status (async, don't block)
+      this.sendStatusChangeEmail(targetOrderId, previousStatus, status).catch(error => {
+        console.error(`❌ Failed to send status change email for order ${targetOrderId}:`, error);
+      });
       
       return order;
     }
@@ -691,6 +767,80 @@ export class DatabaseStorage implements IStorage {
     // Return current order if status didn't change
     const [order] = await db.select().from(orders).where(eq(orders.id, targetOrderId)).limit(1);
     return order;
+  }
+
+  private async sendStatusChangeEmail(orderId: number, previousStatus: string | null, newStatus: string): Promise<void> {
+    try {
+      const { EmailService } = await import("./email/email-service");
+      const { EmailDataMapper } = await import("./email/email-data-mapper");
+      
+      const order = await this.getOrderByIdWithDetails(orderId);
+      if (!order || !order.customer?.email) {
+        console.log(`No email to send for order ${orderId} - customer not found or no email`);
+        return;
+      }
+
+      const emailService = new EmailService(this);
+
+      switch (newStatus) {
+        case 'confirmado':
+          // Send service confirmation when payment is confirmed
+          const serviceConfirmationData = EmailDataMapper.mapToServiceConfirmation(order);
+          await emailService.sendServiceConfirmation(
+            serviceConfirmationData,
+            order.customer.email,
+            order.id,
+            order.customerId
+          );
+          console.log(`📧 Service confirmation email sent for order ${order.orderNumber}`);
+          break;
+
+        case 'em_transito':
+          // Send kit en route notification
+          const kitEnRouteData = EmailDataMapper.mapToKitEnRoute(order);
+          await emailService.sendKitEnRoute(
+            kitEnRouteData,
+            order.customer.email,
+            order.id,
+            order.customerId
+          );
+          console.log(`📧 Kit en route email sent for order ${order.orderNumber}`);
+          break;
+
+        case 'entregue':
+          // Send delivery confirmation
+          const deliveryConfirmationData = EmailDataMapper.mapToDeliveryConfirmation(order);
+          await emailService.sendDeliveryConfirmation(
+            deliveryConfirmationData,
+            order.customer.email,
+            order.id,
+            order.customerId
+          );
+          console.log(`📧 Delivery confirmation email sent for order ${order.orderNumber}`);
+          break;
+
+        case 'kits_sendo_retirados':
+        case 'cancelado':
+        case 'aguardando_pagamento':
+          // Send generic status update for these statuses
+          const statusUpdateData = EmailDataMapper.mapToStatusUpdate(order, previousStatus || '', newStatus);
+          await emailService.sendStatusUpdateEmail(
+            statusUpdateData,
+            order.customer.email,
+            order.id,
+            order.customerId
+          );
+          console.log(`📧 Status update email sent for order ${order.orderNumber}: ${newStatus}`);
+          break;
+
+        default:
+          console.log(`No specific email template for status: ${newStatus}`);
+          break;
+      }
+    } catch (error) {
+      console.error(`❌ Error sending status change email for order ${orderId}:`, error);
+      throw error;
+    }
   }
 
   async updateOrder(orderId: number, updateData: Partial<InsertOrder>): Promise<Order | undefined> {

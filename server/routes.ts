@@ -9,6 +9,7 @@ import { z } from "zod";
 import { calculateDeliveryCost } from "./distance-calculator";
 import { MercadoPagoService } from "./mercadopago-service";
 import { EmailService } from "./email/email-service";
+import { EmailDataMapper } from "./email/email-data-mapper";
 import path from "path";
 import { requireAuth, requireAdmin, requireOwnership, type AuthenticatedRequest } from './middleware/auth';
 import adminAuthRoutes from './routes/admin-auth';
@@ -433,56 +434,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         kits.push(kit);
       }
       
-      // Send order confirmation email (async, don't wait for completion)
-      const customer = await storage.getCustomerById(orderData.customerId);
-      const address = await storage.getAddress(orderData.addressId);
-      
-      if (customer && customer.email) {
-        const emailService = new EmailService(storage);
-        
-        // Prepare order confirmation data
-        const orderConfirmationData = {
-          orderNumber: order.orderNumber,
-          customerName: customer.name,
-          customerCPF: customer.cpf,
-          eventName: selectedEvent.name,
-          eventDate: selectedEvent.date,
-          eventLocation: selectedEvent.location,
-          eventCity: selectedEvent.city,
-          kits: kits.map(kit => ({
-            name: kit.name,
-            cpf: kit.cpf,
-            shirtSize: kit.shirtSize
-          })),
-          address: {
-            street: address?.street || '',
-            number: address?.number || '',
-            complement: address?.complement || '',
-            neighborhood: address?.neighborhood || '',
-            city: address?.city || '',
-            state: address?.state || '',
-            zipCode: address?.zipCode || ''
-          },
-          pricing: {
-            deliveryCost: order.deliveryCost,
-            extraKitsCost: order.extraKitsCost,
-            donationCost: order.donationCost,
-            totalCost: order.totalCost
-          },
-          paymentMethod: order.paymentMethod,
-          status: order.status
-        };
-        
-        // Send email asynchronously (don't block the response)
-        emailService.sendOrderConfirmation(
-          orderConfirmationData, 
-          customer.email, 
-          order.id, 
-          customer.id
-        ).catch(error => {
-          console.error('❌ Failed to send order confirmation email:', error);
-        });
-      }
+      // Note: Order confirmation email will be sent when payment is confirmed, not here
+      // Orders start with "aguardando_pagamento" status
       
       res.json({
         order,
@@ -1461,60 +1414,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
             console.log(`✅ Order ${order.orderNumber} status updated to confirmado - payment approved`);
             
-            // Send payment confirmation email when status changes to "confirmado"
+            // Send service confirmation email when payment is confirmed
             try {
               const emailService = new EmailService(storage);
-              const fullOrder = await storage.getOrderById(order.id);
-              if (!fullOrder) throw new Error('Order not found');
-              const customer = await storage.getCustomer(fullOrder.customerId);
-              const event = await storage.getEvent(fullOrder.eventId);
-              const address = await storage.getAddress(fullOrder.addressId);
-              const kits = await storage.getKitsByOrderId(fullOrder.id);
+              const fullOrder = await storage.getOrderByIdWithDetails(order.id);
               
-              if (customer?.email) {
-                const eventDate = fullOrder.event?.date ? new Date(fullOrder.event.date).toLocaleDateString('pt-BR') : 'A definir';
+              if (fullOrder && fullOrder.customer?.email) {
+                const serviceConfirmationData = EmailDataMapper.mapToServiceConfirmation(fullOrder);
                 
-                const paymentConfirmationData = {
-                  orderNumber: fullOrder.orderNumber,
-                  customerName: fullOrder.customer.name,
-                  customerCPF: fullOrder.customer.cpf,
-                  eventName: fullOrder.event?.name || 'Evento não definido',
-                  eventDate: eventDate,
-                  eventLocation: fullOrder.event?.location || 'Local a definir',
-                  address: fullOrder.address ? {
-                    street: fullOrder.address.street,
-                    number: fullOrder.address.number,
-                    complement: fullOrder.address.complement || '',
-                    neighborhood: fullOrder.address.neighborhood,
-                    city: fullOrder.address.city,
-                    state: fullOrder.address.state,
-                    zipCode: fullOrder.address.zipCode
-                  } : {
-                    street: 'Endereço não definido',
-                    number: '',
-                    complement: '',
-                    neighborhood: '',
-                    city: '',
-                    state: '',
-                    zipCode: ''
-                  },
-                  kits: fullOrder.kits?.map(kit => ({
-                    name: kit.name,
-                    cpf: kit.cpf,
-                    shirtSize: kit.shirtSize
-                  })) || []
-                };
-                
-                await emailService.sendPaymentConfirmation(
-                  paymentConfirmationData,
+                await emailService.sendServiceConfirmation(
+                  serviceConfirmationData,
                   fullOrder.customer.email,
                   fullOrder.id,
                   fullOrder.customerId
                 );
-                console.log(`📧 Payment confirmation email sent for order ${fullOrder.orderNumber}`);
+                console.log(`📧 Service confirmation email sent for order ${fullOrder.orderNumber}`);
               }
             } catch (emailError) {
-              console.error('Error sending payment confirmation email:', emailError);
+              console.error('Error sending service confirmation email:', emailError);
             }
           }
 

@@ -1,15 +1,17 @@
 import sgMail from '@sendgrid/mail';
 import { DatabaseStorage } from '../storage';
 import { 
-  generateOrderConfirmationTemplate, 
+  generateServiceConfirmationTemplate, 
   generateStatusUpdateTemplate,
   generateDeliveryConfirmationTemplate,
+  generateKitEnRouteTemplate,
   EmailUtils
 } from './email-templates';
 import { 
-  OrderConfirmationData, 
+  ServiceConfirmationData, 
   StatusUpdateData, 
   DeliveryConfirmationData,
+  KitEnRouteData,
   EmailType
 } from './email-types';
 
@@ -35,16 +37,16 @@ export class EmailService {
   }
 
   /**
-   * Send order confirmation email
+   * Send service confirmation email (for confirmed orders)
    */
-  async sendOrderConfirmation(data: OrderConfirmationData, recipientEmail: string, orderId?: number, customerId?: number): Promise<boolean> {
+  async sendServiceConfirmation(data: ServiceConfirmationData, recipientEmail: string, orderId?: number, customerId?: number): Promise<boolean> {
     try {
       if (!SENDGRID_ENABLED) {
-        console.log('📧 Email service disabled - would send order confirmation to:', recipientEmail);
+        console.log('📧 Email service disabled - would send service confirmation to:', recipientEmail);
         return false;
       }
 
-      const template = generateOrderConfirmationTemplate(data);
+      const template = generateServiceConfirmationTemplate(data);
       
       const msg = {
         to: recipientEmail,
@@ -64,14 +66,14 @@ export class EmailService {
       await this.logEmail({
         orderId,
         customerId,
-        emailType: 'order_confirmation',
+        emailType: 'service_confirmation',
         recipientEmail,
         subject: template.subject,
         status: 'sent',
         sendgridMessageId: response[0].headers['x-message-id'] || undefined,
       });
 
-      console.log('✅ Order confirmation email sent successfully');
+      console.log('✅ Service confirmation email sent successfully');
       return true;
     } catch (error) {
       console.error('❌ Error sending order confirmation email:', error);
@@ -80,9 +82,66 @@ export class EmailService {
       await this.logEmail({
         orderId,
         customerId,
-        emailType: 'order_confirmation',
+        emailType: 'service_confirmation',
         recipientEmail,
         subject: `Pedido ${data.orderNumber} confirmado - KitRunner`,
+        status: 'failed',
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+
+      return false;
+    }
+  }
+
+  /**
+   * Send kit en route email (when status = 'em_transito')
+   */
+  async sendKitEnRoute(data: KitEnRouteData, recipientEmail: string, orderId?: number, customerId?: number): Promise<boolean> {
+    try {
+      if (!SENDGRID_ENABLED) {
+        console.log('📧 Email service disabled - would send kit en route to:', recipientEmail);
+        return false;
+      }
+
+      const template = generateKitEnRouteTemplate(data);
+      
+      const msg = {
+        to: recipientEmail,
+        from: {
+          email: this.fromEmail,
+          name: this.fromName
+        },
+        subject: template.subject,
+        text: template.text,
+        html: template.html,
+      };
+
+      console.log('📧 Sending kit en route email to:', recipientEmail);
+      const response = await sgMail.send(msg);
+      
+      // Log success
+      await this.logEmail({
+        orderId,
+        customerId,
+        emailType: 'kit_en_route',
+        recipientEmail,
+        subject: template.subject,
+        status: 'sent',
+        sendgridMessageId: response[0].headers['x-message-id'] || undefined,
+      });
+
+      console.log('✅ Kit en route email sent successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Error sending kit en route email:', error);
+      
+      // Log failure
+      await this.logEmail({
+        orderId,
+        customerId,
+        emailType: 'kit_en_route',
+        recipientEmail,
+        subject: `Seu kit está a caminho! - ${data.orderNumber}`,
         status: 'failed',
         errorMessage: error instanceof Error ? error.message : String(error),
       });
@@ -121,7 +180,7 @@ export class EmailService {
       await this.logEmail({
         orderId,
         customerId,
-        emailType: 'delivery_completed',
+        emailType: 'delivery_confirmation',
         recipientEmail,
         subject: template.subject,
         status: 'sent',
@@ -137,7 +196,7 @@ export class EmailService {
       await this.logEmail({
         orderId,
         customerId,
-        emailType: 'delivery_completed',
+        emailType: 'delivery_confirmation',
         recipientEmail,
         subject: `Seu kit chegou direitinho em sua casa! 🎉`,
         status: 'failed',
@@ -292,7 +351,7 @@ Sistema: KitRunner Email Notification System
       
       // Log test email
       await this.logEmail({
-        emailType: 'order_confirmation', // Use existing type for test
+        emailType: 'service_confirmation', // Use existing type for test
         recipientEmail,
         subject: msg.subject,
         status: 'sent',
@@ -306,7 +365,7 @@ Sistema: KitRunner Email Notification System
       
       // Log failure
       await this.logEmail({
-        emailType: 'order_confirmation',
+        emailType: 'service_confirmation',
         recipientEmail,
         subject: 'Teste de Integração SendGrid - KitRunner',
         status: 'failed',
