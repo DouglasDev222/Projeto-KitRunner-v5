@@ -22,7 +22,7 @@ Preferred communication style: Simple, everyday language.
 - **Runtime**: Node.js with Express.js server
 - **Language**: TypeScript with ES modules
 - **Database**: PostgreSQL with Drizzle ORM
-- **Database Provider**: Neon Database (serverless PostgreSQL)
+- **Database Provider**: Supabase PostgreSQL (serverless PostgreSQL)
 - **Storage**: DatabaseStorage implementation with persistent data
 - **API Style**: RESTful API with JSON responses
 - **Development**: Hot reload with Vite middleware integration
@@ -126,7 +126,7 @@ Preferred communication style: Simple, everyday language.
 3. **Session-Based Flow**: Multi-step order process with session storage
 4. **Type Safety**: End-to-end TypeScript with shared validation schemas
 5. **Brazilian Market Focus**: CPF validation, Portuguese localization, BRL currency
-6. **Serverless Database**: Neon Database for scalable PostgreSQL hosting
+6. **Serverless Database**: Supabase for scalable PostgreSQL hosting
 7. **Component Library**: shadcn/ui for consistent, accessible UI components
 8. **Database-First Storage**: Replaced in-memory storage with persistent PostgreSQL database
 
@@ -501,7 +501,7 @@ The application follows a progressive enhancement approach, starting with a soli
 - ✓ **System Cleanup**: Removed all references to old AdminAuth, AdminProtectedRoute, and localStorage-based authentication
 - ✓ **Production Ready**: System now has enterprise-level security suitable for production deployment with comprehensive audit trail
 
-### Final Replit Agent to Replit Migration Completion (July 2025)
+### Final Replit Agent to Replit Migration Completion - SUPABASE (July 2025)
 - ✓ **Migration Successfully Completed**: Migrated project from Replit Agent to standard Replit environment
 - ✓ **PostgreSQL Database Setup**: Created database with all required environment variables (DATABASE_URL, PGPORT, PGUSER, PGPASSWORD, PGDATABASE, PGHOST)
 - ✓ **Schema Migration**: Applied complete database schema using Drizzle Kit with no errors
