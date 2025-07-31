@@ -110,6 +110,8 @@ interface BulkStatusUpdateForm {
 - [x] Criar componente EmailConfirmationModal
 - [x] Integrar no AdminOrders (modal de confirmação ao alterar status)
 - [x] Modificar API para aceitar parâmetro sendEmail
+- [x] Corrigir acessibilidade do modal (DialogDescription)
+- [x] Corrigir problema de frontend travando após alteração de status
 
 ### Fase 3: Logs de Email (2-3 horas)
 - [ ] Implementar logging no email service

@@ -154,9 +154,14 @@ export default function AdminOrders() {
       return response.json();
     },
     onSuccess: (_, variables) => {
+      // Close modal first
+      setEmailConfirmationModal({ isOpen: false, orderId: 0, orderNumber: "", customerName: "", newStatus: "" });
+      
+      // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
-      setEmailConfirmationModal({ isOpen: false, orderId: 0, orderNumber: "", customerName: "", newStatus: "" });
+      
+      // Show toast
       toast({
         title: "Status atualizado com sucesso!",
         description: variables.sendEmail 
@@ -165,6 +170,9 @@ export default function AdminOrders() {
       });
     },
     onError: () => {
+      // Close modal on error too
+      setEmailConfirmationModal({ isOpen: false, orderId: 0, orderNumber: "", customerName: "", newStatus: "" });
+      
       toast({
         title: "Erro ao atualizar status",
         description: "Não foi possível atualizar o status do pedido.",

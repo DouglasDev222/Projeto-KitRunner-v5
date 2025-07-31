@@ -42,10 +42,10 @@ export function EmailConfirmationModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby="email-confirmation-description">
         <DialogHeader>
           <DialogTitle>Confirmar Alteração de Status</DialogTitle>
-          <DialogDescription>
+          <DialogDescription id="email-confirmation-description">
             Você está alterando o status do pedido <strong>{orderNumber}</strong> de{" "}
             <strong>{customerName}</strong> para <strong>{getStatusLabel(newStatus)}</strong>.
           </DialogDescription>

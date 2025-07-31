@@ -769,10 +769,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update order status
-  app.patch("/api/admin/orders/:id/status", async (req, res) => {
+  app.patch("/api/admin/orders/:id/status", requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { status, reason, sendEmail = true } = req.body;
+      
+      console.log('📧 Status update request:', { id, status, sendEmail, reason });
       
       // Validate status - using Portuguese status names
       const validStatuses = ["confirmado", "aguardando_pagamento", "cancelado", "kits_sendo_retirados", "em_transito", "entregue"];
@@ -799,6 +801,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Send status update email notification (async, don't block response)
       if (currentOrder && oldStatus !== status && sendEmail) {
+        console.log('📧 Sending status update email because sendEmail is true');
         const emailService = new EmailService(storage);
         
         // Prepare status update data
@@ -825,6 +828,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ).catch(error => {
           console.error('❌ Failed to send status update email:', error);
         });
+      } else if (currentOrder && oldStatus !== status && !sendEmail) {
+        console.log('📧 Skipping email notification because sendEmail is false');
       }
       
       res.json(order);
