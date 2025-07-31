@@ -1,0 +1,69 @@
+# Solicitação de Melhorias no Painel Administrativo - KitRunner
+
+## 📌 Tela: `/admin/orders`
+
+### ✅ 1. Confirmação de Envio de Email ao Alterar Status
+- [ ] Ao alterar o status de um pedido manualmente, exibir um **modal de confirmação**:
+  - Pergunta: **"Deseja enviar o email de notificação ao cliente?"**
+  - Botões: `Sim, enviar email` / `Não, apenas mudar status`
+  - Se "Sim", dispara o email correspondente ao novo status.
+  - Se "Não", apenas salva o novo status, sem enviar email.
+
+### ✅ 2. Limpeza no Dropdown de Status
+- [ ] Remover a opção **"Processando Pagamento"** do dropdown de seleção de status, pois ela não está mais sendo utilizada no fluxo atual.
+
+---
+
+## 📌 Nova Função: Troca em Massa de Status por Evento
+
+### ✅ 3. Criar funcionalidade de alteração em massa de status:
+- [ ] Nova seção ou botão na tela de pedidos para **“Troca em Massa de Status”**.
+- [ ] Campos:
+  - Seletor de Evento
+  - Seletor de Novo Status
+  - Confirmação antes de aplicar
+- [ ] Atualizar todos os pedidos do evento selecionado para o novo status.
+- [ ] Exibir loading e resultado com sucesso/erro para feedback ao admin.
+- [ ] Opcional: caixa de seleção “Enviar email aos clientes” para essa troca em massa.
+
+---
+
+## 📌 Logs de Emails + Histórico de Status
+
+### ✅ 4. Integração do Histórico de Emails Enviados ao Cliente
+- [ ] Usar a tabela de **logs de envio de emails** para:
+  - Exibir no **painel de detalhes do pedido do admin**.
+  - Mostrar quais emails foram enviados ao cliente.
+  - Mostrar data/hora e status de envio.
+- [ ] Integrar esse log na mesma seção do **histórico de status**, ou criar uma subseção visual:
+Histórico do Pedido
+
+27/07 - Status alterado para "A Caminho"
+
+27/07 - Email enviado: "Seu kit está a caminho!"
+
+29/07 - Status alterado para "Entregue"
+
+29/07 - Email enviado: "Entrega Confirmada"
+
+yaml
+Copiar
+Editar
+
+---
+
+## 📌 Checklist Geral
+
+- [ ] ✔ Adicionar modal de confirmação ao alterar status no admin
+- [ ] ✔ Remover "Processando Pagamento" do dropdown de status
+- [ ] ✔ Implementar tela ou botão para **Troca em Massa de Status por Evento**
+- [ ] ✔ Criar campo para escolher se deseja ou não enviar email ao aplicar essa troca em massa
+- [ ] ✔ Integrar logs de envio de email no detalhe do pedido (admin)
+- [ ] ✔ Exibir junto ao histórico de status ou em seção separada dentro do pedido
+
+---
+
+## ℹ️ Observações Finais
+
+- Todos os links de email enviados devem sempre levar para a tela do cliente em `/orders/{Número do Pedido}`.
+- Os emails devem refletir os status reais e estar todos sendo registrados nos logs para visualização por parte do administrador.
