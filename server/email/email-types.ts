@@ -97,6 +97,7 @@ export interface ServiceConfirmationData extends BaseEmailData {
 // Kit En Route Email
 export interface KitEnRouteData extends BaseEmailData {
   eventName: string;
+  eventDate: string;
   kits: KitItem[];
   address: DeliveryAddress;
   estimatedDelivery: string;

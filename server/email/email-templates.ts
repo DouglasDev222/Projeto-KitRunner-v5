@@ -70,10 +70,10 @@ export class EmailUtils {
         description: "Pagamento confirmado! Em breve retiraremos seu kit",
       },
       retirada_confirmada: {
-        text: "Retirada Confirmada",
+        text: "Retirada em Andamento",
         color: "#5e17eb",
         class: "status-pickup",
-        description: "Seu pedido foi confirmado e logo retiraremos seu kit",
+        description: "Sua retirada está em andamento",
       },
       em_transito: {
         text: "Em Trânsito",
@@ -108,11 +108,11 @@ export class EmailUtils {
     return { ...DEFAULT_THEME, ...customTheme };
   }
 
-  static generateTrackingUrl(
+  static generateOrderDetailsUrl(
     orderNumber: string,
-    baseUrl: string = "https://kitrunner.com.br",
+    baseUrl: string = process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : "https://kitrunner.com.br",
   ): string {
-    return `${baseUrl}/rastrear/${orderNumber}`;
+    return `${baseUrl}/orders/${orderNumber}`;
   }
 }
 
@@ -360,17 +360,19 @@ function getBaseEmailTemplate(theme: EmailTheme): {
       <div class="footer-links">
         <a href="${theme.websiteUrl}">Site</a>
         <a href="mailto:${theme.supportEmail}">Contato</a>
-        <a href="${theme.websiteUrl}/rastrear">Rastrear Pedido</a>
       </div>
 
       <div class="social-links">
-        <a href="https://instagram.com/${theme.instagramHandle.replace("@", "")}">Instagram</a>
+        <a href="https://wa.me/5583981302961?text=Olá! Preciso de ajuda com meu pedido." 
+           style="background: #25D366; color: white !important; padding: 12px 20px; border-radius: 8px; text-decoration: none; display: inline-block;">
+          💬 Falar no WhatsApp
+        </a>
       </div>
 
       <p style="font-size: 12px; color: #6b7280; margin-top: 16px;">
         ${theme.companyName}<br>
         ${theme.address}<br>
-        ${theme.supportEmail} | ${theme.supportPhone}
+        ${theme.supportEmail} | 83 98130-2961
       </p>
 
       <p style="font-size: 11px; color: #9ca3af; margin-top: 12px;">
@@ -390,7 +392,7 @@ export function generateServiceConfirmationTemplate(
   const theme = EmailUtils.mergeTheme(data.theme);
   const { header, footer, styles } = getBaseEmailTemplate(theme);
   const statusInfo = EmailUtils.getStatusDisplay(data.status);
-  const trackingUrl = EmailUtils.generateTrackingUrl(data.orderNumber);
+  const orderDetailsUrl = EmailUtils.generateOrderDetailsUrl(data.orderNumber);
 
   const html = `
     <!DOCTYPE html>
@@ -491,24 +493,24 @@ export function generateServiceConfirmationTemplate(
           </div>
 
           <div style="text-align: center; margin: 32px 0;">
-            <a href="${trackingUrl}" class="button">
-              🔍 Acompanhar Pedido
+            <a href="${orderDetailsUrl}" class="button">
+              📋 Detalhes do Pedido
             </a>
           </div>
 
           <div class="timeline">
             <h3>📅 Próximos Passos</h3>
             <div class="timeline-item active">
-              <strong>Pedido Confirmado</strong> - Agora
+              ✅ <strong>Pedido Confirmado</strong> - Agora
             </div>
             <div class="timeline-item">
-              <strong>Retirada do Kit</strong> - Dia do evento
+              🏃‍♀️ <strong>Retirada do Kit</strong> - até 1 dia antes do evento
             </div>
             <div class="timeline-item">
-              <strong>A Caminho</strong> - Logo após retirada
+              🚚 <strong>A Caminho</strong> - Logo após retirada
             </div>
             <div class="timeline-item">
-              <strong>Entrega</strong> - ${data.estimatedDelivery || "Em breve"}
+              📦 <strong>Entrega</strong> - 1 dia antes da data do evento
             </div>
           </div>
 
@@ -545,7 +547,7 @@ export function generateServiceConfirmationTemplate(
 
     Total: ${EmailUtils.formatCurrency(data.pricing.totalCost)}
 
-    Acompanhe seu pedido: ${trackingUrl}
+    Acompanhe seu pedido: ${orderDetailsUrl}
 
     ${theme.companyName}
     ${theme.supportEmail}
@@ -564,7 +566,13 @@ export function generateKitEnRouteTemplate(
 ): EmailTemplate {
   const theme = EmailUtils.mergeTheme(data.theme);
   const { header, footer, styles } = getBaseEmailTemplate(theme);
-  const trackingUrl = EmailUtils.generateTrackingUrl(data.orderNumber);
+  const orderDetailsUrl = EmailUtils.generateOrderDetailsUrl(data.orderNumber);
+  
+  // Calculate delivery date as 1 day before event
+  const eventDate = new Date(data.eventDate);
+  const deliveryDate = new Date(eventDate);
+  deliveryDate.setDate(eventDate.getDate() - 1);
+  const formattedDeliveryDate = EmailUtils.formatDate(deliveryDate.toISOString());
 
   const html = `
     <!DOCTYPE html>
@@ -621,9 +629,8 @@ export function generateKitEnRouteTemplate(
           <div class="section">
             <h3>⏰ Previsão de Entrega</h3>
             <p style="font-size: 18px; color: ${theme.secondaryColor}; font-weight: 600;">
-              ${data.estimatedDelivery}
+              ${formattedDeliveryDate}
             </p>
-            ${data.trackingCode ? `<p><strong>Código de rastreamento:</strong> ${data.trackingCode}</p>` : ""}
           </div>
 
           ${
@@ -639,8 +646,8 @@ export function generateKitEnRouteTemplate(
           }
 
           <div style="text-align: center; margin: 32px 0;">
-            <a href="${trackingUrl}" class="button">
-              📍 Rastrear em Tempo Real
+            <a href="${orderDetailsUrl}" class="button">
+              📋 Detalhes do Pedido
             </a>
           </div>
 
@@ -678,9 +685,8 @@ export function generateKitEnRouteTemplate(
     Endereço: ${data.address.street}, ${data.address.number}
     ${data.address.neighborhood} - ${data.address.city}, ${data.address.state}
 
-    ${data.trackingCode ? `Código de rastreamento: ${data.trackingCode}` : ""}
 
-    Acompanhe: ${trackingUrl}
+    Detalhes: ${orderDetailsUrl}
 
     ${theme.companyName}
     ${theme.supportEmail}
@@ -850,7 +856,7 @@ export function generateStatusUpdateTemplate(
   const { header, footer, styles } = getBaseEmailTemplate(theme);
   const previousStatusInfo = EmailUtils.getStatusDisplay(data.previousStatus);
   const newStatusInfo = EmailUtils.getStatusDisplay(data.newStatus);
-  const trackingUrl = EmailUtils.generateTrackingUrl(data.orderNumber);
+  const orderDetailsUrl = EmailUtils.generateOrderDetailsUrl(data.orderNumber);
 
   const html = `
     <!DOCTYPE html>
@@ -934,20 +940,11 @@ export function generateStatusUpdateTemplate(
               : ""
           }
 
-          ${
-            data.trackingCode
-              ? `
-            <div class="section">
-              <h3>📍 Rastreamento</h3>
-              <p><strong>Código:</strong> ${data.trackingCode}</p>
-            </div>
-          `
-              : ""
-          }
+
 
           <div style="text-align: center; margin: 32px 0;">
-            <a href="${trackingUrl}" class="button">
-              🔍 Acompanhar Detalhes
+            <a href="${orderDetailsUrl}" class="button">
+              📋 Detalhes do Pedido
             </a>
           </div>
 
@@ -981,9 +978,8 @@ export function generateStatusUpdateTemplate(
 
     ${data.nextSteps ? `Próximos passos: ${data.nextSteps}` : ""}
     ${data.estimatedTime ? `Previsão: ${data.estimatedTime}` : ""}
-    ${data.trackingCode ? `Código de rastreamento: ${data.trackingCode}` : ""}
 
-    Acompanhe: ${trackingUrl}
+    Detalhes: ${orderDetailsUrl}
 
     ${theme.companyName}
     ${theme.supportEmail}
@@ -1379,7 +1375,7 @@ export function generatePaymentPendingTemplate(
 ): EmailTemplate {
   const theme = EmailUtils.mergeTheme(data.theme);
   const { header, footer, styles } = getBaseEmailTemplate(theme);
-  const trackingUrl = EmailUtils.generateTrackingUrl(data.orderNumber);
+  const orderDetailsUrl = EmailUtils.generateOrderDetailsUrl(data.orderNumber);
 
   const html = `
     <!DOCTYPE html>
@@ -1486,7 +1482,7 @@ export function generatePaymentPendingTemplate(
                 <span>${EmailUtils.formatCurrency(data.pricing.extraKitsCost)}</span>
               </div>
               ` : ''}
-              ${data.pricing.donationCost !== '0' && data.pricing.donationCost !== '0.00' ? `
+              ${data.pricing.donationCost && data.pricing.donationCost !== '0' && data.pricing.donationCost !== '0.00' ? `
               <div class="pricing-item">
                 <span>Doação:</span>
                 <span>${EmailUtils.formatCurrency(data.pricing.donationCost)}</span>
@@ -1548,7 +1544,7 @@ export function generatePaymentPendingTemplate(
     Resumo Financeiro:
     Taxa de entrega: ${EmailUtils.formatCurrency(data.pricing.deliveryCost)}
     ${data.pricing.extraKitsCost !== '0' && data.pricing.extraKitsCost !== '0.00' ? `Kits extras: ${EmailUtils.formatCurrency(data.pricing.extraKitsCost)}` : ''}
-    ${data.pricing.donationCost !== '0' && data.pricing.donationCost !== '0.00' ? `Doação: ${EmailUtils.formatCurrency(data.pricing.donationCost)}` : ''}
+    ${data.pricing.donationCost && data.pricing.donationCost !== '0' && data.pricing.donationCost !== '0.00' ? `Doação: ${EmailUtils.formatCurrency(data.pricing.donationCost)}` : ''}
     Total: ${EmailUtils.formatCurrency(data.pricing.totalCost)}
 
     ⚠️ IMPORTANTE: Este pedido expira em 24 horas (${EmailUtils.formatDate(data.expiresAt)}). 
