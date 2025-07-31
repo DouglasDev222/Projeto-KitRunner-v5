@@ -712,7 +712,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async updateOrderStatus(orderId: number | string, status: string, changedBy: string = 'system', changedByName?: string, reason?: string): Promise<Order | undefined> {
+  async updateOrderStatus(orderId: number | string, status: string, changedBy: string = 'system', changedByName?: string, reason?: string, sendEmail: boolean = true): Promise<Order | undefined> {
     let targetOrderId: number;
     let previousStatus: string | null = null;
     
@@ -756,10 +756,14 @@ export class DatabaseStorage implements IStorage {
         .where(eq(orders.id, targetOrderId))
         .returning();
 
-      // Send email notification based on the new status (async, don't block)
-      this.sendStatusChangeEmail(targetOrderId, previousStatus, status).catch(error => {
-        console.error(`❌ Failed to send status change email for order ${targetOrderId}:`, error);
-      });
+      // Send email notification based on the new status (async, don't block) - only if sendEmail is true
+      if (sendEmail) {
+        this.sendStatusChangeEmail(targetOrderId, previousStatus, status).catch(error => {
+          console.error(`❌ Failed to send status change email for order ${targetOrderId}:`, error);
+        });
+      } else {
+        console.log(`📧 Skipping automatic email notification for order ${targetOrderId} - sendEmail is false`);
+      }
       
       return order;
     }

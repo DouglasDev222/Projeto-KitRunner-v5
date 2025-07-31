@@ -112,6 +112,7 @@ interface BulkStatusUpdateForm {
 - [x] Modificar API para aceitar parâmetro sendEmail
 - [x] Corrigir acessibilidade do modal (DialogDescription)
 - [x] Corrigir problema de frontend travando após alteração de status
+- [x] **CORREÇÃO CRÍTICA**: Corrigir envio duplo de emails quando sendEmail=false
 
 ### Fase 3: Logs de Email (2-3 horas)
 - [ ] Implementar logging no email service
@@ -133,9 +134,9 @@ interface BulkStatusUpdateForm {
 ## 🧪 Casos de Teste
 
 ### Modal de Confirmação
-- [ ] Alterar status com envio de email
-- [ ] Alterar status sem envio de email
-- [ ] Cancelar alteração de status
+- [x] Alterar status com envio de email
+- [x] Alterar status sem envio de email (CORRIGIDO - não envia mais email duplo)
+- [x] Cancelar alteração de status
 
 ### Troca em Massa
 - [ ] Alterar status de todos os pedidos de um evento

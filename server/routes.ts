@@ -792,7 +792,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status, 
         'admin', 
         'Administrador', 
-        reason || 'Status alterado pelo administrador'
+        reason || 'Status alterado pelo administrador',
+        false // Don't send automatic email - we'll handle it manually based on sendEmail parameter
       );
       
       if (!order) {
