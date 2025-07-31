@@ -85,6 +85,11 @@ function validateCPF(cpf: string): boolean {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Initialize payment reminder scheduler with email service and storage
+  const emailService = new EmailService(storage);
+  PaymentReminderScheduler.initialize(emailService, storage);
+  console.log('📧 Payment Reminder Scheduler initialized');
+  
   // Apply general rate limiting to all API routes
   app.use('/api', generalRateLimit);
   
