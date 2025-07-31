@@ -64,10 +64,12 @@ export type OrderStatus =
   | 'aguardando_pagamento'
   | 'pagamento_confirmado'
   | 'retirada_confirmada'
+  | 'kits_sendo_retirados'
   | 'em_transito'
   | 'saiu_para_entrega'
   | 'entregue'
-  | 'cancelado';
+  | 'cancelado'
+  | 'confirmado';
 
 export type PaymentMethod = 'pix' | 'cartao' | 'boleto';
 

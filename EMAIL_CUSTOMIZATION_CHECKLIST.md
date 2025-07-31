@@ -40,9 +40,19 @@
 
 ---
 
-**Próximos Passos:**
-1. Atualizar função `generateTrackingUrl` para usar `/orders/`
-2. Modificar status display para "Retirada em Andamento"  
-3. Atualizar templates individuais
-4. Implementar rodapé padrão com WhatsApp
-5. Testar templates atualizados
+## ✅ CORREÇÕES ADICIONAIS IMPLEMENTADAS:
+
+### 🔧 Problemas de Email Corrigidos:
+- [x] **Erro "Invalid time value"**: Implementado tratamento seguro de datas no template "Kit a caminho"
+- [x] **Erro de status não mapeado**: Adicionados novos status (`kits_sendo_retirados`, `confirmado`) aos mapeamentos
+- [x] **Erro "Cannot read properties of undefined"**: Corrigido mapeamento de cores para todos os status
+
+### 🛠️ Melhorias Técnicas:
+- [x] **Cálculo de data**: Data de entrega calculada como 1 dia antes do evento com fallback seguro
+- [x] **Tratamento de erro**: Adicionado try/catch para evitar quebras no sistema de email
+- [x] **Tipos TypeScript**: Atualizadas definições de OrderStatus para incluir novos status
+
+### 📧 Status dos Templates:
+- ✅ **Todos os templates funcionando** sem erros de envio
+- ✅ **Mapeamentos de status** completos e funcionais
+- ✅ **Sistema de email** totalmente operacional

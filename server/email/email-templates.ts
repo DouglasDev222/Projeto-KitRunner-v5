@@ -99,6 +99,18 @@ export class EmailUtils {
         class: "status-cancelled",
         description: "Pedido cancelado",
       },
+      kits_sendo_retirados: {
+        text: "Kits sendo Retirados",
+        color: "#f97316",
+        class: "status-pickup-progress",
+        description: "Nossa equipe está retirando seus kits no evento",
+      },
+      confirmado: {
+        text: "Confirmado",
+        color: "#077d2e",
+        class: "status-confirmed",
+        description: "Pedido confirmado com sucesso",
+      },
     };
 
     return statusMap[status];
@@ -568,11 +580,18 @@ export function generateKitEnRouteTemplate(
   const { header, footer, styles } = getBaseEmailTemplate(theme);
   const orderDetailsUrl = EmailUtils.generateOrderDetailsUrl(data.orderNumber);
   
-  // Calculate delivery date as 1 day before event
-  const eventDate = new Date(data.eventDate);
-  const deliveryDate = new Date(eventDate);
-  deliveryDate.setDate(eventDate.getDate() - 1);
-  const formattedDeliveryDate = EmailUtils.formatDate(deliveryDate.toISOString());
+  // Calculate delivery date as 1 day before event - with safe date handling
+  let formattedDeliveryDate = "1 dia antes do evento";
+  try {
+    const eventDate = new Date(data.eventDate);
+    if (!isNaN(eventDate.getTime())) {
+      const deliveryDate = new Date(eventDate);
+      deliveryDate.setDate(eventDate.getDate() - 1);
+      formattedDeliveryDate = EmailUtils.formatDate(deliveryDate.toISOString());
+    }
+  } catch (error) {
+    console.warn('Error calculating delivery date:', error);
+  }
 
   const html = `
     <!DOCTYPE html>
