@@ -29,6 +29,7 @@ import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
 import { formatCPF } from "@/lib/cpf-validator";
 import { useToast } from "@/hooks/use-toast";
 import { statusOptions, getStatusBadge } from "@/lib/status-utils";
+import { EmailConfirmationModal } from "@/components/admin/EmailConfirmationModal";
 import {
   Dialog,
   DialogContent,
@@ -95,6 +96,19 @@ export default function AdminOrders() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
   const [selectedOrders, setSelectedOrders] = useState<number[]>([]);
+  const [emailConfirmationModal, setEmailConfirmationModal] = useState<{
+    isOpen: boolean;
+    orderId: number;
+    orderNumber: string;
+    customerName: string;
+    newStatus: string;
+  }>({
+    isOpen: false,
+    orderId: 0,
+    orderNumber: "",
+    customerName: "",
+    newStatus: "",
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -126,7 +140,7 @@ export default function AdminOrders() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ orderId, status }: { orderId: number; status: string }) => {
+    mutationFn: async ({ orderId, status, sendEmail }: { orderId: number; status: string; sendEmail: boolean }) => {
       const adminToken = localStorage.getItem('adminToken');
       const response = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: 'PATCH',
@@ -134,17 +148,20 @@ export default function AdminOrders() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${adminToken}`
         },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, sendEmail }),
       });
       if (!response.ok) throw new Error('Erro ao atualizar status');
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "orders", "stats"] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      setEmailConfirmationModal({ isOpen: false, orderId: 0, orderNumber: "", customerName: "", newStatus: "" });
       toast({
         title: "Status atualizado com sucesso!",
-        description: "O status do pedido foi atualizado.",
+        description: variables.sendEmail 
+          ? "O status do pedido foi atualizado e o cliente foi notificado por email." 
+          : "O status do pedido foi atualizado sem envio de email.",
       });
     },
     onError: () => {
@@ -180,7 +197,25 @@ export default function AdminOrders() {
   };
 
   const handleStatusChange = (orderId: number, newStatus: string) => {
-    updateStatusMutation.mutate({ orderId, status: newStatus });
+    // Find the order to get customer name and order number
+    const order = orders.find((o: any) => o.id === orderId);
+    if (order) {
+      setEmailConfirmationModal({
+        isOpen: true,
+        orderId,
+        orderNumber: order.orderNumber,
+        customerName: order.customer.name,
+        newStatus,
+      });
+    }
+  };
+
+  const handleConfirmStatusChange = (sendEmail: boolean) => {
+    updateStatusMutation.mutate({ 
+      orderId: emailConfirmationModal.orderId, 
+      status: emailConfirmationModal.newStatus,
+      sendEmail 
+    });
   };
 
   const resetFilters = () => {
@@ -813,6 +848,17 @@ export default function AdminOrders() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Email Confirmation Modal */}
+      <EmailConfirmationModal
+        isOpen={emailConfirmationModal.isOpen}
+        onClose={() => setEmailConfirmationModal({ isOpen: false, orderId: 0, orderNumber: "", customerName: "", newStatus: "" })}
+        onConfirm={handleConfirmStatusChange}
+        orderNumber={emailConfirmationModal.orderNumber}
+        newStatus={emailConfirmationModal.newStatus}
+        customerName={emailConfirmationModal.customerName}
+        isLoading={updateStatusMutation.isPending}
+      />
     </AdminLayout>
   );
 }

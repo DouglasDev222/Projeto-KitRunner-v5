@@ -772,7 +772,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/orders/:id/status", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { status, reason } = req.body;
+      const { status, reason, sendEmail = true } = req.body;
       
       // Validate status - using Portuguese status names
       const validStatuses = ["confirmado", "aguardando_pagamento", "cancelado", "kits_sendo_retirados", "em_transito", "entregue"];
@@ -798,7 +798,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Send status update email notification (async, don't block response)
-      if (currentOrder && oldStatus !== status) {
+      if (currentOrder && oldStatus !== status && sendEmail) {
         const emailService = new EmailService(storage);
         
         // Prepare status update data

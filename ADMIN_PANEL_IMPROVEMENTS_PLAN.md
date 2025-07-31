@@ -40,11 +40,11 @@ Este documento detalha as melhorias solicitadas para o painel administrativo do 
 - [ ] Atualizar tipos TypeScript relacionados
 
 ### 3. Funcionalidade de Troca em Massa de Status por Evento
-**Localização**: Nova tela `client/src/pages/admin/BulkStatusUpdate.tsx`
+**Localização**: Nova tela(modal) `client/src/pages/admin/BulkStatusUpdate.tsx`
 **Objetivo**: Permitir alteração de status de todos os pedidos de um evento específico
 
 #### Implementação:
-- [ ] Criar nova página/modal para troca em massa
+- [ ] Criar nova modal para troca em massa
 - [ ] Adicionar rota `/admin/bulk-status-update`
 - [ ] Criar endpoint API `POST /api/admin/orders/bulk-status-update`
 - [ ] Implementar seletores para:
@@ -65,29 +65,16 @@ interface BulkStatusUpdateForm {
 ```
 
 ### 4. Integração de Logs de Email no Histórico
-**Localização**: `client/src/pages/admin/AdminOrderDetail.tsx`
+**Localização**: modal de detalhes do pedido localizado na tela de pedidos do admin
 **Objetivo**: Mostrar histórico completo de comunicações com o cliente
 
 #### Implementação:
-- [ ] Criar tabela `email_logs` no banco de dados (se não existir)
+- [ ] Criar tabela `email_logs` no banco de dados (Já existe e é usado na tela /admin/email-logs)
 - [ ] Modificar serviço de email para registrar logs
 - [ ] Criar endpoint `GET /api/admin/orders/:id/email-history`
 - [ ] Integrar logs de email na timeline do histórico do pedido
 - [ ] Mostrar data/hora, tipo de email e status de envio
 
-#### Schema da Tabela Email Logs:
-```sql
-CREATE TABLE email_logs (
-  id SERIAL PRIMARY KEY,
-  order_id INTEGER REFERENCES orders(id),
-  email_type VARCHAR(50),
-  recipient_email VARCHAR(255),
-  subject VARCHAR(255),
-  sent_at TIMESTAMP DEFAULT NOW(),
-  status VARCHAR(20) DEFAULT 'sent',
-  error_message TEXT
-);
-```
 
 ---
 
@@ -115,14 +102,14 @@ CREATE TABLE email_logs (
 ## 📊 Cronograma de Implementação
 
 ### Fase 1: Preparação (1-2 horas)
-- [ ] Análise do código atual
-- [ ] Criação da tabela email_logs
-- [ ] Limpeza do status "processando_pagamento"
+- [x] Análise do código atual
+- [x] Criação da tabela email_logs (já existia)
+- [x] Limpeza do status "processando_pagamento"
 
 ### Fase 2: Modal de Confirmação (2-3 horas)
-- [ ] Criar componente EmailConfirmationModal
-- [ ] Integrar no AdminOrderDetail
-- [ ] Modificar API para aceitar parâmetro sendEmail
+- [x] Criar componente EmailConfirmationModal
+- [x] Integrar no AdminOrders (modal de confirmação ao alterar status)
+- [x] Modificar API para aceitar parâmetro sendEmail
 
 ### Fase 3: Logs de Email (2-3 horas)
 - [ ] Implementar logging no email service
