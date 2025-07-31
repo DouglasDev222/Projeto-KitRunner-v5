@@ -12,7 +12,7 @@ import {
   EmailTheme,
   OrderStatus,
   StatusDisplay,
-  KitItem
+  KitItem,
 } from "./email-types";
 
 // Utility functions for email templates
@@ -46,11 +46,11 @@ export class EmailUtils {
 
   static formatPaymentMethod(method: string): string {
     const methodMap: Record<string, string> = {
-      'credit_card': 'Cartão de Crédito',
-      'debit_card': 'Cartão de Débito',
-      'pix': 'PIX',
-      'bank_transfer': 'Transferência Bancária',
-      'boleto': 'Boleto Bancário'
+      credit_card: "Cartão de Crédito",
+      debit_card: "Cartão de Débito",
+      pix: "PIX",
+      bank_transfer: "Transferência Bancária",
+      boleto: "Boleto Bancário",
     };
     return methodMap[method] || method;
   }
@@ -122,7 +122,9 @@ export class EmailUtils {
 
   static generateOrderDetailsUrl(
     orderNumber: string,
-    baseUrl: string = process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : "https://kitrunner.com.br",
+    baseUrl: string = process.env.REPLIT_DOMAINS
+      ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
+      : "https://kitrunner.com.br",
   ): string {
     return `${baseUrl}/orders/${orderNumber}`;
   }
@@ -579,7 +581,7 @@ export function generateKitEnRouteTemplate(
   const theme = EmailUtils.mergeTheme(data.theme);
   const { header, footer, styles } = getBaseEmailTemplate(theme);
   const orderDetailsUrl = EmailUtils.generateOrderDetailsUrl(data.orderNumber);
-  
+
   // Calculate delivery date as 1 day before event - with safe date handling
   let formattedDeliveryDate = "1 dia antes do evento";
   try {
@@ -590,7 +592,7 @@ export function generateKitEnRouteTemplate(
       formattedDeliveryDate = EmailUtils.formatDate(deliveryDate.toISOString());
     }
   } catch (error) {
-    console.warn('Error calculating delivery date:', error);
+    console.warn("Error calculating delivery date:", error);
   }
 
   const html = `
@@ -1422,7 +1424,9 @@ export function generatePaymentPendingTemplate(
           <p>Seu pedido foi criado com sucesso, mas ainda precisa ser pago para ser confirmado.</p>
           <p>Assim que o pagamento for confirmado, nossa equipe irá retirar seu kit no local do evento e entregá-lo no endereço informado.</p>
 
-          ${data.paymentUrl ? `
+          ${
+            data.paymentUrl
+              ? `
           <div style="text-align: center; margin: 24px 0;">
             <a href="${data.paymentUrl}" 
                style="background-color: ${theme.primaryColor}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
@@ -1432,7 +1436,9 @@ export function generatePaymentPendingTemplate(
               🔒 Pagamento 100% seguro
             </p>
           </div>
-          ` : ''}
+          `
+              : ""
+          }
 
           <div class="section">
             <h3>📋 Detalhes do Pedido</h3>
@@ -1450,7 +1456,7 @@ export function generatePaymentPendingTemplate(
                 <strong>Local:</strong> ${data.eventLocation}
               </div>
               <div class="grid-item">
-                <strong>Kits:</strong> ${data.kits.length} kit${data.kits.length > 1 ? 's' : ''}
+                <strong>Kits:</strong> ${data.kits.length} kit${data.kits.length > 1 ? "s" : ""}
               </div>
               <div class="grid-item">
                 <strong>Forma de Pagamento:</strong> ${EmailUtils.formatPaymentMethod(data.paymentMethod)}
@@ -1461,17 +1467,21 @@ export function generatePaymentPendingTemplate(
           <div class="section">
             <h3>🏃‍♂️ Kits do Pedido</h3>
             <div class="kits-list">
-              ${data.kits.map((kit) => `
+              ${data.kits
+                .map(
+                  (kit) => `
                 <div class="kit-item">
                   <div class="kit-info">
                     <strong>${kit.name}</strong> • ${kit.category}
                   </div>
                   <div class="kit-details">
                     <span class="kit-size">Tamanho ${kit.shirtSize}</span>
-                    ${kit.cpf ? `<span class="kit-cpf">${EmailUtils.formatCPF(kit.cpf)}</span>` : ''}
+                    ${kit.cpf ? `<span class="kit-cpf">${EmailUtils.formatCPF(kit.cpf)}</span>` : ""}
                   </div>
                 </div>
-              `).join('')}
+              `,
+                )
+                .join("")}
             </div>
           </div>
 
@@ -1480,10 +1490,10 @@ export function generatePaymentPendingTemplate(
             <div class="address-card">
               <div class="address-info">
                 <p><strong>${data.address.street}, ${data.address.number}</strong>
-                ${data.address.complement ? `<br>${data.address.complement}` : ''}</p>
+                ${data.address.complement ? `<br>${data.address.complement}` : ""}</p>
                 <p>${data.address.neighborhood} - ${data.address.city}/${data.address.state}</p>
                 <p>CEP: ${data.address.zipCode}</p>
-                ${data.address.reference ? `<p><em>Ref: ${data.address.reference}</em></p>` : ''}
+                ${data.address.reference ? `<p><em>Ref: ${data.address.reference}</em></p>` : ""}
               </div>
             </div>
           </div>
@@ -1495,18 +1505,29 @@ export function generatePaymentPendingTemplate(
                 <span>Taxa de entrega:</span>
                 <span>${EmailUtils.formatCurrency(data.pricing.deliveryCost)}</span>
               </div>
-              ${data.pricing.extraKitsCost !== '0' && data.pricing.extraKitsCost !== '0.00' ? `
+              ${
+                data.pricing.extraKitsCost !== "0" &&
+                data.pricing.extraKitsCost !== "0.00"
+                  ? `
               <div class="pricing-item">
                 <span>Kits extras:</span>
                 <span>${EmailUtils.formatCurrency(data.pricing.extraKitsCost)}</span>
               </div>
-              ` : ''}
-              ${data.pricing.donationCost && data.pricing.donationCost !== '0' && data.pricing.donationCost !== '0.00' ? `
+              `
+                  : ""
+              }
+              ${
+                data.pricing.donationCost &&
+                data.pricing.donationCost !== "0" &&
+                data.pricing.donationCost !== "0.00"
+                  ? `
               <div class="pricing-item">
                 <span>Doação:</span>
                 <span>${EmailUtils.formatCurrency(data.pricing.donationCost)}</span>
               </div>
-              ` : ''}
+              `
+                  : ""
+              }
               <div class="pricing-item pricing-total">
                 <span><strong>Total:</strong></span>
                 <span><strong>${EmailUtils.formatCurrency(data.pricing.totalCost)}</strong></span>
@@ -1548,22 +1569,22 @@ export function generatePaymentPendingTemplate(
     Evento: ${data.eventName}
     Data: ${EmailUtils.formatDate(data.eventDate)}
     Local: ${data.eventLocation}
-    Kits: ${data.kits.length} kit${data.kits.length > 1 ? 's' : ''}
+    Kits: ${data.kits.length} kit${data.kits.length > 1 ? "s" : ""}
     Forma de Pagamento: ${EmailUtils.formatPaymentMethod(data.paymentMethod)}
 
     Kits do Pedido:
-    ${data.kits.map((kit) => `- ${kit.name} (${kit.shirtSize} - ${kit.category}) ${kit.cpf ? `CPF: ${EmailUtils.formatCPF(kit.cpf)}` : ''}`).join("\n")}
+    ${data.kits.map((kit) => `- ${kit.name} (${kit.shirtSize} - ${kit.category}) ${kit.cpf ? `CPF: ${EmailUtils.formatCPF(kit.cpf)}` : ""}`).join("\n")}
 
     Endereço de Entrega:
-    ${data.address.street}, ${data.address.number}${data.address.complement ? `, ${data.address.complement}` : ''}
+    ${data.address.street}, ${data.address.number}${data.address.complement ? `, ${data.address.complement}` : ""}
     ${data.address.neighborhood} - ${data.address.city}/${data.address.state}
     CEP: ${data.address.zipCode}
-    ${data.address.reference ? `Ref: ${data.address.reference}` : ''}
+    ${data.address.reference ? `Ref: ${data.address.reference}` : ""}
 
     Resumo Financeiro:
     Taxa de entrega: ${EmailUtils.formatCurrency(data.pricing.deliveryCost)}
-    ${data.pricing.extraKitsCost !== '0' && data.pricing.extraKitsCost !== '0.00' ? `Kits extras: ${EmailUtils.formatCurrency(data.pricing.extraKitsCost)}` : ''}
-    ${data.pricing.donationCost && data.pricing.donationCost !== '0' && data.pricing.donationCost !== '0.00' ? `Doação: ${EmailUtils.formatCurrency(data.pricing.donationCost)}` : ''}
+    ${data.pricing.extraKitsCost !== "0" && data.pricing.extraKitsCost !== "0.00" ? `Kits extras: ${EmailUtils.formatCurrency(data.pricing.extraKitsCost)}` : ""}
+    ${data.pricing.donationCost && data.pricing.donationCost !== "0" && data.pricing.donationCost !== "0.00" ? `Doação: ${EmailUtils.formatCurrency(data.pricing.donationCost)}` : ""}
     Total: ${EmailUtils.formatCurrency(data.pricing.totalCost)}
 
     ⚠️ IMPORTANTE: Este pedido expira em 24 horas (${EmailUtils.formatDate(data.expiresAt)}). 
