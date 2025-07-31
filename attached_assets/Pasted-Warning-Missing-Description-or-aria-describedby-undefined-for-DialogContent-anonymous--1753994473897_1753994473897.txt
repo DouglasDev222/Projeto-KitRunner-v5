@@ -1,0 +1,39 @@
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+(anonymous) @ @radix-ui_react-dialog.js?v=d76d2a0f:1105
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=d76d2a0f:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=d76d2a0f:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=d76d2a0f:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=d76d2a0f:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=d76d2a0f:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=d76d2a0f:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=d76d2a0f:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=d76d2a0f:19416
+commitRoot @ chunk-RPCDYKBN.js?v=d76d2a0f:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=d76d2a0f:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=d76d2a0f:9119
+flushSync @ chunk-RPCDYKBN.js?v=d76d2a0f:18959
+flushSync$1 @ chunk-RPCDYKBN.js?v=d76d2a0f:21538
+dispatchDiscreteCustomEvent @ chunk-IWFJIMEQ.js?v=d76d2a0f:53
+handleSelect @ @radix-ui_react-dropdown-menu.js?v=d76d2a0f:433
+handleEvent @ chunk-54LY3QNH.js?v=d76d2a0f:95
+callCallback2 @ chunk-RPCDYKBN.js?v=d76d2a0f:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=d76d2a0f:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=d76d2a0f:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=d76d2a0f:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=d76d2a0f:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=d76d2a0f:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=d76d2a0f:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=d76d2a0f:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=d76d2a0f:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=d76d2a0f:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=d76d2a0f:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=d76d2a0f:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=d76d2a0f:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=d76d2a0f:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=d76d2a0f:5449
+orders:1 Blocked aria-hidden on an element because its descendant retained focus. The focus must not be hidden from assistive technology users. Avoid using aria-hidden on a focused element or its ancestor. Consider using the inert attribute instead, which will also prevent focus. For more details, see the aria-hidden section of the WAI-ARIA specification at https://w3c.github.io/aria/#aria-hidden.
+Element with focus: <div.z-50 max-h-[var(--radix-dropdown-menu-content-available-height)] min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-dropdown-menu-content-transform-origin]#radix-:ro:>
+Ancestor with aria-hidden: <div> <div data-radix-popper-content-wrapper dir=​"ltr" style=​"position:​ fixed;​ left:​ 0px;​ top:​ 0px;​ transform:​ translate(1162px, 554px)​;​ min-width:​ max-content;​ z-index:​ 50;​ --radix-popper-available-width:​ 1365px;​ --radix-popper-available-height:​ 365.5px;​ --radix-popper-anchor-width:​ 70px;​ --radix-popper-anchor-height:​ 36px;​ --radix-popper-transform-origin:​ 50% 0px;​" data-aria-hidden=​"true" aria-hidden=​"true">​…​</div>​
+orders:1 Blocked aria-hidden on an element because its descendant retained focus. The focus must not be hidden from assistive technology users. Avoid using aria-hidden on a focused element or its ancestor. Consider using the inert attribute instead, which will also prevent focus. For more details, see the aria-hidden section of the WAI-ARIA specification at https://w3c.github.io/aria/#aria-hidden.
+Element with focus: <button.inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3#radix-:rn:>
+Ancestor with aria-hidden: <div#root> 
