@@ -804,21 +804,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (currentOrder && oldStatus !== status && sendEmail) {
         console.log('📧 Sending status update email because sendEmail is true');
         const emailService = new EmailService(storage);
+        const { EmailDataMapper } = await import("./email/email-data-mapper");
         
-        // Prepare status update data
-        const statusUpdateData = {
-          orderNumber: currentOrder.orderNumber,
-          customerName: currentOrder.customer.name,
-          eventName: currentOrder.event.name,
-          eventDate: currentOrder.event.date,
-          oldStatus: oldStatus,
-          newStatus: status,
-          statusReason: reason || 'Status alterado pelo administrador',
-          trackingInfo: {
-            estimatedDelivery: currentOrder.event.date,
-            currentLocation: currentOrder.address.city
-          }
-        };
+        // Prepare status update data using the mapper
+        const statusUpdateData = EmailDataMapper.mapToStatusUpdate(
+          currentOrder, 
+          oldStatus || '', 
+          status
+        );
         
         // Send email asynchronously (don't block the response)
         emailService.sendStatusUpdateEmail(

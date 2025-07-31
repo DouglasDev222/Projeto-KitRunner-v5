@@ -966,7 +966,7 @@ export function generateStatusUpdateTemplate(
           <div class="section">
             <h3>📦 Kits</h3>
             <div class="kit-list">
-              ${data.kits
+              ${(data.kits || [])
                 .map(
                   (kit) => `
                 <div class="kit-item">
