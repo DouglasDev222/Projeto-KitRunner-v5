@@ -277,6 +277,33 @@ function getBaseEmailTemplate(theme: EmailTheme): {
         border: 1px solid ${theme.borderColor};
       }
 
+      .pricing-breakdown {
+        background: white;
+        border: 1px solid ${theme.borderColor};
+        border-radius: 8px;
+        padding: 16px;
+        margin: 16px 0;
+      }
+
+      .pricing-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #f3f4f6;
+      }
+
+      .pricing-item:last-child {
+        border-bottom: none;
+      }
+
+      .pricing-total {
+        padding-top: 12px;
+        margin-top: 8px;
+        border-top: 2px solid ${theme.primaryColor};
+        font-size: 16px;
+      }
+
       .timeline {
         margin: 24px 0;
       }
@@ -494,14 +521,37 @@ export function generateServiceConfirmationTemplate(
 
           <div class="section">
             <h3>💰 Resumo Financeiro</h3>
-            <div class="info-grid">
-              <div class="info-item">
-                <div class="info-label">Taxa de Entrega</div>
-                <div class="info-value">${EmailUtils.formatCurrency(data.pricing.deliveryCost)}</div>
+            <div class="pricing-breakdown">
+              <div class="pricing-item">
+                <span>Taxa de entrega:</span>
+                <span>${EmailUtils.formatCurrency(data.pricing.deliveryCost)}</span>
               </div>
-              <div class="info-item">
-                <div class="info-label">Total</div>
-                <div class="info-value"><strong>${EmailUtils.formatCurrency(data.pricing.totalCost)}</strong></div>
+              ${
+                data.pricing.extraKitsCost !== "0" &&
+                data.pricing.extraKitsCost !== "0.00"
+                  ? `
+              <div class="pricing-item">
+                <span>Kits extras:</span>
+                <span>${EmailUtils.formatCurrency(data.pricing.extraKitsCost)}</span>
+              </div>
+              `
+                  : ""
+              }
+              ${
+                data.pricing.donationCost &&
+                data.pricing.donationCost !== "0" &&
+                data.pricing.donationCost !== "0.00"
+                  ? `
+              <div class="pricing-item">
+                <span>Doação:</span>
+                <span>${EmailUtils.formatCurrency(data.pricing.donationCost)}</span>
+              </div>
+              `
+                  : ""
+              }
+              <div class="pricing-item pricing-total">
+                <span><strong>Total:</strong></span>
+                <span><strong>${EmailUtils.formatCurrency(data.pricing.totalCost)}</strong></span>
               </div>
             </div>
           </div>
