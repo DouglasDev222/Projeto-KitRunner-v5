@@ -756,14 +756,12 @@ export class DatabaseStorage implements IStorage {
         .where(eq(orders.id, targetOrderId))
         .returning();
 
-      // Send email notification based on the new status (async, don't block) - only if sendEmail is true
-      if (sendEmail) {
-        this.sendStatusChangeEmail(targetOrderId, previousStatus, status).catch(error => {
-          console.error(`❌ Failed to send status change email for order ${targetOrderId}:`, error);
-        });
-      } else {
-        console.log(`📧 Skipping automatic email notification for order ${targetOrderId} - sendEmail is false`);
-      }
+      // Send email notification based on the new status (async, don't block)
+      // Always send specific emails (confirmado, em_transito, entregue)
+      // Only send generic status updates when sendEmail is true
+      this.sendStatusChangeEmail(targetOrderId, previousStatus, status, sendEmail).catch(error => {
+        console.error(`❌ Failed to send status change email for order ${targetOrderId}:`, error);
+      });
       
       return order;
     }
@@ -773,7 +771,7 @@ export class DatabaseStorage implements IStorage {
     return order;
   }
 
-  private async sendStatusChangeEmail(orderId: number, previousStatus: string | null, newStatus: string): Promise<void> {
+  private async sendStatusChangeEmail(orderId: number, previousStatus: string | null, newStatus: string, sendGenericUpdates: boolean = true): Promise<void> {
     try {
       const { EmailService } = await import("./email/email-service");
       const { EmailDataMapper } = await import("./email/email-data-mapper");
@@ -826,15 +824,19 @@ export class DatabaseStorage implements IStorage {
         case 'kits_sendo_retirados':
         case 'cancelado':
         case 'aguardando_pagamento':
-          // Send generic status update for these statuses
-          const statusUpdateData = EmailDataMapper.mapToStatusUpdate(order, previousStatus || '', newStatus);
-          await emailService.sendStatusUpdateEmail(
-            statusUpdateData,
-            order.customer.email,
-            order.id,
-            order.customerId
-          );
-          console.log(`📧 Status update email sent for order ${order.orderNumber}: ${newStatus}`);
+          // Send generic status update for these statuses only if requested
+          if (sendGenericUpdates) {
+            const statusUpdateData = EmailDataMapper.mapToStatusUpdate(order, previousStatus || '', newStatus);
+            await emailService.sendStatusUpdateEmail(
+              statusUpdateData,
+              order.customer.email,
+              order.id,
+              order.customerId
+            );
+            console.log(`📧 Status update email sent for order ${order.orderNumber}: ${newStatus}`);
+          } else {
+            console.log(`📧 Skipping generic status update email for order ${order.orderNumber}: ${newStatus} (sendGenericUpdates: false)`);
+          }
           break;
 
         default:

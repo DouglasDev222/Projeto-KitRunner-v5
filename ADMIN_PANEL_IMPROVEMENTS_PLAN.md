@@ -113,6 +113,8 @@ interface BulkStatusUpdateForm {
 - [x] Corrigir acessibilidade do modal (DialogDescription)
 - [x] Corrigir problema de frontend travando após alteração de status
 - [x] **CORREÇÃO CRÍTICA**: Corrigir envio duplo de emails quando sendEmail=false
+- [x] **RESTAURAR**: Email de confirmação de pagamento (status="confirmado") sempre enviado
+- [x] **LÓGICA**: Emails específicos (confirmado/em_transito/entregue) sempre enviados, genéricos apenas quando solicitado
 
 ### Fase 3: Logs de Email (2-3 horas)
 - [ ] Implementar logging no email service
