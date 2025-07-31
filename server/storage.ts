@@ -1113,7 +1113,7 @@ class MockStorage implements IStorage {
     } as Order;
     
     // Para a MockStorage, precisamos simular a adição de customer e event
-    const customer = await this.getCustomer(newOrder.customerId);
+    const customer = await this.getCustomerById(newOrder.customerId);
     const event = await this.getEvent(newOrder.eventId);
 
     this.orders.push({ ...newOrder, customer, event } as Order & { customer: Customer; event: Event });
@@ -1410,13 +1410,13 @@ class MockStorage implements IStorage {
 
   async getEmailLogs(filters?: any): Promise<any[]> {
     try {
-      let query = db.select().from(emailLogs);
+      const result = db.select().from(emailLogs);
       
       if (filters?.orderId) {
-        query = query.where(eq(emailLogs.orderId, filters.orderId));
+        return await result.where(eq(emailLogs.orderId, filters.orderId)).orderBy(desc(emailLogs.sentAt));
       }
       
-      return await query.orderBy(desc(emailLogs.sentAt));
+      return await result.orderBy(desc(emailLogs.sentAt));
     } catch (error) {
       console.error('Error getting email logs:', error);
       return [];
