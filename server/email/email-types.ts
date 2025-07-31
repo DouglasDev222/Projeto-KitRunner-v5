@@ -62,14 +62,11 @@ export interface PricingInfo {
 
 export type OrderStatus = 
   | 'aguardando_pagamento'
-  | 'pagamento_confirmado'
-  | 'retirada_confirmada'
+  | 'confirmado'
   | 'kits_sendo_retirados'
   | 'em_transito'
-  | 'saiu_para_entrega'
   | 'entregue'
-  | 'cancelado'
-  | 'confirmado';
+  | 'cancelado';
 
 export type PaymentMethod = 'pix' | 'cartao' | 'boleto';
 

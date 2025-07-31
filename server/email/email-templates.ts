@@ -63,29 +63,23 @@ export class EmailUtils {
         class: "status-pending",
         description: "Finalize o pagamento para confirmarmos seu pedido",
       },
-      pagamento_confirmado: {
-        text: "Pagamento Confirmado",
+      confirmado: {
+        text: "Confirmado",
         color: "#077d2e",
         class: "status-confirmed",
-        description: "Pagamento confirmado! Em breve retiraremos seu kit",
+        description: "Pedido confirmado com sucesso",
       },
-      retirada_confirmada: {
-        text: "Retirada em Andamento",
-        color: "#5e17eb",
-        class: "status-pickup",
-        description: "Sua retirada está em andamento",
+      kits_sendo_retirados: {
+        text: "Kits sendo Retirados",
+        color: "#f97316",
+        class: "status-pickup-progress",
+        description: "Nossa equipe está retirando seus kits no evento",
       },
       em_transito: {
         text: "Em Trânsito",
         color: "#3b82f6",
         class: "status-transit",
         description: "Seu kit foi retirado e está a caminho da entrega",
-      },
-      saiu_para_entrega: {
-        text: "Saiu para Entrega",
-        color: "#8b5cf6",
-        class: "status-delivery",
-        description: "Seu kit está sendo entregue agora",
       },
       entregue: {
         text: "Entregue",
@@ -99,21 +93,15 @@ export class EmailUtils {
         class: "status-cancelled",
         description: "Pedido cancelado",
       },
-      kits_sendo_retirados: {
-        text: "Kits sendo Retirados",
-        color: "#f97316",
-        class: "status-pickup-progress",
-        description: "Nossa equipe está retirando seus kits no evento",
-      },
-      confirmado: {
-        text: "Confirmado",
-        color: "#077d2e",
-        class: "status-confirmed",
-        description: "Pedido confirmado com sucesso",
-      },
     };
 
-    return statusMap[status];
+    // Return mapped status or fallback for unknown statuses
+    return statusMap[status] || {
+      text: status || "Processando",
+      color: "#6b7280",
+      class: "status-default",
+      description: "Status em processamento",
+    };
   }
 
   static mergeTheme(customTheme?: Partial<EmailTheme>): EmailTheme {

@@ -210,22 +210,8 @@ export class EmailDataMapper {
    * Map order status string to enum
    */
   private static mapOrderStatus(status: string): OrderStatus {
-    switch (status) {
-      case 'aguardando_pagamento':
-        return 'aguardando_pagamento';
-      case 'confirmado':
-        return 'pagamento_confirmado';
-      case 'kits_sendo_retirados':
-        return 'retirada_confirmada';
-      case 'em_transito':
-        return 'em_transito';
-      case 'entregue':
-        return 'entregue';
-      case 'cancelado':
-        return 'cancelado';
-      default:
-        return 'aguardando_pagamento';
-    }
+    // Return status as-is since the database and templates use the same status names
+    return status as OrderStatus;
   }
 
   /**
