@@ -527,8 +527,8 @@ export function generateServiceConfirmationTemplate(
                 <span>${EmailUtils.formatCurrency(data.pricing.deliveryCost)}</span>
               </div>
               ${
-                data.pricing.extraKitsCost !== "0" &&
-                data.pricing.extraKitsCost !== "0.00"
+                data.pricing.extraKitsCost && 
+                Number(data.pricing.extraKitsCost) > 0
                   ? `
               <div class="pricing-item">
                 <span>Kits extras:</span>
@@ -538,9 +538,8 @@ export function generateServiceConfirmationTemplate(
                   : ""
               }
               ${
-                data.pricing.donationCost &&
-                data.pricing.donationCost !== "0" &&
-                data.pricing.donationCost !== "0.00"
+                data.pricing.donationCost && 
+                Number(data.pricing.donationCost) > 0
                   ? `
               <div class="pricing-item">
                 <span>Doação:</span>
