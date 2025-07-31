@@ -7,7 +7,7 @@ import { sql } from "drizzle-orm";
 import { customerIdentificationSchema, customerRegistrationSchema, orderCreationSchema, adminEventCreationSchema } from "@shared/schema";
 import { z } from "zod";
 import { calculateDeliveryCost } from "./distance-calculator";
-import { MercadoPagoService } from "./mercadopago-service";
+import { MercadoPagoService, getPublicKey } from "./mercadopago-service";
 import { EmailService } from "./email/email-service";
 import { EmailDataMapper } from "./email/email-data-mapper";
 import { PaymentReminderScheduler } from "./email/payment-reminder-scheduler";
@@ -1240,12 +1240,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get MercadoPago public key for frontend
   app.get("/api/mercadopago/public-key", async (req, res) => {
     try {
-      const publicKey = MercadoPagoService.getPublicKey();
+      console.log('🔍 Debug public key request - process.env.MERCADO_PAGO_PUBLIC_KEY:', process.env.MERCADO_PAGO_PUBLIC_KEY ? '[MASKED]' : 'UNDEFINED');
+      const publicKey = getPublicKey();
+      console.log('🔍 Debug getPublicKey() result:', publicKey ? '[MASKED]' : 'UNDEFINED');
+      
       if (!publicKey) {
         return res.status(500).json({ message: "Chave pública do Mercado Pago não configurada" });
       }
       res.json({ publicKey });
     } catch (error) {
+      console.error('Error getting public key:', error);
       res.status(500).json({ message: "Erro ao obter chave pública" });
     }
   });

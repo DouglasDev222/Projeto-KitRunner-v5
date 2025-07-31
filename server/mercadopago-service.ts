@@ -2,7 +2,7 @@ import { MercadoPagoConfig, Payment, Preference } from 'mercadopago';
 
 // Initialize MercadoPago client with access token and secure timeout
 const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
+  accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
   options: {
     timeout: 30000 // Increased from 5s to 30s for payment stability
   }
@@ -13,7 +13,7 @@ const preference = new Preference(client);
 
 // Helper function to get public key
 export function getPublicKey(): string {
-  return process.env.MERCADOPAGO_PUBLIC_KEY || '';
+  return process.env.MERCADO_PAGO_PUBLIC_KEY || '';
 }
 
 export interface PaymentData {
@@ -309,6 +309,6 @@ export class MercadoPagoService {
    * Get public key for frontend
    */
   static getPublicKey() {
-    return process.env.MERCADOPAGO_PUBLIC_KEY;
+    return process.env.MERCADO_PAGO_PUBLIC_KEY;
   }
 }

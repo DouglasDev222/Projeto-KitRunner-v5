@@ -31,11 +31,18 @@ export class PaymentReminderScheduler {
         console.log(`📧 Checking payment status for order ${orderNumber}...`);
         
         // Get order details from database
-        const orders = await this.storage.getAllOrdersWithDetails();
-        const order = orders.find(o => o.orderNumber === orderNumber);
+        const basicOrder = await this.storage.getOrderByNumber(orderNumber);
+        
+        if (!basicOrder) {
+          console.log(`⚠️ Order ${orderNumber} not found, skipping payment reminder`);
+          return;
+        }
+
+        // Get full order details with customer, event, address, and kits
+        const order = await this.storage.getOrderByIdWithDetails(basicOrder.id);
         
         if (!order) {
-          console.log(`⚠️ Order ${orderNumber} not found, skipping payment reminder`);
+          console.log(`⚠️ Order details not found for ${orderNumber}, skipping payment reminder`);
           return;
         }
 
