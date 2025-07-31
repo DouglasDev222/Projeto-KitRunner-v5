@@ -786,7 +786,7 @@ export class DatabaseStorage implements IStorage {
 
       switch (newStatus) {
         case 'confirmado':
-          // Send service confirmation when payment is confirmed
+          // Always send service confirmation when payment is confirmed
           const serviceConfirmationData = EmailDataMapper.mapToServiceConfirmation(order);
           await emailService.sendServiceConfirmation(
             serviceConfirmationData,
@@ -798,7 +798,7 @@ export class DatabaseStorage implements IStorage {
           break;
 
         case 'em_transito':
-          // Send kit en route notification
+          // Always send kit en route notification
           const kitEnRouteData = EmailDataMapper.mapToKitEnRoute(order);
           await emailService.sendKitEnRoute(
             kitEnRouteData,
@@ -810,7 +810,7 @@ export class DatabaseStorage implements IStorage {
           break;
 
         case 'entregue':
-          // Send delivery confirmation
+          // Always send delivery confirmation
           const deliveryConfirmationData = EmailDataMapper.mapToDeliveryConfirmation(order);
           await emailService.sendDeliveryConfirmation(
             deliveryConfirmationData,

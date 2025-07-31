@@ -800,9 +800,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Pedido não encontrado" });
       }
       
-      // Send status update email notification (async, don't block response)
-      if (currentOrder && oldStatus !== status && sendEmail) {
-        console.log('📧 Sending status update email because sendEmail is true');
+      // For admin status changes, let the automatic system handle specific emails
+      // Only send generic status updates for non-specific statuses when requested
+      if (currentOrder && oldStatus !== status && sendEmail && !['confirmado', 'em_transito', 'entregue'].includes(status)) {
+        console.log('📧 Sending generic status update email because sendEmail is true');
         const emailService = new EmailService(storage);
         const { EmailDataMapper } = await import("./email/email-data-mapper");
         
@@ -820,10 +821,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currentOrder.id,
           currentOrder.customer.id
         ).catch(error => {
-          console.error('❌ Failed to send status update email:', error);
+          console.error('❌ Failed to send generic status update email:', error);
         });
-      } else if (currentOrder && oldStatus !== status && !sendEmail) {
-        console.log('📧 Skipping email notification because sendEmail is false');
+      } else if (currentOrder && oldStatus !== status) {
+        console.log(`📧 Status change to ${status} - specific email will be handled by automatic system`);
       }
       
       res.json(order);
