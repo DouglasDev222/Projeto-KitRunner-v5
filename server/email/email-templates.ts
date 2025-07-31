@@ -2,33 +2,227 @@ import { OrderConfirmationData, StatusUpdateData, PaymentConfirmationData, Deliv
 
 const KITRUNNER_LOGO = 'https://assets.replit.app/attached_assets/Orange-Blue-Express-Delivery-Logistic-Logo1-1%20(1)_1753898762911.webp';
 
-const baseStyles = `
+// Professional ecommerce-style email template with modern design
+const modernEmailStyles = `
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: white; }
-    .container { max-width: 600px; margin: 0 auto; background-color: white; border: 1px solid #e5e7eb; }
-    .header { background-color: #5e17eb; color: white; padding: 20px; text-align: center; }
-    .content { padding: 30px; color: #000000; }
-    .footer { background-color: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #e5e7eb; }
-    .status-badge { padding: 8px 16px; border-radius: 20px; font-weight: bold; text-transform: uppercase; font-size: 12px; }
-    .status-aguardando { background-color: #f59e0b; color: white; }
-    .status-confirmado { background-color: #077d2e; color: white; }
-    .status-entregue { background-color: #077d2e; color: white; }
-    .kit-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; margin: 10px 0; background-color: #f9fafb; }
-    .info-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0; }
-    .info-card.primary { background-color: #f3f0ff; border-color: #5e17eb; }
-    .info-card.success { background-color: #f0f9f0; border-color: #077d2e; }
-    .pricing-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-    .pricing-table td { padding: 10px; border-bottom: 1px solid #e5e7eb; }
-    .total-row { font-weight: bold; background-color: #f3f4f6; }
-    .button { display: inline-block; padding: 12px 24px; background-color: #5e17eb; color: white; text-decoration: none; border-radius: 6px; margin: 10px 0; }
-    .button:hover { background-color: #4c0fb5; }
-    .highlight { color: #5e17eb; font-weight: bold; }
-    h1, h2, h3 { color: #000000; }
-    .logo { max-height: 50px; width: auto; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; 
+      margin: 0; 
+      padding: 0; 
+      background-color: #f8fafc; 
+      color: #1f2937;
+      line-height: 1.6;
+    }
+    .email-container { 
+      max-width: 600px; 
+      margin: 0 auto; 
+      background-color: #ffffff; 
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .header { 
+      background: linear-gradient(135deg, #5e17eb 0%, #7c3aed 100%); 
+      color: white; 
+      padding: 32px 24px; 
+      text-align: center; 
+    }
+    .header .logo { 
+      max-height: 60px; 
+      width: auto; 
+      margin-bottom: 16px;
+      filter: brightness(0) invert(1);
+    }
+    .header h1 { 
+      margin: 0; 
+      font-size: 28px; 
+      font-weight: 700; 
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .header .subtitle {
+      margin: 8px 0 0 0;
+      font-size: 16px;
+      opacity: 0.9;
+      font-weight: 400;
+    }
+    .content { 
+      padding: 40px 24px; 
+      background-color: #ffffff;
+    }
+    .greeting {
+      font-size: 18px;
+      color: #374151;
+      margin-bottom: 24px;
+      font-weight: 500;
+    }
+    .status-banner {
+      background: linear-gradient(135deg, #10b981 0%, #077d2e 100%);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      text-align: center;
+      margin: 24px 0;
+      font-weight: 600;
+      font-size: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    .status-pending {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+    .info-grid {
+      display: grid;
+      gap: 20px;
+      margin: 32px 0;
+    }
+    .info-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 24px;
+      background: #f9fafb;
+      border-left: 4px solid #5e17eb;
+    }
+    .info-card h3 {
+      margin: 0 0 12px 0;
+      color: #5e17eb;
+      font-size: 16px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .info-card p {
+      margin: 4px 0;
+      color: #4b5563;
+      font-size: 14px;
+    }
+    .info-card .highlight {
+      color: #111827;
+      font-weight: 600;
+    }
+    .kits-section {
+      margin: 32px 0;
+    }
+    .kits-title {
+      color: #5e17eb;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 8px;
+    }
+    .kit-item {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 12px 0;
+      border-left: 4px solid #077d2e;
+    }
+    .kit-item strong {
+      color: #077d2e;
+      font-weight: 600;
+    }
+    .pricing-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 24px 0;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .pricing-table th {
+      background: #f3f4f6;
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: #374151;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .pricing-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f3f4f6;
+      color: #4b5563;
+    }
+    .pricing-table .total-row {
+      background: #5e17eb;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .cta-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #5e17eb 0%, #7c3aed 100%);
+      color: white;
+      text-decoration: none;
+      padding: 16px 32px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      text-align: center;
+      margin: 24px 0;
+      box-shadow: 0 4px 12px rgba(94, 23, 235, 0.3);
+      transition: all 0.3s ease;
+    }
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(94, 23, 235, 0.4);
+    }
+    .footer {
+      background: #f3f4f6;
+      padding: 32px 24px;
+      text-align: center;
+      border-top: 1px solid #e5e7eb;
+    }
+    .footer-logo {
+      max-height: 40px;
+      width: auto;
+      margin-bottom: 16px;
+      opacity: 0.7;
+    }
+    .footer-text {
+      color: #6b7280;
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 8px 0;
+    }
+    .footer-contact {
+      margin: 16px 0;
+    }
+    .footer-contact a {
+      color: #5e17eb;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .social-links {
+      margin: 16px 0;
+    }
+    .social-links a {
+      display: inline-block;
+      margin: 0 8px;
+      color: #6b7280;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .whatsapp-notice {
+      background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin: 24px 0;
+      text-align: center;
+    }
+    .whatsapp-notice strong {
+      font-size: 16px;
+      display: block;
+      margin-bottom: 8px;
+    }
     @media only screen and (max-width: 600px) {
-      .container { width: 100% !important; margin: 0 !important; }
-      .content { padding: 20px !important; }
-      .info-card { margin: 15px 0 !important; padding: 15px !important; }
+      .email-container { width: 100% !important; margin: 0 !important; }
+      .content { padding: 24px 16px !important; }
+      .header { padding: 24px 16px !important; }
+      .info-card { padding: 16px !important; margin: 12px 0 !important; }
+      .cta-button { width: 100%; padding: 16px !important; }
     }
   </style>
 `;
@@ -53,24 +247,25 @@ function getStatusDisplay(status: string): { text: string, class: string } {
 }
 
 export function generateOrderConfirmationTemplate(data: OrderConfirmationData): EmailTemplate {
-  const subject = `Pedido ${data.orderNumber} confirmado - KitRunner`;
+  const subject = `Pedido ${data.orderNumber} recebido - KitRunner`;
   const statusDisplay = getStatusDisplay(data.status);
   
   const html = `
     <!DOCTYPE html>
-    <html>
+    <html lang="pt-BR">
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${subject}</title>
-      ${baseStyles}
+      ${modernEmailStyles}
     </head>
     <body>
-      <div class="container">
+      <div class="email-container">
         <!-- Header -->
         <div class="header">
           <img src="${KITRUNNER_LOGO}" alt="KitRunner" class="logo">
-          <h1 style="margin: 10px 0 0 0; font-size: 24px;">Pedido Confirmado!</h1>
+          <h1>Pedido Recebido!</h1>
+          <p class="subtitle">Obrigado por escolher a KitRunner</p>
         </div>
 
         <!-- Content -->

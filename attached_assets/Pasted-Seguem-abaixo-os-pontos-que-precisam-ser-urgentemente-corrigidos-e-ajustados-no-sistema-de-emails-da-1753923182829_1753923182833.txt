@@ -1,0 +1,64 @@
+Seguem abaixo os pontos que precisam ser urgentemente corrigidos e ajustados no sistema de emails da aplicação KitRunner, com foco em funcionalidade, fluxo de disparo e qualidade visual/UX:
+
+❌ Problemas Identificados
+1. Pagamento com Cartão
+O envio de emails ainda não está funcionando corretamente para pedidos pagos via cartão.
+
+Nenhum email está sendo enviado nesse fluxo, mesmo quando o pagamento é aprovado imediatamente.
+
+Correção esperada: devem ser enviados dois emails, como definido:
+
+Confirmação de Pedido (status: aguardando pagamento)
+
+Confirmação de Pagamento (status: confirmado), caso já venha aprovado do gateway
+
+2. Email de Confirmação de Pagamento (status: confirmado)
+Esse email não foi criado ou não está implementado corretamente.
+
+Ele é essencial para pedidos pagos via PIX ou Cartão, e deve ser enviado sempre que o status do pedido mudar para confirmado.
+
+3. Emails de Atualização com Status “undefined”
+Os emails de atualização de status continuam sendo enviados com o valor undefined no campo de status.
+
+Isso compromete completamente a comunicação com o cliente e transmite insegurança.
+
+4. Layout Visual e Qualidade dos Templates
+Os templates atuais estão muito amadores, parecendo legendas de redes sociais, e não transmitem a confiança de um ecommerce sério ou marketplace.
+
+Os textos estão sendo aplicados em cima de cores que dificultam a leitura, como preto sobre roxo, o que prejudica a legibilidade e acessibilidade.
+
+✅ Solicitações de Ajuste
+📩 Emails
+ Criar e implementar corretamente o Email de Confirmação de Pagamento
+
+ Garantir o envio de emails no fluxo de pagamento com cartão
+
+ Corrigir o campo status nos emails de atualização (verificar se está sendo passado corretamente ao template)
+
+🎨 Design (UX/UI)
+ Reestruturar completamente os templates de email com visual moderno, limpo e responsivo, inspirado em grandes plataformas de ecommerce
+
+ Utilizar as cores da marca corretamente:
+
+Cor primária: #5e17eb (roxa) – para destaques, títulos e botões
+
+Cor secundária: #077d2e (verde) – para avisos positivos, ações concluídas
+
+Texto principal: sempre em tons neutros (preto em fundo branco, ou branco em fundo escuro)
+
+ Incluir:
+
+Header com logo
+
+Títulos claros
+
+Corpo bem espaçado com blocos organizados
+
+Botão de “Acompanhar Pedido” em todos os emails
+
+Footer com contato e redes sociais
+
+📌 Resumo da Expectativa
+O sistema de emails deve funcionar com precisão técnica e apresentar um design que reforce a credibilidade da KitRunner. Precisamos de uma comunicação alinhada com o padrão de ecommerce profissional, tanto na funcionalidade quanto na aparência.
+
+Se precisarem de exemplos visuais ou mockups, posso fornecer. Aguardo retorno com os ajustes aplicados ou dúvidas pontuais.

@@ -1464,8 +1464,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Send payment confirmation email when status changes to "confirmado"
             try {
               const emailService = new EmailService(storage);
-              const fullOrder = await storage.getOrderWithDetails(order.id);
-              if (fullOrder && fullOrder.customer?.email) {
+              const fullOrder = await storage.getOrderById(order.id);
+              if (!fullOrder) throw new Error('Order not found');
+              const customer = await storage.getCustomer(fullOrder.customerId);
+              const event = await storage.getEvent(fullOrder.eventId);
+              const address = await storage.getAddress(fullOrder.addressId);
+              const kits = await storage.getKitsByOrderId(fullOrder.id);
+              
+              if (customer?.email) {
                 const eventDate = fullOrder.event?.date ? new Date(fullOrder.event.date).toLocaleDateString('pt-BR') : 'A definir';
                 
                 const paymentConfirmationData = {
@@ -1656,8 +1662,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Send payment confirmation email
                 try {
                   const emailService = new EmailService(storage);
-                  const fullOrder = await storage.getOrderWithDetails(order.id);
-                  if (fullOrder && fullOrder.customer?.email) {
+                  const fullOrder = await storage.getOrderById(order.id);
+                  if (!fullOrder) throw new Error('Order not found');
+                  const customer = await storage.getCustomer(fullOrder.customerId);
+                  const event = await storage.getEvent(fullOrder.eventId);
+                  const address = await storage.getAddress(fullOrder.addressId);
+                  const kits = await storage.getKitsByOrderId(fullOrder.id);
+                  
+                  if (customer?.email) {
                     const eventDate = fullOrder.event?.date ? new Date(fullOrder.event.date).toLocaleDateString('pt-BR') : 'A definir';
                     
                     const paymentConfirmationData = {
@@ -1815,8 +1827,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Send payment confirmation email
                 try {
                   const emailService = new EmailService(storage);
-                  const fullOrder = await storage.getOrderWithDetails(order.id);
-                  if (fullOrder && fullOrder.customer?.email) {
+                  const fullOrder = await storage.getOrderById(order.id);
+                  if (!fullOrder) throw new Error('Order not found');
+                  const customer = await storage.getCustomer(fullOrder.customerId);
+                  const event = await storage.getEvent(fullOrder.eventId);
+                  const address = await storage.getAddress(fullOrder.addressId);
+                  const kits = await storage.getKitsByOrderId(fullOrder.id);
+                  
+                  if (customer?.email) {
                     const eventDate = fullOrder.event?.date ? new Date(fullOrder.event.date).toLocaleDateString('pt-BR') : 'A definir';
                     
                     const paymentConfirmationData = {
