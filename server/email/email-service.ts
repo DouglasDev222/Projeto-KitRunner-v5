@@ -5,6 +5,7 @@ import {
   generateStatusUpdateTemplate,
   generateDeliveryConfirmationTemplate,
   generateKitEnRouteTemplate,
+  generatePaymentPendingTemplate,
   EmailUtils
 } from './email-templates';
 import { 
@@ -12,6 +13,7 @@ import {
   StatusUpdateData, 
   DeliveryConfirmationData,
   KitEnRouteData,
+  PaymentPendingData,
   EmailType
 } from './email-types';
 
@@ -256,6 +258,63 @@ export class EmailService {
         emailType: 'status_update',
         recipientEmail,
         subject: `Atualização do pedido ${data.orderNumber} - KitRunner`,
+        status: 'failed',
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+
+      return false;
+    }
+  }
+
+  /**
+   * Send payment pending email (for payment reminders)
+   */
+  async sendPaymentPending(data: PaymentPendingData, recipientEmail: string, orderId?: number, customerId?: number): Promise<boolean> {
+    try {
+      if (!SENDGRID_ENABLED) {
+        console.log('📧 Email service disabled - would send payment pending to:', recipientEmail);
+        return false;
+      }
+
+      const template = generatePaymentPendingTemplate(data);
+      
+      const msg = {
+        to: recipientEmail,
+        from: {
+          email: this.fromEmail,
+          name: this.fromName
+        },
+        subject: template.subject,
+        text: template.text,
+        html: template.html,
+      };
+
+      console.log('📧 Sending payment pending email to:', recipientEmail);
+      const response = await sgMail.send(msg);
+      
+      // Log success
+      await this.logEmail({
+        orderId,
+        customerId,
+        emailType: 'payment_pending',
+        recipientEmail,
+        subject: template.subject,
+        status: 'sent',
+        sendgridMessageId: response[0].headers['x-message-id'] || undefined,
+      });
+
+      console.log('✅ Payment pending email sent successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Error sending payment pending email:', error);
+      
+      // Log failure
+      await this.logEmail({
+        orderId,
+        customerId,
+        emailType: 'payment_pending',
+        recipientEmail,
+        subject: `⏳ Aguardando Pagamento - Finalize seu pedido!`,
         status: 'failed',
         errorMessage: error instanceof Error ? error.message : String(error),
       });

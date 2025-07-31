@@ -4,6 +4,7 @@ import {
   KitEnRouteData,
   DeliveryConfirmationData,
   StatusUpdateData,
+  PaymentPendingData,
   WelcomeData,
   PasswordResetData,
   PromotionalData,
@@ -41,6 +42,17 @@ export class EmailUtils {
       return phone.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
     }
     return phone.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+  }
+
+  static formatPaymentMethod(method: string): string {
+    const methodMap: Record<string, string> = {
+      'credit_card': 'Cartão de Crédito',
+      'debit_card': 'Cartão de Débito',
+      'pix': 'PIX',
+      'bank_transfer': 'Transferência Bancária',
+      'boleto': 'Boleto Bancário'
+    };
+    return methodMap[method] || method;
   }
 
   static getStatusDisplay(status: OrderStatus): StatusDisplay {
@@ -1356,6 +1368,201 @@ export function generatePromotionalTemplate(
 
   return {
     subject: `${data.promoTitle} - Oferta Especial ${theme.companyName}`,
+    html,
+    text,
+  };
+}
+
+// Payment Pending Email Template
+export function generatePaymentPendingTemplate(
+  data: PaymentPendingData,
+): EmailTemplate {
+  const theme = EmailUtils.mergeTheme(data.theme);
+  const { header, footer, styles } = getBaseEmailTemplate(theme);
+  const trackingUrl = EmailUtils.generateTrackingUrl(data.orderNumber);
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Aguardando Pagamento - ${theme.companyName}</title>
+      ${styles}
+    </head>
+    <body>
+      <div class="email-container">
+        ${header}
+
+        <div class="content">
+          <div class="greeting">
+            ⏳ Aguardando Pagamento
+          </div>
+          
+          <h2 style="color: ${theme.primaryColor}; font-size: 20px; margin: 16px 0;">
+            Finalize seu pagamento para confirmarmos seu pedido
+          </h2>
+
+          <p>Olá, ${data.customerName}!</p>
+          <p>Seu pedido foi criado com sucesso, mas ainda precisa ser pago para ser confirmado.</p>
+          <p>Assim que o pagamento for confirmado, nossa equipe irá retirar seu kit no local do evento e entregá-lo no endereço informado.</p>
+
+          ${data.paymentUrl ? `
+          <div style="text-align: center; margin: 24px 0;">
+            <a href="${data.paymentUrl}" 
+               style="background-color: ${theme.primaryColor}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
+              Finalizar Pagamento - ${EmailUtils.formatCurrency(data.totalAmount || data.pricing.totalCost)}
+            </a>
+            <p style="font-size: 12px; color: #6b7280; margin-top: 8px;">
+              🔒 Pagamento 100% seguro
+            </p>
+          </div>
+          ` : ''}
+
+          <div class="section">
+            <h3>📋 Detalhes do Pedido</h3>
+            <div class="grid-container">
+              <div class="grid-item">
+                <strong>Pedido:</strong> ${data.orderNumber}
+              </div>
+              <div class="grid-item">
+                <strong>Evento:</strong> ${data.eventName}
+              </div>
+              <div class="grid-item">
+                <strong>Data:</strong> ${EmailUtils.formatDate(data.eventDate)}
+              </div>
+              <div class="grid-item">
+                <strong>Local:</strong> ${data.eventLocation}
+              </div>
+              <div class="grid-item">
+                <strong>Kits:</strong> ${data.kits.length} kit${data.kits.length > 1 ? 's' : ''}
+              </div>
+              <div class="grid-item">
+                <strong>Forma de Pagamento:</strong> ${EmailUtils.formatPaymentMethod(data.paymentMethod)}
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>🏃‍♂️ Kits do Pedido</h3>
+            <div class="kits-list">
+              ${data.kits.map((kit) => `
+                <div class="kit-item">
+                  <div class="kit-info">
+                    <strong>${kit.name}</strong> • ${kit.category}
+                  </div>
+                  <div class="kit-details">
+                    <span class="kit-size">Tamanho ${kit.shirtSize}</span>
+                    ${kit.cpf ? `<span class="kit-cpf">${EmailUtils.formatCPF(kit.cpf)}</span>` : ''}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>📍 Endereço de Entrega</h3>
+            <div class="address-card">
+              <div class="address-info">
+                <p><strong>${data.address.street}, ${data.address.number}</strong>
+                ${data.address.complement ? `<br>${data.address.complement}` : ''}</p>
+                <p>${data.address.neighborhood} - ${data.address.city}/${data.address.state}</p>
+                <p>CEP: ${data.address.zipCode}</p>
+                ${data.address.reference ? `<p><em>Ref: ${data.address.reference}</em></p>` : ''}
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>💰 Resumo Financeiro</h3>
+            <div class="pricing-breakdown">
+              <div class="pricing-item">
+                <span>Taxa de entrega:</span>
+                <span>${EmailUtils.formatCurrency(data.pricing.deliveryCost)}</span>
+              </div>
+              ${data.pricing.extraKitsCost !== '0' && data.pricing.extraKitsCost !== '0.00' ? `
+              <div class="pricing-item">
+                <span>Kits extras:</span>
+                <span>${EmailUtils.formatCurrency(data.pricing.extraKitsCost)}</span>
+              </div>
+              ` : ''}
+              ${data.pricing.donationCost !== '0' && data.pricing.donationCost !== '0.00' ? `
+              <div class="pricing-item">
+                <span>Doação:</span>
+                <span>${EmailUtils.formatCurrency(data.pricing.donationCost)}</span>
+              </div>
+              ` : ''}
+              <div class="pricing-item pricing-total">
+                <span><strong>Total:</strong></span>
+                <span><strong>${EmailUtils.formatCurrency(data.pricing.totalCost)}</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 16px; border-radius: 8px; margin-top: 24px;">
+            <h4 style="color: #f59e0b; margin-bottom: 8px;">⚠️ Importante</h4>
+            <p style="margin: 0;">Este pedido expira em 24 horas (${EmailUtils.formatDate(data.expiresAt)}). Finalize o pagamento antes do prazo para garantir seu kit!</p>
+          </div>
+
+          <div style="text-align: center; margin-top: 32px; padding: 20px; background: #f8fafc; border-radius: 8px;">
+            <h4 style="color: ${theme.primaryColor}; margin-bottom: 12px;">📞 Precisa de Ajuda?</h4>
+            <p style="margin: 4px 0;">WhatsApp: ${theme.supportPhone}</p>
+            <p style="margin: 4px 0;">Email: ${theme.supportEmail}</p>
+            <p style="margin: 12px 0 0 0; font-size: 14px; color: #6b7280;">
+              Nossa equipe está pronta para ajudar você!
+            </p>
+          </div>
+        </div>
+
+        ${footer}
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `
+    ${theme.companyName} - Aguardando Pagamento ⏳
+
+    Finalize seu pagamento para confirmarmos seu pedido
+
+    Olá, ${data.customerName}!
+
+    Seu pedido foi criado com sucesso, mas ainda precisa ser pago para ser confirmado.
+
+    Pedido: ${data.orderNumber}
+    Evento: ${data.eventName}
+    Data: ${EmailUtils.formatDate(data.eventDate)}
+    Local: ${data.eventLocation}
+    Kits: ${data.kits.length} kit${data.kits.length > 1 ? 's' : ''}
+    Forma de Pagamento: ${EmailUtils.formatPaymentMethod(data.paymentMethod)}
+
+    Kits do Pedido:
+    ${data.kits.map((kit) => `- ${kit.name} (${kit.shirtSize} - ${kit.category}) ${kit.cpf ? `CPF: ${EmailUtils.formatCPF(kit.cpf)}` : ''}`).join("\n")}
+
+    Endereço de Entrega:
+    ${data.address.street}, ${data.address.number}${data.address.complement ? `, ${data.address.complement}` : ''}
+    ${data.address.neighborhood} - ${data.address.city}/${data.address.state}
+    CEP: ${data.address.zipCode}
+    ${data.address.reference ? `Ref: ${data.address.reference}` : ''}
+
+    Resumo Financeiro:
+    Taxa de entrega: ${EmailUtils.formatCurrency(data.pricing.deliveryCost)}
+    ${data.pricing.extraKitsCost !== '0' && data.pricing.extraKitsCost !== '0.00' ? `Kits extras: ${EmailUtils.formatCurrency(data.pricing.extraKitsCost)}` : ''}
+    ${data.pricing.donationCost !== '0' && data.pricing.donationCost !== '0.00' ? `Doação: ${EmailUtils.formatCurrency(data.pricing.donationCost)}` : ''}
+    Total: ${EmailUtils.formatCurrency(data.pricing.totalCost)}
+
+    ⚠️ IMPORTANTE: Este pedido expira em 24 horas (${EmailUtils.formatDate(data.expiresAt)}). 
+    Finalize o pagamento antes do prazo para garantir seu kit!
+
+    Precisa de ajuda?
+    WhatsApp: ${theme.supportPhone}
+    Email: ${theme.supportEmail}
+
+    ${theme.companyName}
+  `;
+
+  return {
+    subject: `⏳ Aguardando Pagamento - Finalize seu pedido! ${data.orderNumber}`,
     html,
     text,
   };

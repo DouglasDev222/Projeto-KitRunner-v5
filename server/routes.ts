@@ -10,6 +10,7 @@ import { calculateDeliveryCost } from "./distance-calculator";
 import { MercadoPagoService } from "./mercadopago-service";
 import { EmailService } from "./email/email-service";
 import { EmailDataMapper } from "./email/email-data-mapper";
+import { PaymentReminderScheduler } from "./email/payment-reminder-scheduler";
 import path from "path";
 import { requireAuth, requireAdmin, requireOwnership, type AuthenticatedRequest } from './middleware/auth';
 import adminAuthRoutes from './routes/admin-auth';
@@ -434,8 +435,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         kits.push(kit);
       }
       
-      // Note: Order confirmation email will be sent when payment is confirmed, not here
-      // Orders start with "aguardando_pagamento" status
+      // Schedule payment pending email to be sent in 1 minute
+      PaymentReminderScheduler.schedulePaymentPendingEmail(order.orderNumber, 1);
       
       res.json({
         order,
@@ -1403,8 +1404,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           console.log(`✅ Order ${order.orderNumber} created successfully with status: ${order.status}`);
 
+          // Schedule payment pending email if payment is not yet approved
+          if (result.status !== 'approved') {
+            PaymentReminderScheduler.schedulePaymentPendingEmail(order.orderNumber, 1);
+          }
+
           // If payment was approved, update status to "confirmado" with proper history
           if (result.status === 'approved') {
+            // Cancel any scheduled payment pending email since payment was approved
+            PaymentReminderScheduler.cancelScheduledEmail(order.orderNumber);
+            
             await storage.updateOrderStatus(
               order.id, 
               'confirmado', 

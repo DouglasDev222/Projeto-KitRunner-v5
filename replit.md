@@ -489,6 +489,20 @@ The application follows a progressive enhancement approach, starting with a soli
 - ✓ **Production Configuration**: Configured verified sender `contato@kitrunner.com.br` and domain `em1561.kitrunner.com.br`
 - ✓ **Testing Confirmed**: Email integration tested successfully - emails sending without errors
 
+### Payment Pending Email System Implementation COMPLETED (July 2025)
+- ✓ **5th Email Type Completion**: Implemented payment pending email as requested with ⏳ emoji and "Aguardando Pagamento" header
+- ✓ **PaymentPendingData Interface**: Created comprehensive data structure for payment reminder emails
+- ✓ **Professional Template**: Built generatePaymentPendingTemplate() with KitRunner branding and responsive design
+- ✓ **EmailService Integration**: Added sendPaymentPending() method with complete error handling and logging
+- ✓ **Data Mapping**: Created orderToPaymentPendingData() conversion function in email-data-mapper.ts
+- ✓ **Automatic Scheduling**: Implemented PaymentReminderScheduler for 1-minute delayed email sending
+- ✓ **Smart Cancellation**: Automatic cancellation of scheduled emails when payment is confirmed
+- ✓ **Complete Integration**: Seamless integration with order creation flow and payment confirmation
+- ✓ **24-Hour Expiration**: Warning message with formatted expiration time as requested
+- ✓ **Brazilian Formatting**: Payment method formatting (PIX, Cartão de Crédito) and currency display
+- ✓ **Testing Infrastructure**: Created test-payment-pending-email.js for system verification
+- ✓ **Production Ready**: Complete payment pending email system operational with all user requirements met
+
 ### Admin Authentication System Complete Implementation & Migration (July 2025)
 - ✓ **Complete Implementation**: Built comprehensive JWT-based admin authentication system from scratch
 - ✓ **Database Schema**: Created admin_users, admin_sessions, admin_audit_log, and password_reset_tokens tables

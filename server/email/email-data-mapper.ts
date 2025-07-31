@@ -3,6 +3,7 @@ import {
   KitEnRouteData, 
   DeliveryConfirmationData, 
   StatusUpdateData,
+  PaymentPendingData,
   KitItem,
   DeliveryAddress,
   PricingInfo,
@@ -293,5 +294,49 @@ export class EmailDataMapper {
       default:
         return 'Em breve';
     }
+  }
+
+  /**
+   * Convert order data to payment pending email data
+   */
+  static orderToPaymentPendingData(order: DatabaseOrder): PaymentPendingData {
+    // Calculate 24 hours from order creation
+    const createdAt = new Date(order.createdAt);
+    const expiresAt = new Date(createdAt.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
+
+    return {
+      customerName: order.customer.name,
+      customerEmail: order.customer.email,
+      orderNumber: order.orderNumber,
+      eventName: order.event.name,
+      eventDate: order.event.date,
+      eventLocation: order.event.location,
+      kits: order.kits?.map(kit => ({
+        name: kit.name,
+        cpf: kit.cpf,
+        shirtSize: kit.shirtSize as "PP" | "P" | "M" | "G" | "GG" | "XG" | "XXG",
+        category: 'Kit'
+      })) || [],
+      address: {
+        street: order.address.street,
+        number: order.address.number,
+        complement: order.address.complement,
+        neighborhood: order.address.neighborhood,
+        city: order.address.city,
+        state: order.address.state,
+        zipCode: order.address.zipCode,
+        reference: ''
+      },
+      pricing: {
+        deliveryCost: order.deliveryCost,
+        extraKitsCost: order.extraKitsCost,
+        donationCost: order.donationCost,
+        totalCost: order.totalCost
+      },
+      paymentMethod: order.paymentMethod as PaymentMethod,
+      paymentUrl: undefined, // To be set by payment service if available
+      expiresAt: expiresAt.toISOString(),
+      totalAmount: order.totalCost
+    };
   }
 }

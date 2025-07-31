@@ -127,6 +127,20 @@ export interface StatusUpdateData extends BaseEmailData {
   trackingCode?: string;
 }
 
+// Payment Pending Email
+export interface PaymentPendingData extends BaseEmailData {
+  eventName: string;
+  eventDate: string;
+  eventLocation: string;
+  kits: KitItem[];
+  address: DeliveryAddress;
+  pricing: PricingInfo;
+  paymentMethod: PaymentMethod;
+  paymentUrl?: string;
+  expiresAt: string; // 24 hours from order creation
+  totalAmount: string;
+}
+
 // Welcome Email
 export interface WelcomeData extends BaseEmailData {
   // Welcome email is simpler, just basic info
@@ -172,6 +186,7 @@ export type EmailType =
   | 'kit_en_route'
   | 'delivery_confirmation'
   | 'status_update'
+  | 'payment_pending'
   | 'welcome'
   | 'password_reset'
   | 'promotional';
