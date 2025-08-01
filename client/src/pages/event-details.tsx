@@ -7,11 +7,13 @@ import { Calendar, MapPin, Users, Truck, Clock, Shield, Heart, DollarSign } from
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { formatDateTime, formatCurrency } from "@/lib/brazilian-formatter";
+import { useAuth } from "@/lib/auth-context";
 import type { Event } from "@shared/schema";
 
 export default function EventDetails() {
   const [, setLocation] = useLocation();
   const { id } = useParams<{ id: string }>();
+  const { isAuthenticated, user } = useAuth();
 
   const { data: event, isLoading } = useQuery<Event>({
     queryKey: ["/api/events", id],
@@ -53,7 +55,15 @@ export default function EventDetails() {
   }
 
   const handleRequestPickup = () => {
-    setLocation(`/events/${id}/identify`);
+    if (!isAuthenticated) {
+      // Store the intended destination for after login
+      sessionStorage.setItem("loginReturnPath", `/events/${id}/address`);
+      setLocation(`/login`);
+    } else {
+      // User is authenticated, store user data and proceed directly to address
+      sessionStorage.setItem("customerData", JSON.stringify(user));
+      setLocation(`/events/${id}/address`);
+    }
   };
 
   return (

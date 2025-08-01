@@ -59,7 +59,8 @@ export default function MyOrders() {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated && !showOrders && !customer) {
-      setLocation("/login?returnPath=/my-orders");
+      sessionStorage.setItem("loginReturnPath", "/my-orders");
+      setLocation("/login");
     }
   }, [isLoading, isAuthenticated, showOrders, customer, setLocation]);
 

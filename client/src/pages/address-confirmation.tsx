@@ -85,7 +85,9 @@ export default function AddressConfirmation() {
   
   useEffect(() => {
     if (!customer) {
-      setLocation(`/events/${id}/identify`);
+      // Redirect to login with proper return path
+      sessionStorage.setItem("loginReturnPath", `/events/${id}/address`);
+      setLocation(`/login`);
     }
   }, [customer, id, setLocation]);
   

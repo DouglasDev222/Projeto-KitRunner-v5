@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { customerIdentificationSchema, type CustomerIdentification } from "@shared/schema";
 import { formatCPF, isValidCPF } from "@/lib/cpf-validator";
 import { apiRequest } from "@/lib/queryClient";
@@ -15,7 +16,29 @@ import { useAuth } from "@/lib/auth-context";
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
+
+  // Handle URL redirect parameter
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectParam = urlParams.get('redirect');
+    if (redirectParam) {
+      sessionStorage.setItem("loginReturnPath", redirectParam);
+    }
+  }, []);
+
+  // If already authenticated, redirect immediately
+  useEffect(() => {
+    if (isAuthenticated) {
+      const returnPath = sessionStorage.getItem("loginReturnPath");
+      if (returnPath) {
+        sessionStorage.removeItem("loginReturnPath");
+        setLocation(returnPath);
+      } else {
+        setLocation("/profile");
+      }
+    }
+  }, [isAuthenticated, setLocation]);
 
   const form = useForm<CustomerIdentification>({
     resolver: zodResolver(customerIdentificationSchema),

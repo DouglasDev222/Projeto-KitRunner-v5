@@ -111,7 +111,7 @@ export default function CustomerRegistration() {
     if (isStandaloneRegistration) {
       return () => setLocation("/login");
     } else {
-      return () => setLocation(`/events/${id}/identify`);
+      return () => setLocation("/login");
     }
   };
 

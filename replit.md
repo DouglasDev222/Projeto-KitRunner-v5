@@ -6,7 +6,10 @@ KitRunner is a mobile-first web application designed for managing event kit pick
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (July 31, 2025)
+## Recent Changes (August 1, 2025)
+- **Authentication Flow Improvement**: Removed `/events/[id]/identify` page and implemented proper login redirect flow
+- **Simplified User Experience**: Unauthenticated users are now redirected directly to main login page with automatic return to intended destination
+- **Modal Blocking Bug Fix**: Resolved issue where `pointer-events: none` remained on body element after modal closure
 - **Email Template Customization**: Updated all email templates with specific delivery dates (1 day before event), WhatsApp contact integration, order details page redirects, and removed all tracking code references
 - **Status Display Updates**: Changed "Retirada Confirmada" to "Retirada em Andamento" 
 - **Enhanced Next Steps**: Updated service confirmation emails with improved timeline and emojis
@@ -40,7 +43,7 @@ Preferred communication style: Simple, everyday language.
 - **Type Safety**: End-to-end TypeScript with shared validation schemas.
 - **Brazilian Market Focus**: CPF validation, Portuguese localization, BRL currency.
 - **Component Library**: shadcn/ui for consistent, accessible UI components.
-- **Authentication**: JWT-based admin authentication, persistent user login with localStorage, role-based access control (RBAC), and ownership validation.
+- **Authentication**: JWT-based admin authentication, persistent user login with localStorage, role-based access control (RBAC), ownership validation, and streamlined login redirect flow with automatic return to intended destination.
 - **PDF Generation**: Modern, professional PDF label generation for order kits.
 - **Email Notification System**: Comprehensive system for order confirmations, status updates, and payment reminders with professional, responsive HTML templates. Custom templates with delivery date calculations (1 day before event), WhatsApp contact integration (83 98130-2961), order details page redirects (/orders/{orderNumber}), and removal of tracking code references.
 

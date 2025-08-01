@@ -37,7 +37,6 @@ function Router() {
     <Switch>
       <Route path="/" component={Events} />
       <Route path="/events/:id" component={EventDetails} />
-      <Route path="/events/:id/identify" component={CustomerIdentification} />
       <Route path="/events/:id/register" component={CustomerRegistration} />
       <Route path="/events/:id/address" component={AddressConfirmation} />
       <Route path="/events/:id/address/new" component={NewAddress} />

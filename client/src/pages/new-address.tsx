@@ -112,8 +112,9 @@ export default function NewAddress() {
   useEffect(() => {
     if (!customer) {
       if (id && id.match(/^\d+$/) && !isEditing) {
-        // Event flow
-        setLocation(`/events/${id}/identify`);
+        // Event flow - redirect to login with proper return path
+        sessionStorage.setItem("loginReturnPath", `/events/${id}/address`);
+        setLocation("/login");
       } else {
         // Profile flow
         setLocation("/profile");
