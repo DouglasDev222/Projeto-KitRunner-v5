@@ -29,23 +29,49 @@ export function EmailConfirmationModal({
   customerName,
   isLoading = false,
 }: EmailConfirmationModalProps) {
-  // Fix body pointer-events issue
+  // Fix body pointer-events issue with aggressive cleanup
   useEffect(() => {
-    const cleanup = () => {
-      // Force remove pointer-events: none from body when modal closes
-      document.body.style.pointerEvents = "";
-      // Also remove any overflow hidden that might be applied
-      document.body.style.overflow = "";
+    const forceCleanup = () => {
+      // Remove all problematic styles from body
+      document.body.style.removeProperty('pointer-events');
+      document.body.style.removeProperty('overflow');
+      document.body.style.removeProperty('padding-right');
+      
+      // Also ensure body classes don't block interactions
+      document.body.classList.remove('pointer-events-none');
     };
 
     if (!isOpen) {
-      // Small delay to ensure the modal has fully closed
-      const timer = setTimeout(cleanup, 100);
-      return () => clearTimeout(timer);
+      // Immediate cleanup
+      forceCleanup();
+      
+      // Multiple cleanup attempts to ensure it sticks
+      const timers = [
+        setTimeout(forceCleanup, 50),
+        setTimeout(forceCleanup, 150),
+        setTimeout(forceCleanup, 300)
+      ];
+      
+      return () => timers.forEach(clearTimeout);
     }
 
-    // Cleanup on unmount
-    return cleanup;
+    // Monitor for unwanted styles during modal lifetime
+    const observer = new MutationObserver(() => {
+      if (!isOpen && (document.body.style.pointerEvents === 'none' || 
+          document.body.style.pointerEvents === 'none')) {
+        forceCleanup();
+      }
+    });
+
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['style', 'class']
+    });
+
+    return () => {
+      observer.disconnect();
+      forceCleanup();
+    };
   }, [isOpen]);
 
   const getStatusLabel = (status: string) => {

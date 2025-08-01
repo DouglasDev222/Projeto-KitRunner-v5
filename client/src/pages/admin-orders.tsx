@@ -112,25 +112,61 @@ export default function AdminOrders() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Global cleanup effect to prevent modal blocking issues
+  // Aggressive body style cleanup to prevent modal blocking
   useEffect(() => {
-    const cleanup = () => {
-      document.body.style.pointerEvents = "";
-      document.body.style.overflow = "";
+    const forceBodyCleanup = () => {
+      document.body.style.removeProperty('pointer-events');
+      document.body.style.removeProperty('overflow');
+      document.body.style.removeProperty('padding-right');
+      document.body.classList.remove('pointer-events-none');
     };
 
+    // Create a mutation observer to watch for unwanted body styles
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.target === document.body) {
+          const body = mutation.target as HTMLElement;
+          
+          // If pointer-events: none is detected and no modals are open, remove it
+          if (!emailConfirmationModal.isOpen && !showOrderDialog) {
+            if (body.style.pointerEvents === 'none') {
+              forceBodyCleanup();
+            }
+          }
+        }
+      });
+    });
+
+    // Start observing body for style changes
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['style', 'class']
+    });
+
+    // Initial cleanup
+    forceBodyCleanup();
+
     // Cleanup on component unmount
-    return cleanup;
+    return () => {
+      observer.disconnect();
+      forceBodyCleanup();
+    };
   }, []);
 
   // Monitor modal states and cleanup if needed
   useEffect(() => {
     if (!emailConfirmationModal.isOpen && !showOrderDialog) {
       // If no modals are open, ensure body is clean
-      setTimeout(() => {
-        document.body.style.pointerEvents = "";
-        document.body.style.overflow = "";
-      }, 50);
+      const cleanup = () => {
+        document.body.style.removeProperty('pointer-events');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+      };
+      
+      // Multiple cleanup attempts
+      cleanup();
+      setTimeout(cleanup, 50);
+      setTimeout(cleanup, 150);
     }
   }, [emailConfirmationModal.isOpen, showOrderDialog]);
 
@@ -263,11 +299,20 @@ export default function AdminOrders() {
       newStatus: "" 
     });
     
-    // Force cleanup of body styles that might be left behind by modal
-    setTimeout(() => {
-      document.body.style.pointerEvents = "";
-      document.body.style.overflow = "";
-    }, 100);
+    // Aggressive cleanup of body styles that might be left behind by modal
+    const forceCleanup = () => {
+      document.body.style.removeProperty('pointer-events');
+      document.body.style.removeProperty('overflow');
+      document.body.style.removeProperty('padding-right');
+      document.body.classList.remove('pointer-events-none');
+    };
+    
+    // Multiple cleanup attempts with different timings
+    forceCleanup();
+    setTimeout(forceCleanup, 10);
+    setTimeout(forceCleanup, 50);
+    setTimeout(forceCleanup, 150);
+    setTimeout(forceCleanup, 300);
   };
 
   const resetFilters = () => {

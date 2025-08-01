@@ -2,6 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Modal body style fixes - prevent pointer-events: none from blocking UI */
+body {
+  pointer-events: auto !important;
+}
+
+/* Only allow pointer-events: none when a modal is actually open */
+body[data-modal-open="true"] {
+  pointer-events: auto !important;
+  overflow: hidden;
+}
+
+/* Ensure dialogs and overlays work properly */
+[data-radix-portal] {
+  pointer-events: auto !important;
+}
+
+/* Force pointer events for critical UI elements */
+button, a, input, select, textarea {
+  pointer-events: auto !important;
+}
+
 :root {
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(20, 14.3%, 4.1%);
