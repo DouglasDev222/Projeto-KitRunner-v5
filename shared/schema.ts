@@ -80,6 +80,7 @@ export const orderStatusHistory = pgTable("order_status_history", {
   changedBy: text("changed_by").notNull(), // 'admin', 'mercadopago', 'system'
   changedByName: text("changed_by_name"), // Nome do admin ou 'Mercado Pago'
   reason: text("reason"), // Motivo da mudança
+  bulkOperationId: text("bulk_operation_id"), // ID para agrupar operações em massa
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -393,3 +394,13 @@ export const auditLogFiltersSchema = z.object({
   offset: z.number().optional(),
   page: z.number().optional(),
 });
+
+// Bulk operations schema
+export const bulkStatusChangeSchema = z.object({
+  orderIds: z.array(z.number()).min(1, "Pelo menos um pedido deve ser selecionado"),
+  newStatus: z.enum(["confirmado", "aguardando_pagamento", "cancelado", "kits_sendo_retirados", "em_transito", "entregue"]),
+  sendEmails: z.boolean().default(false),
+  reason: z.string().optional(),
+});
+
+export type BulkStatusChange = z.infer<typeof bulkStatusChangeSchema>;

@@ -63,9 +63,7 @@ Esta funcionalidade permite que administradores selecionem múltiplos pedidos de
 ### Sistema de E-mails Condicionais
 - [ ] Modificar serviço de e-mail para processar listas de pedidos
 - [ ] Implementar envio assíncrono para não bloquear resposta da API
-- [ ] Criar template específico para notificações de mudança de status
 - [ ] Implementar retry logic para falhas de envio de e-mail
-- [ ] Adicionar configuração para desabilitar e-mails em ambiente de teste
 
 ### Auditoria e Logs
 - [ ] Registrar ação em massa na tabela de logs de pedidos

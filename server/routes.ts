@@ -1877,6 +1877,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk status change for admin
+  app.post("/api/admin/orders/bulk-status-change", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { orderIds, newStatus, sendEmails, reason } = req.body;
+      
+      // Validate input
+      if (!Array.isArray(orderIds) || orderIds.length === 0) {
+        return res.status(400).json({ error: 'Lista de pedidos inválida' });
+      }
+
+      if (!newStatus) {
+        return res.status(400).json({ error: 'Novo status é obrigatório' });
+      }
+
+      const validStatuses = ['confirmado', 'aguardando_pagamento', 'cancelado', 'kits_sendo_retirados', 'em_transito', 'entregue'];
+      if (!validStatuses.includes(newStatus)) {
+        return res.status(400).json({ error: 'Status inválido' });
+      }
+
+      // Validate all orders exist and get current data
+      const orders = await Promise.all(
+        orderIds.map(async (id: number) => {
+          const order = await storage.getFullOrderById(id);
+          if (!order) {
+            throw new Error(`Pedido com ID ${id} não encontrado`);
+          }
+          return order;
+        })
+      );
+
+      // Check if all orders are from the same event
+      const eventIds = [...new Set(orders.map(order => order.eventId))];
+      if (eventIds.length > 1) {
+        return res.status(400).json({ 
+          error: 'Todos os pedidos devem ser do mesmo evento',
+          details: `Encontrados pedidos de ${eventIds.length} eventos diferentes`
+        });
+      }
+
+      // Generate bulk operation ID for tracking
+      const bulkOperationId = `bulk_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      let successCount = 0;
+      let errors: any[] = [];
+      let emailsSent = 0;
+
+      // Process each order
+      for (const order of orders) {
+        try {
+          const previousStatus = order.status;
+          
+          // Skip if already at target status
+          if (previousStatus === newStatus) {
+            continue;
+          }
+
+          // Update order status
+          await storage.updateOrderStatus(
+            order.id, 
+            newStatus, 
+            'admin', 
+            req.user?.fullName || 'Admin',
+            reason || `Alteração em massa via painel administrativo`,
+            bulkOperationId,
+            false  // Don't send individual emails, we'll handle them manually
+          );
+
+          successCount++;
+
+          // Send email if requested
+          if (sendEmails && order.customer?.email) {
+            try {
+              const emailService = new EmailService(storage);
+              const emailData = EmailDataMapper.mapOrderStatusChange({
+                orderNumber: order.orderNumber,
+                customerName: order.customer.name,
+                customerCPF: order.customer.cpf,
+                eventName: order.event?.name || 'Evento',
+                eventDate: order.event?.date || new Date().toISOString(),
+                eventLocation: order.event?.location || 'Local a definir',
+                newStatus: newStatus,
+                previousStatus: previousStatus,
+                address: order.address ? {
+                  street: order.address.street,
+                  number: order.address.number,
+                  complement: order.address.complement || '',
+                  neighborhood: order.address.neighborhood,
+                  city: order.address.city,
+                  state: order.address.state,
+                  zipCode: order.address.zipCode
+                } : {
+                  street: 'Endereço não definido',
+                  number: '', complement: '', neighborhood: '',
+                  city: '', state: '', zipCode: ''
+                },
+                kits: order.kits?.map(kit => ({
+                  name: kit.name, cpf: kit.cpf, shirtSize: kit.shirtSize
+                })) || []
+              });
+
+              await emailService.sendOrderStatusUpdate(
+                emailData,
+                order.customer.email,
+                order.id,
+                order.customerId
+              );
+              emailsSent++;
+            } catch (emailError) {
+              console.error(`Error sending email for order ${order.orderNumber}:`, emailError);
+              // Don't fail the entire operation for email errors
+            }
+          }
+
+        } catch (orderError) {
+          console.error(`Error updating order ${order.id}:`, orderError);
+          errors.push({
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            error: orderError instanceof Error ? orderError.message : 'Erro desconhecido'
+          });
+        }
+      }
+
+      // Log the bulk operation
+      console.log(`🔄 Bulk status change completed: ${successCount}/${orders.length} orders updated, ${emailsSent} emails sent`);
+
+      res.json({
+        success: true,
+        bulkOperationId,
+        totalOrders: orders.length,
+        successCount,
+        errorCount: errors.length,
+        emailsSent: sendEmails ? emailsSent : 0,
+        errors: errors.length > 0 ? errors : undefined,
+        message: `${successCount} pedidos atualizados com sucesso${sendEmails ? `, ${emailsSent} e-mails enviados` : ''}`
+      });
+
+    } catch (error) {
+      console.error('Bulk status change error:', error);
+      res.status(500).json({ 
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
   // SendGrid Test Endpoint
   app.post("/api/test-sendgrid", async (req, res) => {
     try {

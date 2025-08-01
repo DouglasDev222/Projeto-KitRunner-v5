@@ -621,14 +621,15 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async addStatusHistory(orderId: number, previousStatus: string | null, newStatus: string, changedBy: string, changedByName?: string, reason?: string): Promise<OrderStatusHistory> {
+  async addStatusHistory(orderId: number, previousStatus: string | null, newStatus: string, changedBy: string, changedByName?: string, reason?: string, bulkOperationId?: string): Promise<OrderStatusHistory> {
     const [history] = await db.insert(orderStatusHistory).values({
       orderId,
       previousStatus,
       newStatus,
       changedBy,
       changedByName,
-      reason
+      reason,
+      bulkOperationId
     }).returning();
     
     return history;
@@ -712,7 +713,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async updateOrderStatus(orderId: number | string, status: string, changedBy: string = 'system', changedByName?: string, reason?: string, sendEmail: boolean = true): Promise<Order | undefined> {
+  async updateOrderStatus(orderId: number | string, status: string, changedBy: string = 'system', changedByName?: string, reason?: string, bulkOperationId?: string, sendEmail: boolean = true): Promise<Order | undefined> {
     let targetOrderId: number;
     let previousStatus: string | null = null;
     
@@ -747,12 +748,15 @@ export class DatabaseStorage implements IStorage {
     // Only update if status actually changed
     if (previousStatus !== status) {
       // Add to status history
-      await this.addStatusHistory(targetOrderId, previousStatus, status, changedBy, changedByName, reason);
+      await this.addStatusHistory(targetOrderId, previousStatus, status, changedBy, changedByName, reason, bulkOperationId);
       
       // Update order status
       const [order] = await db
         .update(orders)
-        .set({ status })
+        .set({ 
+          status,
+          bulkOperationId: bulkOperationId || null
+        })
         .where(eq(orders.id, targetOrderId))
         .returning();
 

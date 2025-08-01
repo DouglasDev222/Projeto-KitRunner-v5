@@ -96,6 +96,9 @@ export default function AdminOrders() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
   const [selectedOrders, setSelectedOrders] = useState<number[]>([]);
+  const [bulkStatusModalOpen, setBulkStatusModalOpen] = useState(false);
+  const [bulkNewStatus, setBulkNewStatus] = useState("");
+  const [sendBulkEmails, setSendBulkEmails] = useState(false);
   const [emailConfirmationModal, setEmailConfirmationModal] = useState<{
     isOpen: boolean;
     orderId: number;
@@ -239,6 +242,63 @@ export default function AdminOrders() {
     },
   });
 
+  // Bulk status change mutation
+  const bulkStatusMutation = useMutation({
+    mutationFn: async ({ orderIds, newStatus, sendEmails }: { orderIds: number[]; newStatus: string; sendEmails: boolean }) => {
+      const adminToken = localStorage.getItem('adminToken');
+      const response = await fetch('/api/admin/orders/bulk-status-change', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({ orderIds, newStatus, sendEmails }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao atualizar status em massa');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      // Close modal and clear selections
+      setBulkStatusModalOpen(false);
+      setSelectedOrders([]);
+      setBulkNewStatus("");
+      setSendBulkEmails(false);
+      
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      
+      // Show detailed success toast
+      toast({
+        title: "Alteração em massa concluída!",
+        description: `${data.successCount} pedidos atualizados com sucesso. ${data.emailsSent ? `${data.emailsSent} e-mails enviados.` : 'Nenhum e-mail foi enviado.'}`,
+      });
+
+      // Show partial failure warning if any
+      if (data.errors && data.errors.length > 0) {
+        setTimeout(() => {
+          toast({
+            title: "Algumas atualizações falharam",
+            description: `${data.errors.length} pedidos não puderam ser atualizados.`,
+            variant: "destructive",
+          });
+        }, 2000);
+      }
+    },
+    onError: (error: any) => {
+      setBulkStatusModalOpen(false);
+      
+      toast({
+        title: "Erro na alteração em massa",
+        description: error.message || "Não foi possível atualizar os pedidos selecionados.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Query for individual order details
   const { data: selectedOrderData, refetch: refetchOrderDetails } = useQuery({
     queryKey: [`/api/admin/orders/${selectedOrderId}`],
@@ -332,6 +392,51 @@ export default function AdminOrders() {
 
   const handleSelectAll = (checked: boolean) => {
     setSelectedOrders(checked ? orders.map((order: any) => order.id) : []);
+  };
+
+  // Get the event for selected orders (all must be from same event)
+  const getSelectedOrdersEvent = () => {
+    if (selectedOrders.length === 0) return null;
+    const selectedOrdersData = orders.filter((order: any) => selectedOrders.includes(order.id));
+    const eventIds = Array.from(new Set(selectedOrdersData.map((order: any) => order.eventId)));
+    return eventIds.length === 1 ? selectedOrdersData[0]?.event : null;
+  };
+
+  // Check if all selected orders are from the same event
+  const canPerformBulkOperation = () => {
+    if (selectedOrders.length === 0) return false;
+    const selectedOrdersData = orders.filter((order: any) => selectedOrders.includes(order.id));
+    const eventIds = Array.from(new Set(selectedOrdersData.map((order: any) => order.eventId)));
+    return eventIds.length === 1;
+  };
+
+  const handleBulkStatusChange = () => {
+    if (!canPerformBulkOperation()) {
+      toast({
+        title: "Seleção inválida",
+        description: "Todos os pedidos selecionados devem ser do mesmo evento.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setBulkStatusModalOpen(true);
+  };
+
+  const handleConfirmBulkStatusChange = () => {
+    if (!bulkNewStatus) {
+      toast({
+        title: "Status obrigatório",
+        description: "Selecione o novo status para os pedidos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    bulkStatusMutation.mutate({
+      orderIds: selectedOrders,
+      newStatus: bulkNewStatus,
+      sendEmails: sendBulkEmails,
+    });
   };
 
   // Label generation functions
@@ -662,9 +767,63 @@ export default function AdminOrders() {
               </div>
             ) : (
               <div className="overflow-x-auto">
+                {/* Bulk Actions Bar */}
+                {selectedOrders.length > 0 && (
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-medium text-blue-700">
+                        {selectedOrders.length} pedido{selectedOrders.length > 1 ? 's' : ''} selecionado{selectedOrders.length > 1 ? 's' : ''}
+                      </span>
+                      {getSelectedOrdersEvent() && (
+                        <span className="text-sm text-blue-600">
+                          Evento: {getSelectedOrdersEvent().name}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Select value={bulkNewStatus} onValueChange={setBulkNewStatus}>
+                        <SelectTrigger className="w-48">
+                          <SelectValue placeholder="Novo status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusOptions.filter(status => status.value !== 'all').map((status) => (
+                            <SelectItem key={status.value} value={status.value}>
+                              {status.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        onClick={handleBulkStatusChange}
+                        disabled={!bulkNewStatus || !canPerformBulkOperation()}
+                        size="sm"
+                      >
+                        Aplicar Alterações
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedOrders([]);
+                          setBulkNewStatus("");
+                        }}
+                        size="sm"
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectedOrders.length === orders.length && orders.length > 0}
+                          onCheckedChange={handleSelectAll}
+                          aria-label="Selecionar todos"
+                        />
+                      </TableHead>
                       <TableHead>Pedido</TableHead>
                       <TableHead>Cliente</TableHead>
                       <TableHead>Evento</TableHead>
@@ -678,6 +837,13 @@ export default function AdminOrders() {
                   <TableBody>
                     {orders?.map((order: any) => (
                       <TableRow key={order.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedOrders.includes(order.id)}
+                            onCheckedChange={(checked) => handleSelectOrder(order.id, checked as boolean)}
+                            aria-label={`Selecionar pedido ${order.orderNumber}`}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">
                           <div>
                             <p className="font-mono text-sm">{order.orderNumber}</p>
@@ -963,6 +1129,87 @@ export default function AdminOrders() {
         customerName={emailConfirmationModal.customerName}
         isLoading={updateStatusMutation.isPending}
       />
+
+      {/* Bulk Status Change Modal */}
+      <Dialog open={bulkStatusModalOpen} onOpenChange={setBulkStatusModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Alterar Status em Massa</DialogTitle>
+            <DialogDescription>
+              Confirme a alteração de status para {selectedOrders.length} pedido{selectedOrders.length > 1 ? 's' : ''}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Summary */}
+            <div className="space-y-2">
+              <div className="text-sm">
+                <span className="font-medium">Pedidos selecionados:</span> {selectedOrders.length}
+              </div>
+              {getSelectedOrdersEvent() && (
+                <div className="text-sm">
+                  <span className="font-medium">Evento:</span> {getSelectedOrdersEvent().name}
+                </div>
+              )}
+              <div className="text-sm">
+                <span className="font-medium">Novo status:</span> {statusOptions.find(s => s.value === bulkNewStatus)?.label || bulkNewStatus}
+              </div>
+            </div>
+
+            {/* Email option */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="sendBulkEmails"
+                checked={sendBulkEmails}
+                onCheckedChange={(checked) => setSendBulkEmails(checked as boolean)}
+              />
+              <label
+                htmlFor="sendBulkEmails"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Enviar e-mails de notificação aos clientes
+              </label>
+            </div>
+
+            {sendBulkEmails && (
+              <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700">
+                <Mail className="h-4 w-4 inline mr-2" />
+                Os clientes receberão um e-mail informando sobre a mudança de status dos seus pedidos.
+              </div>
+            )}
+
+            {/* Progress indicator */}
+            {bulkStatusMutation.isPending && (
+              <div className="space-y-2">
+                <div className="text-sm text-gray-600">Processando alterações...</div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setBulkStatusModalOpen(false);
+                setBulkNewStatus("");
+                setSendBulkEmails(false);
+              }}
+              disabled={bulkStatusMutation.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmBulkStatusChange}
+              disabled={!bulkNewStatus || bulkStatusMutation.isPending}
+            >
+              {bulkStatusMutation.isPending ? "Processando..." : "Confirmar Alteração"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
