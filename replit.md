@@ -14,6 +14,7 @@ Preferred communication style: Simple, everyday language.
 - **Status Display Updates**: Changed "Retirada Confirmada" to "Retirada em Andamento" 
 - **Enhanced Next Steps**: Updated service confirmation emails with improved timeline and emojis
 - **Contact Integration**: Added WhatsApp button (83 98130-2961) to all email footers
+- **Authentication Flow Fix**: Corrected payment page redirect from old `/identify` route to proper login flow with smart data validation
 
 ## System Architecture
 
