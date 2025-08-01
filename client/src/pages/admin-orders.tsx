@@ -155,7 +155,7 @@ export default function AdminOrders() {
     },
     onSuccess: (_, variables) => {
       // Close modal first
-      setEmailConfirmationModal({ isOpen: false, orderId: 0, orderNumber: "", customerName: "", newStatus: "" });
+      closeEmailConfirmationModal();
       
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
@@ -171,7 +171,7 @@ export default function AdminOrders() {
     },
     onError: () => {
       // Close modal on error too
-      setEmailConfirmationModal({ isOpen: false, orderId: 0, orderNumber: "", customerName: "", newStatus: "" });
+      closeEmailConfirmationModal();
       
       toast({
         title: "Erro ao atualizar status",
@@ -205,6 +205,11 @@ export default function AdminOrders() {
   };
 
   const handleStatusChange = (orderId: number, newStatus: string) => {
+    // Close order details modal if open to prevent overlay conflicts
+    if (showOrderDialog) {
+      setShowOrderDialog(false);
+    }
+    
     // Find the order to get customer name and order number
     const order = orders.find((o: any) => o.id === orderId);
     if (order) {
@@ -223,6 +228,17 @@ export default function AdminOrders() {
       orderId: emailConfirmationModal.orderId, 
       status: emailConfirmationModal.newStatus,
       sendEmail 
+    });
+  };
+
+  // Close email confirmation modal properly
+  const closeEmailConfirmationModal = () => {
+    setEmailConfirmationModal({ 
+      isOpen: false, 
+      orderId: 0, 
+      orderNumber: "", 
+      customerName: "", 
+      newStatus: "" 
     });
   };
 
@@ -712,8 +728,15 @@ export default function AdminOrders() {
       </div>
 
       {/* Order Details Dialog */}
-      <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={showOrderDialog} onOpenChange={(open) => {
+        setShowOrderDialog(open);
+        // Clear selected order when dialog closes
+        if (!open) {
+          setSelectedOrder(null);
+          setSelectedOrderId(null);
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-[90]">
           <DialogHeader>
             <DialogTitle>Detalhes do Pedido</DialogTitle>
             <DialogDescription>
@@ -860,7 +883,7 @@ export default function AdminOrders() {
       {/* Email Confirmation Modal */}
       <EmailConfirmationModal
         isOpen={emailConfirmationModal.isOpen}
-        onClose={() => setEmailConfirmationModal({ isOpen: false, orderId: 0, orderNumber: "", customerName: "", newStatus: "" })}
+        onClose={closeEmailConfirmationModal}
         onConfirm={handleConfirmStatusChange}
         orderNumber={emailConfirmationModal.orderNumber}
         newStatus={emailConfirmationModal.newStatus}

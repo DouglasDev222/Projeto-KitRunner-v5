@@ -41,8 +41,25 @@ export function EmailConfirmationModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md" aria-describedby="email-confirmation-description">
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open && !isLoading) {
+        onClose();
+      }
+    }}>
+      <DialogContent 
+        className="sm:max-w-md z-[100]" 
+        aria-describedby="email-confirmation-description"
+        onPointerDownOutside={(e) => {
+          if (isLoading) {
+            e.preventDefault();
+          }
+        }}
+        onEscapeKeyDown={(e) => {
+          if (isLoading) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Confirmar Alteração de Status</DialogTitle>
           <DialogDescription id="email-confirmation-description">
@@ -60,7 +77,9 @@ export function EmailConfirmationModal({
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
-            onClick={() => onConfirm(false)}
+            onClick={() => {
+              onConfirm(false);
+            }}
             disabled={isLoading}
             className="w-full sm:w-auto"
           >
@@ -68,7 +87,9 @@ export function EmailConfirmationModal({
             Não, apenas mudar status
           </Button>
           <Button
-            onClick={() => onConfirm(true)}
+            onClick={() => {
+              onConfirm(true);
+            }}
             disabled={isLoading}
             className="w-full sm:w-auto"
           >
