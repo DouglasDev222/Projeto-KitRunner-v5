@@ -67,7 +67,15 @@ export default function Payment() {
     }
     
     if (!customerData || !kitInfo || !addressData) {
-      setLocation(`/events/${id}/identify`);
+      // Redirect to login if customer data is missing, or back to address if just missing kit/address data
+      if (!customerData) {
+        sessionStorage.setItem("loginReturnPath", `/events/${id}/address`);
+        setLocation("/login");
+      } else if (!kitInfo) {
+        setLocation(`/events/${id}/kits`);
+      } else {
+        setLocation(`/events/${id}/address`);
+      }
     }
   }, [id, setLocation]);
 

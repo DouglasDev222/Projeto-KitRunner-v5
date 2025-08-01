@@ -17,6 +17,7 @@ import { kitInformationSchema, kitSchema, type KitInformation } from "@shared/sc
 import { formatCPF } from "@/lib/cpf-validator";
 import { formatCurrency } from "@/lib/brazilian-formatter";
 import { calculatePricing, formatPricingBreakdown } from "@/lib/pricing-calculator";
+import { useAuth } from "@/lib/auth-context";
 
 type KitFormData = z.infer<typeof kitInformationSchema>;
 
@@ -24,6 +25,7 @@ export default function KitInformation() {
   const [, setLocation] = useLocation();
   const { id } = useParams<{ id: string }>();
   const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const { isAuthenticated, user } = useAuth();
 
   const form = useForm<KitFormData>({
     resolver: zodResolver(kitInformationSchema),
@@ -53,9 +55,34 @@ export default function KitInformation() {
   });
 
   // Get session data
-  const customer = JSON.parse(sessionStorage.getItem("customerData") || "{}");
-  const selectedAddress = JSON.parse(sessionStorage.getItem("selectedAddress") || "{}");
-  const calculatedCosts = JSON.parse(sessionStorage.getItem("calculatedCosts") || "{}");
+  const customerData = sessionStorage.getItem("customerData");
+  const addressData = sessionStorage.getItem("selectedAddress");
+  const costsData = sessionStorage.getItem("calculatedCosts");
+  
+  const customer = customerData ? JSON.parse(customerData) : (user || {});
+  const selectedAddress = addressData ? JSON.parse(addressData) : {};
+  const calculatedCosts = costsData ? JSON.parse(costsData) : {};
+
+  // Authentication and data validation
+  useEffect(() => {
+    if (!isAuthenticated && !customer?.id) {
+      // Not authenticated and no customer data
+      sessionStorage.setItem("loginReturnPath", `/events/${id}/address`);
+      setLocation("/login");
+      return;
+    }
+
+    if (!selectedAddress?.id) {
+      // No address selected, redirect to address selection
+      setLocation(`/events/${id}/address`);
+      return;
+    }
+
+    // Ensure customer data is in session for next steps
+    if (isAuthenticated && user && !customerData) {
+      sessionStorage.setItem("customerData", JSON.stringify(user));
+    }
+  }, [isAuthenticated, user, customer, selectedAddress, id, setLocation, customerData]);
 
   // Calculate costs using unified pricing logic
   const deliveryPrice = calculatedCosts.deliveryPrice || 18.50;
