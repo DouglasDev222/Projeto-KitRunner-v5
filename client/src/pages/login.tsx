@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { customerIdentificationSchema, type CustomerIdentification } from "@shared/schema";
 import { formatCPF, isValidCPF } from "@/lib/cpf-validator";
 import { apiRequest } from "@/lib/queryClient";
@@ -17,6 +17,7 @@ import { useAuth } from "@/lib/auth-context";
 export default function Login() {
   const [, setLocation] = useLocation();
   const { login, isAuthenticated } = useAuth();
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   // Handle URL redirect parameter
   useEffect(() => {
@@ -27,9 +28,9 @@ export default function Login() {
     }
   }, []);
 
-  // If already authenticated, redirect immediately
+  // If already authenticated, redirect immediately (only for page load, not after manual login)
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !hasRedirected) {
       const returnPath = sessionStorage.getItem("loginReturnPath");
       if (returnPath) {
         sessionStorage.removeItem("loginReturnPath");
@@ -37,8 +38,9 @@ export default function Login() {
       } else {
         setLocation("/profile");
       }
+      setHasRedirected(true);
     }
-  }, [isAuthenticated, setLocation]);
+  }, [isAuthenticated, setLocation, hasRedirected]);
 
   const form = useForm<CustomerIdentification>({
     resolver: zodResolver(customerIdentificationSchema),
@@ -57,17 +59,23 @@ export default function Login() {
       return response.json();
     },
     onSuccess: (customer) => {
+      // Mark that we've manually logged in to prevent double redirect
+      setHasRedirected(true);
+      
+      // Get return path before calling login
+      const returnPath = sessionStorage.getItem("loginReturnPath");
+      sessionStorage.removeItem("loginReturnPath");
+      
       login(customer);
-      // Use setTimeout to ensure state update completes before navigation
+      
+      // Navigate after a small delay to ensure state is updated
       setTimeout(() => {
-        const returnPath = sessionStorage.getItem("loginReturnPath");
         if (returnPath) {
-          sessionStorage.removeItem("loginReturnPath");
           setLocation(returnPath);
         } else {
           setLocation("/profile");
         }
-      }, 100);
+      }, 50);
     },
     onError: () => {
       form.setError("root", {
