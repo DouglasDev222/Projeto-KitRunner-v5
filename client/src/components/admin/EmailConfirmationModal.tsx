@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,25 @@ export function EmailConfirmationModal({
   customerName,
   isLoading = false,
 }: EmailConfirmationModalProps) {
+  // Fix body pointer-events issue
+  useEffect(() => {
+    const cleanup = () => {
+      // Force remove pointer-events: none from body when modal closes
+      document.body.style.pointerEvents = "";
+      // Also remove any overflow hidden that might be applied
+      document.body.style.overflow = "";
+    };
+
+    if (!isOpen) {
+      // Small delay to ensure the modal has fully closed
+      const timer = setTimeout(cleanup, 100);
+      return () => clearTimeout(timer);
+    }
+
+    // Cleanup on unmount
+    return cleanup;
+  }, [isOpen]);
+
   const getStatusLabel = (status: string) => {
     const statusMap: { [key: string]: string } = {
       confirmado: "Confirmado",

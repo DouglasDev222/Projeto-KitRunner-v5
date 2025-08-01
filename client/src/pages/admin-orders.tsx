@@ -112,6 +112,28 @@ export default function AdminOrders() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Global cleanup effect to prevent modal blocking issues
+  useEffect(() => {
+    const cleanup = () => {
+      document.body.style.pointerEvents = "";
+      document.body.style.overflow = "";
+    };
+
+    // Cleanup on component unmount
+    return cleanup;
+  }, []);
+
+  // Monitor modal states and cleanup if needed
+  useEffect(() => {
+    if (!emailConfirmationModal.isOpen && !showOrderDialog) {
+      // If no modals are open, ensure body is clean
+      setTimeout(() => {
+        document.body.style.pointerEvents = "";
+        document.body.style.overflow = "";
+      }, 50);
+    }
+  }, [emailConfirmationModal.isOpen, showOrderDialog]);
+
   // Sistema novo: AdminRouteGuard já protege - não precisa de verificação
 
   const { data: ordersData, isLoading } = useQuery({
@@ -240,6 +262,12 @@ export default function AdminOrders() {
       customerName: "", 
       newStatus: "" 
     });
+    
+    // Force cleanup of body styles that might be left behind by modal
+    setTimeout(() => {
+      document.body.style.pointerEvents = "";
+      document.body.style.overflow = "";
+    }, 100);
   };
 
   const resetFilters = () => {
