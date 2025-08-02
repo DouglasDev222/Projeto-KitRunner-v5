@@ -1899,7 +1899,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate all orders exist and get current data
       const orders = await Promise.all(
         orderIds.map(async (id: number) => {
-          const order = await storage.getFullOrderById(id);
+          const order = await storage.getOrderByIdWithDetails(id);
           if (!order) {
             throw new Error(`Pedido com ID ${id} não encontrado`);
           }
@@ -1908,7 +1908,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Check if all orders are from the same event
-      const eventIds = [...new Set(orders.map(order => order.eventId))];
+      const eventIds = Array.from(new Set(orders.map(order => order.eventId)));
       if (eventIds.length > 1) {
         return res.status(400).json({ 
           error: 'Todos os pedidos devem ser do mesmo evento',
@@ -1938,7 +1938,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             order.id, 
             newStatus, 
             'admin', 
-            req.user?.fullName || 'Admin',
+            req.user?.name || 'Admin',
             reason || `Alteração em massa via painel administrativo`,
             bulkOperationId,
             false  // Don't send individual emails, we'll handle them manually

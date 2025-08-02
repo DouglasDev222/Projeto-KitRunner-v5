@@ -111,6 +111,11 @@ export interface IStorage {
     currentPage: number;
   }>;
 
+  // Order with full details including customer, event, address, kits
+  getFullOrderById(id: number): Promise<any>;
+  getOrderByIdWithDetails(id: number): Promise<any>;
+  updateOrderStatus(orderId: number | string, status: string, changedBy?: string, changedByName?: string, reason?: string, bulkOperationId?: string, sendEmail?: boolean): Promise<Order | undefined>;
+
   // Email logs
   createEmailLog(emailData: any): Promise<any>;
   getEmailLogs(filters?: any): Promise<any[]>;
@@ -619,6 +624,11 @@ export class DatabaseStorage implements IStorage {
       ...order,
       kits: orderKits,
     };
+  }
+
+  // Alias method for compatibility
+  async getFullOrderById(id: number): Promise<any> {
+    return this.getOrderByIdWithDetails(id);
   }
 
   async addStatusHistory(orderId: number, previousStatus: string | null, newStatus: string, changedBy: string, changedByName?: string, reason?: string, bulkOperationId?: string): Promise<OrderStatusHistory> {

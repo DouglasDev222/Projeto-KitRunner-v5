@@ -468,4 +468,18 @@ Sistema: KitRunner Email Notification System
   }): Promise<any[]> {
     return this.storage.getEmailLogs(filters);
   }
+
+  /**
+   * Send order status update email (alias for sendStatusUpdateEmail)
+   */
+  async sendOrderStatusUpdate(data: StatusUpdateData, recipientEmail: string, orderId?: number, customerId?: number): Promise<boolean> {
+    return this.sendStatusUpdateEmail(data, recipientEmail, orderId, customerId);
+  }
+
+  /**
+   * Send payment confirmation email (alias for sendServiceConfirmation)
+   */
+  async sendPaymentConfirmation(data: ServiceConfirmationData, recipientEmail: string, orderId?: number, customerId?: number): Promise<boolean> {
+    return this.sendServiceConfirmation(data, recipientEmail, orderId, customerId);
+  }
 }

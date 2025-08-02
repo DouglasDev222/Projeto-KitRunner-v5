@@ -325,4 +325,42 @@ export class EmailDataMapper {
       totalAmount: order.totalCost
     };
   }
+
+  /**
+   * Map order status change data for bulk updates
+   */
+  static mapOrderStatusChange(data: {
+    orderNumber: string;
+    customerName: string;
+    customerCPF: string;
+    eventName: string;
+    eventDate: string;
+    eventLocation: string;
+    newStatus: string;
+    previousStatus: string;
+    address: DeliveryAddress;
+    kits: Array<{ name: string; cpf: string; shirtSize: string; }>;
+  }): StatusUpdateData {
+    return {
+      customerName: data.customerName,
+      customerEmail: '', // Will be set by caller
+      orderNumber: data.orderNumber,
+      eventName: data.eventName,
+      eventDate: data.eventDate,
+      eventLocation: data.eventLocation,
+      kits: data.kits.map(kit => ({
+        name: kit.name,
+        cpf: kit.cpf,
+        shirtSize: kit.shirtSize as "PP" | "P" | "M" | "G" | "GG" | "XG" | "XXG",
+        category: 'Kit'
+      })),
+      address: data.address,
+      newStatus: data.newStatus as OrderStatus,
+      previousStatus: data.previousStatus as OrderStatus,
+      statusDescription: this.getStatusDescription(data.newStatus),
+      nextSteps: this.getNextSteps(data.newStatus),
+      estimatedTime: this.getEstimatedTime(data.newStatus, data.eventDate),
+      trackingCode: undefined // Not used for status updates
+    };
+  }
 }
