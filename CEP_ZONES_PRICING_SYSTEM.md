@@ -246,7 +246,42 @@ function calculateDeliveryCostForEvent(event: Event, zipCode: string) {
 1. **Seleção de Endereço**: Cliente escolhe/cadastra endereço
 2. **Identificação Automática**: Sistema identifica zona baseada no CEP
 3. **Exibição Clara**: Mostra "Entrega para João Pessoa Z1: R$ 20,00"
-4. **Feedback Claro**: Se CEP não coberto, explica e sugere contato
+4. **Tratamento CEP Não Reconhecido**: 
+   - Erro amigável após seleção de endereço
+   - Mensagem: "CEP não reconhecido ou não atendemos essa área ainda"
+   - Link direto para WhatsApp: (83) 8130-2961
+   - URL: `https://wa.me/5583981302961?text=Olá! Meu CEP ${cep} não foi reconhecido no sistema. Vocês atendem essa região?`
+
+#### Componente de Erro para CEP Não Atendido
+```tsx
+interface CepNotCoveredAlertProps {
+  zipCode: string;
+  eventName: string;
+}
+
+function CepNotCoveredAlert({ zipCode, eventName }: CepNotCoveredAlertProps) {
+  const whatsappMessage = `Olá! Meu CEP ${zipCode} não foi reconhecido no sistema para o evento "${eventName}". Vocês atendem essa região?`;
+  const whatsappUrl = `https://wa.me/5583981302961?text=${encodeURIComponent(whatsappMessage)}`;
+  
+  return (
+    <Alert className="border-orange-200 bg-orange-50">
+      <AlertTriangle className="h-4 w-4 text-orange-600" />
+      <AlertTitle className="text-orange-800">CEP não reconhecido</AlertTitle>
+      <AlertDescription className="text-orange-700">
+        <p className="mb-3">
+          Desculpe, o CEP <strong>{zipCode}</strong> não foi reconhecido ou ainda não atendemos essa área.
+        </p>
+        <Button asChild variant="outline" className="border-orange-300 text-orange-700 hover:bg-orange-100">
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+            <MessageCircle className="w-4 h-4 mr-2" />
+            Falar no WhatsApp (83) 8130-2961
+          </a>
+        </Button>
+      </AlertDescription>
+    </Alert>
+  );
+}
+```
 
 ---
 
@@ -366,6 +401,7 @@ function calculateDeliveryCostForEvent(event: Event, zipCode: string) {
 - **Faixas inclusivas** (start <= CEP <= end)
 - **Zonas podem ser desabilitadas** mas não deletadas (auditoria)
 - **Preços por zona independentes** de outros fatores
+- **Erro amigável para CEP não coberto** com link direto para WhatsApp de suporte
 
 ### Extensões Futuras:
 - **Horários específicos** por zona (delivery noturno)

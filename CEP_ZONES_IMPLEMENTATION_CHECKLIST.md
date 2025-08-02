@@ -155,12 +155,14 @@
   - [ ] Verificar zona automaticamente
   - [ ] Exibir "Entrega para [Nome da Zona]: R$ XX,XX"
   - [ ] Feedback claro se CEP não coberto
+  - [ ] Erro amigável para CEP não atendido com link WhatsApp
 - [ ] **Checkout**: Confirmar zona e preço antes pagamento
 
 ### 3. Componentes de UI Cliente
 - [ ] `ZonePriceDisplay` - Exibição da zona e preço
-- [ ] `CepNotCoveredAlert` - Alerta para CEP não coberto
+- [ ] `CepNotCoveredAlert` - Alerta para CEP não coberto com link WhatsApp (83) 8130-2961
 - [ ] `DeliveryZoneInfo` - Info sobre zona selecionada
+- [ ] Link WhatsApp com mensagem personalizada: "Olá! Meu CEP [CEP] não foi reconhecido no sistema para o evento [EVENTO]. Vocês atendem essa região?"
 
 ---
 
@@ -185,6 +187,7 @@
 - [ ] CEP deve ter exatamente 8 dígitos
 - [ ] Preços devem ser positivos
 - [ ] Nomes de zona devem ser únicos
+- [ ] CEPs não reconhecidos mostram erro amigável com contato WhatsApp
 
 ---
 
