@@ -16,6 +16,8 @@ Preferred communication style: Simple, everyday language.
 - **Enhanced Next Steps**: Updated service confirmation emails with improved timeline and emojis
 - **Contact Integration**: Added WhatsApp button (83 98130-2961) to all email footers
 - **Authentication Flow Fix**: Corrected payment page redirect from old `/identify` route to proper login flow with smart data validation
+- **Bulk Order Status Updates**: Fixed bulk status change functionality with proper email integration, removed duplicate email sending issue
+- **Email System Optimization**: Configured specific email templates for different order statuses (confirmado, em_transito, entregue, aguardando_pagamento)
 
 ## System Architecture
 
@@ -38,7 +40,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Key Components & Features
 - **Database Schema**: Events, Customers, Orders, and Kits with detailed attributes.
-- **Core Features**: Event management, user authentication (with CPF validation for Brazil), profile and address management, dynamic cost calculation (distance-based pricing), kit configuration, multiple payment methods (credit, debit, PIX), order tracking, and simplified ordering for logged-in users.
+- **Core Features**: Event management, user authentication (with CPF validation for Brazil), profile and address management, dynamic cost calculation (distance-based pricing, fixed pricing, and planned CEP zones pricing), kit configuration, multiple payment methods (credit, debit, PIX), order tracking, bulk order status management, and simplified ordering for logged-in users.
 - **Monorepo Structure**: Shared types and schemas between client and server.
 - **Mobile-First Approach**: Tailored for Brazilian mobile commerce patterns.
 - **Session-Based Flow**: Multi-step order process with session storage.
@@ -71,3 +73,19 @@ Preferred communication style: Simple, everyday language.
 - **Build Tools**: Vite, esbuild
 - **TypeScript**: Full TypeScript support
 - **Development**: tsx
+
+## 🚀 Planned Features (Next Implementation)
+
+### CEP Zones Pricing System
+A comprehensive postal code-based pricing system is planned for implementation. This will add a third pricing option alongside the current distance-based and fixed pricing models.
+
+**Key Features:**
+- **Admin Configuration**: Interface to create and manage delivery zones by CEP ranges (e.g., "João Pessoa Z1: 58000-000 to 58099-999 = R$ 20.00")
+- **Event Integration**: Events can choose between three pricing types: distance calculation, fixed price, or CEP zones
+- **Customer Experience**: Automatic zone identification and transparent pricing display
+- **Business Logic**: Non-overlapping CEP ranges with individual pricing per zone
+
+**Documentation:**
+- Complete implementation plan: `CEP_ZONES_PRICING_SYSTEM.md`
+- Detailed checklist: `CEP_ZONES_IMPLEMENTATION_CHECKLIST.md`
+- Estimated implementation: 4-5 days across backend, admin interface, and customer experience
