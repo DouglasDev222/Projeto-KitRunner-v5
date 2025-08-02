@@ -40,6 +40,7 @@ export interface IStorage {
   getCustomerByCredentials(cpf: string, birthDate: string): Promise<Customer | undefined>;
   getCustomerByCPF(cpf: string): Promise<Customer | undefined>;
   getCustomerById(id: number): Promise<Customer | undefined>;
+  getCustomer(id: number): Promise<Customer | undefined>;
   createCustomer(customer: InsertCustomer): Promise<Customer>;
 
   // Addresses
@@ -79,6 +80,7 @@ export interface IStorage {
   getCepZoneById(id: number): Promise<CepZone | undefined>;
   createCepZone(zone: InsertCepZone): Promise<CepZone>;
   updateCepZone(id: number, zone: Partial<InsertCepZone>): Promise<CepZone | undefined>;
+  checkCepZoneOverlap(cepStart: string, cepEnd: string, excludeId?: number): Promise<boolean>;
   
   // Price calculation
   calculateDeliveryPrice(fromZipCode: string, toZipCode: string): Promise<number>;
@@ -123,6 +125,7 @@ export interface IStorage {
   // Order with full details including customer, event, address, kits
   getFullOrderById(id: number): Promise<any>;
   getOrderByIdWithDetails(id: number): Promise<any>;
+  getOrderWithFullDetails(id: number): Promise<any>;
   updateOrderStatus(orderId: number | string, status: string, changedBy?: string, changedByName?: string, reason?: string, bulkOperationId?: string, sendEmail?: boolean): Promise<Order | undefined>;
 
   // Email logs
@@ -224,6 +227,10 @@ export class DatabaseStorage implements IStorage {
       .from(customers)
       .where(eq(customers.id, id));
     return customer || undefined;
+  }
+
+  async getCustomer(id: number): Promise<Customer | undefined> {
+    return this.getCustomerById(id);
   }
 
   async createCustomer(insertCustomer: InsertCustomer): Promise<Customer> {
@@ -1265,6 +1272,81 @@ export class DatabaseStorage implements IStorage {
       .where(eq(cepZones.id, id))
       .returning();
     return updatedZone;
+  }
+
+  async checkCepZoneOverlap(cepStart: string, cepEnd: string, excludeId?: number): Promise<boolean> {
+    // This is a simplified implementation - you might want to implement proper CEP range overlap checking
+    const allZones = await this.getCepZones();
+    
+    for (const zone of allZones) {
+      if (excludeId && zone.id === excludeId) continue;
+      
+      try {
+        const ranges = JSON.parse(zone.cepRanges);
+        for (const range of ranges) {
+          const rangeStart = parseInt(range.start);
+          const rangeEnd = parseInt(range.end);
+          const newStart = parseInt(cepStart);
+          const newEnd = parseInt(cepEnd);
+          
+          // Check for overlap
+          if ((newStart >= rangeStart && newStart <= rangeEnd) ||
+              (newEnd >= rangeStart && newEnd <= rangeEnd) ||
+              (newStart <= rangeStart && newEnd >= rangeEnd)) {
+            return true;
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing cep ranges:', error);
+      }
+    }
+    
+    return false;
+  }
+
+  async getOrderWithFullDetails(id: number): Promise<any> {
+    try {
+      const order = await db
+        .select({
+          id: orders.id,
+          orderNumber: orders.orderNumber,
+          eventId: orders.eventId,
+          customerId: orders.customerId,
+          addressId: orders.addressId,
+          kitQuantity: orders.kitQuantity,
+          deliveryCost: orders.deliveryCost,
+          extraKitsCost: orders.extraKitsCost,
+          donationCost: orders.donationCost,
+          discountAmount: orders.discountAmount,
+          couponCode: orders.couponCode,
+          totalCost: orders.totalCost,
+          paymentMethod: orders.paymentMethod,
+          status: orders.status,
+          donationAmount: orders.donationAmount,
+          idempotencyKey: orders.idempotencyKey,
+          createdAt: orders.createdAt,
+          customer: customers,
+          event: events,
+          address: addresses
+        })
+        .from(orders)
+        .leftJoin(customers, eq(orders.customerId, customers.id))
+        .leftJoin(events, eq(orders.eventId, events.id))
+        .leftJoin(addresses, eq(orders.addressId, addresses.id))
+        .where(eq(orders.id, id));
+
+      if (!order[0]) return undefined;
+
+      const kits = await this.getKitsByOrderId(id);
+      
+      return {
+        ...order[0],
+        kits
+      };
+    } catch (error) {
+      console.error('Error getting order with full details:', error);
+      return undefined;
+    }
   }
 }
 

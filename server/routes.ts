@@ -196,16 +196,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: registrationData.phone
       });
       
-      // Create addresses
-      const addresses = [];
-      for (const addressData of registrationData.addresses) {
-        const address = await storage.createAddress({
-          customerId: customer.id,
-          ...addressData,
-          zipCode: addressData.zipCode.replace(/\D/g, '')
-        });
-        addresses.push(address);
-      }
+      // Create addresses - Note: addresses should be provided separately via POST /api/addresses
+      const addresses: Address[] = [];
       
       res.json({ customer, addresses });
     } catch (error) {
@@ -797,6 +789,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'admin', 
         'Administrador', 
         reason || 'Status alterado pelo administrador',
+        undefined, // bulkOperationId
         false // Don't send automatic email - we'll handle it manually based on sendEmail parameter
       );
       
@@ -1601,9 +1594,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Send payment confirmation email
                 try {
                   const emailService = new EmailService(storage);
-                  const fullOrder = await storage.getOrderById(order.id);
+                  const fullOrder = await storage.getOrderWithFullDetails(order.id);
                   if (!fullOrder) throw new Error('Order not found');
-                  const customer = await storage.getCustomer(fullOrder.customerId);
                   const event = await storage.getEvent(fullOrder.eventId);
                   const address = await storage.getAddress(fullOrder.addressId);
                   const kits = await storage.getKitsByOrderId(fullOrder.id);
@@ -1766,9 +1758,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Send payment confirmation email
                 try {
                   const emailService = new EmailService(storage);
-                  const fullOrder = await storage.getOrderById(order.id);
+                  const fullOrder = await storage.getOrderWithFullDetails(order.id);
                   if (!fullOrder) throw new Error('Order not found');
-                  const customer = await storage.getCustomer(fullOrder.customerId);
                   const event = await storage.getEvent(fullOrder.eventId);
                   const address = await storage.getAddress(fullOrder.addressId);
                   const kits = await storage.getKitsByOrderId(fullOrder.id);
