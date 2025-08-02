@@ -43,7 +43,8 @@ export default function CepZonesAdmin() {
 
   // Fetch CEP zones
   const { data: zones, isLoading } = useQuery<{ success: boolean; zones: CepZone[] }>({
-    queryKey: ['/api/admin/cep-zones'],
+    queryKey: ['cep-zones'],
+    queryFn: () => apiRequest('/api/admin/cep-zones', 'GET'),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -52,7 +53,7 @@ export default function CepZonesAdmin() {
     mutationFn: (data: CreateCepZoneData) => 
       apiRequest('/api/admin/cep-zones', 'POST', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/cep-zones'] });
+      queryClient.invalidateQueries({ queryKey: ['cep-zones'] });
       setIsCreating(false);
       setFormData({ name: '', description: '', rangesText: '', price: '' });
       toast({
@@ -74,7 +75,7 @@ export default function CepZonesAdmin() {
     mutationFn: ({ id, data }: { id: number; data: Partial<CreateCepZoneData> }) =>
       apiRequest(`/api/admin/cep-zones/${id}`, 'PUT', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/cep-zones'] });
+      queryClient.invalidateQueries({ queryKey: ['cep-zones'] });
       setEditingId(null);
       toast({
         title: "Zona atualizada",
@@ -95,7 +96,7 @@ export default function CepZonesAdmin() {
     mutationFn: (id: number) =>
       apiRequest(`/api/admin/cep-zones/${id}`, 'DELETE'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/cep-zones'] });
+      queryClient.invalidateQueries({ queryKey: ['cep-zones'] });
       toast({
         title: "Zona removida",
         description: "A zona CEP foi removida do sistema.",
@@ -147,6 +148,10 @@ export default function CepZonesAdmin() {
 
   const formatCep = (cep: string) => {
     return cep.replace(/(\d{5})(\d{3})/, '$1-$2');
+  };
+
+  const formatRangeForDisplay = (start: string, end: string) => {
+    return `${formatCep(start)} - ${formatCep(end)}`;
   };
 
   if (isLoading) {
