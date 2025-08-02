@@ -10,6 +10,7 @@ export const events = pgTable("events", {
   city: text("city").notNull(),
   state: text("state").notNull(),
   pickupZipCode: text("pickup_zip_code").notNull(), // CEP de retirada
+  pricingType: varchar("pricing_type", { length: 20 }).notNull().default("distance"), // 'distance', 'fixed', 'cep_zones'
   fixedPrice: decimal("fixed_price", { precision: 10, scale: 2 }), // Preço fixo opcional
   extraKitPrice: decimal("extra_kit_price", { precision: 10, scale: 2 }).default("8.00"), // Preço por kit extra
   donationRequired: boolean("donation_required").default(false), // Se requer doação
@@ -124,6 +125,19 @@ export const adminSessions = pgTable("admin_sessions", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// CEP Zones table for postal code-based pricing
+export const cepZones = pgTable("cep_zones", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(), // Ex: "João Pessoa Z1"
+  description: text("description"), // Optional description
+  cepStart: varchar("cep_start", { length: 8 }).notNull(), // Ex: "58000000"
+  cepEnd: varchar("cep_end", { length: 8 }).notNull(), // Ex: "58299999"
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(), // Ex: 20.00
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const adminAuditLog = pgTable("admin_audit_log", {
   id: serial("id").primaryKey(),
   adminUserId: integer("admin_user_id").references(() => adminUsers.id),
@@ -173,6 +187,8 @@ export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({ id: t
 export const insertAdminSessionSchema = createInsertSchema(adminSessions).omit({ id: true, createdAt: true });
 export const insertAdminAuditLogSchema = createInsertSchema(adminAuditLog).omit({ id: true, createdAt: true });
 export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({ id: true, createdAt: true });
+export const insertCepZoneSchema = createInsertSchema(cepZones).omit({ id: true, createdAt: true, updatedAt: true });
+
 export const insertEmailLogSchema = createInsertSchema(emailLogs).omit({ id: true, sentAt: true });
 
 // Customer identification validation
@@ -298,6 +314,10 @@ export type AdminEventCreation = z.infer<typeof adminEventCreationSchema>;
 // Email Log types
 export type EmailLog = typeof emailLogs.$inferSelect;
 export type InsertEmailLog = z.infer<typeof insertEmailLogSchema>;
+
+// CEP Zone types
+export type CepZone = typeof cepZones.$inferSelect;
+export type InsertCepZone = z.infer<typeof insertCepZoneSchema>;
 
 // Auth types
 export interface AuthResult {

@@ -14,6 +14,8 @@ import {
   OrderStatusHistory,
   InsertOrderStatusHistory,
   CustomerIdentification,
+  CepZone,
+  InsertCepZone,
   events,
   customers,
   addresses,
@@ -22,6 +24,7 @@ import {
   coupons,
   orderStatusHistory,
   emailLogs,
+  cepZones,
   insertEmailLogSchema
 } from "@shared/schema";
 import { db } from "./db";
@@ -119,6 +122,15 @@ export interface IStorage {
   // Email logs
   createEmailLog(emailData: any): Promise<any>;
   getEmailLogs(filters?: any): Promise<any[]>;
+  
+  // CEP Zones
+  createCepZone(data: InsertCepZone): Promise<CepZone>;
+  getCepZones(activeOnly?: boolean): Promise<CepZone[]>;
+  getCepZoneById(id: number): Promise<CepZone | undefined>;
+  updateCepZone(id: number, data: Partial<CepZone>): Promise<CepZone | undefined>;
+  deleteCepZone(id: number): Promise<boolean>;
+  findCepZoneByZipCode(zipCode: string): Promise<CepZone | undefined>;
+  checkCepZoneOverlap(cepStart: string, cepEnd: string, excludeId?: number): Promise<CepZone | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1169,6 +1181,99 @@ export class DatabaseStorage implements IStorage {
       .where(eq(emailLogs.id, id))
       .returning();
     return emailLog;
+  }
+
+  // CEP Zones methods
+  async createCepZone(data: InsertCepZone): Promise<CepZone> {
+    const [cepZone] = await db
+      .insert(cepZones)
+      .values(data)
+      .returning();
+    return cepZone;
+  }
+
+  async getCepZones(activeOnly: boolean = false): Promise<CepZone[]> {
+    const query = db.select().from(cepZones);
+    
+    if (activeOnly) {
+      query.where(eq(cepZones.active, true));
+    }
+    
+    return await query.orderBy(asc(cepZones.name));
+  }
+
+  async getCepZoneById(id: number): Promise<CepZone | undefined> {
+    const [cepZone] = await db
+      .select()
+      .from(cepZones)
+      .where(eq(cepZones.id, id));
+    return cepZone;
+  }
+
+  async updateCepZone(id: number, data: Partial<CepZone>): Promise<CepZone | undefined> {
+    const [cepZone] = await db
+      .update(cepZones)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(cepZones.id, id))
+      .returning();
+    return cepZone;
+  }
+
+  async deleteCepZone(id: number): Promise<boolean> {
+    // Soft delete - just set active to false
+    const [cepZone] = await db
+      .update(cepZones)
+      .set({ active: false, updatedAt: new Date() })
+      .where(eq(cepZones.id, id))
+      .returning();
+    return !!cepZone;
+  }
+
+  async findCepZoneByZipCode(zipCode: string): Promise<CepZone | undefined> {
+    // Clean the zip code
+    const cleanZip = zipCode.replace(/\D/g, '').padStart(8, '0');
+    
+    // Find active zone where cepStart <= zipCode <= cepEnd
+    const [cepZone] = await db
+      .select()
+      .from(cepZones)
+      .where(
+        and(
+          eq(cepZones.active, true),
+          sql`${cepZones.cepStart} <= ${cleanZip}`,
+          sql`${cepZones.cepEnd} >= ${cleanZip}`
+        )
+      )
+      .limit(1);
+    
+    return cepZone;
+  }
+
+  async checkCepZoneOverlap(cepStart: string, cepEnd: string, excludeId?: number): Promise<CepZone | undefined> {
+    // Clean CEP inputs
+    const startCep = cepStart.replace(/\D/g, '').padStart(8, '0');
+    const endCep = cepEnd.replace(/\D/g, '').padStart(8, '0');
+    
+    // Build where condition
+    let whereCondition = and(
+      eq(cepZones.active, true),
+      // Check for overlap: start <= zoneEnd && end >= zoneStart
+      sql`${startCep} <= ${cepZones.cepEnd}`,
+      sql`${endCep} >= ${cepZones.cepStart}`
+    );
+    
+    // Exclude specific ID if provided
+    if (excludeId) {
+      whereCondition = and(whereCondition, ne(cepZones.id, excludeId));
+    }
+    
+    const [overlappingZone] = await db
+      .select()
+      .from(cepZones)
+      .where(whereCondition)
+      .limit(1);
+    
+    return overlappingZone;
   }
 }
 

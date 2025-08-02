@@ -31,6 +31,7 @@ import { AdminLogin } from "@/components/admin-auth/admin-login";
 import AdminUsers from "@/pages/admin-users";
 import { AdminEmailLogs } from "@/pages/admin-email-logs";
 import { AdminEmailTest } from "@/pages/admin-email-test";
+import AdminCepZones from "@/pages/admin-cep-zones";
 
 function Router() {
   return (
@@ -122,6 +123,13 @@ function Router() {
         {() => (
           <AdminRouteGuard>
             <AdminEmailTest />
+          </AdminRouteGuard>
+        )}
+      </Route>
+      <Route path="/admin/cep-zones" >
+        {() => (
+          <AdminRouteGuard>
+            <AdminCepZones />
           </AdminRouteGuard>
         )}
       </Route>

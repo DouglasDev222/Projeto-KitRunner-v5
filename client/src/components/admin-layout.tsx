@@ -13,7 +13,8 @@ import {
   BarChart3,
   LogOut,
   Settings,
-  Shield
+  Shield,
+  MapPin
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -30,6 +31,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { icon: Calendar, label: "Eventos", href: "/admin/events" },
     { icon: Users, label: "Clientes", href: "/admin/customers" },
     { icon: Package, label: "Pedidos", href: "/admin/orders" },
+    { icon: MapPin, label: "Zonas CEP", href: "/admin/cep-zones" },
     { icon: BarChart3, label: "Logs de Email", href: "/admin/email-logs" },
     { icon: Shield, label: "Teste Email", href: "/admin/email-test" },
     { icon: BarChart3, label: "Relatórios", href: "/admin/reports" },

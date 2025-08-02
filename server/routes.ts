@@ -4,7 +4,7 @@ import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
-import { customerIdentificationSchema, customerRegistrationSchema, orderCreationSchema, adminEventCreationSchema } from "@shared/schema";
+import { customerIdentificationSchema, customerRegistrationSchema, orderCreationSchema, adminEventCreationSchema, insertCepZoneSchema } from "@shared/schema";
 import { z } from "zod";
 import { calculateDeliveryCost } from "./distance-calculator";
 import { MercadoPagoService, getPublicKey } from "./mercadopago-service";
@@ -2115,6 +2115,177 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false,
         error: 'Internal server error: ' + (error instanceof Error ? error.message : String(error))
       });
+    }
+  });
+
+  // CEP Zones API Routes
+  
+  // Get all CEP zones
+  app.get("/api/admin/cep-zones", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { activeOnly } = req.query;
+      const zones = await storage.getCepZones(activeOnly === 'true');
+      res.json({ success: true, zones });
+    } catch (error: any) {
+      console.error("Error fetching CEP zones:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Create new CEP zone
+  app.post("/api/admin/cep-zones", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { name, description, cepStart, cepEnd, price } = req.body;
+      
+      // Validate required fields
+      if (!name || !cepStart || !cepEnd || !price) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Nome, CEP inicial, CEP final e preço são obrigatórios" 
+        });
+      }
+
+      // Check for overlapping zones
+      const overlappingZone = await storage.checkCepZoneOverlap(cepStart, cepEnd);
+      if (overlappingZone) {
+        return res.status(400).json({ 
+          success: false, 
+          error: `CEP range sobrepõe com zona existente: ${overlappingZone.name}` 
+        });
+      }
+
+      const zone = await storage.createCepZone({
+        name,
+        description: description || null,
+        cepStart: cepStart.replace(/\D/g, '').padStart(8, '0'),
+        cepEnd: cepEnd.replace(/\D/g, '').padStart(8, '0'),
+        price: price.toString(),
+        active: true
+      });
+
+      res.json({ success: true, zone });
+    } catch (error: any) {
+      console.error("Error creating CEP zone:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Update CEP zone
+  app.put("/api/admin/cep-zones/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { name, description, cepStart, cepEnd, price, active } = req.body;
+      
+      // If CEP range is being updated, check for overlaps
+      if (cepStart && cepEnd) {
+        const overlappingZone = await storage.checkCepZoneOverlap(cepStart, cepEnd, id);
+        if (overlappingZone) {
+          return res.status(400).json({ 
+            success: false, 
+            error: `CEP range sobrepõe com zona existente: ${overlappingZone.name}` 
+          });
+        }
+      }
+
+      const updateData: any = {};
+      if (name) updateData.name = name;
+      if (description !== undefined) updateData.description = description;
+      if (cepStart) updateData.cepStart = cepStart.replace(/\D/g, '').padStart(8, '0');
+      if (cepEnd) updateData.cepEnd = cepEnd.replace(/\D/g, '').padStart(8, '0');
+      if (price) updateData.price = price.toString();
+      if (active !== undefined) updateData.active = active;
+
+      const zone = await storage.updateCepZone(id, updateData);
+      
+      if (!zone) {
+        return res.status(404).json({ success: false, error: "Zona CEP não encontrada" });
+      }
+
+      res.json({ success: true, zone });
+    } catch (error: any) {
+      console.error("Error updating CEP zone:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Delete CEP zone (soft delete)
+  app.delete("/api/admin/cep-zones/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteCepZone(id);
+      
+      if (!success) {
+        return res.status(404).json({ success: false, error: "Zona CEP não encontrada" });
+      }
+
+      res.json({ success: true, message: "Zona CEP desativada com sucesso" });
+    } catch (error: any) {
+      console.error("Error deleting CEP zone:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Check CEP zone for a specific ZIP code
+  app.get("/api/cep-zones/check/:zipCode", generalRateLimit, async (req, res) => {
+    try {
+      const { zipCode } = req.params;
+      const { eventName } = req.query;
+      
+      // Get all active zones for calculation  
+      const zones = await storage.getCepZones(true);
+      
+      // Inline CEP zone calculation logic
+      const cleanZip = zipCode.replace(/\D/g, '').padStart(8, '0');
+      let foundZone = null;
+      
+      for (const zone of zones) {
+        const zoneStart = zone.cepStart.replace(/\D/g, '').padStart(8, '0');
+        const zoneEnd = zone.cepEnd.replace(/\D/g, '').padStart(8, '0');
+        
+        if (cleanZip >= zoneStart && cleanZip <= zoneEnd) {
+          foundZone = zone;
+          break;
+        }
+      }
+      
+      const calculation = foundZone 
+        ? {
+            zoneName: foundZone.name,
+            zoneId: foundZone.id,
+            deliveryCost: Number(foundZone.price),
+            found: true,
+            description: foundZone.description || undefined
+          }
+        : {
+            zoneName: '',
+            zoneId: 0,
+            deliveryCost: 0,
+            found: false
+          };
+      
+      if (!calculation.found) {
+        // Generate WhatsApp URL for unsupported CEP
+        const baseUrl = 'https://wa.me/5583981302961';
+        const message = eventName 
+          ? `Olá! Meu CEP ${zipCode} não foi reconhecido no sistema para o evento "${eventName}". Vocês atendem essa região?`
+          : `Olá! Meu CEP ${zipCode} não foi reconhecido no sistema. Vocês atendem essa região?`;
+        const whatsappUrl = `${baseUrl}?text=${encodeURIComponent(message)}`;
+        return res.json({ 
+          success: false, 
+          found: false,
+          whatsappUrl,
+          message: "CEP não atendido. Entre em contato via WhatsApp." 
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        found: true,
+        zone: calculation 
+      });
+    } catch (error: any) {
+      console.error("Error checking CEP zone:", error);
+      res.status(500).json({ success: false, error: error.message });
     }
   });
 
