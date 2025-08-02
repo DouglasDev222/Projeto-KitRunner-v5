@@ -35,20 +35,32 @@ Aplica preço da zona → Exibe nome da zona + valor
 
 ## 🗄️ Estrutura de Dados
 
-### Nova Tabela: `cep_zones`
+### Nova Tabela: `cep_zones` - VERSÃO ATUALIZADA
 ```sql
 CREATE TABLE cep_zones (
   id SERIAL PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,              -- Ex: "João Pessoa Z1", "Bayeux Centro"
+  name VARCHAR(100) NOT NULL,              -- Ex: "João Pessoa Z2", "Bayeux Centro"
   description TEXT,                        -- Descrição opcional da zona
-  cep_start VARCHAR(8) NOT NULL,           -- Ex: "58000000"
-  cep_end VARCHAR(8) NOT NULL,             -- Ex: "58299999"
+  cep_ranges TEXT NOT NULL,                -- JSON array: [{"start":"58083000","end":"58083500"},{"start":"58081400","end":"58082815"}]
   price DECIMAL(10,2) NOT NULL,            -- Ex: 20.00
   active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
 ```
+
+### 🔥 SOLUÇÃO PARA MÚLTIPLAS FAIXAS
+**Problema Identificado**: Uma zona como "João Pessoa Z2" precisa cobrir múltiplas faixas descontínuas:
+```
+58083000...58083500, 58081400...58082815, 58084000...58084740, etc.
+```
+
+**Solução Implementada**:
+- **Campo `cep_ranges`**: Armazena JSON array com múltiplas faixas
+- **Interface Intuitiva**: Campo de texto que aceita entrada simples com quebras de linha
+- **Formato de Entrada**: `58083000...58083500` (uma faixa por linha)
+- **Validação Automática**: Verifica sobreposições entre todas as faixas
+- **Busca Otimizada**: Algoritmo que testa CEP contra todas as faixas da zona
 
 ### Modificação Tabela: `events`
 ```sql
@@ -58,9 +70,12 @@ ALTER TABLE events ADD COLUMN pricing_type VARCHAR(20) DEFAULT 'distance';
 
 ### Índices para Performance:
 ```sql
-CREATE INDEX idx_cep_zones_range ON cep_zones (cep_start, cep_end);
+-- Índice para busca ativa de zonas
 CREATE INDEX idx_cep_zones_active ON cep_zones (active);
+-- Índice para tipos de precificação de eventos
 CREATE INDEX idx_events_pricing_type ON events (pricing_type);
+-- Índice GIN para busca eficiente em JSON (PostgreSQL 9.4+)
+CREATE INDEX idx_cep_zones_ranges_gin ON cep_zones USING gin (cep_ranges);
 ```
 
 ---

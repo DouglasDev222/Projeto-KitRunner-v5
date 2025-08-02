@@ -73,6 +73,12 @@ export interface IStorage {
   // Coupons
   getCouponByCode(code: string): Promise<Coupon | undefined>;
   createCoupon(coupon: InsertCoupon): Promise<Coupon>;
+
+  // CEP Zones
+  getCepZones(activeOnly?: boolean): Promise<CepZone[]>;
+  getCepZoneById(id: number): Promise<CepZone | undefined>;
+  createCepZone(zone: InsertCepZone): Promise<CepZone>;
+  updateCepZone(id: number, zone: Partial<InsertCepZone>): Promise<CepZone | undefined>;
   
   // Price calculation
   calculateDeliveryPrice(fromZipCode: string, toZipCode: string): Promise<number>;
@@ -123,14 +129,11 @@ export interface IStorage {
   createEmailLog(emailData: any): Promise<any>;
   getEmailLogs(filters?: any): Promise<any[]>;
   
-  // CEP Zones
-  createCepZone(data: InsertCepZone): Promise<CepZone>;
+  // CEP Zones  
   getCepZones(activeOnly?: boolean): Promise<CepZone[]>;
   getCepZoneById(id: number): Promise<CepZone | undefined>;
-  updateCepZone(id: number, data: Partial<CepZone>): Promise<CepZone | undefined>;
-  deleteCepZone(id: number): Promise<boolean>;
-  findCepZoneByZipCode(zipCode: string): Promise<CepZone | undefined>;
-  checkCepZoneOverlap(cepStart: string, cepEnd: string, excludeId?: number): Promise<CepZone | undefined>;
+  createCepZone(zone: InsertCepZone): Promise<CepZone>;
+  updateCepZone(id: number, zone: Partial<InsertCepZone>): Promise<CepZone | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -776,8 +779,7 @@ export class DatabaseStorage implements IStorage {
       const [order] = await db
         .update(orders)
         .set({ 
-          status,
-          bulkOperationId: bulkOperationId || null
+          status
         })
         .where(eq(orders.id, targetOrderId))
         .returning();
@@ -1229,51 +1231,40 @@ export class DatabaseStorage implements IStorage {
     return !!cepZone;
   }
 
-  async findCepZoneByZipCode(zipCode: string): Promise<CepZone | undefined> {
-    // Clean the zip code
-    const cleanZip = zipCode.replace(/\D/g, '').padStart(8, '0');
+  // CEP Zone methods using new JSON ranges structure
+  async getCepZones(activeOnly = false): Promise<CepZone[]> {
+    let query = db.select().from(cepZones);
     
-    // Find active zone where cepStart <= zipCode <= cepEnd
+    if (activeOnly) {
+      query = query.where(eq(cepZones.active, true));
+    }
+    
+    return await query.orderBy(asc(cepZones.name));
+  }
+
+  async getCepZoneById(id: number): Promise<CepZone | undefined> {
     const [cepZone] = await db
       .select()
       .from(cepZones)
-      .where(
-        and(
-          eq(cepZones.active, true),
-          sql`${cepZones.cepStart} <= ${cleanZip}`,
-          sql`${cepZones.cepEnd} >= ${cleanZip}`
-        )
-      )
-      .limit(1);
-    
+      .where(eq(cepZones.id, id));
     return cepZone;
   }
 
-  async checkCepZoneOverlap(cepStart: string, cepEnd: string, excludeId?: number): Promise<CepZone | undefined> {
-    // Clean CEP inputs
-    const startCep = cepStart.replace(/\D/g, '').padStart(8, '0');
-    const endCep = cepEnd.replace(/\D/g, '').padStart(8, '0');
-    
-    // Build where condition
-    let whereCondition = and(
-      eq(cepZones.active, true),
-      // Check for overlap: start <= zoneEnd && end >= zoneStart
-      sql`${startCep} <= ${cepZones.cepEnd}`,
-      sql`${endCep} >= ${cepZones.cepStart}`
-    );
-    
-    // Exclude specific ID if provided
-    if (excludeId) {
-      whereCondition = and(whereCondition, ne(cepZones.id, excludeId));
-    }
-    
-    const [overlappingZone] = await db
-      .select()
-      .from(cepZones)
-      .where(whereCondition)
-      .limit(1);
-    
-    return overlappingZone;
+  async createCepZone(zone: InsertCepZone): Promise<CepZone> {
+    const [newZone] = await db
+      .insert(cepZones)
+      .values(zone)
+      .returning();
+    return newZone;
+  }
+
+  async updateCepZone(id: number, zone: Partial<InsertCepZone>): Promise<CepZone | undefined> {
+    const [updatedZone] = await db
+      .update(cepZones)
+      .set({ ...zone, updatedAt: new Date() })
+      .where(eq(cepZones.id, id))
+      .returning();
+    return updatedZone;
   }
 }
 
@@ -1288,6 +1279,7 @@ class MockStorage implements IStorage {
       city: "São Paulo",
       state: "SP",
       pickupZipCode: "04094050",
+      pricingType: "distance",
       fixedPrice: null,
       extraKitPrice: "8.00",
       donationRequired: false,
@@ -1696,6 +1688,29 @@ class MockStorage implements IStorage {
       console.error('Error getting email logs:', error);
       return [];
     }
+  }
+
+  // CEP Zones implementation for MockStorage
+  async getCepZones(activeOnly = false): Promise<CepZone[]> {
+    return [];
+  }
+
+  async getCepZoneById(id: number): Promise<CepZone | undefined> {
+    return undefined;
+  }
+
+  async createCepZone(zone: InsertCepZone): Promise<CepZone> {
+    const newZone = {
+      ...zone,
+      id: Date.now(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    } as CepZone;
+    return newZone;
+  }
+
+  async updateCepZone(id: number, zone: Partial<InsertCepZone>): Promise<CepZone | undefined> {
+    return undefined;
   }
 }
 

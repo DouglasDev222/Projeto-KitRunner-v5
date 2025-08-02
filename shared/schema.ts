@@ -125,13 +125,12 @@ export const adminSessions = pgTable("admin_sessions", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// CEP Zones table for postal code-based pricing
+// CEP Zones table for postal code-based pricing - UPDATED FOR MULTIPLE RANGES
 export const cepZones = pgTable("cep_zones", {
   id: serial("id").primaryKey(),
-  name: varchar("name", { length: 100 }).notNull(), // Ex: "João Pessoa Z1"
+  name: varchar("name", { length: 100 }).notNull(), // Ex: "João Pessoa Z2"
   description: text("description"), // Optional description
-  cepStart: varchar("cep_start", { length: 8 }).notNull(), // Ex: "58000000"
-  cepEnd: varchar("cep_end", { length: 8 }).notNull(), // Ex: "58299999"
+  cepRanges: text("cep_ranges").notNull(), // JSON array: [{"start":"58083000","end":"58083500"},{"start":"58081400","end":"58082815"}]
   price: decimal("price", { precision: 10, scale: 2 }).notNull(), // Ex: 20.00
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),

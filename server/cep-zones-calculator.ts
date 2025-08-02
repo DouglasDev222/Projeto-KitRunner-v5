@@ -28,17 +28,44 @@ export function isValidCep(zipCode: string): boolean {
   return cleaned.length === 8 && /^\d{8}$/.test(cleaned);
 }
 
+// Interface for CEP range
+export interface CepRange {
+  start: string;
+  end: string;
+}
+
 /**
- * Check if a CEP falls within a zone's range
+ * Parse CEP ranges from JSON string
+ */
+export function parseCepRanges(cepRangesJson: string): CepRange[] {
+  try {
+    const ranges = JSON.parse(cepRangesJson);
+    return Array.isArray(ranges) ? ranges : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Check if a CEP falls within any of the zone's ranges
  */
 export function validateCepInZone(zipCode: string, zone: CepZone): boolean {
   if (!isValidCep(zipCode)) return false;
   
   const cleanZip = cleanCep(zipCode);
-  const startCep = cleanCep(zone.cepStart);
-  const endCep = cleanCep(zone.cepEnd);
+  const ranges = parseCepRanges(zone.cepRanges);
   
-  return cleanZip >= startCep && cleanZip <= endCep;
+  // Check if CEP falls within any range
+  for (const range of ranges) {
+    const startCep = cleanCep(range.start);
+    const endCep = cleanCep(range.end);
+    
+    if (cleanZip >= startCep && cleanZip <= endCep) {
+      return true;
+    }
+  }
+  
+  return false;
 }
 
 /**
@@ -88,34 +115,66 @@ export function calculateCepZoneDelivery(zipCode: string, zones: CepZone[]): Cep
  * Check for overlapping CEP ranges
  */
 export function checkCepZoneOverlap(
-  cepStart: string, 
-  cepEnd: string, 
+  newRanges: CepRange[], 
   zones: CepZone[], 
   excludeId?: number
 ): CepZone | null {
-  if (!isValidCep(cepStart) || !isValidCep(cepEnd)) return null;
-  
-  const startCep = cleanCep(cepStart);
-  const endCep = cleanCep(cepEnd);
-  
-  // Ensure start <= end
-  if (startCep > endCep) return null;
-  
   // Check against existing active zones
   for (const zone of zones) {
     if (!zone.active) continue;
     if (excludeId && zone.id === excludeId) continue;
     
-    const zoneStart = cleanCep(zone.cepStart);
-    const zoneEnd = cleanCep(zone.cepEnd);
+    const existingRanges = parseCepRanges(zone.cepRanges);
     
-    // Check for overlap: start <= zoneEnd && end >= zoneStart
-    if (startCep <= zoneEnd && endCep >= zoneStart) {
-      return zone;
+    // Check each new range against each existing range
+    for (const newRange of newRanges) {
+      if (!isValidCep(newRange.start) || !isValidCep(newRange.end)) continue;
+      
+      const newStart = cleanCep(newRange.start);
+      const newEnd = cleanCep(newRange.end);
+      
+      if (newStart > newEnd) continue;
+      
+      for (const existingRange of existingRanges) {
+        const existingStart = cleanCep(existingRange.start);
+        const existingEnd = cleanCep(existingRange.end);
+        
+        // Check for overlap: newStart <= existingEnd && newEnd >= existingStart
+        if (newStart <= existingEnd && newEnd >= existingStart) {
+          return zone;
+        }
+      }
     }
   }
   
   return null;
+}
+
+/**
+ * Parse ranges from text input (one range per line in format: start...end)
+ */
+export function parseRangesFromText(rangesText: string): CepRange[] {
+  const lines = rangesText.split('\n').filter(line => line.trim());
+  const ranges: CepRange[] = [];
+  
+  for (const line of lines) {
+    const match = line.trim().match(/^(\d{8})\.\.\.(\d{8})$/);
+    if (match) {
+      const [, start, end] = match;
+      if (isValidCep(start) && isValidCep(end) && start <= end) {
+        ranges.push({ start, end });
+      }
+    }
+  }
+  
+  return ranges;
+}
+
+/**
+ * Format ranges to text for display (one range per line)
+ */
+export function formatRangesToText(ranges: CepRange[]): string {
+  return ranges.map(range => `${range.start}...${range.end}`).join('\n');
 }
 
 /**

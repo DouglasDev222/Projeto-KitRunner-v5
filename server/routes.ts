@@ -14,6 +14,7 @@ import { PaymentReminderScheduler } from "./email/payment-reminder-scheduler";
 import path from "path";
 import { requireAuth, requireAdmin, requireOwnership, type AuthenticatedRequest } from './middleware/auth';
 import adminAuthRoutes from './routes/admin-auth';
+import cepZonesRoutes from './routes/cep-zones';
 
 // Security: Rate limiting for payment endpoints
 const paymentRateLimit = rateLimit({
@@ -95,6 +96,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Admin authentication routes
   app.use('/api/admin/auth', adminAuthRoutes);
+
+  // CEP Zones routes (new implementation with multiple ranges)
+  app.use('/api', cepZonesRoutes);
   
   // Serve test HTML files
   app.get("/test-rejected-payment.html", (req, res) => {

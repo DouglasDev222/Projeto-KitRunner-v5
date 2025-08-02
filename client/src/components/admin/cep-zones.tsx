@@ -14,8 +14,7 @@ interface CepZone {
   id: number;
   name: string;
   description: string;
-  cepStart: string;
-  cepEnd: string;
+  cepRanges: string; // JSON string containing array of ranges
   price: string;
   active: boolean;
   createdAt: string;
@@ -25,8 +24,7 @@ interface CepZone {
 interface CreateCepZoneData {
   name: string;
   description: string;
-  cepStart: string;
-  cepEnd: string;
+  rangesText: string; // Text with ranges in format "58083000...58083500"
   price: string;
 }
 
@@ -36,8 +34,7 @@ export default function CepZonesAdmin() {
   const [formData, setFormData] = useState<CreateCepZoneData>({
     name: '',
     description: '',
-    cepStart: '',
-    cepEnd: '',
+    rangesText: '',
     price: ''
   });
 
@@ -57,7 +54,7 @@ export default function CepZonesAdmin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/cep-zones'] });
       setIsCreating(false);
-      setFormData({ name: '', description: '', cepStart: '', cepEnd: '', price: '' });
+      setFormData({ name: '', description: '', rangesText: '', price: '' });
       toast({
         title: "Zona criada com sucesso",
         description: "A nova zona CEP foi adicionada ao sistema.",
@@ -122,13 +119,21 @@ export default function CepZonesAdmin() {
     }
   };
 
+  const formatRangesFromJson = (cepRanges: string): string => {
+    try {
+      const ranges = JSON.parse(cepRanges);
+      return ranges.map((range: any) => `${range.start}...${range.end}`).join('\n');
+    } catch {
+      return '';
+    }
+  };
+
   const startEdit = (zone: CepZone) => {
     setEditingId(zone.id);
     setFormData({
       name: zone.name,
       description: zone.description,
-      cepStart: zone.cepStart,
-      cepEnd: zone.cepEnd,
+      rangesText: formatRangesFromJson(zone.cepRanges),
       price: zone.price,
     });
     setIsCreating(true);
@@ -137,7 +142,7 @@ export default function CepZonesAdmin() {
   const cancelEdit = () => {
     setEditingId(null);
     setIsCreating(false);
-    setFormData({ name: '', description: '', cepStart: '', cepEnd: '', price: '' });
+    setFormData({ name: '', description: '', rangesText: '', price: '' });
   };
 
   const formatCep = (cep: string) => {
@@ -216,28 +221,23 @@ export default function CepZonesAdmin() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="cepStart">CEP Inicial</Label>
-                  <Input
-                    id="cepStart"
-                    value={formData.cepStart}
-                    onChange={(e) => setFormData({ ...formData, cepStart: e.target.value.replace(/\D/g, '') })}
-                    placeholder="58000000"
-                    maxLength={8}
-                    required
+              <div>
+                <Label htmlFor="rangesText">Faixas de CEP</Label>
+                <Textarea
+                  id="rangesText"
+                  value={formData.rangesText}
+                  onChange={(e) => setFormData({ ...formData, rangesText: e.target.value })}
+                  placeholder="58083000...58083500&#10;58081400...58082815&#10;58084000...58084740"
+                  rows={6}
+                  className="font-mono text-sm"
+                  required
                   />
-                </div>
-                <div>
-                  <Label htmlFor="cepEnd">CEP Final</Label>
-                  <Input
-                    id="cepEnd"
-                    value={formData.cepEnd}
-                    onChange={(e) => setFormData({ ...formData, cepEnd: e.target.value.replace(/\D/g, '') })}
-                    placeholder="58099999"
-                    maxLength={8}
-                    required
-                  />
+                <div className="text-sm text-muted-foreground mt-2">
+                  <p><strong>Formato:</strong> Uma faixa por linha no formato: CEP_INICIAL...CEP_FINAL</p>
+                  <p><strong>Exemplo:</strong></p>
+                  <p>58083000...58083500</p>
+                  <p>58081400...58082815</p>
+                  <p>58084000...58084740</p>
                 </div>
               </div>
 
@@ -278,7 +278,12 @@ export default function CepZonesAdmin() {
                   )}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
                     <div>
-                      <span className="font-medium">CEP Range:</span> {formatCep(zone.cepStart)} - {formatCep(zone.cepEnd)}
+                      <span className="font-medium">Faixas CEP:</span> 
+                      <div className="font-mono text-xs">
+                        {formatRangesFromJson(zone.cepRanges).split('\n').map((range, idx) => (
+                          <div key={idx}>{range}</div>
+                        ))}
+                      </div>
                     </div>
                     <div>
                       <span className="font-medium">Preço:</span> R$ {Number(zone.price).toFixed(2)}
