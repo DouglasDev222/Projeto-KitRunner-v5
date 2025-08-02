@@ -1946,44 +1946,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           successCount++;
 
-          // Send email if requested
+          // Send specific status email if requested (not generic update)
           if (sendEmails && order.customer?.email) {
             try {
               const emailService = new EmailService(storage);
-              const emailData = EmailDataMapper.mapOrderStatusChange({
-                orderNumber: order.orderNumber,
-                customerName: order.customer.name,
-                customerCPF: order.customer.cpf,
-                eventName: order.event?.name || 'Evento',
-                eventDate: order.event?.date || new Date().toISOString(),
-                eventLocation: order.event?.location || 'Local a definir',
-                newStatus: newStatus,
-                previousStatus: previousStatus,
-                address: order.address ? {
-                  street: order.address.street,
-                  number: order.address.number,
-                  complement: order.address.complement || '',
-                  neighborhood: order.address.neighborhood,
-                  city: order.address.city,
-                  state: order.address.state,
-                  zipCode: order.address.zipCode
-                } : {
-                  street: 'Endereço não definido',
-                  number: '', complement: '', neighborhood: '',
-                  city: '', state: '', zipCode: ''
-                },
-                kits: order.kits?.map(kit => ({
-                  name: kit.name, cpf: kit.cpf, shirtSize: kit.shirtSize
-                })) || []
-              });
+              let emailSent = false;
 
-              await emailService.sendOrderStatusUpdate(
-                emailData,
-                order.customer.email,
-                order.id,
-                order.customerId
-              );
-              emailsSent++;
+              // Send specific email based on status instead of generic update
+              switch (newStatus) {
+                case 'confirmado':
+                  const confirmationData = EmailDataMapper.mapToServiceConfirmation(order);
+                  emailSent = await emailService.sendServiceConfirmation(
+                    confirmationData, 
+                    order.customer.email, 
+                    order.id, 
+                    order.customerId
+                  );
+                  break;
+
+                case 'em_transito':
+                  const enRouteData = EmailDataMapper.mapToKitEnRoute(order);
+                  emailSent = await emailService.sendKitEnRoute(
+                    enRouteData, 
+                    order.customer.email, 
+                    order.id, 
+                    order.customerId
+                  );
+                  break;
+
+                case 'entregue':
+                  const deliveryData = EmailDataMapper.mapToDeliveryConfirmation(order);
+                  emailSent = await emailService.sendDeliveryConfirmation(
+                    deliveryData, 
+                    order.customer.email, 
+                    order.id, 
+                    order.customerId
+                  );
+                  break;
+
+                case 'aguardando_pagamento':
+                  const paymentData = EmailDataMapper.orderToPaymentPendingData(order);
+                  emailSent = await emailService.sendPaymentPending(
+                    paymentData, 
+                    order.customer.email, 
+                    order.id, 
+                    order.customerId
+                  );
+                  break;
+
+                default:
+                  // For other statuses (kits_sendo_retirados, cancelado), send generic update
+                  const emailData = EmailDataMapper.mapOrderStatusChange({
+                    orderNumber: order.orderNumber,
+                    customerName: order.customer.name,
+                    customerCPF: order.customer.cpf,
+                    eventName: order.event?.name || 'Evento',
+                    eventDate: order.event?.date || new Date().toISOString(),
+                    eventLocation: order.event?.location || 'Local a definir',
+                    newStatus: newStatus,
+                    previousStatus: previousStatus,
+                    address: order.address ? {
+                      street: order.address.street,
+                      number: order.address.number,
+                      complement: order.address.complement || '',
+                      neighborhood: order.address.neighborhood,
+                      city: order.address.city,
+                      state: order.address.state,
+                      zipCode: order.address.zipCode
+                    } : {
+                      street: 'Endereço não definido',
+                      number: '', complement: '', neighborhood: '',
+                      city: '', state: '', zipCode: ''
+                    },
+                    kits: order.kits?.map(kit => ({
+                      name: kit.name, cpf: kit.cpf, shirtSize: kit.shirtSize
+                    })) || []
+                  });
+
+                  emailSent = await emailService.sendOrderStatusUpdate(
+                    emailData,
+                    order.customer.email,
+                    order.id,
+                    order.customerId
+                  );
+                  break;
+              }
+
+              if (emailSent) {
+                emailsSent++;
+              }
             } catch (emailError) {
               console.error(`Error sending email for order ${order.orderNumber}:`, emailError);
               // Don't fail the entire operation for email errors

@@ -284,8 +284,17 @@ Esta funcionalidade permite que administradores selecionem múltiplos pedidos de
    - Log de tentativas de envio funcionando
    - Tratamento de falhas de email sem impactar a operação principal
 
+### ✅ CORREÇÕES ADICIONAIS (Agosto 1, 2025):
+4. **Problema de E-mails Duplicados Resolvido**: Sistema agora envia apenas emails específicos para cada status
+   - Status `confirmado`: Email de confirmação de serviço
+   - Status `em_transito`: Email de kit em trânsito
+   - Status `entregue`: Email de confirmação de entrega
+   - Status `aguardando_pagamento`: Email de cobrança pendente
+   - Outros status: Email genérico de atualização
+   - Removido envio de emails genéricos para status que possuem templates específicos
+
 ### 🚨 PRÓXIMOS PASSOS NECESSÁRIOS:
-1. **Testar Funcionalidade**: Verificar se a alteração em massa está funcionando no admin
+1. **Testar Correção**: Verificar se emails duplicados foram eliminados
 2. **Implementar Transações**: Adicionar atomicidade às operações de banco
 3. **Rate Limiting**: Adicionar proteção contra abuso
 4. **Validação de Transições**: Implementar regras de transição de status
