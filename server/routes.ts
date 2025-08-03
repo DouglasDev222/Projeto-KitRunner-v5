@@ -599,7 +599,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/events", async (req, res) => {
     try {
+      console.log("🔍 Raw request body:", JSON.stringify(req.body, null, 2));
       const validatedData = adminEventCreationSchema.parse(req.body);
+      console.log("✅ Validated data:", JSON.stringify(validatedData, null, 2));
       
       // Convert string prices to proper format and handle pricing logic
       const eventData = {
@@ -612,10 +614,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // pricingType IS in the database schema, so we keep it
       const dataToSave = eventData;
+      console.log("💾 Data to save:", JSON.stringify(dataToSave, null, 2));
 
       const event = await storage.createEvent(dataToSave);
+      console.log("🎉 Created event:", JSON.stringify(event, null, 2));
       res.json(event);
     } catch (error: any) {
+      console.error("❌ Error creating event:", error);
       res.status(400).json({ error: error.message });
     }
   });
