@@ -56,7 +56,7 @@ export default function CepZonesAdmin() {
     mutationFn: async (data: {
       name: string;
       description: string;
-      cepRanges: string;
+      rangesText: string;
       price: string;
     }) => {
       const response = await apiRequest('POST', '/api/admin/cep-zones', data);
@@ -87,7 +87,7 @@ export default function CepZonesAdmin() {
       data: {
         name: string;
         description: string;
-        cepRanges: string;
+        rangesText: string;
         price: string;
       }
     }) => {
@@ -135,24 +135,11 @@ export default function CepZonesAdmin() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Convert rangesText to JSON format expected by backend
-    const ranges = formData.rangesText
-      .split('\n')
-      .filter(line => line.trim())
-      .map(line => {
-        const match = line.trim().match(/^(\d{8})\.\.\.(\d{8})$/);
-        if (match) {
-          return { start: match[1], end: match[2] };
-        }
-        return null;
-      })
-      .filter(Boolean);
 
     const apiData = {
       name: formData.name,
       description: formData.description,
-      cepRanges: JSON.stringify(ranges),
+      rangesText: formData.rangesText,
       price: formData.price
     };
 
