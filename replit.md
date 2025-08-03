@@ -12,7 +12,8 @@ Preferred communication style: Simple, everyday language.
 - **Admin Credentials Created**: Super admin user created (username: superadmin, password: KitRunner2025!@#)
 - **Sample Data Loaded**: Events, customers, addresses, orders, and kits populated for testing
 - **CEP Zones System Implemented**: Complete CRUD operations for postal code zones with admin interface, backend API routes, and sample zones data
-- **CEP Zones Integration Started**: Added CEP zones option to event forms, fixed validation schemas, and connected client-side pricing logic - **Status: Requires UX improvements for error handling and user feedback** (see CEP_ZONES_CLIENT_INTEGRATION_PLAN.md)
+- **CEP Zones Pricing Bug Fixed**: Fixed critical issue where CEP zones pricing type was not being saved to database - events now properly save selected pricing type instead of defaulting to "distance"
+- **CEP Zones Integration**: Full event creation flow now supports three pricing types (distance, fixed, CEP zones) with proper database persistence
 
 ## Previous Changes (August 1, 2025)
 - **Project Migration Completed**: Successfully migrated KitRunner from Replit Agent to standard Replit environment with full database and API integration

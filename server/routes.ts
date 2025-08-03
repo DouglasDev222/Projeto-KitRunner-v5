@@ -610,8 +610,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         donationAmount: validatedData.donationAmount ? validatedData.donationAmount : null,
       };
 
-      // Remove pricingType from eventData as it's not in the database schema
-      const { pricingType, ...dataToSave } = eventData;
+      // pricingType IS in the database schema, so we keep it
+      const dataToSave = eventData;
 
       const event = await storage.createEvent(dataToSave);
       res.json(event);
