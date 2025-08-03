@@ -42,9 +42,12 @@ export default function CepZonesAdmin() {
   const queryClient = useQueryClient();
 
   // Fetch CEP zones
-  const { data: zones, isLoading } = useQuery<{ success: boolean; zones: CepZone[] }>({
+  const { data: zonesResponse, isLoading } = useQuery({
     queryKey: ['cep-zones'],
-    queryFn: () => apiRequest('/api/admin/cep-zones', 'GET'),
+    queryFn: async () => {
+      const response = await apiRequest('/api/admin/cep-zones', 'GET');
+      return response as { success: boolean; zones: CepZone[] };
+    },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -267,7 +270,7 @@ export default function CepZonesAdmin() {
 
       {/* Zones List */}
       <div className="grid gap-4">
-        {zones?.zones?.map((zone) => (
+        {zonesResponse?.zones?.map((zone) => (
           <Card key={zone.id}>
             <CardContent className="p-4">
               <div className="flex justify-between items-start">
@@ -325,7 +328,7 @@ export default function CepZonesAdmin() {
           </Card>
         )) || []}
         
-        {zones?.zones?.length === 0 && (
+        {zonesResponse?.zones?.length === 0 && (
           <Card>
             <CardContent className="p-8 text-center">
               <p className="text-muted-foreground">

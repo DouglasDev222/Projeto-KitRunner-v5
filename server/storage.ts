@@ -132,11 +132,7 @@ export interface IStorage {
   createEmailLog(emailData: any): Promise<any>;
   getEmailLogs(filters?: any): Promise<any[]>;
   
-  // CEP Zones  
-  getCepZones(activeOnly?: boolean): Promise<CepZone[]>;
-  getCepZoneById(id: number): Promise<CepZone | undefined>;
-  createCepZone(zone: InsertCepZone): Promise<CepZone>;
-  updateCepZone(id: number, zone: Partial<InsertCepZone>): Promise<CepZone | undefined>;
+
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1211,33 +1207,6 @@ export class DatabaseStorage implements IStorage {
     return await query.orderBy(asc(cepZones.name));
   }
 
-  async getCepZoneById(id: number): Promise<CepZone | undefined> {
-    const [cepZone] = await db
-      .select()
-      .from(cepZones)
-      .where(eq(cepZones.id, id));
-    return cepZone;
-  }
-
-  async updateCepZone(id: number, data: Partial<CepZone>): Promise<CepZone | undefined> {
-    const [cepZone] = await db
-      .update(cepZones)
-      .set({ ...data, updatedAt: new Date() })
-      .where(eq(cepZones.id, id))
-      .returning();
-    return cepZone;
-  }
-
-  async deleteCepZone(id: number): Promise<boolean> {
-    // Soft delete - just set active to false
-    const [cepZone] = await db
-      .update(cepZones)
-      .set({ active: false, updatedAt: new Date() })
-      .where(eq(cepZones.id, id))
-      .returning();
-    return !!cepZone;
-  }
-
   // CEP Zone methods using new JSON ranges structure
   async getCepZones(activeOnly = false): Promise<CepZone[]> {
     let query = db.select().from(cepZones);
@@ -1274,8 +1243,8 @@ export class DatabaseStorage implements IStorage {
     return updatedZone;
   }
 
-  async checkCepZoneOverlap(cepStart: string, cepEnd: string, excludeId?: number): Promise<boolean> {
-    // This is a simplified implementation - you might want to implement proper CEP range overlap checking
+  async checkCepZoneOverlap(cepStart: string, cepEnd: string, excludeId?: number): Promise<CepZone | null> {
+    // Check for overlapping CEP ranges with existing zones
     const allZones = await this.getCepZones();
     
     for (const zone of allZones) {
@@ -1293,7 +1262,7 @@ export class DatabaseStorage implements IStorage {
           if ((newStart >= rangeStart && newStart <= rangeEnd) ||
               (newEnd >= rangeStart && newEnd <= rangeEnd) ||
               (newStart <= rangeStart && newEnd >= rangeEnd)) {
-            return true;
+            return zone; // Return the overlapping zone
           }
         }
       } catch (error) {
@@ -1301,7 +1270,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    return false;
+    return null; // No overlap found
   }
 
   async getOrderWithFullDetails(id: number): Promise<any> {

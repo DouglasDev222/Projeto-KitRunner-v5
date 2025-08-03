@@ -2113,112 +2113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // CEP Zones API Routes
-  
-  // Get all CEP zones
-  app.get("/api/admin/cep-zones", requireAdmin, async (req: AuthenticatedRequest, res) => {
-    try {
-      const { activeOnly } = req.query;
-      const zones = await storage.getCepZones(activeOnly === 'true');
-      res.json({ success: true, zones });
-    } catch (error: any) {
-      console.error("Error fetching CEP zones:", error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
-
-  // Create new CEP zone
-  app.post("/api/admin/cep-zones", requireAdmin, async (req: AuthenticatedRequest, res) => {
-    try {
-      const { name, description, cepStart, cepEnd, price } = req.body;
-      
-      // Validate required fields
-      if (!name || !cepStart || !cepEnd || !price) {
-        return res.status(400).json({ 
-          success: false, 
-          error: "Nome, CEP inicial, CEP final e preço são obrigatórios" 
-        });
-      }
-
-      // Check for overlapping zones
-      const overlappingZone = await storage.checkCepZoneOverlap(cepStart, cepEnd);
-      if (overlappingZone) {
-        return res.status(400).json({ 
-          success: false, 
-          error: `CEP range sobrepõe com zona existente: ${overlappingZone.name}` 
-        });
-      }
-
-      const zone = await storage.createCepZone({
-        name,
-        description: description || null,
-        cepStart: cepStart.replace(/\D/g, '').padStart(8, '0'),
-        cepEnd: cepEnd.replace(/\D/g, '').padStart(8, '0'),
-        price: price.toString(),
-        active: true
-      });
-
-      res.json({ success: true, zone });
-    } catch (error: any) {
-      console.error("Error creating CEP zone:", error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
-
-  // Update CEP zone
-  app.put("/api/admin/cep-zones/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const { name, description, cepStart, cepEnd, price, active } = req.body;
-      
-      // If CEP range is being updated, check for overlaps
-      if (cepStart && cepEnd) {
-        const overlappingZone = await storage.checkCepZoneOverlap(cepStart, cepEnd, id);
-        if (overlappingZone) {
-          return res.status(400).json({ 
-            success: false, 
-            error: `CEP range sobrepõe com zona existente: ${overlappingZone.name}` 
-          });
-        }
-      }
-
-      const updateData: any = {};
-      if (name) updateData.name = name;
-      if (description !== undefined) updateData.description = description;
-      if (cepStart) updateData.cepStart = cepStart.replace(/\D/g, '').padStart(8, '0');
-      if (cepEnd) updateData.cepEnd = cepEnd.replace(/\D/g, '').padStart(8, '0');
-      if (price) updateData.price = price.toString();
-      if (active !== undefined) updateData.active = active;
-
-      const zone = await storage.updateCepZone(id, updateData);
-      
-      if (!zone) {
-        return res.status(404).json({ success: false, error: "Zona CEP não encontrada" });
-      }
-
-      res.json({ success: true, zone });
-    } catch (error: any) {
-      console.error("Error updating CEP zone:", error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
-
-  // Delete CEP zone (soft delete)
-  app.delete("/api/admin/cep-zones/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const success = await storage.deleteCepZone(id);
-      
-      if (!success) {
-        return res.status(404).json({ success: false, error: "Zona CEP não encontrada" });
-      }
-
-      res.json({ success: true, message: "Zona CEP desativada com sucesso" });
-    } catch (error: any) {
-      console.error("Error deleting CEP zone:", error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
+  // CEP Zones routes are handled in separate router (cepZonesRoutes)
 
   // Check CEP zone for a specific ZIP code
   app.get("/api/cep-zones/check/:zipCode", generalRateLimit, async (req, res) => {
@@ -2234,12 +2129,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let foundZone = null;
       
       for (const zone of zones) {
-        const zoneStart = zone.cepStart.replace(/\D/g, '').padStart(8, '0');
-        const zoneEnd = zone.cepEnd.replace(/\D/g, '').padStart(8, '0');
-        
-        if (cleanZip >= zoneStart && cleanZip <= zoneEnd) {
-          foundZone = zone;
-          break;
+        try {
+          const ranges = JSON.parse(zone.cepRanges);
+          for (const range of ranges) {
+            const zoneStart = range.start.replace(/\D/g, '').padStart(8, '0');
+            const zoneEnd = range.end.replace(/\D/g, '').padStart(8, '0');
+            
+            if (cleanZip >= zoneStart && cleanZip <= zoneEnd) {
+              foundZone = zone;
+              break;
+            }
+          }
+          if (foundZone) break;
+        } catch (error) {
+          console.error('Error parsing CEP ranges for zone:', zone.id, error);
         }
       }
       
