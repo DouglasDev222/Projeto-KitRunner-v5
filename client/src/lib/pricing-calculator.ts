@@ -15,13 +15,15 @@ export interface PricingCalculatorProps {
   kitQuantity: number;
   deliveryPrice?: number;
   discountAmount?: number;
+  cepZonePrice?: number; // For CEP zones pricing
 }
 
 export function calculatePricing({
   event,
   kitQuantity,
   deliveryPrice = 18.50,
-  discountAmount = 0
+  discountAmount = 0,
+  cepZonePrice
 }: PricingCalculatorProps): PricingBreakdown {
   let baseCost = 0;
   let deliveryCost = 0;
@@ -35,8 +37,12 @@ export function calculatePricing({
     // Fixed price event - includes all services, no separate delivery cost
     baseCost = fixedPrice;
     deliveryCost = 0; // Included in fixed price
+  } else if (event.pricingType === 'cep_zones' && cepZonePrice !== undefined) {
+    // CEP zones pricing - delivery cost determined by zone
+    deliveryCost = cepZonePrice;
+    baseCost = 0; // No base cost, only delivery
   } else {
-    // Variable pricing - separate delivery cost calculation
+    // Distance-based pricing - separate delivery cost calculation
     deliveryCost = deliveryPrice;
     baseCost = 0; // No base cost, only delivery
   }
@@ -79,8 +85,11 @@ export function formatPricingBreakdown(pricing: PricingBreakdown, event: Event, 
     });
   } else {
     // Show delivery cost separately for variable pricing
+    const deliveryLabel = event.pricingType === 'cep_zones' 
+      ? "Entrega (baseada na zona CEP)"
+      : "Entrega (baseada na distância)";
     breakdown.push({
-      label: "Entrega (baseada na distância)",
+      label: deliveryLabel,
       value: pricing.deliveryCost
     });
   }

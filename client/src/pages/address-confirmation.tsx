@@ -31,6 +31,8 @@ import { formatZipCode } from "@/lib/brazilian-formatter";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth-context";
 import { z } from "zod";
+import { checkCepZone } from "@/lib/cep-zones-client";
+import type { Event } from "@shared/schema";
 
 export default function AddressConfirmation() {
   const [, setLocation] = useLocation();
@@ -48,6 +50,11 @@ export default function AddressConfirmation() {
   const { data: addresses, isLoading } = useQuery({
     queryKey: [`/api/customers/${customer?.id}/addresses`],
     enabled: !!customer?.id,
+  });
+
+  // Fetch event data to determine pricing type
+  const { data: event } = useQuery<Event>({
+    queryKey: ["/api/events", id],
   });
   
   const addressFormSchema = addressSchema.extend({
@@ -129,40 +136,70 @@ export default function AddressConfirmation() {
     // Store address and calculate delivery costs
     sessionStorage.setItem('selectedAddress', JSON.stringify(address));
     
-    // Calculate real delivery costs based on ZIP codes
+    // Calculate real delivery costs based on event pricing type
     const calculateDeliveryCosts = async () => {
       try {
-        const response = await fetch("/api/delivery/calculate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            customerId: customer?.id,
-            eventId: parseInt(id!),
-            kitQuantity: 1,
-            customerZipCode: address.zipCode
-          })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const calculatedCosts = {
-            deliveryPrice: data.deliveryCost,
-            distance: data.distance
-          };
-          sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
+        // Check if event uses CEP zones pricing
+        if (event?.pricingType === 'cep_zones') {
+          // Use CEP zones API for pricing
+          const cepResult = await checkCepZone(address.zipCode);
+          
+          if (cepResult.found && cepResult.price !== undefined) {
+            const calculatedCosts = {
+              deliveryPrice: cepResult.price,
+              cepZoneName: cepResult.zoneName,
+              pricingType: 'cep_zones'
+            };
+            sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
+            return;
+          } else {
+            // CEP not found in any zone - this should be handled as an error
+            console.error('CEP not found in delivery zones:', cepResult.error);
+            const calculatedCosts = {
+              deliveryPrice: 0,
+              error: cepResult.error || 'CEP não encontrado nas zonas de entrega',
+              pricingType: 'cep_zones'
+            };
+            sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
+            return;
+          }
         } else {
-          // Fallback to default values if API fails
-          const calculatedCosts = {
-            deliveryPrice: 18.50,
-            distance: 12.5
-          };
-          sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
+          // Use distance-based calculation API for distance/fixed pricing
+          const response = await fetch("/api/delivery/calculate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              customerId: customer?.id,
+              eventId: parseInt(id!),
+              kitQuantity: 1,
+              customerZipCode: address.zipCode
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            const calculatedCosts = {
+              deliveryPrice: data.deliveryCost,
+              distance: data.distance,
+              pricingType: event?.pricingType || 'distance'
+            };
+            sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
+          } else {
+            // Fallback to default values if API fails
+            const calculatedCosts = {
+              deliveryPrice: 18.50,
+              distance: 12.5,
+              pricingType: 'distance'
+            };
+            sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
+          }
         }
       } catch (error) {
         // Fallback to default values if request fails
         const calculatedCosts = {
           deliveryPrice: 18.50,
-          distance: 12.5
+          distance: 12.5,
+          pricingType: 'distance'
         };
         sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
       }

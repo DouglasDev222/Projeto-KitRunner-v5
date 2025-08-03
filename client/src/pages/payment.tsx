@@ -142,10 +142,13 @@ export default function Payment() {
   
   // Calculate costs using unified pricing logic
   const deliveryPrice = calculatedCosts.deliveryPrice || 18.50;
+  const cepZonePrice = calculatedCosts?.pricingType === 'cep_zones' ? calculatedCosts.deliveryPrice : undefined;
+  
   const pricing = calculatePricing({
     event,
     kitQuantity: kitData.kitQuantity,
-    deliveryPrice
+    deliveryPrice,
+    cepZonePrice
   });
   
   const pricingBreakdown = formatPricingBreakdown(pricing, event, kitData.kitQuantity);

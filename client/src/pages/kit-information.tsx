@@ -87,10 +87,13 @@ export default function KitInformation() {
   // Calculate costs using unified pricing logic
   const deliveryPrice = calculatedCosts.deliveryPrice || 18.50;
   const distance = calculatedCosts.distance || 12.5;
+  const cepZonePrice = calculatedCosts.pricingType === 'cep_zones' ? calculatedCosts.deliveryPrice : undefined;
+  
   const pricing = event ? calculatePricing({
     event,
     kitQuantity: selectedQuantity,
-    deliveryPrice
+    deliveryPrice,
+    cepZonePrice
   }) : null;
 
   // Debug logging

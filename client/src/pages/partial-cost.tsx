@@ -34,10 +34,13 @@ export default function PartialCost() {
   const distance = calculatedCosts?.distance || 12.5;
   
   // Calculate pricing for single kit (base estimation)
+  const cepZonePrice = calculatedCosts?.pricingType === 'cep_zones' ? calculatedCosts.deliveryPrice : undefined;
+  
   const pricing = event ? calculatePricing({
     event,
     kitQuantity: 1, // Base calculation for 1 kit
-    deliveryPrice: deliveryCost
+    deliveryPrice: deliveryCost,
+    cepZonePrice
   }) : null;
 
   const handleContinue = () => {

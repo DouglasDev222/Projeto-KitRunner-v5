@@ -325,6 +325,7 @@ export default function AdminEventEdit() {
                         <SelectContent>
                           <SelectItem value="distance">Calculado por Distância</SelectItem>
                           <SelectItem value="fixed">Preço Fixo</SelectItem>
+                          <SelectItem value="cep_zones">Zonas CEP</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
