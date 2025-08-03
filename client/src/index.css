@@ -34,8 +34,8 @@ button, a, input, select, textarea {
   --card-foreground: hsl(20, 14.3%, 4.1%);
   --border: hsl(20, 5.9%, 90%);
   --input: hsl(20, 5.9%, 90%);
-  --primary: hsl(207, 90%, 54%);
-  --primary-foreground: hsl(211, 100%, 99%);
+  --primary: hsl(267, 73%, 54%);
+  --primary-foreground: hsl(0, 0%, 100%);
   --secondary: hsl(160, 84%, 39%);
   --secondary-foreground: hsl(211, 100%, 99%);
   --accent: hsl(60, 4.8%, 95.9%);
@@ -57,8 +57,8 @@ button, a, input, select, textarea {
   --card-foreground: hsl(0, 0%, 98%);
   --border: hsl(240, 3.7%, 15.9%);
   --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(207, 90%, 54%);
-  --primary-foreground: hsl(211, 100%, 99%);
+  --primary: hsl(267, 73%, 54%);
+  --primary-foreground: hsl(0, 0%, 100%);
   --secondary: hsl(160, 84%, 39%);
   --secondary-foreground: hsl(211, 100%, 99%);
   --accent: hsl(240, 3.7%, 15.9%);
