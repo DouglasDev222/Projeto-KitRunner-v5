@@ -32,11 +32,13 @@ import AdminUsers from "@/pages/admin-users";
 import { AdminEmailLogs } from "@/pages/admin-email-logs";
 import { AdminEmailTest } from "@/pages/admin-email-test";
 import AdminCepZones from "@/pages/admin-cep-zones";
+import Landing from "@/pages/landing";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Events} />
+      <Route path="/" component={Landing} />
+      <Route path="/eventos" component={Events} />
       <Route path="/events/:id" component={EventDetails} />
       <Route path="/events/:id/register" component={CustomerRegistration} />
       <Route path="/events/:id/address" component={AddressConfirmation} />
