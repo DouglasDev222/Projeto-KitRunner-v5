@@ -45,16 +45,23 @@ export default function CepZonesAdmin() {
   const { data: zonesResponse, isLoading } = useQuery({
     queryKey: ['cep-zones'],
     queryFn: async () => {
-      const response = await apiRequest('/api/admin/cep-zones', 'GET');
-      return response as { success: boolean; zones: CepZone[] };
+      const response = await apiRequest('GET', '/api/admin/cep-zones');
+      return await response.json() as { success: boolean; zones: CepZone[] };
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   // Create zone mutation
   const createZoneMutation = useMutation({
-    mutationFn: (data: CreateCepZoneData) => 
-      apiRequest('/api/admin/cep-zones', 'POST', data),
+    mutationFn: async (data: {
+      name: string;
+      description: string;
+      cepRanges: string;
+      price: string;
+    }) => {
+      const response = await apiRequest('POST', '/api/admin/cep-zones', data);
+      return await response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cep-zones'] });
       setIsCreating(false);
@@ -75,8 +82,18 @@ export default function CepZonesAdmin() {
 
   // Update zone mutation
   const updateZoneMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<CreateCepZoneData> }) =>
-      apiRequest(`/api/admin/cep-zones/${id}`, 'PUT', data),
+    mutationFn: async ({ id, data }: { 
+      id: number; 
+      data: {
+        name: string;
+        description: string;
+        cepRanges: string;
+        price: string;
+      }
+    }) => {
+      const response = await apiRequest('PUT', `/api/admin/cep-zones/${id}`, data);
+      return await response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cep-zones'] });
       setEditingId(null);
@@ -96,8 +113,10 @@ export default function CepZonesAdmin() {
 
   // Delete zone mutation
   const deleteZoneMutation = useMutation({
-    mutationFn: (id: number) =>
-      apiRequest(`/api/admin/cep-zones/${id}`, 'DELETE'),
+    mutationFn: async (id: number) => {
+      const response = await apiRequest('DELETE', `/api/admin/cep-zones/${id}`);
+      return await response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cep-zones'] });
       toast({
@@ -116,10 +135,31 @@ export default function CepZonesAdmin() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Convert rangesText to JSON format expected by backend
+    const ranges = formData.rangesText
+      .split('\n')
+      .filter(line => line.trim())
+      .map(line => {
+        const match = line.trim().match(/^(\d{8})\.\.\.(\d{8})$/);
+        if (match) {
+          return { start: match[1], end: match[2] };
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    const apiData = {
+      name: formData.name,
+      description: formData.description,
+      cepRanges: JSON.stringify(ranges),
+      price: formData.price
+    };
+
     if (editingId) {
-      updateZoneMutation.mutate({ id: editingId, data: formData });
+      updateZoneMutation.mutate({ id: editingId, data: apiData });
     } else {
-      createZoneMutation.mutate(formData);
+      createZoneMutation.mutate(apiData);
     }
   };
 
