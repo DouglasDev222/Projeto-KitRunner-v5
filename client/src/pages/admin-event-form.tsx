@@ -74,6 +74,7 @@ export default function AdminEventForm() {
   });
 
   const onSubmit = (data: AdminEventCreation) => {
+    console.log("🚀 Submitting event data:", JSON.stringify(data, null, 2));
     createEventMutation.mutate(data);
   };
 
@@ -164,7 +165,7 @@ export default function AdminEventForm() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Estado</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
@@ -223,7 +224,7 @@ export default function AdminEventForm() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tipo de Precificação</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue />
