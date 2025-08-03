@@ -29,12 +29,13 @@ export async function checkCepZone(zipCode: string): Promise<CepZoneResult> {
     }
 
     const data = await response.json();
+    console.log("🔍 API Response:", data);
     
-    if (data.success && data.zone) {
+    if (data.success && data.result && data.result.found) {
       return {
         found: true,
-        zoneName: data.zone.name,
-        price: Number(data.zone.price)
+        zoneName: data.result.zoneName,
+        price: Number(data.result.deliveryCost)
       };
     } else {
       return {

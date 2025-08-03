@@ -103,7 +103,7 @@ export default function AddressConfirmation() {
   }, [customer, id, setLocation]);
   
   useEffect(() => {
-    if (addresses && addresses.length > 0) {
+    if (addresses && Array.isArray(addresses) && addresses.length > 0) {
       // Auto-select the default address or the first one
       const defaultAddress = addresses.find((addr: Address) => addr.isDefault) || addresses[0];
       setSelectedAddress(defaultAddress);
@@ -149,7 +149,9 @@ export default function AddressConfirmation() {
           setCepZoneError(null);
           
           // Use CEP zones API for pricing
+          console.log("🔍 Checking CEP zone for:", address.zipCode);
           const cepResult = await checkCepZone(address.zipCode);
+          console.log("📊 CEP zone result:", cepResult);
           setIsCheckingCepZone(false);
           
           if (cepResult.found && cepResult.price !== undefined) {
@@ -357,12 +359,12 @@ export default function AddressConfirmation() {
         )}
         
         {/* Address Selection */}
-        {addresses && addresses.length > 1 && (
+        {addresses && Array.isArray(addresses) && addresses.length > 1 && (
           <Card className="mb-6">
             <CardContent className="p-4">
               <h3 className="font-semibold text-lg text-neutral-800 mb-3">Escolher Endereço</h3>
               <div className="space-y-2">
-                {addresses.map((address: Address) => (
+                {(addresses as Address[]).map((address: Address) => (
                   <Button
                     key={address.id}
                     variant={selectedAddress?.id === address.id ? "default" : "outline"}
