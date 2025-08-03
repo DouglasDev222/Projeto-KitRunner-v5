@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Edit3, CheckCircle, Plus } from "lucide-react";
+import { MapPin, Edit3, CheckCircle, Plus, AlertTriangle, Loader2, Info } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation, useParams } from "wouter";
@@ -39,6 +40,9 @@ export default function AddressConfirmation() {
   const { id } = useParams<{ id: string }>();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [cepZoneError, setCepZoneError] = useState<string | null>(null);
+  const [isCheckingCepZone, setIsCheckingCepZone] = useState(false);
+  const [calculatedCosts, setCalculatedCosts] = useState<any>(null);
   const queryClient = useQueryClient();
   const { user: authUser } = useAuth();
   
@@ -141,8 +145,12 @@ export default function AddressConfirmation() {
       try {
         // Check if event uses CEP zones pricing
         if (event?.pricingType === 'cep_zones') {
+          setIsCheckingCepZone(true);
+          setCepZoneError(null);
+          
           // Use CEP zones API for pricing
           const cepResult = await checkCepZone(address.zipCode);
+          setIsCheckingCepZone(false);
           
           if (cepResult.found && cepResult.price !== undefined) {
             const calculatedCosts = {
@@ -151,16 +159,19 @@ export default function AddressConfirmation() {
               pricingType: 'cep_zones'
             };
             sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
+            setCalculatedCosts(calculatedCosts);
             return;
           } else {
-            // CEP not found in any zone - this should be handled as an error
-            console.error('CEP not found in delivery zones:', cepResult.error);
+            // CEP not found in any zone - show error and block flow
+            const errorMessage = cepResult.error || 'CEP não encontrado nas zonas de entrega';
+            setCepZoneError(errorMessage);
             const calculatedCosts = {
               deliveryPrice: 0,
-              error: cepResult.error || 'CEP não encontrado nas zonas de entrega',
+              error: errorMessage,
               pricingType: 'cep_zones'
             };
             sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
+            setCalculatedCosts(calculatedCosts);
             return;
           }
         } else {
@@ -184,6 +195,7 @@ export default function AddressConfirmation() {
               pricingType: event?.pricingType || 'distance'
             };
             sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
+            setCalculatedCosts(calculatedCosts);
           } else {
             // Fallback to default values if API fails
             const calculatedCosts = {
@@ -192,6 +204,7 @@ export default function AddressConfirmation() {
               pricingType: 'distance'
             };
             sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
+            setCalculatedCosts(calculatedCosts);
           }
         }
       } catch (error) {
@@ -202,6 +215,7 @@ export default function AddressConfirmation() {
           pricingType: 'distance'
         };
         sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
+        setCalculatedCosts(calculatedCosts);
       }
     };
 
@@ -233,12 +247,16 @@ export default function AddressConfirmation() {
   };
   
   const handleConfirmAddress = () => {
-    if (selectedAddress) {
+    if (selectedAddress && !cepZoneError) {
       // Store selected address in session storage
       sessionStorage.setItem("selectedAddress", JSON.stringify(selectedAddress));
       setLocation(`/events/${id}/kits`);
     }
   };
+
+  // Check if user can continue (no CEP zone errors)
+  const canContinue = !cepZoneError && 
+    (calculatedCosts?.deliveryPrice > 0 || calculatedCosts?.pricingType !== 'cep_zones');
   
   const handleZipCodeChange = (value: string) => {
     const formatted = value.replace(/\D/g, '').replace(/(\d{5})(\d{3})/, '$1-$2');
@@ -287,6 +305,56 @@ export default function AddressConfirmation() {
           <h2 className="text-2xl font-bold text-neutral-800">Confirmar Endereço</h2>
         </div>
         <p className="text-neutral-600 mb-6">Confirme o endereço de entrega para os kits</p>
+        
+        {/* CEP Zones User Guidance */}
+        {event?.pricingType === 'cep_zones' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Info className="h-4 w-4 text-blue-600" />
+              <h4 className="font-medium text-blue-900">Entregas por Zona CEP</h4>
+            </div>
+            <p className="text-sm text-blue-700">
+              Este evento usa preços baseados em zonas de CEP. Digite seu endereço 
+              para verificar se atendemos sua região e conhecer o valor da entrega.
+            </p>
+          </div>
+        )}
+
+        {/* CEP Zone Loading State */}
+        {isCheckingCepZone && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-yellow-600" />
+              <span className="text-sm text-yellow-800">Verificando zona de entrega...</span>
+            </div>
+          </div>
+        )}
+
+        {/* CEP Zone Error */}
+        {cepZoneError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <div className="font-medium mb-1">CEP não disponível para entrega</div>
+              <div className="text-sm">{cepZoneError}</div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* CEP Zone Success Display */}
+        {calculatedCosts?.pricingType === 'cep_zones' && calculatedCosts.cepZoneName && !cepZoneError && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+            <div className="flex items-center gap-2 mb-1">
+              <MapPin className="h-4 w-4 text-green-600" />
+              <span className="text-sm font-medium text-green-800">
+                Zona de entrega: {calculatedCosts.cepZoneName}
+              </span>
+            </div>
+            <p className="text-sm text-green-700">
+              Taxa de entrega: R$ {calculatedCosts.deliveryPrice?.toFixed(2).replace('.', ',')}
+            </p>
+          </div>
+        )}
         
         {/* Address Selection */}
         {addresses && addresses.length > 1 && (
@@ -526,9 +594,9 @@ export default function AddressConfirmation() {
           className="w-full bg-primary text-white hover:bg-primary/90" 
           size="lg"
           onClick={handleConfirmAddress}
-          disabled={!selectedAddress || isEditing}
+          disabled={!selectedAddress || isEditing || !canContinue}
         >
-          Confirmar Endereço
+          {cepZoneError ? 'CEP não disponível' : 'Confirmar Endereço'}
         </Button>
       </div>
     </div>

@@ -80,7 +80,12 @@ export default function PartialCost() {
                     <span className="font-semibold text-neutral-800">Incluído</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-neutral-600">Entrega ({distance.toFixed(1)} km)</span>
+                    <span className="text-neutral-600">
+                      {calculatedCosts?.pricingType === 'cep_zones' 
+                        ? `Entrega (${calculatedCosts.cepZoneName || 'Zona CEP'})`
+                        : `Entrega (${distance.toFixed(1)} km)`
+                      }
+                    </span>
                     <span className="font-semibold text-neutral-800">{formatCurrency(deliveryCost)}</span>
                   </div>
                   {event?.donationRequired && (

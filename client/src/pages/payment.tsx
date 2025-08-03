@@ -238,7 +238,12 @@ export default function Payment() {
                   </div>
                 ) : (
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-neutral-600">Entrega ({calculatedCosts.distance || 12.5} km)</span>
+                    <span className="text-neutral-600">
+                      {calculatedCosts?.pricingType === 'cep_zones' 
+                        ? `Entrega (${calculatedCosts.cepZoneName || 'Zona CEP'})`
+                        : `Entrega (${calculatedCosts.distance || 12.5} km)`
+                      }
+                    </span>
                     <span className="font-medium text-neutral-800">{formatCurrency(pricing.deliveryCost)}</span>
                   </div>
                 )}
