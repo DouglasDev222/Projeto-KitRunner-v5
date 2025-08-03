@@ -24,7 +24,7 @@ const eventSchema = z.object({
   city: z.string().min(1, "Cidade é obrigatória"),
   state: z.string().min(1, "Estado é obrigatório"),
   pickupZipCode: z.string().min(8, "CEP é obrigatório"),
-  pricingType: z.enum(["distance", "fixed"]).default("distance"),
+  pricingType: z.enum(["distance", "fixed", "cep_zones"]).default("distance"),
   fixedPrice: z.string().optional(),
   extraKitPrice: z.string().default("8.00"),
   donationRequired: z.boolean().default(false),
@@ -97,7 +97,7 @@ export default function AdminEventEdit() {
         city: event.city,
         state: event.state,
         pickupZipCode: event.pickupZipCode,
-        pricingType: event.fixedPrice ? "fixed" : "distance", // Determina o tipo baseado se tem preço fixo
+        pricingType: event.pricingType || "distance", // Usa o tipo real do banco de dados
         fixedPrice: event.fixedPrice || "",
         extraKitPrice: event.extraKitPrice || "8.00",
         donationRequired: event.donationRequired || false,
@@ -110,12 +110,11 @@ export default function AdminEventEdit() {
 
   const updateEventMutation = useMutation({
     mutationFn: async (data: EventFormData) => {
-      // Remove pricingType and adjust data types for API
-      const { pricingType, ...eventData } = data;
+      // Include pricingType in the data sent to API
       const finalData = {
-        ...eventData,
+        ...data,
         // Handle decimal fields - convert empty strings to null
-        fixedPrice: pricingType === "fixed" && data.fixedPrice && data.fixedPrice.trim() !== "" ? data.fixedPrice : null,
+        fixedPrice: data.pricingType === "fixed" && data.fixedPrice && data.fixedPrice.trim() !== "" ? data.fixedPrice : null,
         extraKitPrice: data.extraKitPrice && data.extraKitPrice.trim() !== "" ? data.extraKitPrice : "8.00",
         donationAmount: data.donationAmount && data.donationAmount.trim() !== "" ? data.donationAmount : null,
         // Ensure description is null if empty

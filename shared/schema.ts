@@ -248,7 +248,7 @@ export const adminEventCreationSchema = z.object({
   city: z.string().min(1, "Cidade é obrigatória"),
   state: z.string().min(1, "Estado é obrigatório"),
   pickupZipCode: z.string().min(8, "CEP deve ter 8 dígitos").max(8, "CEP deve ter 8 dígitos"),
-  pricingType: z.enum(["fixed", "distance"], { required_error: "Tipo de precificação é obrigatório" }),
+  pricingType: z.enum(["fixed", "distance", "cep_zones"], { required_error: "Tipo de precificação é obrigatório" }),
   fixedPrice: z.string().optional(),
   extraKitPrice: z.string().default("8.00"),
   donationRequired: z.boolean().default(false),
