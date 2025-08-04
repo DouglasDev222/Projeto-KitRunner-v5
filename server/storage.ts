@@ -1126,13 +1126,13 @@ export class DatabaseStorage implements IStorage {
     return emailLog;
   }
 
-  // CEP Zone methods using new JSON ranges structure
+  // CEP Zone methods using new JSON ranges structure with priority support
   async getCepZones(activeOnly = false): Promise<CepZone[]> {
     if (activeOnly) {
-      return await db.select().from(cepZones).where(eq(cepZones.active, true)).orderBy(asc(cepZones.name));
+      return await db.select().from(cepZones).where(eq(cepZones.active, true)).orderBy(asc(cepZones.priority));
     }
     
-    return await db.select().from(cepZones).orderBy(asc(cepZones.name));
+    return await db.select().from(cepZones).orderBy(asc(cepZones.priority));
   }
 
   async getCepZoneById(id: number): Promise<CepZone | undefined> {

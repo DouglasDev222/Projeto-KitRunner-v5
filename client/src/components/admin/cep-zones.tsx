@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit, Trash2, Save, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,6 +16,7 @@ interface CepZone {
   description: string;
   cepRanges: string; // JSON string containing array of ranges
   price: string;
+  priority: number; // NOVO CAMPO - Priority for overlap resolution
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -26,6 +27,7 @@ interface CreateCepZoneData {
   description: string;
   rangesText: string; // Text with ranges in format "58083000...58083500"
   price: string;
+  priority: number; // NOVO CAMPO - Priority field
 }
 
 export default function CepZonesAdmin() {
@@ -35,7 +37,8 @@ export default function CepZonesAdmin() {
     name: '',
     description: '',
     rangesText: '',
-    price: ''
+    price: '',
+    priority: 1
   });
 
   const { toast } = useToast();
@@ -58,6 +61,7 @@ export default function CepZonesAdmin() {
       description: string;
       rangesText: string;
       price: string;
+      priority: number;
     }) => {
       const response = await apiRequest('POST', '/api/admin/cep-zones', data);
       return await response.json();
@@ -65,7 +69,7 @@ export default function CepZonesAdmin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cep-zones'] });
       setIsCreating(false);
-      setFormData({ name: '', description: '', rangesText: '', price: '' });
+      setFormData({ name: '', description: '', rangesText: '', price: '', priority: 1 });
       toast({
         title: "Zona criada com sucesso",
         description: "A nova zona CEP foi adicionada ao sistema.",
@@ -173,7 +177,7 @@ export default function CepZonesAdmin() {
   const cancelEdit = () => {
     setEditingId(null);
     setIsCreating(false);
-    setFormData({ name: '', description: '', rangesText: '', price: '' });
+    setFormData({ name: '', description: '', rangesText: '', price: '', priority: 1 });
   };
 
   const formatCep = (cep: string) => {
@@ -182,6 +186,65 @@ export default function CepZonesAdmin() {
 
   const formatRangeForDisplay = (start: string, end: string) => {
     return `${formatCep(start)} - ${formatCep(end)}`;
+  };
+
+  // Priority reordering mutation
+  const reorderMutation = useMutation({
+    mutationFn: async (zones: Array<{ id: number; priority: number }>) => {
+      const response = await apiRequest('PUT', '/api/admin/cep-zones/reorder', { zones });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cep-zones'] });
+      toast({
+        title: "Prioridades atualizadas",
+        description: "A ordem das zonas foi atualizada com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao reordenar",
+        description: error.message || "Erro ao atualizar prioridades das zonas.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Move zone priority up or down
+  const moveZone = (zoneId: number, direction: 'up' | 'down') => {
+    if (!zonesResponse?.zones) return;
+    
+    const zones = [...zonesResponse.zones].sort((a, b) => a.priority - b.priority);
+    const currentIndex = zones.findIndex(z => z.id === zoneId);
+    
+    if (currentIndex === -1) return;
+    if (direction === 'up' && currentIndex === 0) return;
+    if (direction === 'down' && currentIndex === zones.length - 1) return;
+    
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    
+    // Swap priorities
+    const updates = [
+      { id: zones[currentIndex].id, priority: zones[targetIndex].priority },
+      { id: zones[targetIndex].id, priority: zones[currentIndex].priority }
+    ];
+    
+    reorderMutation.mutate(updates);
+  };
+
+  // Component for priority indicator
+  const PriorityIndicator = ({ priority }: { priority: number }) => {
+    const getPriorityColor = (p: number) => {
+      if (p === 1) return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'; // Alta prioridade
+      if (p <= 3) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'; // Média prioridade
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'; // Baixa prioridade
+    };
+    
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(priority)}`}>
+        Prioridade {priority}
+      </span>
+    );
   };
 
   if (isLoading) {
@@ -246,6 +309,25 @@ export default function CepZonesAdmin() {
                 </div>
               </div>
               
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="priority">Prioridade</Label>
+                  <Input
+                    id="priority"
+                    type="number"
+                    min="1"
+                    value={formData.priority}
+                    onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) || 1 })}
+                    placeholder="1"
+                    required
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Menor número = maior prioridade (1 = prioridade máxima)
+                  </p>
+                </div>
+                <div></div> {/* Empty div for grid alignment */}
+              </div>
+              
               <div>
                 <Label htmlFor="description">Descrição</Label>
                 <Textarea
@@ -295,15 +377,23 @@ export default function CepZonesAdmin() {
         </Card>
       )}
 
-      {/* Zones List */}
+      {/* Zones List ordered by priority */}
       <div className="grid gap-4">
-        {zonesResponse?.zones?.map((zone) => (
+        {zonesResponse?.zones
+          ?.sort((a, b) => (a.priority || 1) - (b.priority || 1))
+          ?.map((zone, index) => {
+            const sortedZones = zonesResponse.zones.sort((a, b) => (a.priority || 1) - (b.priority || 1));
+            const isFirst = index === 0;
+            const isLast = index === sortedZones.length - 1;
+            
+            return (
           <Card key={zone.id}>
             <CardContent className="p-4">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <h3 className="font-semibold">{zone.name}</h3>
+                    <PriorityIndicator priority={zone.priority || 1} />
                     <Badge variant={zone.active ? "default" : "secondary"}>
                       {zone.active ? 'Ativa' : 'Inativa'}
                     </Badge>
@@ -324,36 +414,67 @@ export default function CepZonesAdmin() {
                       <span className="font-medium">Preço:</span> R$ {Number(zone.price).toFixed(2)}
                     </div>
                     <div>
+                      <span className="font-medium">Prioridade:</span> {zone.priority || 1}
+                    </div>
+                    <div>
                       <span className="font-medium">Criada em:</span> {new Date(zone.createdAt).toLocaleDateString('pt-BR')}
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2 ml-4">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => startEdit(zone)}
-                    disabled={editingId === zone.id}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      if (confirm('Tem certeza que deseja remover esta zona?')) {
-                        deleteZoneMutation.mutate(zone.id);
-                      }
-                    }}
-                    disabled={deleteZoneMutation.isPending}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div className="flex flex-col gap-2 ml-4">
+                  {/* Priority controls */}
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => moveZone(zone.id, 'up')}
+                      disabled={isFirst || reorderMutation.isPending}
+                      title="Subir prioridade"
+                    >
+                      <ChevronUp className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => moveZone(zone.id, 'down')}
+                      disabled={isLast || reorderMutation.isPending}
+                      title="Descer prioridade"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  {/* Action controls */}
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => startEdit(zone)}
+                      disabled={editingId === zone.id}
+                      title="Editar zona"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        if (confirm('Tem certeza que deseja remover esta zona?')) {
+                          deleteZoneMutation.mutate(zone.id);
+                        }
+                      }}
+                      disabled={deleteZoneMutation.isPending}
+                      title="Remover zona"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
-        )) || []}
+            );
+          })}
         
         {zonesResponse?.zones?.length === 0 && (
           <Card>

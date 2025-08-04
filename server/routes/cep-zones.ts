@@ -13,12 +13,13 @@ import { requireAdminAuth } from "../middleware/auth";
 
 const router = express.Router();
 
-// Schema for creating/updating CEP zones with text input
+// Schema for creating/updating CEP zones with text input and priority
 const cepZoneInputSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(100, "Nome deve ter no máximo 100 caracteres"),
   description: z.string().optional(),
   rangesText: z.string().min(1, "Pelo menos uma faixa de CEP é obrigatória"),
   price: z.string().min(1, "Preço é obrigatório").regex(/^\d+(\.\d{1,2})?$/, "Formato de preço inválido"),
+  priority: z.number().min(1, "Prioridade deve ser maior que 0").optional().default(1),
 });
 
 // GET /api/admin/cep-zones - List all zones
@@ -50,23 +51,16 @@ router.post("/admin/cep-zones", requireAdminAuth, async (req, res) => {
       });
     }
     
-    // Check for overlaps with existing zones
-    const existingZones = await storage.getCepZones();
-    const overlappingZone = checkCepZoneOverlap(ranges, existingZones);
+    // REMOVED: Check for overlaps - now overlaps are allowed with priority system
+    // Priority-based system allows overlapping zones
     
-    if (overlappingZone) {
-      return res.status(400).json({
-        success: false,
-        message: `Faixa de CEP sobrepõe com a zona existente: ${overlappingZone.name}`
-      });
-    }
-    
-    // Create the zone
+    // Create the zone with priority
     const zoneData = {
       name: validatedData.name,
       description: validatedData.description || null,
       cepRanges: JSON.stringify(ranges),
       price: validatedData.price,
+      priority: validatedData.priority || 1,
     };
     
     const zone = await storage.createCepZone(zoneData);
@@ -224,6 +218,46 @@ router.get("/cep-zones/check/:zipCode", async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: "Erro interno do servidor" 
+    });
+  }
+});
+
+// PUT /api/admin/cep-zones/reorder - Reorder zones by priority
+router.put("/admin/cep-zones/reorder", requireAdminAuth, async (req, res) => {
+  try {
+    const { zones } = req.body; // Array of { id, priority }
+    
+    if (!Array.isArray(zones)) {
+      return res.status(400).json({
+        success: false,
+        message: "Dados de prioridade inválidos"
+      });
+    }
+    
+    // Validate each zone update
+    for (const zone of zones) {
+      if (!zone.id || typeof zone.id !== 'number' || !zone.priority || typeof zone.priority !== 'number' || zone.priority < 1) {
+        return res.status(400).json({
+          success: false,
+          message: "Cada zona deve ter ID e prioridade válidos (prioridade >= 1)"
+        });
+      }
+    }
+    
+    // Update priorities in batch
+    for (const zone of zones) {
+      await storage.updateCepZone(zone.id, { priority: zone.priority });
+    }
+    
+    res.json({
+      success: true,
+      message: "Prioridades atualizadas com sucesso"
+    });
+  } catch (error) {
+    console.error("Error reordering CEP zones:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erro ao reordenar zonas"
     });
   }
 });

@@ -9,6 +9,7 @@ export interface CepZoneCalculation {
   deliveryCost: number;
   found: boolean;
   description?: string;
+  priority?: number;  // Add priority field for new system
 }
 
 /**
@@ -69,15 +70,18 @@ export function validateCepInZone(zipCode: string, zone: CepZone): boolean {
 }
 
 /**
- * Find the appropriate zone for a given CEP
+ * Find the appropriate zone for a given CEP using priority-based search
+ * Returns the zone with highest priority (lowest priority number) that matches
  */
 export function findCepZoneFromList(zipCode: string, zones: CepZone[]): CepZone | null {
   if (!isValidCep(zipCode)) return null;
   
-  // Filter only active zones
-  const activeZones = zones.filter(zone => zone.active);
+  // Filter only active zones and sort by priority (ASC = lower number = higher priority)
+  const activeZones = zones
+    .filter(zone => zone.active)
+    .sort((a, b) => (a.priority || 1) - (b.priority || 1));
   
-  // Find the first zone that contains this CEP
+  // Find the first zone that contains this CEP (highest priority match)
   for (const zone of activeZones) {
     if (validateCepInZone(zipCode, zone)) {
       return zone;
@@ -88,7 +92,7 @@ export function findCepZoneFromList(zipCode: string, zones: CepZone[]): CepZone 
 }
 
 /**
- * Calculate delivery cost for a given CEP using zones
+ * Calculate delivery cost for a given CEP using zones with priority support
  */
 export function calculateCepZoneDelivery(zipCode: string, zones: CepZone[]): CepZoneCalculation {
   const zone = findCepZoneFromList(zipCode, zones);
@@ -107,7 +111,8 @@ export function calculateCepZoneDelivery(zipCode: string, zones: CepZone[]): Cep
     zoneId: zone.id,
     deliveryCost: Number(zone.price),
     found: true,
-    description: zone.description || undefined
+    description: zone.description || undefined,
+    priority: zone.priority || 1  // Include priority in result
   };
 }
 

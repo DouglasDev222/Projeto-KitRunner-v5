@@ -132,6 +132,7 @@ export const cepZones = pgTable("cep_zones", {
   description: text("description"), // Optional description
   cepRanges: text("cep_ranges").notNull(), // JSON array: [{"start":"58083000","end":"58083500"},{"start":"58081400","end":"58082815"}]
   price: decimal("price", { precision: 10, scale: 2 }).notNull(), // Ex: 20.00
+  priority: integer("priority").notNull().default(1), // Campo de prioridade - menor número = maior prioridade
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
