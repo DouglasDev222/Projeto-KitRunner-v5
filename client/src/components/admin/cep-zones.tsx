@@ -61,7 +61,6 @@ export default function CepZonesAdmin() {
       description: string;
       rangesText: string;
       price: string;
-      priority?: number; // Optional for creation
     }) => {
       const response = await apiRequest('POST', '/api/admin/cep-zones', data);
       return await response.json();
@@ -93,6 +92,7 @@ export default function CepZonesAdmin() {
         description: string;
         rangesText: string;
         price: string;
+        priority?: number;
       }
     }) => {
       const response = await apiRequest('PUT', `/api/admin/cep-zones/${id}`, data);

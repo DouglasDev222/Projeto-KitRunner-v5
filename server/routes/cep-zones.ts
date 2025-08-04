@@ -253,9 +253,19 @@ router.get("/cep-zones/check/:zipCode", async (req, res) => {
 // PUT /api/admin/cep-zones/reorder - Reorder zones by priority
 router.put("/admin/cep-zones/reorder", requireAdminAuth, async (req, res) => {
   try {
+    console.log("Reorder request body:", req.body);
     const { zones } = req.body; // Array of { id, priority }
     
-    if (!Array.isArray(zones) || zones.length !== 2) {
+    if (!Array.isArray(zones)) {
+      console.error("Zones is not an array:", zones);
+      return res.status(400).json({
+        success: false,
+        message: "Dados de prioridade inválidos - zones deve ser um array"
+      });
+    }
+    
+    if (zones.length !== 2) {
+      console.error("Invalid zones length:", zones.length);
       return res.status(400).json({
         success: false,
         message: "Dados de prioridade inválidos - deve conter exatamente 2 zonas para trocar"
@@ -264,19 +274,32 @@ router.put("/admin/cep-zones/reorder", requireAdminAuth, async (req, res) => {
     
     // Validate each zone update
     for (const zone of zones) {
-      if (!zone.id || typeof zone.id !== 'number' || typeof zone.priority !== 'number' || zone.priority < 1) {
+      console.log("Validating zone:", zone);
+      if (!zone.hasOwnProperty('id') || !zone.hasOwnProperty('priority')) {
+        console.error("Missing required properties:", zone);
         return res.status(400).json({
           success: false,
-          message: "Cada zona deve ter ID e prioridade válidos (prioridade >= 1)"
+          message: "Cada zona deve ter propriedades 'id' e 'priority'"
+        });
+      }
+      
+      if (typeof zone.id !== 'number' || typeof zone.priority !== 'number' || zone.priority < 1) {
+        console.error("Invalid zone data types:", zone);
+        return res.status(400).json({
+          success: false,
+          message: `Dados inválidos para zona: ID=${zone.id} (tipo: ${typeof zone.id}), prioridade=${zone.priority} (tipo: ${typeof zone.priority})`
         });
       }
     }
     
+    console.log("Updating zones with new priorities...");
     // Update priorities in batch (swap)
     for (const zone of zones) {
+      console.log(`Updating zone ${zone.id} to priority ${zone.priority}`);
       await storage.updateCepZone(zone.id, { priority: zone.priority });
     }
     
+    console.log("Reorder completed successfully");
     res.json({
       success: true,
       message: "Prioridades atualizadas com sucesso"
