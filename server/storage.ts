@@ -80,6 +80,7 @@ export interface IStorage {
   getCepZoneById(id: number): Promise<CepZone | undefined>;
   createCepZone(zone: InsertCepZone): Promise<CepZone>;
   updateCepZone(id: number, zone: Partial<InsertCepZone>): Promise<CepZone | undefined>;
+  deleteCepZone(id: number): Promise<boolean>;
   checkCepZoneOverlap(cepStart: string, cepEnd: string, excludeId?: number): Promise<CepZone | null>;
   
   // Price calculation
@@ -1160,6 +1161,13 @@ export class DatabaseStorage implements IStorage {
     return updatedZone;
   }
 
+  async deleteCepZone(id: number): Promise<boolean> {
+    const result = await db
+      .delete(cepZones)
+      .where(eq(cepZones.id, id));
+    return result.rowCount > 0;
+  }
+
   async checkCepZoneOverlap(cepStart: string, cepEnd: string, excludeId?: number): Promise<CepZone | null> {
     // Check for overlapping CEP ranges with existing zones
     const allZones = await this.getCepZones();
@@ -1481,6 +1489,10 @@ class MockStorage implements IStorage {
 
   async updateCepZone(id: number, zone: Partial<InsertCepZone>): Promise<CepZone | undefined> {
     return undefined;
+  }
+
+  async deleteCepZone(id: number): Promise<boolean> {
+    return true;
   }
 
   async checkCepZoneOverlap(cepStart: string, cepEnd: string, excludeId?: number): Promise<CepZone | null> {

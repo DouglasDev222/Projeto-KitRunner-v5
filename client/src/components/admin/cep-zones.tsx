@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit, Trash2, Save, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -100,7 +100,8 @@ export default function CepZonesAdmin() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cep-zones'] });
-      setEditingId(null);
+      // Fechar o formulário após edição bem-sucedida
+      cancelEdit();
       toast({
         title: "Zona atualizada",
         description: "As alterações foram salvas com sucesso.",
@@ -115,7 +116,7 @@ export default function CepZonesAdmin() {
     },
   });
 
-  // Delete zone mutation
+  // Delete zone mutation (permanent deletion)
   const deleteZoneMutation = useMutation({
     mutationFn: async (id: number) => {
       const response = await apiRequest('DELETE', `/api/admin/cep-zones/${id}`);
@@ -124,13 +125,35 @@ export default function CepZonesAdmin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cep-zones'] });
       toast({
-        title: "Zona removida",
-        description: "A zona CEP foi removida do sistema.",
+        title: "Zona excluída",
+        description: "A zona CEP foi excluída permanentemente do sistema.",
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Erro ao remover zona",
+        title: "Erro ao excluir zona",
+        description: error.message || "Ocorreu um erro inesperado.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Toggle zone active status mutation
+  const toggleZoneMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest('PATCH', `/api/admin/cep-zones/${id}/toggle`);
+      return await response.json();
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['cep-zones'] });
+      toast({
+        title: "Status atualizado",
+        description: result.message || "Status da zona foi alterado com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao alterar status",
         description: error.message || "Ocorreu um erro inesperado.",
         variant: "destructive",
       });
@@ -503,13 +526,26 @@ export default function CepZonesAdmin() {
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => toggleZoneMutation.mutate(zone.id)}
+                      disabled={toggleZoneMutation.isPending}
+                      title={zone.active ? "Desativar zona" : "Ativar zona"}
+                    >
+                      {zone.active ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => {
-                        if (confirm('Tem certeza que deseja remover esta zona?')) {
+                        if (confirm('Tem certeza que deseja EXCLUIR PERMANENTEMENTE esta zona? Esta ação não pode ser desfeita.')) {
                           deleteZoneMutation.mutate(zone.id);
                         }
                       }}
                       disabled={deleteZoneMutation.isPending}
-                      title="Remover zona"
+                      title="Excluir zona permanentemente"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

@@ -245,7 +245,7 @@ router.put("/admin/cep-zones/:id", requireAdminAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/admin/cep-zones/:id - Delete (deactivate) zone and reorder priorities
+// DELETE /api/admin/cep-zones/:id - Permanently delete zone and reorder priorities
 router.delete("/admin/cep-zones/:id", requireAdminAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
@@ -267,8 +267,8 @@ router.delete("/admin/cep-zones/:id", requireAdminAuth, async (req, res) => {
       });
     }
     
-    // Soft delete by setting active to false
-    await storage.updateCepZone(id, { active: false });
+    // Permanently delete the zone
+    await storage.deleteCepZone(id);
     
     // Reorder priorities of remaining active zones
     const remainingActiveZones = existingZones
@@ -285,10 +285,74 @@ router.delete("/admin/cep-zones/:id", requireAdminAuth, async (req, res) => {
     
     res.json({ 
       success: true, 
-      message: "Zona CEP removida e prioridades reajustadas com sucesso" 
+      message: "Zona CEP excluída permanentemente e prioridades reajustadas com sucesso" 
     });
   } catch (error) {
     console.error("Error deleting CEP zone:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Erro interno do servidor" 
+    });
+  }
+});
+
+// PATCH /api/admin/cep-zones/:id/toggle - Toggle zone active status
+router.patch("/admin/cep-zones/:id/toggle", requireAdminAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID da zona inválido"
+      });
+    }
+    
+    // Get the zone to toggle
+    const existingZones = await storage.getCepZones();
+    const zoneToToggle = existingZones.find(zone => zone.id === id);
+    
+    if (!zoneToToggle) {
+      return res.status(404).json({
+        success: false,
+        message: "Zona não encontrada"
+      });
+    }
+    
+    const newActiveStatus = !zoneToToggle.active;
+    
+    // If activating a zone, assign it the next priority
+    let updateData: any = { active: newActiveStatus };
+    
+    if (newActiveStatus) {
+      // When activating, assign the next highest priority
+      const activeZones = existingZones.filter(zone => zone.active);
+      const maxPriority = activeZones.length > 0 ? Math.max(...activeZones.map(z => z.priority || 1)) : 0;
+      updateData.priority = maxPriority + 1;
+    }
+    
+    await storage.updateCepZone(id, updateData);
+    
+    // If deactivating, reorder priorities of remaining active zones
+    if (!newActiveStatus) {
+      const remainingActiveZones = existingZones
+        .filter(zone => zone.active && zone.id !== id)
+        .sort((a, b) => (a.priority || 1) - (b.priority || 1));
+      
+      // Update priorities to be sequential (1, 2, 3, ...)
+      for (let i = 0; i < remainingActiveZones.length; i++) {
+        const newPriority = i + 1;
+        if (remainingActiveZones[i].priority !== newPriority) {
+          await storage.updateCepZone(remainingActiveZones[i].id, { priority: newPriority });
+        }
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      message: `Zona CEP ${newActiveStatus ? 'ativada' : 'desativada'} com sucesso` 
+    });
+  } catch (error) {
+    console.error("Error toggling CEP zone status:", error);
     res.status(500).json({ 
       success: false, 
       message: "Erro interno do servidor" 
