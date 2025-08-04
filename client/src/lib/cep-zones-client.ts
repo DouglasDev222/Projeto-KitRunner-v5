@@ -9,7 +9,7 @@ export interface CepZoneResult {
 /**
  * Check if a CEP belongs to any CEP zone for pricing calculation
  */
-export async function checkCepZone(zipCode: string): Promise<CepZoneResult> {
+export async function checkCepZone(zipCode: string, eventId?: number): Promise<CepZoneResult> {
   try {
     // Clean and format the CEP
     const cleanZip = zipCode.replace(/\D/g, '');
@@ -21,26 +21,38 @@ export async function checkCepZone(zipCode: string): Promise<CepZoneResult> {
       };
     }
 
-    // Call the public CEP zone check API
-    const response = await fetch(`/api/cep-zones/check/${cleanZip}`);
+    // Use the enhanced calculate-cep-price API that supports event-specific pricing
+    const queryParams = new URLSearchParams({ cep: cleanZip });
+    if (eventId) {
+      queryParams.append('eventId', eventId.toString());
+    }
+    
+    const response = await fetch(`/api/calculate-cep-price?${queryParams}`);
     
     if (!response.ok) {
+      if (response.status === 404) {
+        const errorData = await response.json().catch(() => ({}));
+        return {
+          found: false,
+          error: errorData.error || "CEP não encontrado em nenhuma zona de entrega"
+        };
+      }
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
     const data = await response.json();
     console.log("🔍 API Response:", data);
     
-    if (data.success && data.result && data.result.found) {
+    if (data.price !== undefined) {
       return {
         found: true,
-        zoneName: data.result.zoneName,
-        price: Number(data.result.deliveryCost)
+        zoneName: "Zona de Entrega", // We could enhance this to return zone name
+        price: Number(data.price)
       };
     } else {
       return {
         found: false,
-        error: data.message || "CEP não encontrado em nenhuma zona de entrega"
+        error: "CEP não encontrado em nenhuma zona de entrega"
       };
     }
   } catch (error: any) {

@@ -1,6 +1,9 @@
 // CEP Zones Calculator for postal code-based pricing
 // This service handles zone identification and delivery cost calculation
 
+import { db } from "./db";
+import { cepZones, eventCepZonePrices } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 import type { CepZone } from "../shared/schema";
 
 export interface CepZoneCalculation {
@@ -192,6 +195,70 @@ export function generateWhatsAppContactUrl(zipCode: string, eventName?: string):
     : `Olá! Meu CEP ${zipCode} não foi reconhecido no sistema. Vocês atendem essa região?`;
   
   return `${baseUrl}?text=${encodeURIComponent(message)}`;
+}
+
+/**
+ * Calculate delivery cost for a given CEP with event-specific pricing support
+ */
+export async function calculateCepZonePrice(cep: string, eventId?: number): Promise<number | null> {
+  try {
+    const cleanedCep = cep.replace(/\D/g, '').padStart(8, '0');
+    
+    if (!isValidCep(cleanedCep)) {
+      return null;
+    }
+    
+    // If eventId provided, try to find event-specific pricing first
+    if (eventId) {
+      const customPrices = await db
+        .select({
+          price: eventCepZonePrices.price,
+          cepRanges: cepZones.cepRanges,
+          priority: cepZones.priority,
+          active: cepZones.active
+        })
+        .from(eventCepZonePrices)
+        .innerJoin(cepZones, eq(cepZones.id, eventCepZonePrices.cepZoneId))
+        .where(
+          and(
+            eq(eventCepZonePrices.eventId, eventId),
+            eq(cepZones.active, true)
+          )
+        )
+        .orderBy(cepZones.priority);
+      
+      // Check if CEP matches any event-specific zone
+      for (const zonePrice of customPrices) {
+        const ranges = parseCepRanges(zonePrice.cepRanges);
+        for (const range of ranges) {
+          const startCepClean = cleanCep(range.start);
+          const endCepClean = cleanCep(range.end);
+          
+          if (cleanedCep >= startCepClean && cleanedCep <= endCepClean) {
+            return parseFloat(zonePrice.price);
+          }
+        }
+      }
+    }
+    
+    // Fallback to global zone pricing
+    const zones = await db
+      .select()
+      .from(cepZones)
+      .where(eq(cepZones.active, true))
+      .orderBy(cepZones.priority);
+    
+    for (const zone of zones) {
+      if (validateCepInZone(cleanedCep, zone)) {
+        return parseFloat(zone.price);
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Erro ao calcular preço por CEP:', error);
+    return null;
+  }
 }
 
 // Note: ES module exports used - compatible with TypeScript import/export system

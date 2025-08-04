@@ -3,10 +3,11 @@ import { createServer, type Server } from "http";
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { db } from "./db";
-import { sql } from "drizzle-orm";
-import { customerIdentificationSchema, customerRegistrationSchema, orderCreationSchema, adminEventCreationSchema, insertCepZoneSchema } from "@shared/schema";
+import { sql, eq, and } from "drizzle-orm";
+import { customerIdentificationSchema, customerRegistrationSchema, orderCreationSchema, adminEventCreationSchema, insertCepZoneSchema, eventCepZonePrices, cepZones, events } from "@shared/schema";
 import { z } from "zod";
 import { calculateDeliveryCost } from "./distance-calculator";
+import { calculateCepZonePrice } from "./cep-zones-calculator";
 import { MercadoPagoService, getPublicKey } from "./mercadopago-service";
 import { EmailService } from "./email/email-service";
 import { EmailDataMapper } from "./email/email-data-mapper";
@@ -727,6 +728,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Evento excluído com sucesso" });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Event CEP Zone Prices Routes - Custom pricing per event
+
+  // Get CEP zones with current prices for an event (custom or global fallback)
+  app.get("/api/events/:id/cep-zone-prices", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      
+      // Get all active CEP zones
+      const zones = await db.select().from(cepZones).where(eq(cepZones.active, true));
+      
+      // Get custom prices for this event
+      const customPrices = await db
+        .select()
+        .from(eventCepZonePrices)
+        .where(eq(eventCepZonePrices.eventId, eventId));
+      
+      // Combine data: custom price or global price fallback
+      const result = zones.map(zone => {
+        const customPrice = customPrices.find(cp => cp.cepZoneId === zone.id);
+        return {
+          ...zone,
+          currentPrice: customPrice ? customPrice.price : zone.price,
+          hasCustomPrice: !!customPrice
+        };
+      });
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error fetching event CEP zone prices:', error);
+      res.status(500).json({ error: "Erro ao buscar preços das zonas CEP" });
+    }
+  });
+
+  // Save custom CEP zone prices for an event
+  app.put("/api/events/:id/cep-zone-prices", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      const { zonePrices } = req.body; // Array: [{ cepZoneId: 1, price: "25.00" }]
+      
+      // Verify event exists and uses CEP zones pricing
+      const event = await db.select().from(events).where(eq(events.id, eventId)).limit(1);
+      if (!event[0]) {
+        return res.status(404).json({ error: "Evento não encontrado" });
+      }
+      
+      if (event[0].pricingType !== 'cep_zones') {
+        return res.status(400).json({ error: "Evento não usa precificação por zonas CEP" });
+      }
+      
+      // Validate zonePrices array
+      if (!Array.isArray(zonePrices)) {
+        return res.status(400).json({ error: "zonePrices deve ser um array" });
+      }
+      
+      // Remove existing custom prices for this event
+      await db.delete(eventCepZonePrices).where(eq(eventCepZonePrices.eventId, eventId));
+      
+      // Insert new custom prices
+      if (zonePrices.length > 0) {
+        const validatedPrices = zonePrices.map(zp => ({
+          eventId,
+          cepZoneId: parseInt(zp.cepZoneId),
+          price: zp.price
+        }));
+        
+        await db.insert(eventCepZonePrices).values(validatedPrices);
+      }
+      
+      res.json({ success: true, message: "Preços personalizados salvos com sucesso" });
+    } catch (error: any) {
+      console.error('Error saving event CEP zone prices:', error);
+      res.status(500).json({ error: "Erro ao salvar preços personalizados" });
+    }
+  });
+
+  // Calculate price for a CEP considering event-specific pricing
+  app.get("/api/calculate-cep-price", async (req, res) => {
+    try {
+      const { cep, eventId } = req.query;
+      
+      if (!cep) {
+        return res.status(400).json({ error: "CEP é obrigatório" });
+      }
+      
+      const price = await calculateCepZonePrice(
+        cep as string, 
+        eventId ? parseInt(eventId as string) : undefined
+      );
+      
+      if (price === null) {
+        return res.status(404).json({ error: "CEP não atendido nas zonas disponíveis" });
+      }
+      
+      res.json({ price: price.toFixed(2) });
+    } catch (error: any) {
+      console.error('Error calculating CEP price:', error);
+      res.status(500).json({ error: "Erro interno do servidor" });
     }
   });
 

@@ -148,9 +148,9 @@ export default function AddressConfirmation() {
           setIsCheckingCepZone(true);
           setCepZoneError(null);
           
-          // Use CEP zones API for pricing
-          console.log("🔍 Checking CEP zone for:", address.zipCode);
-          const cepResult = await checkCepZone(address.zipCode);
+          // Use CEP zones API for pricing with event-specific pricing support
+          console.log("🔍 Checking CEP zone for:", address.zipCode, "with event ID:", id);
+          const cepResult = await checkCepZone(address.zipCode, parseInt(id!));
           console.log("📊 CEP zone result:", cepResult);
           setIsCheckingCepZone(false);
           

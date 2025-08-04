@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { events, customers, addresses, orders, kits, adminUsers, adminSessions, adminAuditLog, passwordResetTokens, cepZones } from "@shared/schema";
+import { events, customers, addresses, orders, kits, adminUsers, adminSessions, adminAuditLog, passwordResetTokens, cepZones, eventCepZonePrices } from "@shared/schema";
 import bcrypt from 'bcryptjs';
 
 // Function to generate valid CPF using Brazilian algorithm
@@ -70,6 +70,7 @@ async function seedDatabase() {
     // Clear existing data first (respecting foreign key constraints)
     await db.delete(kits);
     await db.delete(orders);
+    await db.delete(eventCepZonePrices);
     await db.delete(addresses);
     await db.delete(customers);
     await db.delete(events);
@@ -521,9 +522,36 @@ async function seedDatabase() {
       })
       .returning();
 
+    // Create example event-specific CEP zone prices
+    // This demonstrates how the first event (Corrida de João Pessoa) has custom pricing
+    const eventCepZonePricesData = await db
+      .insert(eventCepZonePrices)
+      .values([
+        {
+          eventId: eventsData[0].id, // Corrida de João Pessoa (uses cep_zones pricing)
+          cepZoneId: cepZonesData[0].id, // João Pessoa Centro (usually R$ 20.00)
+          price: "15.00" // Special discount for this event
+        },
+        {
+          eventId: eventsData[0].id, // Corrida de João Pessoa
+          cepZoneId: cepZonesData[1].id, // João Pessoa Zona Sul (usually R$ 25.00)
+          price: "22.00" // Small discount for this event
+        },
+        {
+          eventId: eventsData[0].id, // Corrida de João Pessoa
+          cepZoneId: cepZonesData[2].id, // Bayeux (usually R$ 30.00)
+          price: "35.00" // Premium pricing for this popular event
+        },
+        // Note: eventsData[1] (Triathlon Campina Grande) will use global CEP zone prices
+        // eventsData[2] (Caminhada Cabo Branco) uses fixed pricing (R$ 18.00)
+        // eventsData[3] (Maratona João Pessoa) uses distance-based pricing
+      ])
+      .returning();
+
     console.log("Database seeded successfully!");
     console.log("✅ Events:", eventsData.length);
     console.log("✅ CEP Zones:", cepZonesData.length);
+    console.log("✅ Event CEP Zone Prices:", eventCepZonePricesData.length);
     console.log("✅ Customers:", customersData.length);
     console.log("✅ Addresses:", addressesData.length);
     console.log("✅ Orders:", ordersData.length);

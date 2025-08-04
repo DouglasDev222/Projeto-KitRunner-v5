@@ -6,7 +6,17 @@ KitRunner is a mobile-first web application designed for managing event kit pick
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (August 3, 2025)
+## Recent Changes (August 4, 2025)
+- **Event-Specific CEP Zone Pricing Implementation Complete**: Successfully implemented the comprehensive event-specific pricing customization system for CEP zones as requested
+  - **Database Schema**: Created `eventCepZonePrices` table with foreign keys to events and CEP zones, supporting custom pricing per event
+  - **Backend API**: Enhanced CEP zones calculator to support event-specific pricing with fallback to global zone prices
+  - **API Routes**: Added GET/PUT endpoints for managing event-specific CEP zone prices in admin interface
+  - **Frontend Components**: Created `EventCepZonePrices` React component for admin interface with real-time price editing
+  - **Integration**: Updated admin event form to show CEP zone pricing configuration after event creation when using CEP zones pricing type
+  - **Client Integration**: Enhanced `checkCepZone` function to support eventId parameter for event-specific pricing calculation
+  - **Sample Data**: Added example pricing configurations showing "Corrida de João Pessoa" with custom prices (Centro: R$ 15.00, Zona Sul: R$ 22.00, Bayeux: R$ 35.00)
+
+## Previous Changes (August 3, 2025)
 - **Project Migration Completed**: Successfully migrated KitRunner from Replit Agent to standard Replit environment with full database and API integration
 - **Landing Page Implementation**: Implemented complete landing page as initial screen exactly as provided in ZIP file, with routing updated so landing page (/) leads to events page (/eventos)
 - **Brand Color Update**: Applied brand color #822ae6 (hsl(267, 73%, 54%)) as primary color throughout the application
@@ -89,19 +99,23 @@ Preferred communication style: Simple, everyday language.
 
 ## 🚀 Recently Implemented Features
 
-### CEP Zones Pricing System ✅
-A comprehensive postal code-based pricing system has been successfully implemented. This adds a third pricing option alongside the current distance-based and fixed pricing models.
+### Event-Specific CEP Zone Pricing System ✅
+A comprehensive event-specific pricing customization system has been successfully implemented. This extends the CEP zones system to allow different prices per zone for each specific event.
 
 **Completed Features:**
-- **Admin Configuration**: Interface to create and manage delivery zones by CEP ranges (e.g., "João Pessoa Z1: 58000-000 to 58099-999 = R$ 20.00") ✅
-- **Backend API**: Complete CRUD operations with overlap detection and validation ✅
-- **Database Schema**: CEP zones table with ranges stored as JSON ✅
-- **Sample Data**: Pre-loaded zones for João Pessoa Centro, Zona Sul, and Bayeux ✅
+- **Base CEP Zones System**: Interface to create and manage delivery zones by CEP ranges (e.g., "João Pessoa Z1: 58000-000 to 58099-999 = R$ 20.00") ✅
+- **Event-Specific Pricing**: Events can override global zone prices with custom pricing per zone ✅
+- **Database Schema**: `eventCepZonePrices` table for storing custom prices per event and zone ✅
+- **Backend API**: Enhanced calculator supporting event-specific pricing with fallback to global prices ✅
+- **Admin Interface**: Complete React component for managing custom prices per event ✅
+- **Client Integration**: Automatic event-specific price calculation throughout the application ✅
+- **Sample Data**: Example configurations demonstrating custom pricing for "Corrida de João Pessoa" ✅
 
-**Next Steps:**
-- **Event Integration**: Events can choose between three pricing types: distance calculation, fixed price, or CEP zones
-- **Customer Experience**: Automatic zone identification and transparent pricing display
+**Pricing Hierarchy:**
+1. **Event-Specific Price**: If custom price exists for the event and zone
+2. **Global Zone Price**: Fallback to the default zone price
+3. **No Service**: If CEP is not in any configured zone
 
 **Documentation:**
-- Complete implementation plan: `CEP_ZONES_PRICING_SYSTEM.md`
-- Detailed checklist: `CEP_ZONES_IMPLEMENTATION_CHECKLIST.md`
+- Complete implementation plan: `PERSONALIZACAO_PRECOS_CEP_POR_EVENTO.md`
+- Previous plans: `CEP_ZONES_PRICING_SYSTEM.md`, `CEP_ZONES_IMPLEMENTATION_CHECKLIST.md`

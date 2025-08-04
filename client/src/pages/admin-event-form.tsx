@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/header";
 import { AdminLayout } from "@/components/admin-layout";
+import { EventCepZonePrices } from "@/components/admin/EventCepZonePrices";
 // Sistema novo: AdminRouteGuard protege esta página
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ export default function AdminEventForm() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [createdEventId, setCreatedEventId] = useState<number | null>(null);
   // Sistema novo: AdminRouteGuard já protege
 
   // Sistema novo: AdminRouteGuard já protege - não precisa de verificação
@@ -55,14 +57,20 @@ export default function AdminEventForm() {
       const response = await apiRequest("POST", "/api/admin/events", data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Evento criado com sucesso!",
         description: "O evento foi adicionado ao sistema.",
       });
       queryClient.invalidateQueries({ queryKey: ["admin", "events"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
-      setLocation("/admin");
+      
+      // If the event uses CEP zones pricing, set the event ID for custom pricing
+      if (form.getValues("pricingType") === "cep_zones") {
+        setCreatedEventId(data.id);
+      } else {
+        setLocation("/admin");
+      }
     },
     onError: (error: any) => {
       toast({
@@ -381,6 +389,26 @@ export default function AdminEventForm() {
             </Form>
           </CardContent>
         </Card>
+        
+        {/* CEP Zone Pricing Configuration - Only show after event is created with cep_zones pricing */}
+        {createdEventId && (
+          <div className="mt-6">
+            <EventCepZonePrices 
+              eventId={createdEventId} 
+              isVisible={true}
+            />
+            
+            <div className="mt-4 flex justify-center">
+              <Button
+                onClick={() => setLocation("/admin")}
+                variant="outline"
+                size="lg"
+              >
+                Finalizar e Voltar ao Painel
+              </Button>
+            </div>
+          </div>
+        )}
     </AdminLayout>
   );
 }

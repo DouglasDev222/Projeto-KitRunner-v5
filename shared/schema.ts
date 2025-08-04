@@ -176,6 +176,16 @@ export const emailLogs = pgTable("email_logs", {
   clickedAt: timestamp("clicked_at"),
 });
 
+// Event CEP Zone Prices table for per-event price customization
+export const eventCepZonePrices = pgTable("event_cep_zone_prices", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  cepZoneId: integer("cep_zone_id").notNull().references(() => cepZones.id, { onDelete: "cascade" }),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Validation schemas
 export const insertEventSchema = createInsertSchema(events).omit({ id: true, createdAt: true });
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true });
@@ -188,6 +198,11 @@ export const insertAdminSessionSchema = createInsertSchema(adminSessions).omit({
 export const insertAdminAuditLogSchema = createInsertSchema(adminAuditLog).omit({ id: true, createdAt: true });
 export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({ id: true, createdAt: true });
 export const insertCepZoneSchema = createInsertSchema(cepZones).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertEventCepZonePriceSchema = createInsertSchema(eventCepZonePrices).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
 
 export const insertEmailLogSchema = createInsertSchema(emailLogs).omit({ id: true, sentAt: true });
 
