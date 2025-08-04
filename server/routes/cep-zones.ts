@@ -19,7 +19,7 @@ const cepZoneInputSchema = z.object({
   description: z.string().optional(),
   rangesText: z.string().min(1, "Pelo menos uma faixa de CEP é obrigatória"),
   price: z.string().min(1, "Preço é obrigatório").regex(/^\d+(\.\d{1,2})?$/, "Formato de preço inválido"),
-  priority: z.number().min(1, "Prioridade deve ser maior que 0").optional().default(1),
+  priority: z.number().min(1, "Prioridade deve ser maior que 0").optional(),
 });
 
 // GET /api/admin/cep-zones - List all zones
@@ -51,26 +51,18 @@ router.post("/admin/cep-zones", requireAdminAuth, async (req, res) => {
       });
     }
     
-    // Check for duplicate priorities (validation)
+    // Automatically assign the next priority (last position)
     const existingZones = await storage.getCepZones();
-    const duplicatePriority = existingZones.find(zone => 
-      zone.active && zone.priority === validatedData.priority
-    );
+    const activeZones = existingZones.filter(zone => zone.active);
+    const nextPriority = activeZones.length > 0 ? Math.max(...activeZones.map(z => z.priority || 1)) + 1 : 1;
     
-    if (duplicatePriority) {
-      return res.status(400).json({
-        success: false,
-        message: `Já existe uma zona com prioridade ${validatedData.priority}: ${duplicatePriority.name}. Escolha uma prioridade diferente.`
-      });
-    }
-    
-    // Create the zone with priority
+    // Create the zone with automatic priority
     const zoneData = {
       name: validatedData.name,
       description: validatedData.description || null,
       cepRanges: JSON.stringify(ranges),
       price: validatedData.price,
-      priority: validatedData.priority || 1,
+      priority: nextPriority,
     };
     
     const zone = await storage.createCepZone(zoneData);
@@ -120,27 +112,33 @@ router.put("/admin/cep-zones/:id", requireAdminAuth, async (req, res) => {
       });
     }
     
-    // Check for duplicate priorities (validation) - excluding current zone
-    const existingZones = await storage.getCepZones();
-    const duplicatePriority = existingZones.find(zone => 
-      zone.active && zone.id !== id && zone.priority === validatedData.priority
-    );
-    
-    if (duplicatePriority) {
-      return res.status(400).json({
-        success: false,
-        message: `Já existe uma zona com prioridade ${validatedData.priority}: ${duplicatePriority.name}. Escolha uma prioridade diferente.`
-      });
+    // When updating, only check priority if it's being changed
+    if (validatedData.priority) {
+      const existingZones = await storage.getCepZones();
+      const duplicatePriority = existingZones.find(zone => 
+        zone.active && zone.id !== id && zone.priority === validatedData.priority
+      );
+      
+      if (duplicatePriority) {
+        return res.status(400).json({
+          success: false,
+          message: `Já existe uma zona com prioridade ${validatedData.priority}: ${duplicatePriority.name}. Use os botões de seta para reordenar.`
+        });
+      }
     }
     
-    // Update the zone
-    const updateData = {
+    // Update the zone (only include priority if provided)
+    const updateData: any = {
       name: validatedData.name,
       description: validatedData.description || null,
       cepRanges: JSON.stringify(ranges),
       price: validatedData.price,
-      priority: validatedData.priority || 1,
     };
+    
+    // Only update priority if explicitly provided
+    if (validatedData.priority !== undefined) {
+      updateData.priority = validatedData.priority;
+    }
     
     const zone = await storage.updateCepZone(id, updateData);
     
@@ -173,7 +171,7 @@ router.put("/admin/cep-zones/:id", requireAdminAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/admin/cep-zones/:id - Delete (deactivate) zone
+// DELETE /api/admin/cep-zones/:id - Delete (deactivate) zone and reorder priorities
 router.delete("/admin/cep-zones/:id", requireAdminAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
@@ -184,19 +182,36 @@ router.delete("/admin/cep-zones/:id", requireAdminAuth, async (req, res) => {
       });
     }
     
-    // Soft delete by setting active to false
-    const zone = await storage.updateCepZone(id, { active: false });
+    // Get the zone to be deleted
+    const existingZones = await storage.getCepZones();
+    const zoneToDelete = existingZones.find(zone => zone.id === id);
     
-    if (!zone) {
+    if (!zoneToDelete) {
       return res.status(404).json({
         success: false,
         message: "Zona não encontrada"
       });
     }
     
+    // Soft delete by setting active to false
+    await storage.updateCepZone(id, { active: false });
+    
+    // Reorder priorities of remaining active zones
+    const remainingActiveZones = existingZones
+      .filter(zone => zone.active && zone.id !== id)
+      .sort((a, b) => (a.priority || 1) - (b.priority || 1));
+    
+    // Update priorities to be sequential (1, 2, 3, ...)
+    for (let i = 0; i < remainingActiveZones.length; i++) {
+      const newPriority = i + 1;
+      if (remainingActiveZones[i].priority !== newPriority) {
+        await storage.updateCepZone(remainingActiveZones[i].id, { priority: newPriority });
+      }
+    }
+    
     res.json({ 
       success: true, 
-      message: "Zona CEP removida com sucesso" 
+      message: "Zona CEP removida e prioridades reajustadas com sucesso" 
     });
   } catch (error) {
     console.error("Error deleting CEP zone:", error);
@@ -240,16 +255,16 @@ router.put("/admin/cep-zones/reorder", requireAdminAuth, async (req, res) => {
   try {
     const { zones } = req.body; // Array of { id, priority }
     
-    if (!Array.isArray(zones)) {
+    if (!Array.isArray(zones) || zones.length !== 2) {
       return res.status(400).json({
         success: false,
-        message: "Dados de prioridade inválidos"
+        message: "Dados de prioridade inválidos - deve conter exatamente 2 zonas para trocar"
       });
     }
     
     // Validate each zone update
     for (const zone of zones) {
-      if (!zone.id || typeof zone.id !== 'number' || !zone.priority || typeof zone.priority !== 'number' || zone.priority < 1) {
+      if (!zone.id || typeof zone.id !== 'number' || typeof zone.priority !== 'number' || zone.priority < 1) {
         return res.status(400).json({
           success: false,
           message: "Cada zona deve ter ID e prioridade válidos (prioridade >= 1)"
@@ -257,7 +272,7 @@ router.put("/admin/cep-zones/reorder", requireAdminAuth, async (req, res) => {
       }
     }
     
-    // Update priorities in batch
+    // Update priorities in batch (swap)
     for (const zone of zones) {
       await storage.updateCepZone(zone.id, { priority: zone.priority });
     }

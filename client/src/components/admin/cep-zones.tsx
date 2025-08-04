@@ -61,7 +61,7 @@ export default function CepZonesAdmin() {
       description: string;
       rangesText: string;
       price: string;
-      priority: number;
+      priority?: number; // Optional for creation
     }) => {
       const response = await apiRequest('POST', '/api/admin/cep-zones', data);
       return await response.json();
@@ -140,18 +140,25 @@ export default function CepZonesAdmin() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const apiData = {
-      name: formData.name,
-      description: formData.description,
-      rangesText: formData.rangesText,
-      price: formData.price,
-      priority: formData.priority
-    };
-
     if (editingId) {
-      updateZoneMutation.mutate({ id: editingId, data: apiData });
+      // When editing, include priority
+      const editData = {
+        name: formData.name,
+        description: formData.description,
+        rangesText: formData.rangesText,
+        price: formData.price,
+        priority: formData.priority
+      };
+      updateZoneMutation.mutate({ id: editingId, data: editData });
     } else {
-      createZoneMutation.mutate(apiData);
+      // When creating, don't include priority (it's automatic)
+      const createData = {
+        name: formData.name,
+        description: formData.description,
+        rangesText: formData.rangesText,
+        price: formData.price,
+      };
+      createZoneMutation.mutate(createData);
     }
   };
 
@@ -311,24 +318,36 @@ export default function CepZonesAdmin() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="priority">Prioridade</Label>
-                  <Input
-                    id="priority"
-                    type="number"
-                    min="1"
-                    value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) || 1 })}
-                    placeholder="1"
-                    required
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Menor número = maior prioridade (1 = prioridade máxima)
+              {/* Priority is now automatic - show info only */}
+              {!editingId && (
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 rounded-full bg-blue-500" />
+                    <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                      Prioridade Automática
+                    </p>
+                  </div>
+                  <p className="text-sm text-blue-600 dark:text-blue-300 mt-1">
+                    Esta zona será automaticamente adicionada na última posição (menor prioridade). 
+                    Use os botões de seta para reordenar depois de criada.
                   </p>
                 </div>
-                <div></div> {/* Empty div for grid alignment */}
-              </div>
+              )}
+              
+              {/* Show current priority when editing */}
+              {editingId && (
+                <div className="p-4 bg-gray-50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-800">
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 rounded-full bg-gray-500" />
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                      Prioridade Atual: {formData.priority}
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                    Use os botões de seta na lista para alterar a prioridade desta zona.
+                  </p>
+                </div>
+              )}
               
               <div>
                 <Label htmlFor="description">Descrição</Label>
