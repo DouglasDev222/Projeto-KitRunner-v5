@@ -51,8 +51,18 @@ router.post("/admin/cep-zones", requireAdminAuth, async (req, res) => {
       });
     }
     
-    // REMOVED: Check for overlaps - now overlaps are allowed with priority system
-    // Priority-based system allows overlapping zones
+    // Check for duplicate priorities (validation)
+    const existingZones = await storage.getCepZones();
+    const duplicatePriority = existingZones.find(zone => 
+      zone.active && zone.priority === validatedData.priority
+    );
+    
+    if (duplicatePriority) {
+      return res.status(400).json({
+        success: false,
+        message: `Já existe uma zona com prioridade ${validatedData.priority}: ${duplicatePriority.name}. Escolha uma prioridade diferente.`
+      });
+    }
     
     // Create the zone with priority
     const zoneData = {
@@ -110,14 +120,16 @@ router.put("/admin/cep-zones/:id", requireAdminAuth, async (req, res) => {
       });
     }
     
-    // Check for overlaps with existing zones (excluding current zone)
+    // Check for duplicate priorities (validation) - excluding current zone
     const existingZones = await storage.getCepZones();
-    const overlappingZone = checkCepZoneOverlap(ranges, existingZones, id);
+    const duplicatePriority = existingZones.find(zone => 
+      zone.active && zone.id !== id && zone.priority === validatedData.priority
+    );
     
-    if (overlappingZone) {
+    if (duplicatePriority) {
       return res.status(400).json({
         success: false,
-        message: `Faixa de CEP sobrepõe com a zona existente: ${overlappingZone.name}`
+        message: `Já existe uma zona com prioridade ${validatedData.priority}: ${duplicatePriority.name}. Escolha uma prioridade diferente.`
       });
     }
     
@@ -127,6 +139,7 @@ router.put("/admin/cep-zones/:id", requireAdminAuth, async (req, res) => {
       description: validatedData.description || null,
       cepRanges: JSON.stringify(ranges),
       price: validatedData.price,
+      priority: validatedData.priority || 1,
     };
     
     const zone = await storage.updateCepZone(id, updateData);

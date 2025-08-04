@@ -144,7 +144,8 @@ export default function CepZonesAdmin() {
       name: formData.name,
       description: formData.description,
       rangesText: formData.rangesText,
-      price: formData.price
+      price: formData.price,
+      priority: formData.priority
     };
 
     if (editingId) {
@@ -170,6 +171,7 @@ export default function CepZonesAdmin() {
       description: zone.description,
       rangesText: formatRangesFromJson(zone.cepRanges),
       price: zone.price,
+      priority: zone.priority || 1,
     });
     setIsCreating(true);
   };
