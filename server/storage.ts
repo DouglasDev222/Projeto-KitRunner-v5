@@ -80,7 +80,7 @@ export interface IStorage {
   getCepZoneById(id: number): Promise<CepZone | undefined>;
   createCepZone(zone: InsertCepZone): Promise<CepZone>;
   updateCepZone(id: number, zone: Partial<InsertCepZone>): Promise<CepZone | undefined>;
-  checkCepZoneOverlap(cepStart: string, cepEnd: string, excludeId?: number): Promise<boolean>;
+  checkCepZoneOverlap(cepStart: string, cepEnd: string, excludeId?: number): Promise<CepZone | null>;
   
   // Price calculation
   calculateDeliveryPrice(fromZipCode: string, toZipCode: string): Promise<number>;
@@ -576,76 +576,14 @@ export class DatabaseStorage implements IStorage {
     return order;
   }
 
-  async getOrderWithFullDetails(orderId: number): Promise<any | undefined> {
-    const [order] = await db.select({
-      id: orders.id,
-      orderNumber: orders.orderNumber,
-      eventId: orders.eventId,
-      customerId: orders.customerId,
-      addressId: orders.addressId,
-      kitQuantity: orders.kitQuantity,
-      deliveryCost: orders.deliveryCost,
-      extraKitsCost: orders.extraKitsCost,
-      donationCost: orders.donationCost,
-      discountAmount: orders.discountAmount,
-      couponCode: orders.couponCode,
-      totalCost: orders.totalCost,
-      paymentMethod: orders.paymentMethod,
-      status: orders.status,
-      donationAmount: orders.donationAmount,
-      createdAt: orders.createdAt,
-      customer: {
-        id: customers.id,
-        name: customers.name,
-        cpf: customers.cpf,
-        email: customers.email,
-        phone: customers.phone,
-      },
-      event: {
-        id: events.id,
-        name: events.name,
-        date: events.date,
-        location: events.location,
-        city: events.city,
-        state: events.state,
-        pickupZipCode: events.pickupZipCode,
-        fixedPrice: events.fixedPrice,
-        extraKitPrice: events.extraKitPrice,
-        donationRequired: events.donationRequired,
-        donationAmount: events.donationAmount,
-        donationDescription: events.donationDescription,
-      },
-      address: {
-        id: addresses.id,
-        label: addresses.label,
-        street: addresses.street,
-        number: addresses.number,
-        complement: addresses.complement,
-        neighborhood: addresses.neighborhood,
-        city: addresses.city,
-        state: addresses.state,
-        zipCode: addresses.zipCode,
-      },
-    })
-    .from(orders)
-    .leftJoin(customers, eq(orders.customerId, customers.id))
-    .leftJoin(events, eq(orders.eventId, events.id))
-    .leftJoin(addresses, eq(orders.addressId, addresses.id))
-    .where(eq(orders.id, orderId));
 
-    if (!order) return undefined;
-
-    // Get kits for this order
-    const orderKits = await db.select().from(kits).where(eq(kits.orderId, orderId));
-
-    return {
-      ...order,
-      kits: orderKits,
-    };
-  }
 
   // Alias method for compatibility
   async getFullOrderById(id: number): Promise<any> {
+    return this.getOrderByIdWithDetails(id);
+  }
+
+  async getOrderWithFullDetails(id: number): Promise<any> {
     return this.getOrderByIdWithDetails(id);
   }
 
@@ -1188,34 +1126,13 @@ export class DatabaseStorage implements IStorage {
     return emailLog;
   }
 
-  // CEP Zones methods
-  async createCepZone(data: InsertCepZone): Promise<CepZone> {
-    const [cepZone] = await db
-      .insert(cepZones)
-      .values(data)
-      .returning();
-    return cepZone;
-  }
-
-  async getCepZones(activeOnly: boolean = false): Promise<CepZone[]> {
-    const query = db.select().from(cepZones);
-    
-    if (activeOnly) {
-      query.where(eq(cepZones.active, true));
-    }
-    
-    return await query.orderBy(asc(cepZones.name));
-  }
-
   // CEP Zone methods using new JSON ranges structure
   async getCepZones(activeOnly = false): Promise<CepZone[]> {
-    let query = db.select().from(cepZones);
-    
     if (activeOnly) {
-      query = query.where(eq(cepZones.active, true));
+      return await db.select().from(cepZones).where(eq(cepZones.active, true)).orderBy(asc(cepZones.name));
     }
     
-    return await query.orderBy(asc(cepZones.name));
+    return await db.select().from(cepZones).orderBy(asc(cepZones.name));
   }
 
   async getCepZoneById(id: number): Promise<CepZone | undefined> {
@@ -1273,50 +1190,7 @@ export class DatabaseStorage implements IStorage {
     return null; // No overlap found
   }
 
-  async getOrderWithFullDetails(id: number): Promise<any> {
-    try {
-      const order = await db
-        .select({
-          id: orders.id,
-          orderNumber: orders.orderNumber,
-          eventId: orders.eventId,
-          customerId: orders.customerId,
-          addressId: orders.addressId,
-          kitQuantity: orders.kitQuantity,
-          deliveryCost: orders.deliveryCost,
-          extraKitsCost: orders.extraKitsCost,
-          donationCost: orders.donationCost,
-          discountAmount: orders.discountAmount,
-          couponCode: orders.couponCode,
-          totalCost: orders.totalCost,
-          paymentMethod: orders.paymentMethod,
-          status: orders.status,
-          donationAmount: orders.donationAmount,
-          idempotencyKey: orders.idempotencyKey,
-          createdAt: orders.createdAt,
-          customer: customers,
-          event: events,
-          address: addresses
-        })
-        .from(orders)
-        .leftJoin(customers, eq(orders.customerId, customers.id))
-        .leftJoin(events, eq(orders.eventId, events.id))
-        .leftJoin(addresses, eq(orders.addressId, addresses.id))
-        .where(eq(orders.id, id));
 
-      if (!order[0]) return undefined;
-
-      const kits = await this.getKitsByOrderId(id);
-      
-      return {
-        ...order[0],
-        kits
-      };
-    } catch (error) {
-      console.error('Error getting order with full details:', error);
-      return undefined;
-    }
-  }
 }
 
 // Mock implementation for development without database
@@ -1390,6 +1264,10 @@ class MockStorage implements IStorage {
 
   async getCustomerById(id: number): Promise<Customer | undefined> {
     return this.customers.find(c => c.id === id);
+  }
+
+  async getCustomer(id: number): Promise<Customer | undefined> {
+    return this.getCustomerById(id);
   }
 
   async createCustomer(customer: InsertCustomer): Promise<Customer> {
@@ -1566,30 +1444,52 @@ class MockStorage implements IStorage {
   }
 
   async getAdminStats(): Promise<{ totalCustomers: number; totalOrders: number; activeEvents: number; totalRevenue: number; }> {
+    const totalRevenue = this.orders.reduce((sum, order) => sum + parseFloat(order.totalCost || "0"), 0);
     return {
       totalCustomers: this.customers.length,
       totalOrders: this.orders.length,
       activeEvents: this.events.filter(e => e.available).length,
-      totalRevenue: this.orders.reduce((sum, o) => sum + Number(o.totalCost), 0)
+      totalRevenue
     };
   }
 
+  // Add missing methods for IStorage interface
   async getCouponByCode(code: string): Promise<Coupon | undefined> {
+    // Mock implementation - would need to add coupons array
     return undefined;
   }
 
   async createCoupon(coupon: InsertCoupon): Promise<Coupon> {
-    const newCoupon = { 
-      ...coupon, 
-      id: Date.now(), 
-      usageCount: 0,
-      createdAt: new Date()
-    } as Coupon;
+    // Mock implementation
+    const newCoupon = { ...coupon, id: Date.now(), createdAt: new Date(), updatedAt: new Date() } as Coupon;
     return newCoupon;
   }
 
+  async getCepZones(activeOnly?: boolean): Promise<CepZone[]> {
+    // Mock implementation - would return empty array for now
+    return [];
+  }
+
+  async getCepZoneById(id: number): Promise<CepZone | undefined> {
+    return undefined;
+  }
+
+  async createCepZone(zone: InsertCepZone): Promise<CepZone> {
+    const newZone = { ...zone, id: Date.now(), createdAt: new Date(), updatedAt: new Date() } as CepZone;
+    return newZone;
+  }
+
+  async updateCepZone(id: number, zone: Partial<InsertCepZone>): Promise<CepZone | undefined> {
+    return undefined;
+  }
+
+  async checkCepZoneOverlap(cepStart: string, cepEnd: string, excludeId?: number): Promise<CepZone | null> {
+    return null;
+  }
+
   async calculateDeliveryPrice(fromZipCode: string, toZipCode: string): Promise<number> {
-    return 15.50;
+    // Mock implementation - return fixed price
+    return 15.00;
   }
 
   async getOrderStats(): Promise<{
@@ -1601,169 +1501,90 @@ class MockStorage implements IStorage {
     deliveredOrders: number;
     totalRevenue: number;
   }> {
-    // Get order counts by status from database
-    const totalOrdersResult = await db.select({ count: count() }).from(orders);
-    const totalOrders = totalOrdersResult[0]?.count || 0;
-
-    const confirmedOrdersResult = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'confirmado'));
-    const confirmedOrders = confirmedOrdersResult[0]?.count || 0;
-
-    const awaitingPaymentResult = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'aguardando_pagamento'));
-    const awaitingPayment = awaitingPaymentResult[0]?.count || 0;
-
-    const cancelledOrdersResult = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'cancelado'));
-    const cancelledOrders = cancelledOrdersResult[0]?.count || 0;
-
-    const inTransitOrdersResult = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'em_transito'));
-    const inTransitOrders = inTransitOrdersResult[0]?.count || 0;
-
-    const deliveredOrdersResult = await db.select({ count: count() }).from(orders).where(eq(orders.status, 'entregue'));
-    const deliveredOrders = deliveredOrdersResult[0]?.count || 0;
-
-    // Calculate total revenue
-    const revenueResult = await db.select({ 
-      total: sql<number>`COALESCE(SUM(CAST(${orders.totalCost} AS DECIMAL)), 0)`
-    }).from(orders);
-    const totalRevenue = Number(revenueResult[0]?.total || 0);
-
+    const totalRevenue = this.orders.reduce((sum, order) => sum + parseFloat(order.totalCost || "0"), 0);
     return {
-      totalOrders,
-      confirmedOrders,
-      awaitingPayment,
-      cancelledOrders,
-      inTransitOrders,
-      deliveredOrders,
-      totalRevenue,
+      totalOrders: this.orders.length,
+      confirmedOrders: this.orders.filter(o => o.status === "confirmado").length,
+      awaitingPayment: this.orders.filter(o => o.status === "aguardando_pagamento").length,
+      cancelledOrders: this.orders.filter(o => o.status === "cancelado").length,
+      inTransitOrders: this.orders.filter(o => o.status === "em_transito").length,
+      deliveredOrders: this.orders.filter(o => o.status === "entregue").length,
+      totalRevenue
     };
   }
 
-
-
   async createCustomerWithAddresses(customerData: any): Promise<{ customer: Customer; addresses: Address[] }> {
-    // Start a transaction to ensure data consistency
-    const { name, cpf, birthDate, email, phone, addresses: addressesData } = customerData;
+    const customer = await this.createCustomer(customerData.customer);
+    const addresses: Address[] = [];
     
-    // Create customer
-    const [customer] = await db
-      .insert(customers)
-      .values({
-        name,
-        cpf,
-        birthDate,
-        email,
-        phone,
-      })
-      .returning();
+    for (const addressData of customerData.addresses || []) {
+      const address = await this.createAddress({ ...addressData, customerId: customer.id });
+      addresses.push(address);
+    }
     
-    // Create addresses
-    const createdAddresses = await Promise.all(
-      addressesData.map(async (addressData: any) => {
-        const [address] = await db
-          .insert(addresses)
-          .values({
-            ...addressData,
-            customerId: customer.id,
-          })
-          .returning();
-        return address;
-      })
-    );
-    
-    return {
-      customer,
-      addresses: createdAddresses,
-    };
+    return { customer, addresses };
   }
 
   async updateCustomer(id: number, customerData: any): Promise<Customer | undefined> {
-    const [customer] = await db
-      .update(customers)
-      .set(customerData)
-      .where(eq(customers.id, id))
-      .returning();
+    const index = this.customers.findIndex(c => c.id === id);
+    if (index === -1) return undefined;
     
-    return customer || undefined;
+    this.customers[index] = { ...this.customers[index], ...customerData };
+    return this.customers[index];
   }
 
   async deleteCustomer(id: number): Promise<boolean> {
-    // First delete all addresses
-    await db.delete(addresses).where(eq(addresses.customerId, id));
+    const index = this.customers.findIndex(c => c.id === id);
+    if (index === -1) return false;
     
-    // Then delete customer
-    const result = await db.delete(customers).where(eq(customers.id, id));
-    
-    return (result.rowCount || 0) > 0;
+    this.customers.splice(index, 1);
+    return true;
   }
 
   async getCustomerWithAddresses(id: number): Promise<(Customer & { addresses: Address[] }) | undefined> {
-    // Get customer
-    const [customer] = await db.select().from(customers).where(eq(customers.id, id));
+    const customer = this.customers.find(c => c.id === id);
+    if (!customer) return undefined;
     
-    if (!customer) {
-      return undefined;
-    }
-    
-    // Get addresses for this customer
-    const customerAddresses = await db
-      .select()
-      .from(addresses)
-      .where(eq(addresses.customerId, id));
-    
-    return {
-      ...customer,
-      addresses: customerAddresses,
-    };
+    const addresses = this.addresses.filter(a => a.customerId === id);
+    return { ...customer, addresses };
   }
 
-  // Email logs implementation
+  async getFullOrderById(id: number): Promise<any> {
+    return this.getOrderByIdWithDetails(id);
+  }
+
+  async getOrderByIdWithDetails(id: number): Promise<any> {
+    const order = this.orders.find(o => o.id === id);
+    if (!order) return undefined;
+    
+    const kits = this.kits.filter(k => k.orderId === id);
+    return { ...order, kits };
+  }
+
+  async getOrderWithFullDetails(id: number): Promise<any> {
+    return this.getOrderByIdWithDetails(id);
+  }
+
+  async updateOrderStatus(orderId: number | string, status: string, changedBy?: string, changedByName?: string, reason?: string, bulkOperationId?: string, sendEmail?: boolean): Promise<Order | undefined> {
+    const id = typeof orderId === 'string' ? parseInt(orderId) : orderId;
+    const index = this.orders.findIndex(o => o.id === id);
+    if (index === -1) return undefined;
+    
+    this.orders[index].status = status;
+    return this.orders[index];
+  }
+
   async createEmailLog(emailData: any): Promise<any> {
-    try {
-      const [emailLog] = await db.insert(emailLogs).values(emailData).returning();
-      return emailLog;
-    } catch (error) {
-      console.error('Error creating email log:', error);
-      throw error;
-    }
+    // Mock implementation
+    return { ...emailData, id: Date.now(), sentAt: new Date() };
   }
 
   async getEmailLogs(filters?: any): Promise<any[]> {
-    try {
-      const result = db.select().from(emailLogs);
-      
-      if (filters?.orderId) {
-        return await result.where(eq(emailLogs.orderId, filters.orderId)).orderBy(desc(emailLogs.sentAt));
-      }
-      
-      return await result.orderBy(desc(emailLogs.sentAt));
-    } catch (error) {
-      console.error('Error getting email logs:', error);
-      return [];
-    }
-  }
-
-  // CEP Zones implementation for MockStorage
-  async getCepZones(activeOnly = false): Promise<CepZone[]> {
+    // Mock implementation
     return [];
-  }
-
-  async getCepZoneById(id: number): Promise<CepZone | undefined> {
-    return undefined;
-  }
-
-  async createCepZone(zone: InsertCepZone): Promise<CepZone> {
-    const newZone = {
-      ...zone,
-      id: Date.now(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    } as CepZone;
-    return newZone;
-  }
-
-  async updateCepZone(id: number, zone: Partial<InsertCepZone>): Promise<CepZone | undefined> {
-    return undefined;
   }
 }
 
+// Export the storage implementation
 export const storage = new DatabaseStorage();
 
