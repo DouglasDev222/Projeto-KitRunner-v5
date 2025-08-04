@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { events, customers, addresses, orders, kits, adminUsers, adminSessions, adminAuditLog, passwordResetTokens } from "@shared/schema";
+import { events, customers, addresses, orders, kits, adminUsers, adminSessions, adminAuditLog, passwordResetTokens, cepZones } from "@shared/schema";
 import bcrypt from 'bcryptjs';
 
 // Function to generate valid CPF using Brazilian algorithm
@@ -74,6 +74,13 @@ async function seedDatabase() {
     await db.delete(customers);
     await db.delete(events);
     
+    // Clear CEP zones
+    try {
+      await db.delete(cepZones);
+    } catch (error) {
+      console.log("CEP zones table may not exist yet, continuing...");
+    }
+    
     // Clear admin related tables
     try {
       await db.delete(adminAuditLog);
@@ -95,6 +102,7 @@ async function seedDatabase() {
           city: "João Pessoa",
           state: "PB",
           pickupZipCode: "58039000",
+          pricingType: "cep_zones",
           fixedPrice: null,
           extraKitPrice: "12.00",
           donationRequired: true,
@@ -109,6 +117,7 @@ async function seedDatabase() {
           city: "João Pessoa",
           state: "PB",
           pickupZipCode: "58045000",
+          pricingType: "fixed",
           fixedPrice: "35.00",
           extraKitPrice: "15.00",
           donationRequired: false,
@@ -123,6 +132,7 @@ async function seedDatabase() {
           city: "Campina Grande",
           state: "PB",
           pickupZipCode: "58400000",
+          pricingType: "distance",
           fixedPrice: null,
           extraKitPrice: "10.00",
           donationRequired: false,
@@ -137,12 +147,75 @@ async function seedDatabase() {
           city: "Patos",
           state: "PB",
           pickupZipCode: "58700000",
+          pricingType: "fixed",
           fixedPrice: "25.00",
           extraKitPrice: "8.00",
           donationRequired: true,
           donationAmount: "3.00",
           donationDescription: "Doação para Casa de Apoio",
           available: false,
+        },
+        {
+          name: "Music Run",
+          date: "2025-08-05",
+          location: "Arena João Pessoa",
+          city: "João Pessoa",
+          state: "PB",
+          pickupZipCode: "58045000",
+          pricingType: "cep_zones",
+          fixedPrice: null,
+          extraKitPrice: "20.00",
+          donationRequired: false,
+          donationAmount: null,
+          donationDescription: null,
+          available: true,
+        },
+      ])
+      .returning();
+
+    // Seed CEP zones
+    const cepZonesData = await db
+      .insert(cepZones)
+      .values([
+        {
+          name: "João Pessoa - Centro",
+          description: "Centro da cidade de João Pessoa",
+          cepRanges: JSON.stringify([
+            { start: "58010000", end: "58059999" }
+          ]),
+          price: "15.00",
+          priority: 1,
+          active: true,
+        },
+        {
+          name: "João Pessoa - Zona Sul",
+          description: "Zona Sul de João Pessoa incluindo Tambaú, Cabo Branco",
+          cepRanges: JSON.stringify([
+            { start: "58020000", end: "58099999" }
+          ]),
+          price: "20.00",
+          priority: 2,
+          active: true,
+        },
+        {
+          name: "Bayeux",
+          description: "Cidade de Bayeux - PB",
+          cepRanges: JSON.stringify([
+            { start: "58300000", end: "58399999" }
+          ]),
+          price: "25.00",
+          priority: 3,
+          active: true,
+        },
+        {
+          name: "João Pessoa - Mangabeira",
+          description: "Bairro Mangabeira e adjacências",
+          cepRanges: JSON.stringify([
+            { start: "58055000", end: "58055999" }
+          ]),
+          price: "18.00",
+          priority: 4,
+          active: true,
         },
       ])
       .returning();
@@ -450,6 +523,7 @@ async function seedDatabase() {
 
     console.log("Database seeded successfully!");
     console.log("✅ Events:", eventsData.length);
+    console.log("✅ CEP Zones:", cepZonesData.length);
     console.log("✅ Customers:", customersData.length);
     console.log("✅ Addresses:", addressesData.length);
     console.log("✅ Orders:", ordersData.length);
