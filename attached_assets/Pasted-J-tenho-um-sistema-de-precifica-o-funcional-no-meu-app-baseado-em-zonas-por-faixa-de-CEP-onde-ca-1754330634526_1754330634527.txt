@@ -1,0 +1,57 @@
+Já tenho um sistema de precificação funcional no meu app, baseado em zonas por faixa de CEP, onde cada zona tem um preço associado. No entanto, atualmente não é possível cadastrar faixas de CEP sobrepostas, pois o sistema impede isso para evitar conflitos.
+
+Quero modificar essa lógica para que seja possível criar zonas com faixas de CEP sobrepostas, desde que exista um mecanismo de prioridade entre elas. A ideia é:
+
+A precificação deve considerar as zonas em ordem de prioridade.
+
+A primeira zona que conter o CEP buscado será utilizada.
+
+Isso permitirá, por exemplo, criar uma "zona geral da cidade" (com um grande intervalo de CEPs) como fallback para qualquer CEP não coberto por zonas mais específicas.
+
+🎯 O que preciso implementar:
+1. Backend (API / lógica de negócio):
+Permitir faixas de CEP sobrepostas no cadastro de zonas.
+
+Adicionar um campo de prioridade (ex: número inteiro ou ordem na lista).
+
+Alterar a lógica de busca de preço para:
+
+Percorrer as zonas em ordem de prioridade (ex: ordem ASC).
+
+Verificar se o CEP está dentro da faixa de cada zona.
+
+Retornar o preço da primeira zona correspondente.
+
+Se não encontrar nenhuma, retornar erro como hoje.
+
+2. Frontend (painel administrativo):
+Adicionar uma forma simples de o usuário definir e reordenar a prioridade das zonas.
+
+Pode ser um campo de ordenação, botões "subir/descer", ou drag-and-drop.
+
+Garantir que a ordem configurada seja refletida corretamente na API (ex: via campo ordem).
+
+3. Lado do cliente (app ou site que consulta o preço):
+Verificar se precisa atualizar algo na lógica de precificação.
+
+Garantir que a busca percorra todas as zonas em ordem de prioridade antes de retornar erro.
+
+Retornar erro somente se nenhuma zona corresponder ao CEP.
+
+4. Validação e compatibilidade:
+Permitir salvar faixas sobrepostas (remover restrição atual).
+
+Garantir que todas as zonas tenham um valor de prioridade definido.
+
+(Opcional) Avisar o usuário se houver duas zonas com prioridade igual e faixas sobrepostas, para evitar ambiguidades.
+
+🔍 Exemplo:
+Zona 1 (prioridade 1) → CEPs 58000-000 a 58030-000 → R$12,00
+
+Zona 2 (prioridade 2) → CEPs 58000-000 a 58099-999 → R$15,00
+
+CEP 58020-000 → retorna Zona 1
+
+CEP 58090-000 → retorna Zona 2
+
+CEP fora de todas → erro
