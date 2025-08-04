@@ -15,10 +15,15 @@ interface CepZonePrice {
   description: string;
   cepRanges: string;
   price: string;
-  currentPrice: string;
-  hasCustomPrice: boolean;
+  currentPrice?: string;
+  hasCustomPrice?: boolean;
   priority: number;
   active: boolean;
+}
+
+interface ApiResponse {
+  success: boolean;
+  zones: CepZonePrice[];
 }
 
 interface EventCepZonePricesProps {
@@ -32,12 +37,16 @@ export function EventCepZonePrices({ eventId, isVisible }: EventCepZonePricesPro
   const queryClient = useQueryClient();
   
   const { data: zones, isLoading, error } = useQuery({
-    queryKey: ['/api/events', eventId, 'cep-zone-prices'],
-    enabled: isVisible && !!eventId,
+    queryKey: eventId ? ['/api/events', eventId, 'cep-zone-prices'] : ['/api/admin/cep-zones'],
+    enabled: isVisible,
   });
   
   const savePricesMutation = useMutation({
     mutationFn: async (prices: Array<{ cepZoneId: number; price: string }>) => {
+      if (!eventId) {
+        throw new Error('ID do evento é necessário para salvar preços personalizados');
+      }
+      
       const response = await fetch(`/api/events/${eventId}/cep-zone-prices`, {
         method: 'PUT',
         headers: {
@@ -59,13 +68,26 @@ export function EventCepZonePrices({ eventId, isVisible }: EventCepZonePricesPro
   });
   
   useEffect(() => {
-    if (zones && Array.isArray(zones)) {
+    if (zones) {
       const initialPrices: Record<number, string> = {};
-      zones.forEach((zone: CepZonePrice) => {
-        initialPrices[zone.id] = zone.currentPrice;
-      });
-      setZonePrices(initialPrices);
-      setHasChanges(false);
+      let zonesList: CepZonePrice[] = [];
+      
+      // Handle different response formats
+      if ((zones as ApiResponse).success && (zones as ApiResponse).zones) {
+        // Format from /api/admin/cep-zones
+        zonesList = (zones as ApiResponse).zones;
+      } else if (Array.isArray(zones)) {
+        // Format from /api/events/:id/cep-zone-prices
+        zonesList = zones as CepZonePrice[];
+      }
+      
+      if (Array.isArray(zonesList)) {
+        zonesList.forEach((zone: CepZonePrice) => {
+          initialPrices[zone.id] = zone.currentPrice || zone.price;
+        });
+        setZonePrices(initialPrices);
+        setHasChanges(false);
+      }
     }
   }, [zones]);
   
@@ -138,7 +160,15 @@ export function EventCepZonePrices({ eventId, isVisible }: EventCepZonePricesPro
     );
   }
 
-  if (!zones || !Array.isArray(zones) || zones.length === 0) {
+  // Handle different response formats
+  let zonesList: CepZonePrice[] = [];
+  if ((zones as ApiResponse)?.success && (zones as ApiResponse)?.zones) {
+    zonesList = (zones as ApiResponse).zones;
+  } else if (Array.isArray(zones)) {
+    zonesList = zones as CepZonePrice[];
+  }
+
+  if (!zonesList || !Array.isArray(zonesList) || zonesList.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -171,7 +201,7 @@ export function EventCepZonePrices({ eventId, isVisible }: EventCepZonePricesPro
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        {Array.isArray(zones) && zones.map((zone: CepZonePrice) => (
+        {Array.isArray(zonesList) && zonesList.map((zone: CepZonePrice) => (
           <div key={zone.id} className="flex items-start gap-4 p-4 border rounded-lg bg-card">
             <div className="flex-1 space-y-2">
               <div className="flex items-center gap-2">
@@ -195,30 +225,32 @@ export function EventCepZonePrices({ eventId, isVisible }: EventCepZonePricesPro
               </p>
               
               <p className="text-sm">
-                <span className="font-semibold">Preço global:</span> R$ {parseFloat(zone.price).toFixed(2)}
+                <span className="font-semibold">Preço global:</span> R$ {parseFloat(zone.price || zone.currentPrice || '0').toFixed(2)}
               </p>
             </div>
             
-            <div className="w-32 space-y-2">
-              <Label htmlFor={`price-${zone.id}`} className="text-sm font-medium">
-                Preço Personalizado
-              </Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">
-                  R$
-                </span>
-                <Input
-                  id={`price-${zone.id}`}
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={zonePrices[zone.id] || ''}
-                  onChange={(e) => handlePriceChange(zone.id, e.target.value)}
-                  placeholder={parseFloat(zone.price).toFixed(2)}
-                  className="pl-8"
-                />
+            {eventId && (
+              <div className="w-32 space-y-2">
+                <Label htmlFor={`price-${zone.id}`} className="text-sm font-medium">
+                  Preço Personalizado
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">
+                    R$
+                  </span>
+                  <Input
+                    id={`price-${zone.id}`}
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={zonePrices[zone.id] || ''}
+                    onChange={(e) => handlePriceChange(zone.id, e.target.value)}
+                    placeholder={parseFloat(zone.price || zone.currentPrice || '0').toFixed(2)}
+                    className="pl-8"
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
         ))}
         
@@ -231,29 +263,39 @@ export function EventCepZonePrices({ eventId, isVisible }: EventCepZonePricesPro
           </Alert>
         )}
         
-        <div className="flex items-center justify-between pt-4 border-t">
-          <p className="text-sm text-muted-foreground">
-            {hasChanges ? '⚠️ Você tem alterações não salvas' : '✅ Todas as alterações salvas'}
-          </p>
-          
-          <Button 
-            onClick={handleSave} 
-            disabled={savePricesMutation.isPending || !hasChanges}
-            className="min-w-[140px]"
-          >
-            {savePricesMutation.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Salvar Preços
-              </>
-            )}
-          </Button>
-        </div>
+        {eventId && (
+          <div className="flex items-center justify-between pt-4 border-t">
+            <p className="text-sm text-muted-foreground">
+              {hasChanges ? '⚠️ Você tem alterações não salvas' : '✅ Todas as alterações salvas'}
+            </p>
+            
+            <Button 
+              onClick={handleSave} 
+              disabled={savePricesMutation.isPending || !hasChanges}
+              className="min-w-[140px]"
+            >
+              {savePricesMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Salvar Preços
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+        
+        {!eventId && (
+          <div className="pt-4 border-t">
+            <p className="text-sm text-muted-foreground text-center">
+              📋 Preços globais das zonas CEP (somente visualização)
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

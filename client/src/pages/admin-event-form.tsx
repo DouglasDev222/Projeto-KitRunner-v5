@@ -299,6 +299,25 @@ export default function AdminEventForm() {
                   />
                 </div>
 
+                {/* CEP Zone Pricing Preview - Show when cep_zones is selected */}
+                {watchPricingType === "cep_zones" && (
+                  <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">Preços por Zona CEP</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Este evento usará precificação por zonas CEP. Abaixo estão as zonas atualmente configuradas no sistema com seus preços globais.
+                      Após criar o evento, você poderá personalizar os preços para cada zona.
+                    </p>
+                    
+                    <EventCepZonePrices 
+                      eventId={null} 
+                      isVisible={true}
+                    />
+                  </div>
+                )}
+
                 {/* Donation Settings */}
                 <div className="space-y-4">
                   <FormField
