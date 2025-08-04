@@ -200,8 +200,13 @@ export default function CepZonesAdmin() {
   // Priority reordering mutation
   const reorderMutation = useMutation({
     mutationFn: async (zones: Array<{ id: number; priority: number }>) => {
-      const response = await apiRequest('PUT', '/api/admin/cep-zones/reorder', { zones });
-      return await response.json();
+      console.log('Sending reorder request with zones:', zones);
+      const payload = { zones };
+      console.log('Full payload:', payload);
+      const response = await apiRequest('PUT', '/api/admin/cep-zones/reorder', payload);
+      const result = await response.json();
+      console.log('Reorder response:', result);
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cep-zones'] });
@@ -221,16 +226,34 @@ export default function CepZonesAdmin() {
 
   // Move zone priority up or down
   const moveZone = (zoneId: number, direction: 'up' | 'down') => {
-    if (!zonesResponse?.zones) return;
+    console.log('moveZone called:', { zoneId, direction });
+    
+    if (!zonesResponse?.zones) {
+      console.error('No zones response available');
+      return;
+    }
     
     const zones = [...zonesResponse.zones].sort((a, b) => a.priority - b.priority);
-    const currentIndex = zones.findIndex(z => z.id === zoneId);
+    console.log('Sorted zones:', zones.map(z => ({ id: z.id, name: z.name, priority: z.priority })));
     
-    if (currentIndex === -1) return;
-    if (direction === 'up' && currentIndex === 0) return;
-    if (direction === 'down' && currentIndex === zones.length - 1) return;
+    const currentIndex = zones.findIndex(z => z.id === zoneId);
+    console.log('Current index:', currentIndex);
+    
+    if (currentIndex === -1) {
+      console.error('Zone not found with ID:', zoneId);
+      return;
+    }
+    if (direction === 'up' && currentIndex === 0) {
+      console.log('Already at top, cannot move up');
+      return;
+    }
+    if (direction === 'down' && currentIndex === zones.length - 1) {
+      console.log('Already at bottom, cannot move down');
+      return;
+    }
     
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    console.log('Target index:', targetIndex);
     
     // Swap priorities
     const updates = [
@@ -238,6 +261,7 @@ export default function CepZonesAdmin() {
       { id: zones[targetIndex].id, priority: zones[currentIndex].priority }
     ];
     
+    console.log('Updates to send:', updates);
     reorderMutation.mutate(updates);
   };
 
