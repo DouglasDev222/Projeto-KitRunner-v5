@@ -13,6 +13,8 @@ import { requireAdminAuth } from "../middleware/auth";
 
 const router = express.Router();
 
+console.log("🔥 CEP ZONES ROUTER LOADED AND INITIALIZED");
+
 // Schema for creating/updating CEP zones with text input and priority
 const cepZoneInputSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(100, "Nome deve ter no máximo 100 caracteres"),
@@ -252,6 +254,11 @@ router.get("/cep-zones/check/:zipCode", async (req, res) => {
 
 // PUT /api/admin/cep-zones/reorder - Reorder zones by priority  
 router.put("/admin/cep-zones/reorder", requireAdminAuth, async (req, res) => {
+  console.log("🔄 REORDER ROUTE HIT!");
+  console.log("Method:", req.method);
+  console.log("URL:", req.url);
+  console.log("Full path:", req.path);
+  
   try {
     console.log("🔄 REORDER REQUEST RECEIVED");
     console.log("Raw request body:", JSON.stringify(req.body, null, 2));
