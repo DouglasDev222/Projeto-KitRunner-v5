@@ -1,0 +1,83 @@
+Personalização de preços por zona de CEP por evento
+
+Já existe um sistema funcional de precificação por zonas de CEP, onde cada zona possui um preço fixo global, salvo na tabela cep_zones.
+
+Agora quero adicionar uma funcionalidade que permita ao administrador personalizar os preços das zonas de CEP para cada evento, mas somente quando o tipo de precificação do evento for "zonas CEP" (essa lógica de seleção de tipo de precificação já está implementada no sistema).
+
+🎯 Objetivo:
+Permitir que, ao criar (/admin/events/new) ou editar (/admin/events/:id/edit) um evento com tipo de precificação = "zonas CEP", o sistema exiba um formulário com as zonas de CEP ativas, permitindo personalizar os preços por zona exclusivamente para aquele evento.
+
+O preço atual da zona, salvo em cep_zones, será carregado como valor sugerido (predefinido) no formulário, mas poderá ser editado.
+
+Esses valores customizados serão salvos em uma nova tabela de vínculo entre o evento e as zonas.
+
+Mesmo que o valor customizado seja igual ao global, ele será salvo (não é opcional).
+
+✅ Importante: Se o tipo de precificação escolhido não for "zonas CEP", esse formulário não será exibido e nenhum preço customizado será salvo.
+
+🛠️ Backend
+Nova tabela: event_cep_zone_prices
+Coluna	Tipo	Detalhes
+id	integer	PK
+event_id	integer	FK → eventos
+cep_zone_id	integer	FK → zonas de CEP
+price	decimal	Preço customizado
+created_at	datetime	
+updated_at	datetime	
+
+Lógica:
+Ao salvar evento com tipo "zonas CEP":
+
+Salvar todos os preços do formulário na nova tabela.
+
+Se o tipo for alterado para outro (ex: preço fixo), pode ignorar essa tabela.
+
+Na leitura:
+
+Buscar preço da zona a partir da nova tabela.
+
+Se não houver valor para a zona no evento, usar valor de cep_zones.
+
+🖼️ Frontend (Admin)
+Em /admin/events/new e /admin/events/:id/edit:
+Ao selecionar "zonas CEP" como tipo de precificação:
+
+Exibir um formulário expandido com todas as zonas ativas.
+
+Mostrar:
+
+Nome da zona
+
+CEP inicial/final
+
+Campo de preço, com valor predefinido da zona
+
+O admin pode:
+
+Editar os preços diretamente.
+
+Deixar como estão (os valores serão salvos igual ao predefinido).
+
+Em qualquer outro tipo de precificação: o formulário não aparece.
+
+📲 Lado do cliente (app/site):
+Na busca de preço para um CEP em um evento:
+
+Verificar event_cep_zone_prices.
+
+Se não encontrar, buscar valor em cep_zones.
+
+Se não encontrar nenhuma zona, retornar erro.
+
+✅ Checklist rápido:
+ Nova tabela event_cep_zone_prices
+
+ Backend: salvar preços customizados ao criar/editar eventos com tipo "zonas CEP"
+
+ Backend: leitura com fallback
+
+ Frontend: mostrar formulário SOMENTE se "zonas CEP" for selecionado
+
+ Cliente: buscar preço correto por evento (endpoint ou fallback)
+
+ Garantir que os valores sejam salvos mesmo se iguais aos predefinidos
