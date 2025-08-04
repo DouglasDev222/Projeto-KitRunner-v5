@@ -250,11 +250,15 @@ router.get("/cep-zones/check/:zipCode", async (req, res) => {
   }
 });
 
-// PUT /api/admin/cep-zones/reorder - Reorder zones by priority
+// PUT /api/admin/cep-zones/reorder - Reorder zones by priority  
 router.put("/admin/cep-zones/reorder", requireAdminAuth, async (req, res) => {
   try {
-    console.log("Reorder request body:", req.body);
+    console.log("🔄 REORDER REQUEST RECEIVED");
+    console.log("Raw request body:", JSON.stringify(req.body, null, 2));
+    console.log("Request headers:", req.headers['content-type']);
+    
     const { zones } = req.body; // Array of { id, priority }
+    console.log("Extracted zones:", zones);
     
     if (!Array.isArray(zones)) {
       console.error("Zones is not an array:", zones);
