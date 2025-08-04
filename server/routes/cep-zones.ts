@@ -91,6 +91,78 @@ router.post("/admin/cep-zones", requireAdminAuth, async (req, res) => {
   }
 });
 
+// PUT /api/admin/cep-zones/reorder - Reorder zones by priority (MUST come before /:id route)
+router.put("/admin/cep-zones/reorder", requireAdminAuth, async (req, res) => {
+  console.log("🔄 REORDER ROUTE HIT!");
+  console.log("Method:", req.method);
+  console.log("URL:", req.url);
+  console.log("Full path:", req.path);
+  
+  try {
+    console.log("🔄 REORDER REQUEST RECEIVED");
+    console.log("Raw request body:", JSON.stringify(req.body, null, 2));
+    console.log("Request headers:", req.headers['content-type']);
+    
+    const { zones } = req.body; // Array of { id, priority }
+    console.log("Extracted zones:", zones);
+    
+    if (!Array.isArray(zones)) {
+      console.error("Zones is not an array:", zones);
+      return res.status(400).json({
+        success: false,
+        message: "Dados de prioridade inválidos - zones deve ser um array"
+      });
+    }
+    
+    if (zones.length !== 2) {
+      console.error("Invalid zones length:", zones.length);
+      return res.status(400).json({
+        success: false,
+        message: "Dados de prioridade inválidos - deve conter exatamente 2 zonas para trocar"
+      });
+    }
+    
+    // Validate each zone update
+    for (const zone of zones) {
+      console.log("Validating zone:", zone);
+      if (!zone.hasOwnProperty('id') || !zone.hasOwnProperty('priority')) {
+        console.error("Missing required properties:", zone);
+        return res.status(400).json({
+          success: false,
+          message: "Cada zona deve ter propriedades 'id' e 'priority'"
+        });
+      }
+      
+      if (typeof zone.id !== 'number' || typeof zone.priority !== 'number' || zone.priority < 1) {
+        console.error("Invalid zone data types:", zone);
+        return res.status(400).json({
+          success: false,
+          message: `Dados inválidos para zona: ID=${zone.id} (tipo: ${typeof zone.id}), prioridade=${zone.priority} (tipo: ${typeof zone.priority})`
+        });
+      }
+    }
+    
+    console.log("Updating zones with new priorities...");
+    // Update priorities in batch (swap)
+    for (const zone of zones) {
+      console.log(`Updating zone ${zone.id} to priority ${zone.priority}`);
+      await storage.updateCepZone(zone.id, { priority: zone.priority });
+    }
+    
+    console.log("Reorder completed successfully");
+    res.json({
+      success: true,
+      message: "Prioridades atualizadas com sucesso"
+    });
+  } catch (error) {
+    console.error("Error reordering CEP zones:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erro ao reordenar zonas"
+    });
+  }
+});
+
 // PUT /api/admin/cep-zones/:id - Update zone
 router.put("/admin/cep-zones/:id", requireAdminAuth, async (req, res) => {
   try {
@@ -252,76 +324,6 @@ router.get("/cep-zones/check/:zipCode", async (req, res) => {
   }
 });
 
-// PUT /api/admin/cep-zones/reorder - Reorder zones by priority  
-router.put("/admin/cep-zones/reorder", requireAdminAuth, async (req, res) => {
-  console.log("🔄 REORDER ROUTE HIT!");
-  console.log("Method:", req.method);
-  console.log("URL:", req.url);
-  console.log("Full path:", req.path);
-  
-  try {
-    console.log("🔄 REORDER REQUEST RECEIVED");
-    console.log("Raw request body:", JSON.stringify(req.body, null, 2));
-    console.log("Request headers:", req.headers['content-type']);
-    
-    const { zones } = req.body; // Array of { id, priority }
-    console.log("Extracted zones:", zones);
-    
-    if (!Array.isArray(zones)) {
-      console.error("Zones is not an array:", zones);
-      return res.status(400).json({
-        success: false,
-        message: "Dados de prioridade inválidos - zones deve ser um array"
-      });
-    }
-    
-    if (zones.length !== 2) {
-      console.error("Invalid zones length:", zones.length);
-      return res.status(400).json({
-        success: false,
-        message: "Dados de prioridade inválidos - deve conter exatamente 2 zonas para trocar"
-      });
-    }
-    
-    // Validate each zone update
-    for (const zone of zones) {
-      console.log("Validating zone:", zone);
-      if (!zone.hasOwnProperty('id') || !zone.hasOwnProperty('priority')) {
-        console.error("Missing required properties:", zone);
-        return res.status(400).json({
-          success: false,
-          message: "Cada zona deve ter propriedades 'id' e 'priority'"
-        });
-      }
-      
-      if (typeof zone.id !== 'number' || typeof zone.priority !== 'number' || zone.priority < 1) {
-        console.error("Invalid zone data types:", zone);
-        return res.status(400).json({
-          success: false,
-          message: `Dados inválidos para zona: ID=${zone.id} (tipo: ${typeof zone.id}), prioridade=${zone.priority} (tipo: ${typeof zone.priority})`
-        });
-      }
-    }
-    
-    console.log("Updating zones with new priorities...");
-    // Update priorities in batch (swap)
-    for (const zone of zones) {
-      console.log(`Updating zone ${zone.id} to priority ${zone.priority}`);
-      await storage.updateCepZone(zone.id, { priority: zone.priority });
-    }
-    
-    console.log("Reorder completed successfully");
-    res.json({
-      success: true,
-      message: "Prioridades atualizadas com sucesso"
-    });
-  } catch (error) {
-    console.error("Error reordering CEP zones:", error);
-    res.status(500).json({
-      success: false,
-      message: "Erro ao reordenar zonas"
-    });
-  }
-});
+
 
 export default router;

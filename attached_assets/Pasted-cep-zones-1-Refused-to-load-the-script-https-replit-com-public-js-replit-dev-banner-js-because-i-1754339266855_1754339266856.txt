@@ -1,0 +1,71 @@
+cep-zones:1 Refused to load the script 'https://replit.com/public/js/replit-dev-banner.js' because it violates the following Content Security Policy directive: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sdk.mercadopago.com". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback.
+
+chunk-RPCDYKBN.js?v=414879f3:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+cep-zones.tsx:229 moveZone called: {zoneId: 1, direction: 'down'}
+cep-zones.tsx:237 Sorted zones: (3) [{…}, {…}, {…}]
+cep-zones.tsx:240 Current index: 0
+cep-zones.tsx:256 Target index: 1
+cep-zones.tsx:264 Updates to send: (2) [{…}, {…}]
+cep-zones.tsx:203 Sending reorder request with zones: (2) [{…}, {…}]
+cep-zones.tsx:205 Full payload: {zones: Array(2)}
+queryClient.ts:54  PUT https://784a964d-2e55-44bc-b10d-9591d140ef97-00-2y0qyn4v4a0x6.picard.replit.dev/api/admin/cep-zones/reorder 400 (Bad Request)
+apiRequest @ queryClient.ts:54
+mutationFn @ cep-zones.tsx:206
+fn @ @tanstack_react-query.js?v=414879f3:1189
+run @ @tanstack_react-query.js?v=414879f3:494
+start @ @tanstack_react-query.js?v=414879f3:536
+execute @ @tanstack_react-query.js?v=414879f3:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=414879f3:2630
+(anonymous) @ @tanstack_react-query.js?v=414879f3:3295
+moveZone @ cep-zones.tsx:265
+onClick @ cep-zones.tsx:484
+callCallback2 @ chunk-RPCDYKBN.js?v=414879f3:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=414879f3:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=414879f3:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=414879f3:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=414879f3:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=414879f3:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=414879f3:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=414879f3:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=414879f3:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=414879f3:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=414879f3:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=414879f3:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=414879f3:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=414879f3:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=414879f3:5449
+cep-zones.tsx:229 moveZone called: {zoneId: 2, direction: 'down'}
+cep-zones.tsx:237 Sorted zones: (3) [{…}, {…}, {…}]
+cep-zones.tsx:240 Current index: 1
+cep-zones.tsx:256 Target index: 2
+cep-zones.tsx:264 Updates to send: (2) [{…}, {…}]
+cep-zones.tsx:203 Sending reorder request with zones: (2) [{…}, {…}]
+cep-zones.tsx:205 Full payload: {zones: Array(2)}
+queryClient.ts:54  PUT https://784a964d-2e55-44bc-b10d-9591d140ef97-00-2y0qyn4v4a0x6.picard.replit.dev/api/admin/cep-zones/reorder 400 (Bad Request)
+apiRequest @ queryClient.ts:54
+mutationFn @ cep-zones.tsx:206
+fn @ @tanstack_react-query.js?v=414879f3:1189
+run @ @tanstack_react-query.js?v=414879f3:494
+start @ @tanstack_react-query.js?v=414879f3:536
+execute @ @tanstack_react-query.js?v=414879f3:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=414879f3:2630
+(anonymous) @ @tanstack_react-query.js?v=414879f3:3295
+moveZone @ cep-zones.tsx:265
+onClick @ cep-zones.tsx:484
+callCallback2 @ chunk-RPCDYKBN.js?v=414879f3:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=414879f3:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=414879f3:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=414879f3:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=414879f3:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=414879f3:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=414879f3:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=414879f3:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=414879f3:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=414879f3:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=414879f3:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=414879f3:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=414879f3:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=414879f3:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=414879f3:5449
