@@ -58,10 +58,10 @@ export default function Payment() {
     try {
       const policyResponse = await fetch('/api/policies?type=order');
       if (policyResponse.ok) {
-        const policy = await policyResponse.json();
+        const policyData = await policyResponse.json();
         await acceptPolicyMutation.mutateAsync({
           userId: customer.id,
-          policyId: policy.id,
+          policyId: policyData.policy.id,
           context: 'order',
           orderId: orderId
         });
