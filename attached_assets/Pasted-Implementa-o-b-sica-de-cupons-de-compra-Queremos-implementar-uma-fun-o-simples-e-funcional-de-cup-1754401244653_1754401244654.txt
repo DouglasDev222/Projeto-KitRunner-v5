@@ -1,0 +1,111 @@
+Implementação básica de cupons de compra
+Queremos implementar uma função simples e funcional de cupons de desconto no fluxo de compra de eventos. O cupom poderá oferecer desconto por valor fixo ou percentual e será aplicado na tela de pagamento do evento.
+
+🎯 Funcionalidade desejada
+O cupom será inserido na tela /events/:id/payment, logo abaixo do resumo do pedido.
+
+O sistema deverá validar e aplicar o cupom, recalculando o total.
+
+Os cupons serão gerenciados pelo painel do administrador, com opções básicas de criação e limite de uso.
+
+🧾 Estrutura básica da tabela de cupons
+Sugestão de tabela: coupons
+
+Campo	Tipo	Observações
+id	integer (PK)	
+code	string	Código do cupom (único e case-insensitive)
+type	enum	"fixed" ou "percent"
+value	decimal	Valor em R$ (para fixed) ou % (para percent)
+description	string (opcional)	Texto explicativo
+product_ids	array / JSON	IDs dos produtos elegíveis (ou null para todos)
+max_uses	integer (opcional)	Limite total de uso do cupom
+uses	integer	Contador de usos já feitos
+expires_at	datetime	Data de validade
+active	boolean	Cupom ativo ou inativo
+created_at	datetime	
+updated_at	datetime	
+
+🧩 Fluxo no frontend /events/:id/payment
+Campo de input para digitar o código do cupom.
+
+Botão de "Aplicar" (ou automático ao sair do input).
+
+Validação do cupom (chamada à API):
+
+Verifica se está ativo, não expirado, se ainda tem uso disponível, e se é válido para o produto atual.
+
+Se válido:
+
+Mostrar o desconto aplicado e atualizar o total.
+
+(Opcional simples) Feedback: “Cupom aplicado com sucesso!”
+
+Se inválido:
+
+Mostrar mensagem de erro: “Cupom inválido ou expirado.”
+
+⚙️ Backend – Validação
+Endpoint: POST /api/coupons/validate
+
+Recebe code, product_id, event_id (se necessário).
+
+Retorna: tipo, valor, desconto aplicado, mensagem.
+
+Lógica básica:
+
+code válido (case-insensitive)
+
+active == true
+
+expires_at ainda válida
+
+max_uses não excedido
+
+product_ids compatível com o evento/kit comprado (ou null para todos)
+
+🛠️ Admin Panel
+Nova seção “Cupons” no menu lateral do admin
+
+Lista com os cupons existentes (filtros por ativo, expirado, etc.)
+
+Botão "Criar novo cupom"
+
+Formulário básico com:
+
+Código
+
+Tipo (fixed ou percent)
+
+Valor
+
+Produtos aplicáveis (checkbox ou select múltiplo)
+
+Data de validade
+
+Limite de uso
+
+✅ Checklist mínimo para MVP
+Banco de dados
+ Criar tabela coupons
+
+Backend
+ Endpoint para aplicar cupom no checkout (POST /api/coupons/validate)
+
+ Incrementar contador de uso após pagamento confirmado (se desejar)
+
+ Endpoint CRUD de cupons no admin
+
+Frontend – Cliente
+ Campo de input de cupom na tela /events/:id/payment
+
+ Aplicar desconto no resumo do pedido
+
+ Mostrar mensagens de sucesso ou erro
+
+Frontend – Admin
+ Listagem e criação de cupons
+
+
+ Exibir a descrição do cupom aplicado, se houver (ex: "Cupom 10OFF – 10% de desconto"). (isso tem aparecer na tela de pedido do cliente que foi usado cupom e também no detalhes do pedido do lado administrador)
+
+ Bloquear múltiplos cupons (permitir apenas um por compra – mais simples).

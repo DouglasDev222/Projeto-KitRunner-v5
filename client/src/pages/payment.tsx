@@ -16,6 +16,7 @@ import { orderCreationSchema } from "@shared/schema";
 import { calculatePricing, formatPricingBreakdown } from "@/lib/pricing-calculator";
 import { CardPayment } from "@/components/payment/card-payment";
 import { PIXPayment } from "@/components/payment/pix-payment";
+import { CouponInput } from "@/components/CouponInput";
 import type { Customer, Event, Address } from "@shared/schema";
 
 type OrderCreation = {
@@ -46,6 +47,11 @@ export default function Payment() {
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  
+  // Coupon state
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [originalTotalCost, setOriginalTotalCost] = useState(0);
 
   const { data: event } = useQuery<Event>({
     queryKey: ["/api/events", id],
@@ -132,6 +138,17 @@ export default function Payment() {
     setIsProcessing(false);
   };
 
+  // Coupon handlers
+  const handleCouponApplied = (coupon: any, discount: number, finalAmount: number) => {
+    setAppliedCoupon(coupon);
+    setCouponDiscount(discount);
+  };
+
+  const handleCouponRemoved = () => {
+    setAppliedCoupon(null);
+    setCouponDiscount(0);
+  };
+
   if (!customer || !kitData || !event) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
@@ -150,14 +167,21 @@ export default function Payment() {
   const deliveryPrice = calculatedCosts.deliveryPrice || 18.50;
   const cepZonePrice = calculatedCosts?.pricingType === 'cep_zones' ? calculatedCosts.deliveryPrice : undefined;
   
-  const pricing = calculatePricing({
+  const basePricing = calculatePricing({
     event,
     kitQuantity: kitData.kitQuantity,
     deliveryPrice,
     cepZonePrice
   });
   
-  const pricingBreakdown = formatPricingBreakdown(pricing, event, kitData.kitQuantity);
+  const pricingBreakdown = formatPricingBreakdown(basePricing, event, kitData.kitQuantity);
+  
+  // Apply coupon discount to pricing
+  const pricing = {
+    ...basePricing,
+    discountAmount: couponDiscount,
+    totalCost: Math.max(0, basePricing.totalCost - couponDiscount)
+  };
 
   // Create order data function to be used by payment components
   const createOrderData = (idempotencyKey: string): OrderCreation => {
@@ -176,9 +200,10 @@ export default function Payment() {
       deliveryCost: pricing.deliveryCost,
       extraKitsCost: pricing.extraKitsCost,
       donationCost: pricing.donationAmount,
-      discountAmount: pricing.discountAmount,
+      discountAmount: couponDiscount,
       donationAmount: pricing.donationAmount,
       idempotencyKey,
+      couponCode: appliedCoupon?.code,
     };
   };
 
@@ -271,6 +296,14 @@ export default function Payment() {
                   </div>
                 )}
                 
+                {/* Coupon discount */}
+                {couponDiscount > 0 && (
+                  <div className="flex justify-between items-center mb-1 text-green-600">
+                    <span className="text-green-600">Desconto ({appliedCoupon?.code})</span>
+                    <span className="font-medium text-green-600">-{formatCurrency(couponDiscount)}</span>
+                  </div>
+                )}
+                
                 <div className="border-t pt-2 mt-3">
                   <div className="flex justify-between items-center">
                     <span className="font-semibold text-lg text-neutral-800">Total</span>
@@ -279,6 +312,19 @@ export default function Payment() {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Coupon Input */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <CouponInput
+              eventId={parseInt(id!)}
+              totalAmount={basePricing.totalCost}
+              onCouponApplied={handleCouponApplied}
+              onCouponRemoved={handleCouponRemoved}
+              appliedCoupon={appliedCoupon}
+            />
           </CardContent>
         </Card>
 

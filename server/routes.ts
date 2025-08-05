@@ -16,6 +16,7 @@ import path from "path";
 import { requireAuth, requireAdmin, requireOwnership, type AuthenticatedRequest } from './middleware/auth';
 import adminAuthRoutes from './routes/admin-auth';
 import cepZonesRoutes from './routes/cep-zones';
+import couponsRoutes from './routes/coupons';
 
 // Security: Rate limiting for payment endpoints
 const paymentRateLimit = rateLimit({
@@ -100,6 +101,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // CEP Zones routes (new implementation with multiple ranges)
   app.use('/api', cepZonesRoutes);
+  
+  // Coupons routes
+  app.use('/api', couponsRoutes);
   
   // Serve test HTML files
   app.get("/test-rejected-payment.html", (req, res) => {
