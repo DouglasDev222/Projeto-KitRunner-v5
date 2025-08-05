@@ -294,7 +294,7 @@ export const customerRegistrationSchema = z.object({
     neighborhood: z.string().min(1, "Bairro é obrigatório"),
     city: z.string().min(1, "Cidade é obrigatória"),
     state: z.string().min(1, "Estado é obrigatório"),
-    zipCode: z.string().min(8, "CEP deve ter 8 dígitos").max(8, "CEP deve ter 8 dígitos"),
+    zipCode: z.string().regex(/^\d{5}-?\d{3}$/, "CEP deve ter o formato 12345-678"),
     isDefault: z.boolean().default(true),
   })).min(1, "Pelo menos um endereço é obrigatório"),
 });
@@ -306,7 +306,7 @@ export const adminEventCreationSchema = z.object({
   location: z.string().min(1, "Local do evento é obrigatório"),
   city: z.string().min(1, "Cidade é obrigatória"),
   state: z.string().min(1, "Estado é obrigatório"),
-  pickupZipCode: z.string().min(8, "CEP deve ter 8 dígitos").max(8, "CEP deve ter 8 dígitos"),
+  pickupZipCode: z.string().regex(/^\d{5}-?\d{3}$/, "CEP deve ter o formato 12345-678"),
   pricingType: z.enum(["fixed", "distance", "cep_zones"], { required_error: "Tipo de precificação é obrigatório" }),
   fixedPrice: z.string().optional(),
   extraKitPrice: z.string().default("8.00"),
@@ -461,7 +461,7 @@ export const addressSchema = z.object({
   neighborhood: z.string().min(1, "Bairro é obrigatório"),
   city: z.string().min(1, "Cidade é obrigatória"),
   state: z.string().min(2, "Estado é obrigatório").max(2, "Estado deve ter 2 caracteres"),
-  zipCode: z.string().min(8, "CEP deve ter 8 dígitos").max(8, "CEP deve ter 8 dígitos"),
+  zipCode: z.string().regex(/^\d{5}-?\d{3}$/, "CEP deve ter o formato 12345-678"),
   label: z.string().min(1, "Identificação do endereço é obrigatória"),
 });
 
