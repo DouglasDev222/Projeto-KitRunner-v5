@@ -52,7 +52,17 @@ export function CepZonePricing({
     enabled: isVisible,
   });
 
-  const zones: CepZone[] = zonesData?.zones || zonesData?.zones || [];
+  // Handle different data structures from different APIs
+  const zones: CepZone[] = eventId 
+    ? (zonesData?.zones || []) 
+    : (zonesData?.zones || []).map((zone: any) => ({
+        id: zone.id,
+        name: zone.name,
+        description: zone.description,
+        globalPrice: Number(zone.price || 0), // Map 'price' to 'globalPrice'
+        customPrice: null,
+        active: zone.active
+      }));
 
   // Initialize custom prices when data loads
   useEffect(() => {
@@ -157,7 +167,7 @@ export function CepZonePricing({
                 <Label className="text-xs text-gray-500">Preço Global</Label>
                 <div className="flex items-center gap-2 p-2 bg-gray-100 rounded border">
                   <DollarSign className="h-4 w-4 text-gray-400" />
-                  <span className="font-medium">{formatCurrency(zone.globalPrice)}</span>
+                  <span className="font-medium">{formatCurrency(zone.globalPrice || 0)}</span>
                 </div>
               </div>
 
@@ -171,7 +181,7 @@ export function CepZonePricing({
                   type="number"
                   step="0.01"
                   min="0"
-                  placeholder={`Ex: ${zone.globalPrice.toFixed(2)}`}
+                  placeholder={`Ex: ${(zone.globalPrice || 0).toFixed(2)}`}
                   value={customPrices[zone.id] || ""}
                   onChange={(e) => handlePriceChange(zone.id, e.target.value)}
                   className="text-right"
@@ -193,7 +203,7 @@ export function CepZonePricing({
                   <div key={zoneId} className="flex justify-between text-sm">
                     <span className="text-blue-700">{zone.name}</span>
                     <span className="font-medium text-blue-900">
-                      {formatCurrency(parseFloat(price))}
+                      {formatCurrency(parseFloat(price) || 0)}
                     </span>
                   </div>
                 ) : null;
