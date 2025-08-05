@@ -32,6 +32,7 @@ import AdminUsers from "@/pages/admin-users";
 import { AdminEmailLogs } from "@/pages/admin-email-logs";
 import { AdminEmailTest } from "@/pages/admin-email-test";
 import AdminCepZones from "@/pages/admin-cep-zones";
+import AdminCoupons from "@/pages/admin/coupons";
 import Landing from "@/pages/landing";
 
 function Router() {
@@ -132,6 +133,13 @@ function Router() {
         {() => (
           <AdminRouteGuard>
             <AdminCepZones />
+          </AdminRouteGuard>
+        )}
+      </Route>
+      <Route path="/admin/coupons" >
+        {() => (
+          <AdminRouteGuard>
+            <AdminCoupons />
           </AdminRouteGuard>
         )}
       </Route>

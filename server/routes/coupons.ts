@@ -27,11 +27,13 @@ const adminCouponSchema = insertCouponSchema.extend({
  * POST /api/coupons/validate
  * Valida um cupom e retorna o desconto aplicável
  */
-router.post('/validate', async (req, res) => {
+router.post('/coupons/validate', async (req, res) => {
   try {
+    console.log('🎫 Coupon validation request:', req.body);
     const validatedData = couponValidationSchema.parse(req.body);
     
     const validation = await CouponService.validateCoupon(validatedData);
+    console.log('🎫 Coupon validation result:', validation);
     
     res.json(validation);
   } catch (error) {

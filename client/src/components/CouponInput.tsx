@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,7 +43,7 @@ export function CouponInput({
   const [validationStatus, setValidationStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   // Query para validação do cupom
-  const { isLoading } = useQuery({
+  const { isLoading, data, error } = useQuery({
     queryKey: ['validate-coupon', couponCode, eventId, totalAmount],
     queryFn: async (): Promise<CouponValidationResponse> => {
       const response = await fetch('/api/coupons/validate', {
@@ -60,7 +60,12 @@ export function CouponInput({
       return response.json();
     },
     enabled: shouldValidate && couponCode.length > 0 && !appliedCoupon,
-    onSuccess: (data) => {
+    retry: false
+  });
+
+  // Handle response when data changes
+  useEffect(() => {
+    if (data && shouldValidate) {
       setShouldValidate(false);
       setValidationMessage(data.message);
       
@@ -71,14 +76,17 @@ export function CouponInput({
       } else {
         setValidationStatus('error');
       }
-    },
-    onError: () => {
+    }
+  }, [data, shouldValidate, onCouponApplied]);
+
+  // Handle error when error changes
+  useEffect(() => {
+    if (error && shouldValidate) {
       setShouldValidate(false);
       setValidationMessage("Erro ao validar cupom. Tente novamente.");
       setValidationStatus('error');
-    },
-    retry: false
-  });
+    }
+  }, [error, shouldValidate]);
 
   const handleApplyCoupon = () => {
     if (couponCode.trim() && !appliedCoupon) {
