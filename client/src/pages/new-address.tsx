@@ -54,14 +54,17 @@ export default function NewAddress() {
   const sessionCustomer = customerData ? JSON.parse(customerData) : null;
   const customer = user || sessionCustomer;
 
-  // For editing, get existing address data
+  // Check if this is an edit operation by looking at the route pattern
+  const isEditRoute = window.location.pathname.includes('/edit');
+  
+  // For editing, get existing address data (only if this is an edit route)
   const { data: existingAddress } = useQuery({
     queryKey: ["/api/addresses", id],
-    enabled: Boolean(id && id.match(/^\d+$/)),
+    enabled: Boolean(id && id.match(/^\d+$/) && isEditRoute),
   });
 
   useEffect(() => {
-    if (existingAddress) {
+    if (existingAddress && isEditRoute) {
       setIsEditing(true);
       form.reset({
         street: existingAddress.street,
@@ -74,8 +77,11 @@ export default function NewAddress() {
         label: existingAddress.label,
         isDefault: existingAddress.isDefault,
       });
+    } else {
+      // Ensure we're in creation mode for new address routes
+      setIsEditing(false);
     }
-  }, [existingAddress]);
+  }, [existingAddress, isEditRoute]);
 
   const form = useForm<AddressFormData>({
     resolver: zodResolver(addressFormSchema),

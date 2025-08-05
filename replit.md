@@ -20,6 +20,12 @@ Preferred communication style: Simple, everyday language.
   - **Profile Links Updated**: Added proper origin context to all address editing links in `profile.tsx`
   - **Comprehensive Testing**: Verified both profile→edit→profile and event→edit→event navigation flows work correctly
 
+- **Address Form Mode Detection Fix**: Corrected critical bug where `/events/5/address/new` showed edit form instead of creation form
+  - **Route-Based Detection**: Implemented URL pattern analysis (`/edit` in path) to correctly determine edit vs create mode
+  - **State Management**: Enhanced useEffect logic to properly set editing state based on route pattern
+  - **Form Behavior**: Fixed form initialization to show correct title and behavior for creation vs editing
+  - **Documentation**: Created comprehensive guide `CORRECAO_FLUXO_EDICAO_ENDERECOS.md` for future reference
+
 - **Admin Events Refactoring Complete**: Successfully implemented comprehensive admin events interface improvements
   - **CepZonePricing Component**: Created reusable component with compact layout (zone name + global price + custom input)
   - **EventDetailsModal**: Developed modal for comprehensive event information display with CEP zone pricing integration

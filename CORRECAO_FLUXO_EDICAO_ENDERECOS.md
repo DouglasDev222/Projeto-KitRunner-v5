@@ -1,81 +1,130 @@
-# Correção e melhoria no fluxo de edição de endereços do cliente
+# Correção do Fluxo de Edição de Endereços
 
-Queremos realizar ajustes no fluxo de edição de endereços do cliente, garantindo o correto carregamento dos dados e o redirecionamento adequado ao finalizar ou cancelar a edição.
+## 🚨 Problema Identificado
 
-## 🐞 1. Correção de erro 401 ao editar endereço
+### Erro na Rota `/events/5/address/new`
+- **Comportamento errado**: Ao clicar em "Adicionar Endereço", a página mostrava formulário de edição em vez de criação
+- **Causa raiz**: Lógica de detecção de modo de edição estava interpretando incorretamente o ID numérico da URL como ID de endereço para edição
 
-### Problema:
-Ao acessar a página `/profile/address/:id/edit`, ocorre um erro 401 (Unauthorized).
+### URL Problemática:
+```
+/events/5/address/new
+       ↑
+  Interpreado incorretamente como ID de endereço para editar
+```
 
-Com isso, os dados do endereço não são carregados para edição, mesmo com o cliente autenticado.
+## ✅ Solução Implementada
 
-### Solução:
-Consultar e aplicar as instruções do arquivo `AUTHENTICATION_FIX_GUIDE.md`, que explica como corrigir esse tipo de erro.
+### 1. **Detecção Correta de Modo de Edição**
 
-Verificar se:
-- O token está sendo enviado corretamente nas chamadas autenticadas.
-- A rota está protegida da forma certa.
-- O fetch está utilizando o contexto de sessão/logado do cliente.
+**Arquivo:** `client/src/pages/new-address.tsx`  
+**Localização:** Linha 61
 
-## 🔄 2. Correção no redirecionamento após editar endereço ou sair
+**Antes:**
+```typescript
+// Interpretava qualquer ID numérico como edição
+const { data: existingAddress } = useQuery({
+  queryKey: ["/api/addresses", id],
+  enabled: Boolean(id && id.match(/^\d+$/)),
+});
+```
 
-### Comportamento atual:
-Após editar um endereço ou clicar em "voltar", o sistema redireciona automaticamente para `/events/:id/address`, mesmo que o usuário tenha vindo da área de perfil.
+**Depois:**
+```typescript
+// Verifica se a URL contém '/edit' para determinar modo de edição
+const isEditRoute = window.location.pathname.includes('/edit');
 
-### Comportamento desejado:
-- Se o usuário acessou a edição de endereço a partir da tela de um evento (ex: `/events/8/address` → editar endereço), ao concluir ou cancelar deve voltar para `/events/8/address`.
-- Se o usuário acessou diretamente pela área de perfil (ex: `/profile/address/8/edit`), ao concluir ou cancelar deve voltar para `/profile`.
+const { data: existingAddress } = useQuery({
+  queryKey: ["/api/addresses", id],
+  enabled: Boolean(id && id.match(/^\d+$/) && isEditRoute),
+});
+```
 
-### Solução:
-Utilizar um parâmetro de origem ou referrer, por exemplo:
-- `/profile/address/8/edit?from=profile`
-- `/profile/address/8/edit?from=event&eventId=8`
+### 2. **Lógica de Estado Aprimorada**
 
-Armazenar esse parâmetro e utilizá-lo para definir o comportamento de redirecionamento ao:
-- Clicar em "Voltar"
-- Concluir a edição
+**Localização:** Linha 69-85
 
-## ✅ Checklist
+```typescript
+useEffect(() => {
+  if (existingAddress && isEditRoute) {
+    setIsEditing(true);
+    // Carrega dados do endereço existente
+    form.reset({...});
+  } else {
+    // Garante modo de criação para rotas novas
+    setIsEditing(false);
+  }
+}, [existingAddress, isEditRoute]);
+```
 
-### Correção do erro 401:
-- [x] Revisar autenticação conforme `AUTHENTICATION_FIX_GUIDE.md`
-- [x] Verificar headers/token nas chamadas da página `/profile/address/:id/edit`
-- [x] Garantir que a API permite o acesso correto a endereços do cliente autenticado
+### 3. **Diferenciação de Rotas**
 
-### Redirecionamento:
-- [x] Implementar controle de origem via query param (`from=profile` ou `from=event&eventId=X`)
-- [x] Adaptar lógica de "voltar" e pós-edição para redirecionar corretamente
-- [x] Atualizar links em `profile.tsx` para incluir `?from=profile`
-- [ ] Testar os dois fluxos:
-  - Acesso via `/profile`
-  - Acesso via `/events/:id/address` → editar endereço
+| Rota | Propósito | Modo |
+|------|-----------|------|
+| `/events/:id/address/new` | Criar novo endereço no contexto de evento | Criação |
+| `/profile/address/new` | Criar novo endereço no perfil | Criação |
+| `/profile/address/:id/edit` | Editar endereço existente | Edição |
 
-## ✅ Implementação Concluída
+## 🎯 Resultados
 
-### Correções Realizadas:
+### ✅ Comportamento Correto Agora:
 
-1. **Erro 401 (Unauthorized) Corrigido:**
-   - Substituído `fetch()` direto por React Query com autenticação automática
-   - Query agora usa `queryKey: ["/api/addresses", id]` com headers de auth
-   - Aplicado padrão do `AUTHENTICATION_FIX_GUIDE.md`
+1. **`/events/5/address/new`**:
+   - ✅ Mostra "Novo Endereço" no título
+   - ✅ Formulário limpo para criação
+   - ✅ Submissão cria novo endereço
 
-2. **Sistema de Redirecionamento Baseado em Origem:**
-   - Implementado parser de query parameters usando `useSearch()` do wouter
-   - Função `getNavigationTarget()` determina destino correto baseado em contexto
-   - Suporte para `from=profile`, `from=event&eventId=X`, e comportamento legacy
-   - Aplicado em `onSuccess`, `handleCancel`, e redirecionamento de autenticação
+2. **`/profile/address/123/edit`**:
+   - ✅ Mostra "Editar Endereço" no título
+   - ✅ Formulário preenchido com dados existentes
+   - ✅ Submissão atualiza endereço existente
 
-3. **Links Atualizados:**
-   - `profile.tsx`: Adicionado `?from=profile` em todos os links de edição e criação de endereços
-   - Mantém compatibilidade com fluxo legacy para eventos
+### 🔄 Fluxo de Navegação Corrigido:
 
-### Fluxos de Navegação:
+```
+Eventos → Endereço → "Adicionar Endereço" → /events/5/address/new
+                                             ↓
+                                        Formulário de CRIAÇÃO ✅
+                                             ↓
+                                        Novo endereço salvo
+                                             ↓
+                                        Volta para /events/5/address
+```
 
-**Do Perfil:**
-- `/profile` → editar endereço → `/profile/address/8/edit?from=profile` → volta para `/profile`
+## 🛠️ Para Futuras Implementações
 
-**Do Evento:**
-- `/events/8/address` → editar endereço → `/profile/address/8/edit?from=event&eventId=8` → volta para `/events/8/address`
+### Princípio para Detectar Modo de Edição:
+1. **Use padrão de URL explícito**: `/edit` na rota = modo de edição
+2. **Não dependa apenas de IDs**: IDs podem aparecer em contextos diferentes
+3. **Validação dupla**: Verificar tanto rota quanto existência de dados
 
-**Legacy (compatibilidade):**
-- URLs sem parâmetros mantêm comportamento anterior
+### Template para Componentes Similares:
+```typescript
+const isEditRoute = window.location.pathname.includes('/edit');
+const isEditMode = Boolean(existingData && isEditRoute);
+
+useEffect(() => {
+  if (isEditMode) {
+    // Modo edição
+    setEditing(true);
+    form.reset(existingData);
+  } else {
+    // Modo criação
+    setEditing(false);
+  }
+}, [existingData, isEditRoute]);
+```
+
+## 📋 Status da Correção
+
+- ✅ **Problema identificado**: Interpretação incorreta de ID na URL
+- ✅ **Solução implementada**: Detecção baseada em padrão `/edit` na URL
+- ✅ **Teste realizado**: Rota `/events/5/address/new` agora funciona corretamente
+- ✅ **Documentação atualizada**: Este guia para referência futura
+
+### Rotas Validadas:
+- ✅ `/events/:id/address/new` - Criação ✅
+- ✅ `/profile/address/new` - Criação ✅  
+- ✅ `/profile/address/:id/edit` - Edição ✅
+
+A correção garante que o formulário de endereços sempre opere no modo correto baseado na intenção da URL, eliminando confusão entre criação e edição de endereços.
