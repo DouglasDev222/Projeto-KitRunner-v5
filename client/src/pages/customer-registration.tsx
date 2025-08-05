@@ -70,10 +70,10 @@ export default function CustomerRegistration() {
         // Get the active register policy and record acceptance
         const policyResponse = await fetch('/api/policies?type=register');
         if (policyResponse.ok) {
-          const policy = await policyResponse.json();
+          const policyData = await policyResponse.json();
           await acceptPolicyMutation.mutateAsync({
             userId: data.customer.id,
-            policyId: policy.id,
+            policyId: policyData.policy.id,
             context: 'register'
           });
         }
