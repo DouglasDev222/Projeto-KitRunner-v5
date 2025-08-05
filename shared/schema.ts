@@ -254,6 +254,17 @@ export const customerRegistrationSchema = z.object({
   birthDate: z.string().min(10, "Data de nascimento é obrigatória").max(10, "Data inválida"),
   email: z.string().email("Email inválido"),
   phone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos"),
+  addresses: z.array(z.object({
+    label: z.string().min(1, "Etiqueta do endereço é obrigatória"),
+    street: z.string().min(1, "Rua é obrigatória"),
+    number: z.string().min(1, "Número é obrigatório"),
+    complement: z.string().optional(),
+    neighborhood: z.string().min(1, "Bairro é obrigatório"),
+    city: z.string().min(1, "Cidade é obrigatória"),
+    state: z.string().min(1, "Estado é obrigatório"),
+    zipCode: z.string().min(8, "CEP deve ter 8 dígitos").max(8, "CEP deve ter 8 dígitos"),
+    isDefault: z.boolean().default(true),
+  })).min(1, "Pelo menos um endereço é obrigatório"),
 });
 
 // Admin event creation validation

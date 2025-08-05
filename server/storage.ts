@@ -1165,7 +1165,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(cepZones)
       .where(eq(cepZones.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async checkCepZoneOverlap(cepStart: string, cepEnd: string, excludeId?: number): Promise<CepZone | null> {
