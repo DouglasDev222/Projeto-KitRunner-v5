@@ -18,7 +18,9 @@ Preferred communication style: Simple, everyday language.
   - **Backend Service**: Created `PolicyService` class with full CRUD operations and acceptance tracking logic
   - **API Routes**: Implemented complete REST API with public endpoints for policy retrieval/acceptance and admin endpoints for management
   - **Validation**: Added Zod schemas for policy document creation/update and acceptance tracking
-  - **Initial Data**: Created initial register and order policies with comprehensive Brazilian Portuguese content
+  - **Updated Content**: Integrated actual "Termos e Condições Gerais de Uso da KITRUNNER" from Politicas.md into both registration and order policies
+  - **Policy Structure**: General terms appear in both registration and order processes, with order-specific conditions added for payment flow
+  - **Frontend Integration**: Fixed policy modal display issues and improved UI design with organized hyperlinks
   - **Files Created**: `server/policy-service.ts`, `server/routes/policies.ts` with full API implementation
   - **Testing**: All endpoints tested and confirmed working (policy retrieval, acceptance recording, duplicate prevention)
 
