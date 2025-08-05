@@ -198,7 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Create addresses - Note: addresses should be provided separately via POST /api/addresses
-      const addresses: Address[] = [];
+      const addresses: any[] = [];
       
       res.json({ customer, addresses });
     } catch (error) {
@@ -1485,7 +1485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             donationAmount = Number(selectedEvent.donationAmount) * validatedOrderData.kitQuantity;
           }
 
-          totalCost = baseCost + deliveryCost + additionalCost + donationAmount - (validatedOrderData.discountAmount || 0);
+          totalCost = baseCost + deliveryCost + additionalCost + donationAmount - Number(validatedOrderData.discountAmount || 0);
 
           // Create the order with status "aguardando_pagamento" first
           const order = await storage.createOrder({
@@ -1709,7 +1709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   const address = await storage.getAddress(fullOrder.addressId);
                   const kits = await storage.getKitsByOrderId(fullOrder.id);
                   
-                  if (customer?.email) {
+                  if (fullOrder.customer?.email) {
                     const eventDate = fullOrder.event?.date ? new Date(fullOrder.event.date).toLocaleDateString('pt-BR') : 'A definir';
                     
                     const paymentConfirmationData = {
@@ -1732,7 +1732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         number: '', complement: '', neighborhood: '',
                         city: '', state: '', zipCode: ''
                       },
-                      kits: fullOrder.kits?.map(kit => ({
+                      kits: fullOrder.kits?.map((kit: any) => ({
                         name: kit.name, cpf: kit.cpf, shirtSize: kit.shirtSize
                       })) || []
                     };
@@ -1873,7 +1873,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   const address = await storage.getAddress(fullOrder.addressId);
                   const kits = await storage.getKitsByOrderId(fullOrder.id);
                   
-                  if (customer?.email) {
+                  if (fullOrder.customer?.email) {
                     const eventDate = fullOrder.event?.date ? new Date(fullOrder.event.date).toLocaleDateString('pt-BR') : 'A definir';
                     
                     const paymentConfirmationData = {
@@ -1896,7 +1896,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         number: '', complement: '', neighborhood: '',
                         city: '', state: '', zipCode: ''
                       },
-                      kits: fullOrder.kits?.map(kit => ({
+                      kits: fullOrder.kits?.map((kit: any) => ({
                         name: kit.name, cpf: kit.cpf, shirtSize: kit.shirtSize
                       })) || []
                     };
@@ -2122,7 +2122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       number: '', complement: '', neighborhood: '',
                       city: '', state: '', zipCode: ''
                     },
-                    kits: order.kits?.map(kit => ({
+                    kits: order.kits?.map((kit: any) => ({
                       name: kit.name, cpf: kit.cpf, shirtSize: kit.shirtSize
                     })) || []
                   });
@@ -2334,7 +2334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get basic event information
-      const event = await storage.getEventById(eventId);
+      const event = await storage.getEvent(eventId);
       if (!event) {
         return res.status(404).json({ error: "Evento não encontrado" });
       }
