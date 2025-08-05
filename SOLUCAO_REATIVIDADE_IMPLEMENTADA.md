@@ -186,7 +186,25 @@ const mutationExample = useMutation({
 - ✅ Endereços: Criação e edição
 - ✅ Pedidos: Criação  
 - ✅ Eventos: Criação e edição
+- ✅ Meus Pedidos: Identificação de cliente com invalidação automática
+- ✅ Confirmação de Endereços: Query keys padronizadas
 - ⚠️ Pendente: Exclusão de endereços (funcionalidade não existe ainda)
 - ⚠️ Pendente: Outras operações de exclusão conforme necessário
+
+## 📊 Páginas Atualizadas com Reatividade
+
+### ✅ Principais Telas do Cliente:
+1. **new-address.tsx** - Criação/edição de endereços
+2. **address-confirmation.tsx** - Seleção e edição de endereços em contexto de evento  
+3. **payment.tsx** - Criação de pedidos
+4. **my-orders.tsx** - Lista de pedidos do cliente
+5. **admin-event-form.tsx** - Criação de eventos
+6. **admin-event-edit.tsx** - Edição de eventos
+
+### 🔄 Invalidações Implementadas:
+- **Endereços**: Invalidação tripla (`/api/customers/:id/addresses`, `addresses/:id`, `/api/addresses`)
+- **Pedidos**: Invalidação abrangente (customer orders, admin orders, stats, events)
+- **Eventos**: Invalidação pública e admin (public events, admin events, admin stats)
+- **Identificação**: Invalidação proativa de orders e addresses do cliente
 
 Este guia garante reatividade completa no sistema e serve como referência para implementações futuras.

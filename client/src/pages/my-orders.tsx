@@ -11,13 +11,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { customerIdentificationSchema, type CustomerIdentification, type Order, type Kit } from "@shared/schema";
 import { formatCPF, isValidCPF } from "@/lib/cpf-validator";
 import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth-context";
-import { getStatusBadge } from "@/lib/status-utils";;
+import { getStatusBadge } from "@/lib/status-utils";
 
 export default function MyOrders() {
   // ALL hooks must be at the very top, before any conditional logic
@@ -25,6 +25,7 @@ export default function MyOrders() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [customer, setCustomer] = useState(null);
   const [showOrders, setShowOrders] = useState(false);
+  const queryClient = useQueryClient();
 
   const form = useForm<CustomerIdentification>({
     resolver: zodResolver(customerIdentificationSchema),
@@ -47,6 +48,10 @@ export default function MyOrders() {
       return response.json();
     },
     onSuccess: (customerData) => {
+      // Invalidate relevant caches for customer identification
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerData.id, "orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerData.id, "addresses"] });
+      
       setCustomer(customerData);
       setShowOrders(true);
     },

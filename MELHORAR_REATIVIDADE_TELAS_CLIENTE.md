@@ -65,10 +65,18 @@ Resultado: ao voltar para a tela de listagem, o novo endereço já está visíve
    - **Endereços**: `new-address.tsx` e `address-confirmation.tsx` com invalidação tripla
    - **Pedidos**: `payment.tsx` com invalidação de orders, stats e eventos
    - **Eventos**: `admin-event-form.tsx` e `admin-event-edit.tsx` com invalidação pública e admin
+   - **Meus Pedidos**: `my-orders.tsx` com invalidação de orders e endereços do cliente
+   - **Confirmação de Endereços**: `address-confirmation.tsx` com query key padronizada
 
 3. **Padrão Estabelecido**: Template de implementação criado para futuras funcionalidades
 
 4. **Documentação Completa**: Guia detalhado disponível em `SOLUCAO_REATIVIDADE_IMPLEMENTADA.md`
+
+### Últimas Correções Aplicadas:
+
+- ✅ **my-orders.tsx**: Adicionado queryClient import e invalidação de cache na identificação de cliente
+- ✅ **address-confirmation.tsx**: Padronizada query key para consistency (`["/api/customers", id, "addresses"]`)
+- ✅ **Invalidação Proativa**: Identificação de cliente agora invalida orders e addresses automaticamente
 
 ### Resultado:
 - ✅ Interfaces reagem imediatamente a mudanças

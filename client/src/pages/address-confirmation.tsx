@@ -52,7 +52,7 @@ export default function AddressConfirmation() {
   
   // Fetch customer addresses
   const { data: addresses, isLoading } = useQuery({
-    queryKey: [`/api/customers/${customer?.id}/addresses`],
+    queryKey: ["/api/customers", customer?.id, "addresses"],
     enabled: !!customer?.id,
   });
 
