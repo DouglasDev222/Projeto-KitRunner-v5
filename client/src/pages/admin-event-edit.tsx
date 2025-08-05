@@ -197,7 +197,7 @@ export default function AdminEventEdit() {
         </div>
       </div>
 
-      <Card className="max-w-4xl">
+      <Card>
         <CardHeader>
           <CardTitle>Informações do Evento</CardTitle>
         </CardHeader>
