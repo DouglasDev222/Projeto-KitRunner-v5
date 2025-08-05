@@ -39,6 +39,23 @@ export function EventCepZonePrices({ eventId, isVisible }: EventCepZonePricesPro
   const { data: zones, isLoading, error } = useQuery({
     queryKey: eventId ? ['/api/events', eventId, 'cep-zone-prices'] : ['/api/admin/cep-zones'],
     enabled: isVisible,
+    queryFn: async () => {
+      const endpoint = eventId ? `/api/events/${eventId}/cep-zone-prices` : '/api/admin/cep-zones';
+      const token = localStorage.getItem('adminToken');
+      
+      const response = await fetch(endpoint, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error fetching data: ${response.status}`);
+      }
+      
+      return response.json();
+    }
   });
   
   const savePricesMutation = useMutation({
