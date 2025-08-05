@@ -17,6 +17,7 @@ import { requireAuth, requireAdmin, requireOwnership, type AuthenticatedRequest 
 import adminAuthRoutes from './routes/admin-auth';
 import cepZonesRoutes from './routes/cep-zones';
 import couponsRoutes from './routes/coupons';
+import { CouponService } from './coupon-service';
 
 // Security: Rate limiting for payment endpoints
 const paymentRateLimit = rateLimit({
@@ -439,6 +440,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           shirtSize: kitData.shirtSize
         });
         kits.push(kit);
+      }
+      
+      // If a coupon was used, increment its usage count
+      if (orderData.couponCode && orderData.couponCode.trim()) {
+        try {
+          console.log(`🎫 Incrementing coupon usage for: ${orderData.couponCode}`);
+          const incrementSuccess = await CouponService.incrementUsage(orderData.couponCode);
+          if (incrementSuccess) {
+            console.log(`✅ Coupon usage incremented successfully: ${orderData.couponCode}`);
+          } else {
+            console.log(`⚠️ Failed to increment coupon usage: ${orderData.couponCode}`);
+          }
+        } catch (error) {
+          console.error(`❌ Error incrementing coupon usage for ${orderData.couponCode}:`, error);
+          // Don't fail the order creation if coupon increment fails
+        }
       }
       
       // Schedule payment pending email to be sent in 1 minute

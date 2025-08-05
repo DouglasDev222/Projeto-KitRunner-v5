@@ -7,6 +7,12 @@ KitRunner is a mobile-first web application designed for managing event kit pick
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (August 5, 2025)
+- **Coupon Usage Count Implementation Complete**: Successfully implemented automatic coupon usage tracking during order creation
+  - **Database Integration**: Added coupon usage increment functionality in order creation flow
+  - **Backend Implementation**: Enhanced `/api/orders` route to automatically increment `usage_count` when coupon is applied
+  - **Error Handling**: Implemented robust error handling to prevent order creation failure if coupon increment fails
+  - **Logging**: Added comprehensive logging for coupon usage tracking and debugging
+  - **Service Integration**: Connected `CouponService.incrementUsage()` method to order creation process
 - **UI Reactivity Improvements Complete**: Successfully implemented comprehensive cache invalidation system to eliminate manual page refresh requirements
   - **Address Management**: Enhanced cache invalidation in `new-address.tsx` and `address-confirmation.tsx` with triple invalidation pattern
   - **Order Creation**: Improved `payment.tsx` to invalidate customer orders, admin orders, stats, and events caches automatically
