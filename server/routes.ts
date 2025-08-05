@@ -2283,7 +2283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate event exists
-      const event = await storage.getEventById(eventId);
+      const event = await storage.getEvent(eventId);
       if (!event) {
         return res.status(404).json({ error: "Evento não encontrado" });
       }
