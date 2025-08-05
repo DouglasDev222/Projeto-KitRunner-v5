@@ -140,6 +140,27 @@ export const cepZones = pgTable("cep_zones", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Policy Documents table - for terms and privacy policies
+export const policyDocuments = pgTable("policy_documents", {
+  id: serial("id").primaryKey(),
+  type: varchar("type", { length: 20 }).notNull(), // 'register' | 'order'
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Policy Acceptances table - tracks user consent
+export const policyAcceptances = pgTable("policy_acceptances", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => customers.id),
+  policyId: integer("policy_id").notNull().references(() => policyDocuments.id),
+  acceptedAt: timestamp("accepted_at").notNull().defaultNow(),
+  context: varchar("context", { length: 20 }).notNull(), // 'register' | 'order'
+  orderId: integer("order_id").references(() => orders.id), // nullable, only for order context
+});
+
 export const adminAuditLog = pgTable("admin_audit_log", {
   id: serial("id").primaryKey(),
   adminUserId: integer("admin_user_id").references(() => adminUsers.id),
@@ -207,6 +228,15 @@ export const insertEventCepZonePriceSchema = createInsertSchema(eventCepZonePric
 });
 
 export const insertEmailLogSchema = createInsertSchema(emailLogs).omit({ id: true, sentAt: true });
+export const insertPolicyDocumentSchema = createInsertSchema(policyDocuments).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
+export const insertPolicyAcceptanceSchema = createInsertSchema(policyAcceptances).omit({ 
+  id: true, 
+  acceptedAt: true 
+});
 
 // Customer identification validation
 export const customerIdentificationSchema = z.object({
@@ -338,6 +368,12 @@ export type KitInformation = z.infer<typeof kitInformationSchema>;
 export type OrderCreation = z.infer<typeof orderCreationSchema>;
 export type CustomerRegistration = z.infer<typeof customerRegistrationSchema>;
 export type AdminEventCreation = z.infer<typeof adminEventCreationSchema>;
+
+// Policy types
+export type PolicyDocument = typeof policyDocuments.$inferSelect;
+export type NewPolicyDocument = z.infer<typeof insertPolicyDocumentSchema>;
+export type PolicyAcceptance = typeof policyAcceptances.$inferSelect;
+export type NewPolicyAcceptance = z.infer<typeof insertPolicyAcceptanceSchema>;
 
 // Email Log types
 export type EmailLog = typeof emailLogs.$inferSelect;

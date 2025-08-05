@@ -13,6 +13,15 @@ Preferred communication style: Simple, everyday language.
   - **Implementation**: Updated both coupon creation and update routes to use local timezone conversion
   - **Files Modified**: `server/routes/coupons.ts` with utility function and corrected date parsing
 
+- **Terms and Policies System Implementation**: Successfully implemented comprehensive backend system for managing terms and policies with user acceptance tracking
+  - **Database**: Added `policy_documents` and `policy_acceptances` tables with proper relationships and migration completed
+  - **Backend Service**: Created `PolicyService` class with full CRUD operations and acceptance tracking logic
+  - **API Routes**: Implemented complete REST API with public endpoints for policy retrieval/acceptance and admin endpoints for management
+  - **Validation**: Added Zod schemas for policy document creation/update and acceptance tracking
+  - **Initial Data**: Created initial register and order policies with comprehensive Brazilian Portuguese content
+  - **Files Created**: `server/policy-service.ts`, `server/routes/policies.ts` with full API implementation
+  - **Testing**: All endpoints tested and confirmed working (policy retrieval, acceptance recording, duplicate prevention)
+
 ## System Architecture
 
 ### Frontend Architecture

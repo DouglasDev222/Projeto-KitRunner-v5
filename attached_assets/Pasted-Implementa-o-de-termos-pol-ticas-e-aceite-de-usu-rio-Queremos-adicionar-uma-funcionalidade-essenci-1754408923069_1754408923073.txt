@@ -1,0 +1,119 @@
+Implementação de termos, políticas e aceite de usuário
+Queremos adicionar uma funcionalidade essencial para garantir boas práticas legais e de consentimento em nosso sistema: o aceite de termos e políticas, tanto no cadastro do usuário quanto na finalização de pedidos.
+
+🎯 Objetivo
+Exibir e registrar o aceite dos termos e políticas em:
+
+Tela de cadastro (/register)
+
+Tela de pagamento do evento (/events/:id/payment)
+
+O conteúdo das políticas deve ser editável via painel do administrador.
+
+O aceite precisa ser registrado em banco de dados, com referência ao usuário e timestamp.
+
+🧾 Estrutura de dados (sugestão de tabelas)
+1. policy_documents
+Campo	Tipo	Descrição
+id	integer	PK
+type	enum	"register" ou "order"
+title	string	Título (ex: "Política de Privacidade")
+content	text	Conteúdo em HTML ou markdown
+active	boolean	Política ativa?
+updated_at	datetime	Última modificação
+
+Permite que políticas sejam diferentes para cadastro e pedidos, e que sejam atualizáveis.
+
+2. policy_acceptances
+Campo	Tipo	Descrição
+id	integer	PK
+user_id	integer	FK para users
+policy_id	integer	FK para policy_documents
+accepted_at	datetime	Data e hora do aceite
+context	string	"register" ou "order" (reforça a origem)
+order_id	integer (nullable)	FK se for aceite em pedido específico
+
+🖥️ Fluxo nas interfaces do cliente
+1. /register (Cadastro)
+Adicionar um checkbox obrigatório com texto:
+
+“Li e aceito os Termos e Políticas” (link abre modal)
+
+Ao clicar no link:
+
+Abrir modal com conteúdo da política do tipo "register"
+
+Só permitir o cadastro se o checkbox for marcado
+
+Registrar aceite no banco, referenciando o user_id após o cadastro ser concluído
+
+2. /events/:id/payment (Pagamento do pedido)
+Adicionar checkbox obrigatório antes de finalizar o pedido:
+
+“Li e aceito os Termos do Pedido” (abre modal)
+
+Modal mostra a política ativa do tipo "order"
+
+Só permitir concluir o pedido se o checkbox estiver marcado
+
+Salvar aceite no banco com:
+
+user_id
+
+policy_id
+
+order_id do pedido
+
+accepted_at
+
+🔧 Painel do Administrador
+Nova seção: "Termos e Políticas"
+Rota: /admin/policies
+
+Funcionalidades:
+
+Visualizar políticas existentes (listagem por tipo)
+
+Criar ou editar política (type: register | order)
+
+Usar editor de texto (HTML ou markdown)
+
+Ativar/desativar uma política
+
+✅ Boas práticas recomendadas
+✅ Política versão única ativa por tipo – apenas uma política ativa por tipo (register, order) de cada vez.
+
+✅ Conteúdo versionável – manter o histórico de versões (mesmo que apenas visualmente no admin).
+
+✅ Modal claro e com rolagem – o texto não deve abrir em nova aba, deve ser lido ali mesmo.
+
+✅ Checkbox obrigatório – impede avanço sem consentimento.
+
+✅ Salvamento com timestamp – registra o momento do aceite, como exigido por LGPD e boas práticas legais.
+
+✅ Admin com campo “última modificação” – ajuda a manter rastreabilidade.
+
+✅ Checklist de implementação
+Backend
+ Criar tabelas policy_documents e policy_acceptances
+
+ Endpoint para buscar política ativa por tipo (GET /api/policies?type=register)
+
+ Endpoint para registrar aceite
+
+ Validar aceite obrigatório antes de cadastrar usuário ou concluir pedido
+
+Frontend – Cliente
+ /register: checkbox com link → modal → aceite obrigatório
+
+ /events/:id/payment: mesma lógica de aceite
+
+ Modal com rolagem, exibindo política carregada do backend
+
+Frontend – Admin
+ Página /admin/policies com listagem, criação e edição
+
+ Editor de texto (HTML/Markdown)
+
+ Mostrar data da última edição
+

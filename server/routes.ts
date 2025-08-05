@@ -17,6 +17,7 @@ import { requireAuth, requireAdmin, requireOwnership, type AuthenticatedRequest 
 import adminAuthRoutes from './routes/admin-auth';
 import cepZonesRoutes from './routes/cep-zones';
 import couponsRoutes from './routes/coupons';
+import policyRoutes from './routes/policies';
 import { CouponService } from './coupon-service';
 
 // Security: Rate limiting for payment endpoints
@@ -105,6 +106,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Coupons routes
   app.use('/api', couponsRoutes);
+  
+  // Policy routes
+  app.use('/api', policyRoutes);
   
   // Serve test HTML files
   app.get("/test-rejected-payment.html", (req, res) => {
