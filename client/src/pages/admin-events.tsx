@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AdminLayout } from "@/components/admin-layout";
+import { EventDetailsModal } from "@/components/admin/EventDetailsModal";
 // Sistema novo: AdminRouteGuard já protege esta página
 import { 
   Plus, 
@@ -124,15 +125,21 @@ export default function AdminEvents() {
         ) : (
           <div className="grid gap-4">
             {(events || []).map((event: Event) => (
-              <Card key={event.id} className="hover:shadow-md transition-shadow">
+              <Card key={event.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-primary/20">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Calendar className="w-5 h-5 text-blue-600" />
-                      <CardTitle className="text-lg">{event.name}</CardTitle>
+                      <Calendar className="w-5 h-5 text-primary" />
+                      <div>
+                        <CardTitle className="text-lg text-gray-900">{event.name}</CardTitle>
+                        <p className="text-sm text-gray-500 mt-1">{formatDate(event.date)} • {event.city}, {event.state}</p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant={event.available ? "default" : "secondary"}>
+                      <Badge 
+                        variant={event.available ? "default" : "secondary"}
+                        className={event.available ? "bg-green-100 text-green-800 hover:bg-green-200" : ""}
+                      >
                         {event.available ? "Ativo" : "Inativo"}
                       </Badge>
                       <Button
@@ -140,6 +147,7 @@ export default function AdminEvents() {
                         size="sm"
                         onClick={() => handleToggleEvent(event)}
                         disabled={toggleEventMutation.isPending}
+                        className="h-8 w-8 p-0"
                       >
                         {event.available ? (
                           <ToggleRight className="w-5 h-5 text-green-600" />
@@ -151,36 +159,60 @@ export default function AdminEvents() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-neutral-600">
-                      <Calendar className="w-4 h-4" />
-                      <span>{formatDate(event.date)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-neutral-600">
-                      <MapPin className="w-4 h-4" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <MapPin className="w-4 h-4 text-gray-400" />
                       <span>{event.location}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-neutral-600">
-                      <span className="font-medium">{event.city} - {event.state}</span>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <DollarSign className="w-4 h-4 text-gray-400" />
+                      <span className="font-medium">
+                        {event.pricingType === "fixed" && event.fixedPrice ? (
+                          `Preço Fixo: ${formatCurrency(Number(event.fixedPrice))}`
+                        ) : event.pricingType === "distance" ? (
+                          "Por Distância"
+                        ) : event.pricingType === "cep_zones" ? (
+                          "Zonas de CEP"
+                        ) : (
+                          "Não definido"
+                        )}
+                      </span>
+                      <Badge 
+                        variant="outline" 
+                        className={
+                          event.pricingType === "fixed" ? "border-green-200 text-green-700" :
+                          event.pricingType === "distance" ? "border-blue-200 text-blue-700" :
+                          event.pricingType === "cep_zones" ? "border-purple-200 text-purple-700" :
+                          "border-gray-200 text-gray-700"
+                        }
+                      >
+                        {event.pricingType === "fixed" ? "Fixo" : 
+                         event.pricingType === "distance" ? "Distância" :
+                         event.pricingType === "cep_zones" ? "CEP" : "?"}
+                      </Badge>
                     </div>
-                    {event.fixedPrice && (
-                      <div className="flex items-center gap-2 text-sm text-neutral-600">
-                        <DollarSign className="w-4 h-4" />
-                        <span>Preço: {formatCurrency(Number(event.fixedPrice))}</span>
-                      </div>
-                    )}
                   </div>
 
                   {event.donationRequired && (
                     <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                       <p className="text-sm text-orange-800">
                         <strong>Doação Obrigatória:</strong> {event.donationDescription}
+                        {event.donationAmount && ` - ${formatCurrency(Number(event.donationAmount))}`}
                       </p>
                     </div>
                   )}
 
                   <div className="flex items-center justify-between">
                     <div className="flex gap-2">
+                      <EventDetailsModal 
+                        event={event}
+                        trigger={
+                          <Button variant="outline" size="sm">
+                            <Eye className="w-4 h-4 mr-2" />
+                            Detalhes
+                          </Button>
+                        }
+                      />
                       <Button
                         variant="outline"
                         size="sm"
@@ -194,11 +226,11 @@ export default function AdminEvents() {
                         size="sm"
                         onClick={() => handleViewOrders(event)}
                       >
-                        <Eye className="w-4 h-4 mr-2" />
-                        Ver Pedidos
+                        <Package className="w-4 h-4 mr-2" />
+                        Pedidos
                       </Button>
                     </div>
-                    <div className="text-sm text-neutral-500">
+                    <div className="text-xs text-gray-400">
                       ID: {event.id}
                     </div>
                   </div>

@@ -12,9 +12,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminLayout } from "@/components/admin-layout";
+import { CepZonePricing } from "@/components/admin/CepZonePricing";
 // Sistema novo: AdminRouteGuard já protege esta página
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { Event } from "@shared/schema";
 
 const eventSchema = z.object({
@@ -50,17 +52,14 @@ type EventFormData = z.infer<typeof eventSchema>;
 export default function AdminEventEdit() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
-  // Sistema novo: sem necessidade de autenticação aqui (AdminRouteGuard protege)
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Sistema novo: AdminRouteGuard já protege - não precisa de verificação
+  const [cepZonePrices, setCepZonePrices] = useState<Record<number, string>>({});
 
   const { data: event, isLoading } = useQuery({
     queryKey: ["admin", "event", id],
     queryFn: async () => {
-      const response = await fetch(`/api/admin/events/${id}`);
-      if (!response.ok) throw new Error("Erro ao carregar evento");
+      const response = await apiRequest("GET", `/api/admin/events/${id}`);
       return response.json();
     },
     enabled: !!id,
@@ -121,18 +120,31 @@ export default function AdminEventEdit() {
         donationDescription: data.donationDescription && data.donationDescription.trim() !== "" ? data.donationDescription : null,
       };
       
-      const response = await fetch(`/api/admin/events/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(finalData),
-      });
+      const response = await apiRequest("PUT", `/api/admin/events/${id}`, finalData);
+      const eventData = await response.json();
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Erro ao atualizar evento: ${response.status} - ${errorText}`);
+      // If the event uses CEP zones pricing and has custom prices, save them
+      if (data.pricingType === "cep_zones" && Object.keys(cepZonePrices).length > 0) {
+        const customPrices = Object.entries(cepZonePrices)
+          .filter(([_, price]) => price && price.trim() !== '')
+          .map(([cepZoneId, price]) => ({
+            cepZoneId: parseInt(cepZoneId),
+            price
+          }));
+        
+        if (customPrices.length > 0) {
+          try {
+            await apiRequest("PUT", `/api/admin/events/${id}/cep-zone-prices`, {
+              customPrices
+            });
+          } catch (error) {
+            console.error('Erro ao salvar preços personalizados:', error);
+            // Don't fail the entire operation if custom prices fail
+          }
+        }
       }
       
-      return response.json();
+      return eventData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "events"] });
@@ -381,6 +393,14 @@ export default function AdminEventEdit() {
                   )}
                 />
               </div>
+
+              {/* CEP Zone Pricing Configuration - Show when cep_zones is selected */}
+              <CepZonePricing
+                eventId={id ? parseInt(id) : undefined}
+                isVisible={watchPricingType === "cep_zones"}
+                onPricesChange={setCepZonePrices}
+                className="mt-4"
+              />
 
               {/* Donation Configuration */}
               <div className="space-y-4">

@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/header";
 import { AdminLayout } from "@/components/admin-layout";
-import { EventCepZonePrices } from "@/components/admin/EventCepZonePrices";
-import { CepZonePricingConfig } from "@/components/admin/CepZonePricingConfig";
+import { CepZonePricing } from "@/components/admin/CepZonePricing";
 // Sistema novo: AdminRouteGuard protege esta página
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,13 +69,8 @@ export default function AdminEventForm() {
         
         if (customPrices.length > 0) {
           try {
-            await fetch(`/api/events/${eventData.id}/cep-zone-prices`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-              },
-              body: JSON.stringify({ zonePrices: customPrices })
+            await apiRequest("PUT", `/api/admin/events/${eventData.id}/cep-zone-prices`, {
+              customPrices
             });
           } catch (error) {
             console.error('Erro ao salvar preços personalizados:', error);
@@ -324,22 +318,11 @@ export default function AdminEventForm() {
                 </div>
 
                 {/* CEP Zone Pricing Configuration - Show when cep_zones is selected */}
-                {watchPricingType === "cep_zones" && (
-                  <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-5 w-5 text-primary" />
-                      <h3 className="text-lg font-semibold">Configuração de Preços por Zona CEP</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Configure preços personalizados para este evento. Se não definir um preço customizado, será usado o preço global da zona.
-                    </p>
-                    
-                    <CepZonePricingConfig 
-                      onPricesChange={setCepZonePrices}
-                      prices={cepZonePrices}
-                    />
-                  </div>
-                )}
+                <CepZonePricing
+                  isVisible={watchPricingType === "cep_zones"}
+                  onPricesChange={setCepZonePrices}
+                  className="mt-4"
+                />
 
                 {/* Donation Settings */}
                 <div className="space-y-4">
@@ -432,25 +415,7 @@ export default function AdminEventForm() {
           </CardContent>
         </Card>
         
-        {/* CEP Zone Pricing Configuration - Only show after event is created with cep_zones pricing */}
-        {createdEventId && (
-          <div className="mt-6">
-            <EventCepZonePrices 
-              eventId={createdEventId} 
-              isVisible={true}
-            />
-            
-            <div className="mt-4 flex justify-center">
-              <Button
-                onClick={() => setLocation("/admin")}
-                variant="outline"
-                size="lg"
-              >
-                Finalizar e Voltar ao Painel
-              </Button>
-            </div>
-          </div>
-        )}
+
     </AdminLayout>
   );
 }

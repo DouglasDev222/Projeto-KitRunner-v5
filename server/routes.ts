@@ -2221,6 +2221,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // CEP Zones routes are handled in separate router (cepZonesRoutes)
 
+  // Event CEP Zone Prices Management - Admin only
+  
+  // Get CEP zone prices for a specific event
+  app.get("/api/admin/events/:id/cep-zone-prices", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      
+      if (isNaN(eventId)) {
+        return res.status(400).json({ error: "ID do evento inválido" });
+      }
+      
+      // Get all CEP zones with their global prices
+      const allZones = await storage.getCepZones();
+      
+      // Get custom prices for this specific event
+      const customPrices = await db
+        .select()
+        .from(eventCepZonePrices)
+        .where(eq(eventCepZonePrices.eventId, eventId));
+      
+      // Create a map of custom prices by zone ID
+      const customPricesMap = new Map(
+        customPrices.map(cp => [cp.cepZoneId, cp.price])
+      );
+      
+      // Combine zones with their custom prices
+      const zonesWithPrices = allZones.map(zone => ({
+        id: zone.id,
+        name: zone.name,
+        description: zone.description,
+        globalPrice: Number(zone.price),
+        customPrice: customPricesMap.has(zone.id) 
+          ? Number(customPricesMap.get(zone.id)) 
+          : null,
+        active: zone.active
+      }));
+      
+      res.json({
+        success: true,
+        zones: zonesWithPrices
+      });
+    } catch (error: any) {
+      console.error("Error getting event CEP zone prices:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Update CEP zone prices for a specific event
+  app.put("/api/admin/events/:id/cep-zone-prices", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      const { customPrices } = req.body;
+      
+      if (isNaN(eventId)) {
+        return res.status(400).json({ error: "ID do evento inválido" });
+      }
+      
+      if (!Array.isArray(customPrices)) {
+        return res.status(400).json({ error: "customPrices deve ser um array" });
+      }
+      
+      // Validate event exists
+      const event = await storage.getEventById(eventId);
+      if (!event) {
+        return res.status(404).json({ error: "Evento não encontrado" });
+      }
+      
+      // Start transaction - first delete existing custom prices for this event
+      await db.delete(eventCepZonePrices).where(eq(eventCepZonePrices.eventId, eventId));
+      
+      // Insert new custom prices (only those with valid prices)
+      const validCustomPrices = customPrices.filter(cp => 
+        cp.cepZoneId && 
+        cp.price && 
+        !isNaN(parseFloat(cp.price)) && 
+        parseFloat(cp.price) > 0
+      );
+      
+      if (validCustomPrices.length > 0) {
+        const priceData = validCustomPrices.map(cp => ({
+          eventId,
+          cepZoneId: parseInt(cp.cepZoneId),
+          price: cp.price.toString()
+        }));
+        
+        await db.insert(eventCepZonePrices).values(priceData);
+      }
+      
+      res.json({
+        success: true,
+        message: `${validCustomPrices.length} preços personalizados salvos com sucesso`,
+        updatedCount: validCustomPrices.length
+      });
+      
+    } catch (error: any) {
+      console.error("Error updating event CEP zone prices:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Get detailed event information including CEP zone prices
+  app.get("/api/admin/events/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      
+      if (isNaN(eventId)) {
+        return res.status(400).json({ error: "ID do evento inválido" });
+      }
+      
+      // Get basic event information
+      const event = await storage.getEventById(eventId);
+      if (!event) {
+        return res.status(404).json({ error: "Evento não encontrado" });
+      }
+      
+      // If event uses CEP zones pricing, get the custom prices
+      let cepZonePrices = null;
+      if (event.pricingType === 'cep_zones') {
+        const customPrices = await db
+          .select({
+            cepZoneId: eventCepZonePrices.cepZoneId,
+            price: eventCepZonePrices.price,
+            zoneName: cepZones.name
+          })
+          .from(eventCepZonePrices)
+          .leftJoin(cepZones, eq(eventCepZonePrices.cepZoneId, cepZones.id))
+          .where(eq(eventCepZonePrices.eventId, eventId));
+          
+        cepZonePrices = customPrices.map(cp => ({
+          zoneId: cp.cepZoneId,
+          zoneName: cp.zoneName,
+          customPrice: Number(cp.price)
+        }));
+      }
+      
+      res.json({
+        ...event,
+        cepZonePrices
+      });
+      
+    } catch (error: any) {
+      console.error("Error getting event details:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Check CEP zone for a specific ZIP code
   app.get("/api/cep-zones/check/:zipCode", generalRateLimit, async (req, res) => {
     try {
