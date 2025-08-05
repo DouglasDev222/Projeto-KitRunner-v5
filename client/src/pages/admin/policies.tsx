@@ -43,9 +43,12 @@ export default function AdminPolicies() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: policies = [], isLoading } = useQuery<PolicyDocument[]>({
+  const { data: policiesData, isLoading } = useQuery<{policies: PolicyDocument[]}>({
     queryKey: ['/api/admin/policies'],
   });
+
+  // Extract policies array from response
+  const policies = policiesData?.policies || [];
 
   const createPolicyMutation = useMutation({
     mutationFn: async (data: PolicyFormData) => {
@@ -172,8 +175,8 @@ export default function AdminPolicies() {
     return type === 'register' ? 'default' : 'secondary';
   };
 
-  const activePolicies = policies.filter(p => p.active);
-  const inactivePolicies = policies.filter(p => !p.active);
+  const activePolicies = policies.filter((p: PolicyDocument) => p.active);
+  const inactivePolicies = policies.filter((p: PolicyDocument) => !p.active);
 
   return (
     <AdminLayout>
@@ -210,7 +213,7 @@ export default function AdminPolicies() {
             </Card>
           ) : (
             <div className="grid gap-4">
-              {activePolicies.map((policy) => (
+              {activePolicies.map((policy: PolicyDocument) => (
                 <Card key={policy.id}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -282,7 +285,7 @@ export default function AdminPolicies() {
             </h2>
             
             <div className="grid gap-4">
-              {inactivePolicies.map((policy) => (
+              {inactivePolicies.map((policy: PolicyDocument) => (
                 <Card key={policy.id} className="opacity-60">
                   <CardHeader>
                     <div className="flex items-center justify-between">

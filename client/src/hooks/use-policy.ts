@@ -24,7 +24,9 @@ export function usePolicyByType(type: 'register' | 'order') {
       if (!response.ok) {
         throw new Error('Erro ao carregar política');
       }
-      return response.json();
+      const data = await response.json();
+      // API returns { success: true, policy: {...} }
+      return data.policy;
     }
   });
 }

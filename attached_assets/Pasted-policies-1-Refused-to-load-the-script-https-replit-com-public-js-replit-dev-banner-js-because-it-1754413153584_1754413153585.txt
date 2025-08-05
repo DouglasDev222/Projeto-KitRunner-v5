@@ -1,0 +1,53 @@
+policies:1 Refused to load the script 'https://replit.com/public/js/replit-dev-banner.js' because it violates the following Content Security Policy directive: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sdk.mercadopago.com". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback.
+
+chunk-RPCDYKBN.js?v=d463117a:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+policies.tsx:175 Uncaught TypeError: policies.filter is not a function
+    at AdminPolicies (policies.tsx:175:35)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=d463117a:11548:26)
+    at updateFunctionComponent (chunk-RPCDYKBN.js?v=d463117a:14582:28)
+    at beginWork (chunk-RPCDYKBN.js?v=d463117a:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=d463117a:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=d463117a:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=d463117a:3733:39)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=d463117a:19765:15)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=d463117a:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=d463117a:19137:13)
+policies.tsx:175 Uncaught TypeError: policies.filter is not a function
+    at AdminPolicies (policies.tsx:175:35)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=d463117a:11548:26)
+    at updateFunctionComponent (chunk-RPCDYKBN.js?v=d463117a:14582:28)
+    at beginWork (chunk-RPCDYKBN.js?v=d463117a:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=d463117a:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=d463117a:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=d463117a:3733:39)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=d463117a:19765:15)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=d463117a:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=d463117a:19137:13)
+chunk-RPCDYKBN.js?v=d463117a:14032 The above error occurred in the <AdminPolicies> component:
+
+    at AdminPolicies (https://629c85f7-d23e-4129-a1cd-0202d48c9f91-00-dazdwknkcoho.spock.replit.dev/src/pages/admin/policies.tsx:34:55)
+    at AdminRouteGuard (https://629c85f7-d23e-4129-a1cd-0202d48c9f91-00-dazdwknkcoho.spock.replit.dev/src/components/admin-auth/admin-route-guard.tsx:21:35)
+    at Route (https://629c85f7-d23e-4129-a1cd-0202d48c9f91-00-dazdwknkcoho.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=d463117a:323:16)
+    at Switch (https://629c85f7-d23e-4129-a1cd-0202d48c9f91-00-dazdwknkcoho.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=d463117a:379:17)
+    at Router
+    at Provider (https://629c85f7-d23e-4129-a1cd-0202d48c9f91-00-dazdwknkcoho.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-TONAP5II.js?v=d463117a:43:15)
+    at TooltipProvider (https://629c85f7-d23e-4129-a1cd-0202d48c9f91-00-dazdwknkcoho.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=d463117a:64:5)
+    at AdminAuthProvider (https://629c85f7-d23e-4129-a1cd-0202d48c9f91-00-dazdwknkcoho.spock.replit.dev/src/contexts/admin-auth-context.tsx:20:37)
+    at AuthProvider (https://629c85f7-d23e-4129-a1cd-0202d48c9f91-00-dazdwknkcoho.spock.replit.dev/src/lib/auth-context.tsx:20:32)
+    at QueryClientProvider (https://629c85f7-d23e-4129-a1cd-0202d48c9f91-00-dazdwknkcoho.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=d463117a:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-RPCDYKBN.js?v=d463117a:14032
+chunk-RPCDYKBN.js?v=d463117a:9129 Uncaught TypeError: policies.filter is not a function
+    at AdminPolicies (policies.tsx:175:35)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=d463117a:11548:26)
+    at updateFunctionComponent (chunk-RPCDYKBN.js?v=d463117a:14582:28)
+    at beginWork (chunk-RPCDYKBN.js?v=d463117a:15924:22)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=d463117a:19753:22)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=d463117a:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=d463117a:19137:13)
+    at renderRootSync (chunk-RPCDYKBN.js?v=d463117a:19116:15)
+    at recoverFromConcurrentError (chunk-RPCDYKBN.js?v=d463117a:18736:28)
+    at performSyncWorkOnRoot (chunk-RPCDYKBN.js?v=d463117a:18879:28)
