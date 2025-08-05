@@ -16,12 +16,16 @@ import { customerRegistrationSchema, type CustomerRegistration } from "@shared/s
 import { formatCPF, isValidCPF } from "@/lib/cpf-validator";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth-context";
+import { PolicyAcceptance } from "@/components/policy-acceptance";
+import { useAcceptPolicy } from "@/hooks/use-policy";
 
 export default function CustomerRegistration() {
   const [, setLocation] = useLocation();
   const { id } = useParams<{ id: string }>();
   const [error, setError] = useState<string | null>(null);
+  const [policyAccepted, setPolicyAccepted] = useState(false);
   const { login } = useAuth();
+  const acceptPolicyMutation = useAcceptPolicy();
   
   // Check if we're in standalone registration mode (no event ID)
   const isStandaloneRegistration = !id;
@@ -60,7 +64,24 @@ export default function CustomerRegistration() {
       const response = await apiRequest("POST", "/api/customers/register", data);
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // Record policy acceptance
+      try {
+        // Get the active register policy and record acceptance
+        const policyResponse = await fetch('/api/policies?type=register');
+        if (policyResponse.ok) {
+          const policy = await policyResponse.json();
+          await acceptPolicyMutation.mutateAsync({
+            userId: data.customer.id,
+            policyId: policy.id,
+            context: 'register'
+          });
+        }
+      } catch (policyError) {
+        console.error('Error recording policy acceptance:', policyError);
+        // Continue with registration flow even if policy recording fails
+      }
+
       if (isStandaloneRegistration) {
         // Standalone registration - log in user and go to profile
         login(data.customer);
@@ -79,6 +100,12 @@ export default function CustomerRegistration() {
 
   const onSubmit = (data: CustomerRegistration) => {
     setError(null);
+    
+    // Validate policy acceptance
+    if (!policyAccepted) {
+      setError("É necessário aceitar os termos de cadastro para prosseguir");
+      return;
+    }
     
     registerMutation.mutate(data);
   };
@@ -374,6 +401,18 @@ export default function CustomerRegistration() {
               </CardContent>
             </Card>
             
+            {/* Policy Acceptance */}
+            <Card>
+              <CardContent className="p-4">
+                <PolicyAcceptance
+                  type="register"
+                  checked={policyAccepted}
+                  onCheckedChange={setPolicyAccepted}
+                  required={true}
+                />
+              </CardContent>
+            </Card>
+
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
@@ -384,7 +423,7 @@ export default function CustomerRegistration() {
               type="submit" 
               className="w-full bg-primary text-white hover:bg-primary/90"
               size="lg"
-              disabled={registerMutation.isPending}
+              disabled={registerMutation.isPending || !policyAccepted}
             >
               {registerMutation.isPending ? "Cadastrando..." : "Finalizar Cadastro"}
             </Button>

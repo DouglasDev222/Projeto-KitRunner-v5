@@ -11,12 +11,14 @@ import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/brazilian-formatter";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { orderCreationSchema } from "@shared/schema";
 import { calculatePricing, formatPricingBreakdown } from "@/lib/pricing-calculator";
 import { CardPayment } from "@/components/payment/card-payment";
 import { PIXPayment } from "@/components/payment/pix-payment";
 import { CouponInput } from "@/components/CouponInput";
+import { PolicyAcceptance } from "@/components/policy-acceptance";
+import { useAcceptPolicy } from "@/hooks/use-policy";
 import type { Customer, Event, Address } from "@shared/schema";
 
 type OrderCreation = {
@@ -47,6 +49,27 @@ export default function Payment() {
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [policyAccepted, setPolicyAccepted] = useState(false);
+  
+  const acceptPolicyMutation = useAcceptPolicy();
+
+  // Helper function to record policy acceptance
+  const recordPolicyAcceptance = async (orderId: number) => {
+    try {
+      const policyResponse = await fetch('/api/policies?type=order');
+      if (policyResponse.ok) {
+        const policy = await policyResponse.json();
+        await acceptPolicyMutation.mutateAsync({
+          userId: customer.id,
+          policyId: policy.id,
+          context: 'order',
+          orderId: orderId
+        });
+      }
+    } catch (policyError) {
+      console.error('Error recording policy acceptance:', policyError);
+    }
+  };
   
   // Coupon state
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
@@ -402,6 +425,18 @@ export default function Payment() {
           </Alert>
         )}
 
+        {/* Policy Acceptance */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <PolicyAcceptance
+              type="order"
+              checked={policyAccepted}
+              onCheckedChange={setPolicyAccepted}
+              required={true}
+            />
+          </CardContent>
+        </Card>
+
         {/* Security Notice */}
         <Alert className="mb-6">
           <Shield className="h-4 w-4" />
@@ -422,9 +457,18 @@ export default function Payment() {
                 amount={pricing.totalCost}
                 orderData={() => createOrderData(`${Date.now()}-${Math.random()}`)}
                 createOrder={async (orderData) => {
+                  // Validate policy acceptance before creating order
+                  if (!policyAccepted) {
+                    throw new Error("É necessário aceitar a política de pedidos para prosseguir");
+                  }
+                  
                   return new Promise((resolve, reject) => {
                     createOrderMutation.mutate(orderData, {
-                      onSuccess: (data) => resolve(data),
+                      onSuccess: async (data) => {
+                        // Record policy acceptance after successful order creation
+                        await recordPolicyAcceptance(data.order.id);
+                        resolve(data);
+                      },
                       onError: (error) => reject(error)
                     });
                   });
@@ -446,9 +490,18 @@ export default function Payment() {
                 amount={pricing.totalCost}
                 orderData={() => createOrderData(`${Date.now()}-${Math.random()}`)}
                 createOrder={async (orderData) => {
+                  // Validate policy acceptance before creating order
+                  if (!policyAccepted) {
+                    throw new Error("É necessário aceitar a política de pedidos para prosseguir");
+                  }
+                  
                   return new Promise((resolve, reject) => {
                     createOrderMutation.mutate(orderData, {
-                      onSuccess: (data) => resolve(data),
+                      onSuccess: async (data) => {
+                        // Record policy acceptance after successful order creation
+                        await recordPolicyAcceptance(data.order.id);
+                        resolve(data);
+                      },
                       onError: (error) => reject(error)
                     });
                   });
