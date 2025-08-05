@@ -46,7 +46,7 @@ export async function checkCepZone(zipCode: string, eventId?: number): Promise<C
     if (data.price !== undefined) {
       return {
         found: true,
-        zoneName: "Zona de Entrega", // We could enhance this to return zone name
+        zoneName: data.zoneName || "Zona de Entrega",
         price: Number(data.price)
       };
     } else {

@@ -7,7 +7,7 @@ import { sql, eq, and } from "drizzle-orm";
 import { customerIdentificationSchema, customerRegistrationSchema, orderCreationSchema, adminEventCreationSchema, insertCepZoneSchema, eventCepZonePrices, cepZones, events } from "@shared/schema";
 import { z } from "zod";
 import { calculateDeliveryCost } from "./distance-calculator";
-import { calculateCepZonePrice } from "./cep-zones-calculator";
+import { calculateCepZonePrice, calculateCepZoneInfo } from "./cep-zones-calculator";
 import { MercadoPagoService, getPublicKey } from "./mercadopago-service";
 import { EmailService } from "./email/email-service";
 import { EmailDataMapper } from "./email/email-data-mapper";
@@ -815,16 +815,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "CEP é obrigatório" });
       }
       
-      const price = await calculateCepZonePrice(
+      const result = await calculateCepZoneInfo(
         cep as string, 
         eventId ? parseInt(eventId as string) : undefined
       );
       
-      if (price === null) {
+      if (result === null) {
         return res.status(404).json({ error: "CEP não atendido nas zonas disponíveis" });
       }
       
-      res.json({ price: price.toFixed(2) });
+      res.json({ 
+        price: result.price.toFixed(2),
+        zoneName: result.zoneName
+      });
     } catch (error: any) {
       console.error('Error calculating CEP price:', error);
       res.status(500).json({ error: "Erro interno do servidor" });

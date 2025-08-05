@@ -261,4 +261,75 @@ export async function calculateCepZonePrice(cep: string, eventId?: number): Prom
   }
 }
 
+/**
+ * Calculate CEP zone price and return both price and zone name
+ */
+export async function calculateCepZoneInfo(cep: string, eventId?: number): Promise<{ price: number; zoneName: string } | null> {
+  try {
+    const cleanedCep = cep.replace(/\D/g, '').padStart(8, '0');
+    
+    if (!isValidCep(cleanedCep)) {
+      return null;
+    }
+    
+    // If eventId provided, try to find event-specific pricing first
+    if (eventId) {
+      const customPrices = await db
+        .select({
+          price: eventCepZonePrices.price,
+          zoneName: cepZones.name,
+          cepRanges: cepZones.cepRanges,
+          priority: cepZones.priority,
+          active: cepZones.active
+        })
+        .from(eventCepZonePrices)
+        .innerJoin(cepZones, eq(cepZones.id, eventCepZonePrices.cepZoneId))
+        .where(
+          and(
+            eq(eventCepZonePrices.eventId, eventId),
+            eq(cepZones.active, true)
+          )
+        )
+        .orderBy(cepZones.priority);
+      
+      // Check if CEP matches any event-specific zone
+      for (const zonePrice of customPrices) {
+        const ranges = parseCepRanges(zonePrice.cepRanges);
+        for (const range of ranges) {
+          const startCepClean = cleanCep(range.start);
+          const endCepClean = cleanCep(range.end);
+          
+          if (cleanedCep >= startCepClean && cleanedCep <= endCepClean) {
+            return {
+              price: parseFloat(zonePrice.price),
+              zoneName: zonePrice.zoneName
+            };
+          }
+        }
+      }
+    }
+    
+    // Fallback to global zone pricing
+    const zones = await db
+      .select()
+      .from(cepZones)
+      .where(eq(cepZones.active, true))
+      .orderBy(cepZones.priority);
+    
+    for (const zone of zones) {
+      if (validateCepInZone(cleanedCep, zone)) {
+        return {
+          price: parseFloat(zone.price),
+          zoneName: zone.name
+        };
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Erro ao calcular preço e zona por CEP:', error);
+    return null;
+  }
+}
+
 // Note: ES module exports used - compatible with TypeScript import/export system
