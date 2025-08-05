@@ -37,7 +37,9 @@ export function PolicyAcceptance({
       if (!response.ok) {
         throw new Error('Erro ao carregar política');
       }
-      return response.json();
+      const data = await response.json();
+      // API returns { success: true, policy: {...} }
+      return data.policy;
     }
   });
 
@@ -70,26 +72,26 @@ export function PolicyAcceptance({
           required={required}
           className="mt-1"
         />
-        <div className="flex-1 space-y-1">
+        <div className="flex-1">
           <label 
             htmlFor={`policy-${type}`}
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+            className="text-sm font-medium text-neutral-700 cursor-pointer flex items-center gap-2"
           >
-            {getAcceptanceText(type)}
-            {required && <span className="text-red-500 ml-1">*</span>}
-          </label>
-          <div>
+            <span>
+              {getAcceptanceText(type)}
+              {required && <span className="text-red-500 ml-1">*</span>}
+            </span>
             <Button
               type="button"
               variant="link"
               size="sm"
               onClick={() => setIsModalOpen(true)}
-              className="h-auto p-0 text-blue-600 hover:text-blue-800 text-xs"
+              className="h-auto p-0 text-xs text-blue-600 hover:text-blue-800 underline"
             >
               <ExternalLink className="w-3 h-3 mr-1" />
-              Ler {policy.title}
+              Ler
             </Button>
-          </div>
+          </label>
         </div>
       </div>
       
