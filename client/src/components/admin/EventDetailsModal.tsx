@@ -55,6 +55,16 @@ export function EventDetailsModal({ event, trigger }: EventDetailsModalProps) {
     enabled: open,
   });
 
+  // Fetch CEP zone pricing if event uses cep_zones pricing
+  const { data: cepZoneData, isLoading: cepZoneLoading } = useQuery({
+    queryKey: ["/api/admin/events", event.id, "cep-zone-prices"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/admin/events/${event.id}/cep-zone-prices`);
+      return response.json();
+    },
+    enabled: open && event.pricingType === "cep_zones",
+  });
+
   const handleEdit = () => {
     setOpen(false);
     setLocation(`/admin/events/${event.id}/edit`);
@@ -191,26 +201,28 @@ export function EventDetailsModal({ event, trigger }: EventDetailsModalProps) {
                   </div>
                 )}
 
-                {eventDetails.pricingType === "cep_zones" && eventDetails.cepZonePrices && (
+                {eventDetails.pricingType === "cep_zones" && (
                   <div>
-                    <label className="text-sm font-medium text-gray-500">
-                      Preços Personalizados por Zona
-                    </label>
-                    {eventDetails.cepZonePrices.length > 0 ? (
+                    {cepZoneLoading ? (
                       <div className="mt-2 space-y-2">
-                        {eventDetails.cepZonePrices.map((zonePrice) => (
-                          <div 
-                            key={zonePrice.zoneId}
-                            className="flex justify-between items-center p-3 bg-purple-50 rounded border border-purple-200"
-                          >
-                            <span className="font-medium text-purple-900">
-                              {zonePrice.zoneName}
-                            </span>
-                            <span className="text-lg font-semibold text-purple-900">
-                              {formatCurrency(zonePrice.customPrice)}
-                            </span>
-                          </div>
-                        ))}
+                        <div className="h-4 bg-gray-200 animate-pulse rounded"></div>
+                        <div className="h-4 bg-gray-200 animate-pulse rounded"></div>
+                      </div>
+                    ) : cepZoneData?.zones && cepZoneData.zones.some((zone: any) => zone.customPrice !== null) ? (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Resumo dos Preços Personalizados
+                        </label>
+                        <div className="mt-2 space-y-1">
+                          {cepZoneData.zones
+                            .filter((zone: any) => zone.customPrice !== null)
+                            .map((zone: any) => (
+                              <div key={zone.id} className="flex justify-between text-sm">
+                                <span className="text-gray-700">{zone.name}</span>
+                                <span className="font-medium">{formatCurrency(zone.customPrice)}</span>
+                              </div>
+                            ))}
+                        </div>
                       </div>
                     ) : (
                       <div className="mt-2 p-3 bg-gray-50 rounded border border-gray-200 text-center">
