@@ -6,6 +6,13 @@ KitRunner is a mobile-first web application for managing event kit pickup and de
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Fixes (August 5, 2025)
+- **Coupon Date Timezone Fix**: Resolved coupon date handling issue where dates were being shifted by 1 day due to UTC/local timezone conversion
+  - **Problem**: JavaScript `new Date('2025-01-15')` interprets as UTC midnight, converting to 21h previous day in Brazilian timezone (UTC-3)
+  - **Solution**: Added `parseLocalDate()` utility function that explicitly sets Brazilian timezone (-03:00) for coupon validity dates
+  - **Implementation**: Updated both coupon creation and update routes to use local timezone conversion
+  - **Files Modified**: `server/routes/coupons.ts` with utility function and corrected date parsing
+
 ## System Architecture
 
 ### Frontend Architecture

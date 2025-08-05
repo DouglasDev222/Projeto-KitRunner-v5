@@ -6,6 +6,12 @@ import { insertCouponSchema } from "@shared/schema";
 
 const router = Router();
 
+// Função utilitária para converter datas corretamente com fuso horário brasileiro
+function parseLocalDate(dateString: string, endOfDay = false): Date {
+  const time = endOfDay ? 'T23:59:59-03:00' : 'T00:00:00-03:00';
+  return new Date(dateString + time);
+}
+
 // Schema para validação de cupom
 const couponValidationSchema = z.object({
   code: z.string().min(1, "Código do cupom é obrigatório"),
@@ -83,8 +89,8 @@ router.post('/admin/coupons', requireAdmin, async (req, res) => {
       ...validatedData,
       discountValue: validatedData.discountValue,
       maxDiscount: validatedData.maxDiscount || null,
-      validFrom: new Date(validatedData.validFrom),
-      validUntil: new Date(validatedData.validUntil),
+      validFrom: parseLocalDate(validatedData.validFrom),
+      validUntil: parseLocalDate(validatedData.validUntil, true),
       usageLimit: validatedData.usageLimit || null,
       productIds: validatedData.productIds || null
     };
@@ -167,10 +173,10 @@ router.put('/admin/coupons/:id', requireAdmin, async (req, res) => {
     // Converter campos de string para tipos corretos
     const couponData: any = { ...validatedData };
     if (validatedData.validFrom) {
-      couponData.validFrom = new Date(validatedData.validFrom);
+      couponData.validFrom = parseLocalDate(validatedData.validFrom);
     }
     if (validatedData.validUntil) {
-      couponData.validUntil = new Date(validatedData.validUntil);
+      couponData.validUntil = parseLocalDate(validatedData.validUntil, true);
     }
     
     const updatedCoupon = await CouponService.updateCoupon(id, couponData);
