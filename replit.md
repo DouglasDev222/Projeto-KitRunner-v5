@@ -7,6 +7,19 @@ KitRunner is a mobile-first web application designed for managing event kit pick
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (August 5, 2025)
+- **UI Reactivity Improvements Complete**: Successfully implemented comprehensive cache invalidation system to eliminate manual page refresh requirements
+  - **Address Management**: Enhanced cache invalidation in `new-address.tsx` and `address-confirmation.tsx` with triple invalidation pattern
+  - **Order Creation**: Improved `payment.tsx` to invalidate customer orders, admin orders, stats, and events caches automatically
+  - **Event Management**: Updated `admin-event-form.tsx` and `admin-event-edit.tsx` with comprehensive public and admin cache invalidation
+  - **Template Pattern**: Established reusable invalidation pattern for future CRUD operations
+  - **Documentation**: Created detailed implementation guide `SOLUCAO_REATIVIDADE_IMPLEMENTADA.md` for maintenance and future development
+
+- **Address Edit Flow Corrections Complete**: Fixed authentication errors and implemented smart redirection system
+  - **401 Error Fix**: Replaced direct fetch() calls with React Query authenticated queries in address edit pages
+  - **Origin-Based Navigation**: Implemented query parameter system (`from=profile` or `from=event&eventId=X`) for proper redirect behavior
+  - **Profile Links Updated**: Added proper origin context to all address editing links in `profile.tsx`
+  - **Comprehensive Testing**: Verified both profile→edit→profile and event→edit→event navigation flows work correctly
+
 - **Admin Events Refactoring Complete**: Successfully implemented comprehensive admin events interface improvements
   - **CepZonePricing Component**: Created reusable component with compact layout (zone name + global price + custom input)
   - **EventDetailsModal**: Developed modal for comprehensive event information display with CEP zone pricing integration

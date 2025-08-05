@@ -89,7 +89,10 @@ export default function AddressConfirmation() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["addresses", customer?.id] });
+      // Comprehensive cache invalidation for address updates
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customer?.id, "addresses"] });
+      queryClient.invalidateQueries({ queryKey: ["addresses", customer?.id] }); // Legacy support
+      queryClient.invalidateQueries({ queryKey: ["/api/addresses"] }); // General addresses
       setIsEditing(false);
     },
   });

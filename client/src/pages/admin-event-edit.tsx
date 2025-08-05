@@ -147,8 +147,13 @@ export default function AdminEventEdit() {
       return eventData;
     },
     onSuccess: () => {
+      // Comprehensive cache invalidation for event updates
       queryClient.invalidateQueries({ queryKey: ["admin", "events"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "event", id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] }); // Public events list
+      queryClient.invalidateQueries({ queryKey: ["/api/events", id] }); // Specific event
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] }); // Dashboard stats
+      
       toast({
         title: "Sucesso",
         description: "Evento atualizado com sucesso!",

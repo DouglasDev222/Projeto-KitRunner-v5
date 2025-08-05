@@ -85,6 +85,12 @@ export default function Payment() {
       return response.json();
     },
     onSuccess: (data) => {
+      // Invalidate caches to ensure reactive updates
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customer?.id, "orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] }); // May affect event stats
+      
       setOrderNumber(data.order.orderNumber);
       setPaymentCompleted(true);
       setPaymentError(null);

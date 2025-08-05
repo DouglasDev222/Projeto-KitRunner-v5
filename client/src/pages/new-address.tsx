@@ -113,7 +113,10 @@ export default function NewAddress() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["addresses", customer?.id] });
+      // Invalidate multiple cache keys to ensure proper updates
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customer?.id, "addresses"] });
+      queryClient.invalidateQueries({ queryKey: ["addresses", customer?.id] }); // Legacy support
+      queryClient.invalidateQueries({ queryKey: ["/api/addresses"] }); // General addresses
       setLocation(getNavigationTarget());
     },
   });

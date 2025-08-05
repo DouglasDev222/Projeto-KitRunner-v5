@@ -86,8 +86,12 @@ export default function AdminEventForm() {
         title: "Evento criado com sucesso!",
         description: "O evento foi adicionado ao sistema.",
       });
+      // Comprehensive cache invalidation for new events
       queryClient.invalidateQueries({ queryKey: ["admin", "events"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] }); // Public events list
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] }); // Dashboard stats
+      
       setLocation("/admin");
     },
     onError: (error: any) => {

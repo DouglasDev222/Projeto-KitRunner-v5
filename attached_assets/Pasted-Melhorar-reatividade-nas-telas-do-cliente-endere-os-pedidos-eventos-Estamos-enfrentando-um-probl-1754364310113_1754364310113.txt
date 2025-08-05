@@ -1,0 +1,61 @@
+Melhorar reatividade nas telas do cliente (endereços, pedidos, eventos)
+Estamos enfrentando um problema de baixa reatividade nas interfaces do cliente, o que prejudica a experiência do usuário. As ações realizadas (como criar, editar ou excluir dados) não refletem imediatamente na interface — é necessário atualizar manualmente a página para ver os dados atualizados.
+
+💢 Problemas observados:
+Tela de endereços (/profile/address):
+
+Ao criar ou editar um endereço, o usuário retorna à listagem, mas o novo ou atualizado endereço não aparece até que a página seja recarregada.
+
+Tela de pedidos (/profile/orders ou equivalente):
+
+Novos pedidos ou alterações não são refletidos automaticamente.
+
+Tela principal de eventos:
+
+Eventos recentes (como inscrições, alterações) também não atualizam visualmente.
+
+Esse comportamento se repete em todas as ações CRUD (create, update, delete), impactando negativamente a fluidez da navegação.
+
+🎯 Objetivo:
+Implementar uma atualização reativa das informações em todas as telas afetadas, garantindo que, após uma ação do usuário, os dados exibidos na interface estejam sempre atualizados sem necessidade de recarregar a página manualmente.
+
+✅ Soluções propostas (a escolher ou combinar):
+1. Atualização local com estado
+Após uma ação (ex: criação de endereço), atualizar imediatamente o estado local da tela (useState, useContext, etc.).
+
+Exemplo: ao criar novo endereço → adicionar à lista local de endereços sem recarregar via API.
+
+2. Revalidação automática dos dados
+Usar bibliotecas como:
+
+SWR ou React Query para revalidar os dados com o backend após uma mutação.
+
+Ex: queryClient.invalidateQueries("enderecos") após criar/editar/excluir.
+
+Isso garante dados atualizados com mínima espera e sem reload.
+
+3. Sistema de mensagens ou eventos
+Em sistemas mais avançados, implementar um mecanismo de eventos locais ou globais (Ex: via Context ou EventEmitter) para informar componentes que precisam recarregar dados após certas ações.
+
+🧪 Exemplo prático (endereços):
+Após o POST de um novo endereço:
+
+Atualizar estado local da lista de endereços OU
+
+Reexecutar o fetch ou query que lista os endereços
+
+Resultado: ao voltar para a tela de listagem, o novo endereço já está visível.
+
+📌 Checklist de ajustes por tela
+Endereços:
+ Criar: atualizar lista ou revalidar
+
+ Editar: atualizar item local ou revalidar
+
+ Excluir: remover localmente ou revalidar
+
+Pedidos:
+ Após nova compra ou modificação, recarregar a lista automaticamente
+
+Eventos (tela inicial):
+ Revalidar dados após qualquer ação do usuário relacionada aos eventos
