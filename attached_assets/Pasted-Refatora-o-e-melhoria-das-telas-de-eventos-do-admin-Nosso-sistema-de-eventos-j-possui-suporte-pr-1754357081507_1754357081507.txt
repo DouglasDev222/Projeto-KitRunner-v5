@@ -1,0 +1,101 @@
+Refatoração e melhoria das telas de eventos do admin
+Nosso sistema de eventos já possui suporte à precificação por zonas de CEP, mas as telas administrativas precisam ser atualizadas para melhorar a usabilidade, refletir as novas funcionalidades e tornar a experiência do administrador mais limpa e eficiente.
+
+1. 📄 /admin/events/new – Criação de novo evento
+Problema:
+Atualmente, ao selecionar a opção "zonas CEP" no tipo de precificação, é exibida uma sessão longa com muitas informações sobre as zonas, o que deixa a interface poluída.
+
+Solução:
+Após selecionar "zonas CEP" no tipo de precificação:
+
+Mostrar uma sessão simplificada, com layout mais compacto.
+
+Cada linha deve conter:
+
+Nome da zona
+
+Preço global (predefinido) da zona (apenas leitura)
+
+Campo de input para o preço personalizado (editável)
+
+Essa sessão deve:
+
+Aparecer logo abaixo do select de tipo de precificação, com espaçamento visual adequado.
+
+Ser invisível até que "zonas CEP" seja selecionado.
+
+2. 📋 /admin/events – Lista de eventos cadastrados
+Problema:
+A tela está desatualizada e não contempla informações ou ações relacionadas à precificação por zonas de CEP.
+
+Melhorias propostas:
+Exibir cards ou linhas de eventos com as seguintes informações:
+
+Nome do evento
+
+Data e status
+
+Tipo de precificação (ex: "preço fixo" ou "zonas CEP")
+
+Adicionar botão "Detalhes" em cada evento:
+
+Abrir um modal com as informações completas do evento, incluindo:
+
+Dados básicos (nome, data, etc.)
+
+Tipo de precificação
+
+Se for zonas CEP, listar as zonas com os preços personalizados do evento (vindos da tabela event_cep_zone_prices)
+
+Incluir também no modal:
+
+Botão para editar evento, redirecionando para /admin/events/:id/edit
+
+3. ✏️ /admin/events/:id/edit – Edição de evento
+Problema:
+A tela já existe, mas precisa refletir as novas funcionalidades de personalização por zona de CEP.
+
+Ajustes:
+Detectar o tipo de precificação atual do evento:
+
+Se for "zonas CEP":
+
+Exibir o mesmo formulário compacto de personalização usado em /admin/events/new
+
+Preencher automaticamente os preços personalizados já salvos na tabela event_cep_zone_prices
+
+Permitir editar os preços diretamente.
+
+Atualizar as entradas na tabela ao salvar.
+
+✅ Checklist geral
+Backend
+ Endpoint para buscar preços personalizados por evento (usado no modal e na edição).
+
+ Atualizar lógica de salvamento e edição para lidar com event_cep_zone_prices.
+
+Frontend
+/admin/events/new
+ Detectar seleção de "zonas CEP" e exibir formulário resumido.
+
+ Exibir: nome da zona + preço global (read-only) + input de preço customizado.
+
+ Inserir essa sessão abaixo do tipo de precificação com layout limpo.
+
+/admin/events
+ Exibir tipo de precificação nos cards/linhas de evento.
+
+ Adicionar botão "Detalhes" → abrir modal.
+
+ Modal mostra informações completas, incluindo preços por zona se houver.
+
+ Botão de "Editar evento" no modal.
+
+/admin/events/:id/edit
+ Se tipo de precificação for "zonas CEP":
+
+Carregar dados da tabela event_cep_zone_prices
+
+Exibir o formulário compacto de edição de preços por zona
+
+ Salvar alterações corretamente no backend.
