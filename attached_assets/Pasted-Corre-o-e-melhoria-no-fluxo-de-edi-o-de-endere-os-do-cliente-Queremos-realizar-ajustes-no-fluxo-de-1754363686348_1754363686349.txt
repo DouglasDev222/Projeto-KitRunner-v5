@@ -1,0 +1,60 @@
+Correção e melhoria no fluxo de edição de endereços do cliente
+Queremos realizar ajustes no fluxo de edição de endereços do cliente, garantindo o correto carregamento dos dados e o redirecionamento adequado ao finalizar ou cancelar a edição.
+
+🐞 1. Correção de erro 401 ao editar endereço
+Problema:
+Ao acessar a página /profile/address/:id/edit, ocorre um erro 401 (Unauthorized).
+
+Com isso, os dados do endereço não são carregados para edição, mesmo com o cliente autenticado.
+
+Solução:
+Consultar e aplicar as instruções do arquivo AUTHENTICATION_FIX_GUIDE.md, que explica como corrigir esse tipo de erro.
+
+Verificar se:
+
+O token está sendo enviado corretamente nas chamadas autenticadas.
+
+A rota está protegida da forma certa.
+
+O fetch está utilizando o contexto de sessão/logado do cliente.
+
+🔄 2. Correção no redirecionamento após editar endereço ou sair
+Comportamento atual:
+Após editar um endereço ou clicar em "voltar", o sistema redireciona automaticamente para /events/:id/address, mesmo que o usuário tenha vindo da área de perfil.
+
+Comportamento desejado:
+Se o usuário acessou a edição de endereço a partir da tela de um evento (ex: /events/8/address → editar endereço), ao concluir ou cancelar deve voltar para /events/8/address.
+
+Se o usuário acessou diretamente pela área de perfil (ex: /profile/address/8/edit), ao concluir ou cancelar deve voltar para /profile.
+
+Solução:
+Utilizar um parâmetro de origem ou referrer, por exemplo:
+
+/profile/address/8/edit?from=profile
+
+/profile/address/8/edit?from=event&eventId=8
+
+Armazenar esse parâmetro e utilizá-lo para definir o comportamento de redirecionamento ao:
+
+Clicar em “Voltar”
+
+Concluir a edição
+
+✅ Checklist
+Correção do erro 401:
+ Revisar autenticação conforme AUTHENTICATION_FIX_GUIDE.md
+
+ Verificar headers/token nas chamadas da página /profile/address/:id/edit
+
+ Garantir que a API permite o acesso correto a endereços do cliente autenticado
+
+Redirecionamento:
+ Implementar controle de origem via query param (from=profile ou from=event&eventId=X)
+
+ Adaptar lógica de “voltar” e pós-edição para redirecionar corretamente
+
+ Testar os dois fluxos:
+
+Acesso via /profile
+
+Acesso via /events/:id/address → editar endereço

@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useLocation, useParams } from "wouter";
+import { useLocation, useParams, useSearch } from "wouter";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { addressSchema, type AddressData } from "@shared/schema";
@@ -24,9 +24,30 @@ type AddressFormData = z.infer<typeof addressFormSchema>;
 export default function NewAddress() {
   const [, setLocation] = useLocation();
   const { id } = useParams<{ id: string }>();
+  const search = useSearch();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Parse query parameters for navigation context
+  const searchParams = new URLSearchParams(search);
+  const from = searchParams.get('from'); // 'profile' or 'event'
+  const eventId = searchParams.get('eventId'); // for event context
+  
+  // Determine correct navigation target based on context
+  const getNavigationTarget = () => {
+    if (from === 'event' && eventId) {
+      return `/events/${eventId}/address`;
+    } else if (from === 'profile') {
+      return '/profile';
+    } else if (id && id.match(/^\d+$/) && !isEditing) {
+      // Legacy behavior: if id is numeric and not editing, assume event flow
+      return `/events/${id}/address`;
+    } else {
+      // Default to profile for editing or no clear context
+      return '/profile';
+    }
+  };
   
   // Get customer data - prefer auth user, fallback to session
   const customerData = sessionStorage.getItem("customerData");
@@ -35,13 +56,7 @@ export default function NewAddress() {
 
   // For editing, get existing address data
   const { data: existingAddress } = useQuery({
-    queryKey: ["address", id],
-    queryFn: async () => {
-      if (!id || !id.match(/^\d+$/)) return null;
-      const response = await fetch(`/api/addresses/${id}`);
-      if (!response.ok) return null;
-      return response.json();
-    },
+    queryKey: ["/api/addresses", id],
     enabled: Boolean(id && id.match(/^\d+$/)),
   });
 
@@ -99,41 +114,33 @@ export default function NewAddress() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["addresses", customer?.id] });
-      if (id && id.match(/^\d+$/) && !isEditing) {
-        // Event flow - id is event ID
-        setLocation(`/events/${id}/address`);
-      } else {
-        // Profile flow or editing
-        setLocation("/profile");
-      }
+      setLocation(getNavigationTarget());
     },
   });
 
   useEffect(() => {
     if (!customer) {
-      if (id && id.match(/^\d+$/) && !isEditing) {
+      if (from === 'event' && eventId) {
         // Event flow - redirect to login with proper return path
+        sessionStorage.setItem("loginReturnPath", `/events/${eventId}/address`);
+        setLocation("/login");
+      } else if (id && id.match(/^\d+$/) && !isEditing) {
+        // Legacy event flow
         sessionStorage.setItem("loginReturnPath", `/events/${id}/address`);
         setLocation("/login");
       } else {
-        // Profile flow
+        // Profile flow or default
         setLocation("/profile");
       }
     }
-  }, [customer, id, setLocation, isEditing]);
+  }, [customer, id, setLocation, isEditing, from, eventId]);
 
   const onSubmit = (data: AddressFormData) => {
     saveAddressMutation.mutate(data);
   };
 
   const handleCancel = () => {
-    if (id && id.match(/^\d+$/) && !isEditing) {
-      // Event flow
-      setLocation(`/events/${id}/address`);
-    } else {
-      // Profile flow
-      setLocation("/profile");
-    }
+    setLocation(getNavigationTarget());
   };
 
   return (

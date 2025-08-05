@@ -133,7 +133,7 @@ export default function Profile() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setLocation("/profile/address/new")}
+                onClick={() => setLocation("/profile/address/new?from=profile")}
               >
                 <Plus className="w-4 h-4 mr-1" />
                 Adicionar
@@ -157,7 +157,7 @@ export default function Profile() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => setLocation(`/profile/address/${address.id}/edit`)}
+                        onClick={() => setLocation(`/profile/address/${address.id}/edit?from=profile`)}
                       >
                         <Edit3 className="w-4 h-4" />
                       </Button>
@@ -178,7 +178,7 @@ export default function Profile() {
                 <p className="text-neutral-600 mb-4">Nenhum endereço cadastrado</p>
                 <Button 
                   variant="outline" 
-                  onClick={() => setLocation("/profile/address/new")}
+                  onClick={() => setLocation("/profile/address/new?from=profile")}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Adicionar Primeiro Endereço
