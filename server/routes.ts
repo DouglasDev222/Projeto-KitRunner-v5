@@ -423,6 +423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         extraKitsCost: finalExtraKitsCost.toString(),
         donationCost: finalDonationAmount.toString(),
         discountAmount: orderData.discountAmount.toString(),
+        couponCode: orderData.couponCode || null,
         totalCost: finalTotalCost.toString(),
         paymentMethod: orderData.paymentMethod,
         status: "aguardando_pagamento", // Order starts awaiting payment

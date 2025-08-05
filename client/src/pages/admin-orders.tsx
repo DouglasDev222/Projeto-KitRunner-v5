@@ -1029,7 +1029,12 @@ export default function AdminOrders() {
                       <p><span className="font-medium">Kits Extras:</span> {formatCurrency(Number(selectedOrder.extraKitsCost))}</p>
                       <p><span className="font-medium">Doação:</span> {formatCurrency(Number(selectedOrder.donationCost))}</p>
                       {Number(selectedOrder.discountAmount) > 0 && (
-                        <p><span className="font-medium">Desconto:</span> <span className="text-green-600">-{formatCurrency(Number(selectedOrder.discountAmount))}</span></p>
+                        <>
+                          <p><span className="font-medium">Desconto:</span> <span className="text-green-600">-{formatCurrency(Number(selectedOrder.discountAmount))}</span></p>
+                          {selectedOrder.couponCode && (
+                            <p><span className="font-medium">Cupom:</span> <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{selectedOrder.couponCode}</span></p>
+                          )}
+                        </>
                       )}
                       <p className="border-t pt-2"><span className="font-medium">Total:</span> <span className="font-bold">{formatCurrency(Number(selectedOrder.totalCost))}</span></p>
                     </div>

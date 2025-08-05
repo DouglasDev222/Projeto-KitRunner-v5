@@ -185,10 +185,18 @@ export default function OrderDetails() {
               )}
               
               {parseFloat(order.discountAmount) > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-neutral-600">Desconto:</span>
-                  <span className="text-green-600">-{formatCurrency(parseFloat(order.discountAmount))}</span>
-                </div>
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-600">Desconto:</span>
+                    <span className="text-green-600">-{formatCurrency(parseFloat(order.discountAmount))}</span>
+                  </div>
+                  {order.couponCode && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-neutral-600">Cupom utilizado:</span>
+                      <span className="font-mono text-xs bg-green-50 text-green-700 px-2 py-1 rounded">{order.couponCode}</span>
+                    </div>
+                  )}
+                </>
               )}
               
               <Separator />
