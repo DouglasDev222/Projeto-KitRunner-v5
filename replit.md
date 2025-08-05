@@ -13,6 +13,7 @@ Preferred communication style: Simple, everyday language.
   - **Error Handling**: Implemented robust error handling to prevent order creation failure if coupon increment fails
   - **Logging**: Added comprehensive logging for coupon usage tracking and debugging
   - **Service Integration**: Connected `CouponService.incrementUsage()` method to order creation process
+  - **Admin Interface Enhancement**: Added discount display in admin order details modal matching client-side order view
 - **UI Reactivity Improvements Complete**: Successfully implemented comprehensive cache invalidation system to eliminate manual page refresh requirements
   - **Address Management**: Enhanced cache invalidation in `new-address.tsx` and `address-confirmation.tsx` with triple invalidation pattern
   - **Order Creation**: Improved `payment.tsx` to invalidate customer orders, admin orders, stats, and events caches automatically
