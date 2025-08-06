@@ -218,26 +218,18 @@ export default function AdminCustomers() {
   ) || [];
 
   const handleCreateCustomer = (data: CustomerRegistration) => {
-    // Extract only numbers from CPF for validation and storage
-    const cleanCPF = data.cpf.replace(/\D/g, "");
+    // CPF is already clean (numbers only) from handleCPFChange
     const cleanPhone = data.phone.replace(/\D/g, "");
     
-    // Validate CPF
-    if (!isValidCPF(cleanCPF)) {
-      createForm.setError("cpf", { message: "CPF inválido" });
-      return;
-    }
-
     // Validate phone
     if (!isValidPhone(cleanPhone)) {
       createForm.setError("phone", { message: "Telefone deve ter 10 ou 11 dígitos" });
       return;
     }
 
-    // Send data with clean CPF and phone (numbers only) to the server
+    // Send data with clean phone (numbers only) to the server
     const cleanData = {
       ...data,
-      cpf: cleanCPF,
       phone: cleanPhone
     };
     
@@ -351,16 +343,25 @@ export default function AdminCustomers() {
   };
 
   const handleCPFChange = (value: string) => {
-    const formatted = formatCPF(value);
-    createForm.setValue("cpf", formatted);
+    // Store only numbers, but display formatted
+    const numbersOnly = value.replace(/\D/g, "");
+    createForm.setValue("cpf", numbersOnly);
   };
 
   const handleCPFBlur = () => {
-    // When field loses focus, store only numbers but keep visual formatting
+    // Just validate when field loses focus, keep numbers only
     const currentValue = createForm.getValues("cpf");
     const numbersOnly = currentValue.replace(/\D/g, "");
-    // Keep the formatted display but prepare numbers for submission
-    createForm.setValue("cpf", formatCPF(numbersOnly));
+    createForm.setValue("cpf", numbersOnly);
+    
+    // Validate CPF if it has 11 digits
+    if (numbersOnly.length === 11) {
+      if (!isValidCPF(numbersOnly)) {
+        createForm.setError("cpf", { message: "CPF inválido" });
+      } else {
+        createForm.clearErrors("cpf");
+      }
+    }
   };
 
   const handlePhoneChange = (value: string) => {
@@ -427,11 +428,16 @@ export default function AdminCustomers() {
                           <FormLabel>CPF</FormLabel>
                           <FormControl>
                             <Input
-                              {...field}
                               placeholder="000.000.000-00"
+                              value={formatCPF(field.value)} // Display formatted
                               onChange={(e) => handleCPFChange(e.target.value)}
                               onBlur={handleCPFBlur}
                               maxLength={14}
+                              className={
+                                field.value.length === 11 && !isValidCPF(field.value) 
+                                  ? "border-red-500" 
+                                  : ""
+                              }
                             />
                           </FormControl>
                           <FormMessage />
