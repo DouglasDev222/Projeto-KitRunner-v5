@@ -206,8 +206,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: registrationData.phone
       });
       
-      // Create addresses - Note: addresses should be provided separately via POST /api/addresses
+      // Create addresses from registration form
       const addresses: any[] = [];
+      if (registrationData.addresses && registrationData.addresses.length > 0) {
+        for (const addressData of registrationData.addresses) {
+          const address = await storage.createAddress({
+            customerId: customer.id,
+            label: addressData.label,
+            street: addressData.street,
+            number: addressData.number,
+            complement: addressData.complement || '',
+            neighborhood: addressData.neighborhood,
+            city: addressData.city,
+            state: addressData.state,
+            zipCode: addressData.zipCode.replace(/\D/g, ''),
+            isDefault: addressData.isDefault || false
+          });
+          addresses.push(address);
+        }
+      }
       
       res.json({ customer, addresses });
     } catch (error) {
