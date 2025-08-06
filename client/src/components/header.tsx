@@ -14,7 +14,7 @@ export function Header({ showBackButton = false, onBack }: HeaderProps) {
     if (onBack) {
       onBack();
     } else {
-      setLocation("/");
+      setLocation("/eventos");
     }
   };
 
