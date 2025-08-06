@@ -83,7 +83,7 @@ export default function Profile() {
           </Button>
           <Button
             className="h-12 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90"
-            onClick={() => setLocation("/")}
+            onClick={() => setLocation("/eventos")}
           >
             <Plus className="w-5 h-5" />
             <span>Fazer Novo Pedido</span>
