@@ -148,12 +148,36 @@ export default function AdminCustomers() {
   const createCustomerMutation = useMutation({
     mutationFn: async (data: CustomerRegistration) => {
       const response = await apiRequest("POST", "/api/admin/customers", data);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Erro ao criar cliente");
+      }
+      
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "customers"] });
       setIsCreateDialogOpen(false);
       createForm.reset();
+    },
+    onError: (error: Error) => {
+      // Handle specific CPF duplicate error
+      if (error.message.includes("CPF já cadastrado")) {
+        createForm.setError("cpf", { 
+          type: "manual", 
+          message: "Este CPF já está cadastrado no sistema" 
+        });
+      } else if (error.message.includes("Email já cadastrado")) {
+        createForm.setError("email", { 
+          type: "manual", 
+          message: "Este email já está cadastrado no sistema" 
+        });
+      } else {
+        // Handle other errors with a generic message
+        console.error("Erro ao criar cliente:", error);
+        // You could also show a toast notification here if needed
+      }
     },
   });
 

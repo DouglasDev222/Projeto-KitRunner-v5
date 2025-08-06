@@ -60,13 +60,13 @@ const generalRateLimit = rateLimit({
 function validateCPF(cpf: string): boolean {
   // Remove formatting characters and validate
   const cleanCPF = cpf.replace(/\D/g, "");
-  
+
   // CPF validation algorithm
   if (cleanCPF.length !== 11) return false;
-  
+
   // Check if all digits are the same
   if (/^(\d)\1{10}$/.test(cleanCPF)) return false;
-  
+
   // Validate first check digit
   let sum = 0;
   for (let i = 0; i < 9; i++) {
@@ -75,7 +75,7 @@ function validateCPF(cpf: string): boolean {
   let remainder = (sum * 10) % 11;
   if (remainder === 10 || remainder === 11) remainder = 0;
   if (remainder !== parseInt(cleanCPF.charAt(9))) return false;
-  
+
   // Validate second check digit
   sum = 0;
   for (let i = 0; i < 10; i++) {
@@ -84,41 +84,41 @@ function validateCPF(cpf: string): boolean {
   remainder = (sum * 10) % 11;
   if (remainder === 10 || remainder === 11) remainder = 0;
   if (remainder !== parseInt(cleanCPF.charAt(10))) return false;
-  
+
   return true;
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  
+
   // Initialize payment reminder scheduler with email service and storage
   const emailService = new EmailService(storage);
   PaymentReminderScheduler.initialize(emailService, storage);
   console.log('📧 Payment Reminder Scheduler initialized');
-  
+
   // Apply general rate limiting to all API routes
   app.use('/api', generalRateLimit);
-  
+
   // Admin authentication routes
   app.use('/api/admin/auth', adminAuthRoutes);
 
   // CEP Zones routes (new implementation with multiple ranges)
   app.use('/api', cepZonesRoutes);
-  
+
   // Coupons routes
   app.use('/api', couponsRoutes);
-  
+
   // Policy routes
   app.use('/api', policyRoutes);
-  
+
   // Serve test HTML files
   app.get("/test-rejected-payment.html", (req, res) => {
     res.sendFile(path.resolve(process.cwd(), "test-rejected-payment.html"));
   });
-  
+
   app.get("/test-debug-card.html", (req, res) => {
     res.sendFile(path.resolve(process.cwd(), "test-debug-card.html"));
   });
-  
+
   app.get("/test-apro-vs-othe.html", (req, res) => {
     res.sendFile(path.resolve(process.cwd(), "test-apro-vs-othe.html"));
   });
@@ -138,11 +138,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const event = await storage.getEvent(id);
-      
+
       if (!event) {
         return res.status(404).json({ message: "Evento não encontrado" });
       }
-      
+
       res.json(event);
     } catch (error) {
       res.status(500).json({ message: "Erro ao buscar evento" });
@@ -153,7 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/customers/identify", identificationRateLimit, async (req, res) => {
     try {
       const { cpf, birthDate } = customerIdentificationSchema.parse(req.body);
-      
+
       // Security: Additional CPF validation on backend
       if (!validateCPF(cpf)) {
         console.warn(`🔒 Invalid CPF attempted: ${cpf.substring(0, 3)}***`);
@@ -161,16 +161,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "CPF inválido" 
         });
       }
-      
+
       const customer = await storage.getCustomerByCredentials(cpf, birthDate);
-      
+
       if (!customer) {
         return res.status(404).json({ 
           message: "Cliente não encontrado. Verifique o CPF e data de nascimento.",
           canRegister: true
         });
       }
-      
+
       res.json(customer);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -187,16 +187,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/customers/register", async (req, res) => {
     try {
       const registrationData = customerRegistrationSchema.parse(req.body);
-      
+
       // Check if customer already exists
       const existingCustomer = await storage.getCustomerByCPF(registrationData.cpf.replace(/\D/g, ''));
-      
+
       if (existingCustomer) {
         return res.status(409).json({ 
           message: "Cliente já cadastrado com este CPF." 
         });
       }
-      
+
       // Create customer
       const customer = await storage.createCustomer({
         name: registrationData.name,
@@ -205,7 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: registrationData.email,
         phone: registrationData.phone
       });
-      
+
       // Create addresses from registration form
       const addresses: any[] = [];
       if (registrationData.addresses && registrationData.addresses.length > 0) {
@@ -225,7 +225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           addresses.push(address);
         }
       }
-      
+
       res.json({ customer, addresses });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -254,11 +254,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const addressId = parseInt(req.params.id);
       const address = await storage.getAddress(addressId);
-      
+
       if (!address) {
         return res.status(404).json({ message: "Endereço não encontrado" });
       }
-      
+
       res.json(address);
     } catch (error) {
       res.status(500).json({ message: "Erro ao buscar endereço" });
@@ -270,7 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const addressId = parseInt(req.params.id);
       const updateData = req.body;
-      
+
       // If setting as default, unset other defaults first
       if (updateData.isDefault) {
         const currentAddress = await storage.getAddress(addressId);
@@ -283,7 +283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
-      
+
       const address = await storage.updateAddress(addressId, updateData);
       res.json(address);
     } catch (error) {
@@ -295,9 +295,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/delivery/calculate", async (req, res) => {
     try {
       const { customerId, eventId, kitQuantity, customerZipCode } = req.body;
-      
+
       const event = await storage.getEvent(eventId);
-      
+
       if (!event) {
         return res.status(404).json({ message: "Evento não encontrado" });
       }
@@ -308,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let donationAmount = 0;
       let deliveryCost = 0;
       let distance = 0;
-      
+
       if (event.fixedPrice) {
         baseCost = Number(event.fixedPrice);
         deliveryCost = 0; // Included in fixed price
@@ -319,7 +319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           event.pickupZipCode || '58000000', // Event pickup ZIP
           customerZipCode || '58030000' // Customer ZIP
         );
-        
+
         deliveryCost = deliveryCalculation.deliveryCost;
         distance = deliveryCalculation.distance;
         baseCost = 0; // No base cost, only delivery
@@ -334,7 +334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       totalCost = baseCost + deliveryCost + additionalKitCost + donationAmount;
-      
+
       res.json({
         baseCost,
         deliveryCost,
@@ -368,9 +368,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalCost: typeof req.body.totalCost === 'number' ? req.body.totalCost.toString() : req.body.totalCost,
         donationAmount: typeof req.body.donationAmount === 'number' ? req.body.donationAmount.toString() : req.body.donationAmount,
       };
-      
+
       const orderData = orderCreationSchema.parse(orderDataForValidation);
-      
+
       // Check for existing order with same idempotency key
       if (orderData.idempotencyKey) {
         const existingOrder = await storage.getOrderByIdempotencyKey(orderData.idempotencyKey);
@@ -389,7 +389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       }
-      
+
       const selectedEvent = await storage.getEvent(orderData.eventId);
       if (!selectedEvent) {
         return res.status(404).json({ message: "Evento não encontrado" });
@@ -403,7 +403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get customer address for delivery calculation
       const customerAddress = await storage.getAddress(orderData.addressId);
-      
+
       if (selectedEvent.fixedPrice) {
         baseCost = Number(selectedEvent.fixedPrice);
         deliveryCost = 0; // Included in fixed price
@@ -413,7 +413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           selectedEvent.pickupZipCode || '58000000', // Event pickup ZIP
           customerAddress?.zipCode || '58030000' // Customer ZIP
         );
-        
+
         deliveryCost = deliveryCalculation.deliveryCost;
         baseCost = 0; // No base cost for variable pricing
       }
@@ -427,7 +427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       totalCost = baseCost + deliveryCost + additionalCost + donationAmount;
-      
+
       // Use provided costs or calculate them
       const finalDeliveryCost = orderData.deliveryCost || deliveryCost;
       const finalExtraKitsCost = orderData.extraKitsCost || additionalCost;
@@ -451,7 +451,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         donationAmount: finalDonationAmount.toString(),
         idempotencyKey: orderData.idempotencyKey,
       });
-      
+
       // Create kits
       const kits = [];
       for (const kitData of orderData.kits) {
@@ -463,7 +463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         kits.push(kit);
       }
-      
+
       // If a coupon was used, increment its usage count
       if (orderData.couponCode && orderData.couponCode.trim()) {
         try {
@@ -479,10 +479,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Don't fail the order creation if coupon increment fails
         }
       }
-      
+
       // Schedule payment pending email to be sent in 1 minute
       PaymentReminderScheduler.schedulePaymentPendingEmail(order.orderNumber, 1);
-      
+
       res.json({
         order,
         kits,
@@ -510,7 +510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const customerId = parseInt(req.params.id);
       const addressData = req.body;
-      
+
       // If setting as default, unset other defaults first
       if (addressData.isDefault) {
         const currentAddresses = await storage.getAddressesByCustomerId(customerId);
@@ -520,13 +520,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
-      
+
       const address = await storage.createAddress({
         customerId,
         ...addressData,
         zipCode: addressData.zipCode.replace(/\D/g, '')
       });
-      
+
       res.json(address);
     } catch (error) {
       res.status(500).json({ message: "Erro ao criar endereço" });
@@ -549,11 +549,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { orderNumber } = req.params;
       const order = await storage.getOrderByOrderNumber(orderNumber);
-      
+
       if (!order) {
         return res.status(404).json({ message: "Pedido não encontrado" });
       }
-      
+
       res.json(order);
     } catch (error) {
       console.error('Error fetching order:', error);
@@ -577,7 +577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const customerId = parseInt(req.params.customerId);
       const addressData = req.body;
-      
+
       // If this address is being set as default, update other addresses
       if (addressData.isDefault) {
         // First get all customer addresses and set them to non-default
@@ -588,12 +588,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
-      
+
       const address = await storage.createAddress({
         ...addressData,
         customerId
       });
-      
+
       res.json(address);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -604,13 +604,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const addressData = req.body;
-      
+
       // Get the current address to find the customerId
       const currentAddress = await storage.getAddress(id);
       if (!currentAddress) {
         return res.status(404).json({ message: "Endereço não encontrado" });
       }
-      
+
       // If this address is being set as default, update other addresses
       if (addressData.isDefault) {
         const existingAddresses = await storage.getAddressesByCustomerId(currentAddress.customerId);
@@ -620,7 +620,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
-      
+
       const address = await storage.updateAddress(id, addressData);
       res.json(address);
     } catch (error: any) {
@@ -646,7 +646,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("🔍 Raw request body:", JSON.stringify(req.body, null, 2));
       const validatedData = adminEventCreationSchema.parse(req.body);
       console.log("✅ Validated data:", JSON.stringify(validatedData, null, 2));
-      
+
       // Convert string prices to proper format and handle pricing logic
       const eventData = {
         ...validatedData,
@@ -674,11 +674,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const event = await storage.getEvent(id);
-      
+
       if (!event) {
         return res.status(404).json({ message: "Evento não encontrado" });
       }
-      
+
       res.json(event);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -690,12 +690,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const updateData = req.body;
-      
+
       // Convert date format if needed
       if (updateData.date && !updateData.date.includes('T')) {
         updateData.date = updateData.date + 'T00:00:00.000Z';
       }
-      
+
       // Clean up the data - ensure proper types
       const cleanedData = {
         ...updateData,
@@ -707,13 +707,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         extraKitPrice: updateData.extraKitPrice && updateData.extraKitPrice.toString().trim() !== "" ? updateData.extraKitPrice.toString() : "8.00",
         donationAmount: updateData.donationAmount && updateData.donationAmount.toString().trim() !== "" ? updateData.donationAmount.toString() : null,
       };
-      
+
       const event = await storage.updateEvent(id, cleanedData);
-      
+
       if (!event) {
         return res.status(404).json({ message: "Evento não encontrado" });
       }
-      
+
       res.json(event);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -725,13 +725,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const { available } = req.body;
-      
+
       const event = await storage.updateEvent(id, { available });
-      
+
       if (!event) {
         return res.status(404).json({ message: "Evento não encontrado" });
       }
-      
+
       res.json(event);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -753,7 +753,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/admin/events/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       // Check if event has orders
       const orders = await storage.getOrdersByEventId(id);
       if (orders.length > 0) {
@@ -761,13 +761,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Não é possível excluir evento com pedidos associados" 
         });
       }
-      
+
       const success = await storage.deleteEvent(id);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Evento não encontrado" });
       }
-      
+
       res.json({ message: "Evento excluído com sucesso" });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -780,16 +780,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/events/:id/cep-zone-prices", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const eventId = parseInt(req.params.id);
-      
+
       // Get all active CEP zones
       const zones = await db.select().from(cepZones).where(eq(cepZones.active, true));
-      
+
       // Get custom prices for this event
       const customPrices = await db
         .select()
         .from(eventCepZonePrices)
         .where(eq(eventCepZonePrices.eventId, eventId));
-      
+
       // Combine data: custom price or global price fallback
       const result = zones.map(zone => {
         const customPrice = customPrices.find(cp => cp.cepZoneId === zone.id);
@@ -799,7 +799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           hasCustomPrice: !!customPrice
         };
       });
-      
+
       res.json(result);
     } catch (error: any) {
       console.error('Error fetching event CEP zone prices:', error);
@@ -812,25 +812,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const eventId = parseInt(req.params.id);
       const { zonePrices } = req.body; // Array: [{ cepZoneId: 1, price: "25.00" }]
-      
+
       // Verify event exists and uses CEP zones pricing
       const event = await db.select().from(events).where(eq(events.id, eventId)).limit(1);
       if (!event[0]) {
         return res.status(404).json({ error: "Evento não encontrado" });
       }
-      
+
       if (event[0].pricingType !== 'cep_zones') {
         return res.status(400).json({ error: "Evento não usa precificação por zonas CEP" });
       }
-      
+
       // Validate zonePrices array
       if (!Array.isArray(zonePrices)) {
         return res.status(400).json({ error: "zonePrices deve ser um array" });
       }
-      
+
       // Remove existing custom prices for this event
       await db.delete(eventCepZonePrices).where(eq(eventCepZonePrices.eventId, eventId));
-      
+
       // Insert new custom prices
       if (zonePrices.length > 0) {
         const validatedPrices = zonePrices.map(zp => ({
@@ -838,10 +838,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cepZoneId: parseInt(zp.cepZoneId),
           price: zp.price
         }));
-        
+
         await db.insert(eventCepZonePrices).values(validatedPrices);
       }
-      
+
       res.json({ success: true, message: "Preços personalizados salvos com sucesso" });
     } catch (error: any) {
       console.error('Error saving event CEP zone prices:', error);
@@ -853,20 +853,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/calculate-cep-price", async (req, res) => {
     try {
       const { cep, eventId } = req.query;
-      
+
       if (!cep) {
         return res.status(400).json({ error: "CEP é obrigatório" });
       }
-      
+
       const result = await calculateCepZoneInfo(
         cep as string, 
         eventId ? parseInt(eventId as string) : undefined
       );
-      
+
       if (result === null) {
         return res.status(404).json({ error: "CEP não atendido nas zonas disponíveis" });
       }
-      
+
       res.json({ 
         price: result.price.toFixed(2),
         zoneName: result.zoneName
@@ -878,14 +878,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin Orders Management Routes
-  
+
   // Get all orders with filters and pagination
   app.get("/api/admin/orders", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { page = 1, limit = 10, ...filters } = req.query;
       const pageNum = parseInt(page as string);
       const limitNum = parseInt(limit as string);
-      
+
       // Check if pagination is requested
       if (req.query.paginated === 'true') {
         const result = await storage.getAllOrdersWithDetailsPaginated(pageNum, limitNum, filters);
@@ -905,11 +905,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const order = await storage.getOrderWithFullDetails(id);
-      
+
       if (!order) {
         return res.status(404).json({ message: "Pedido não encontrado" });
       }
-      
+
       res.json(order);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -921,20 +921,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const { status, reason, sendEmail = true } = req.body;
-      
+
       console.log('📧 Status update request:', { id, status, sendEmail, reason });
-      
+
       // Validate status - using Portuguese status names
       const validStatuses = ["confirmado", "aguardando_pagamento", "cancelado", "kits_sendo_retirados", "em_transito", "entregue"];
       console.log('Received status:', status, 'Valid statuses:', validStatuses);
       if (!validStatuses.includes(status)) {
         return res.status(400).json({ message: "Status inválido", received: status, valid: validStatuses });
       }
-      
+
       // Get current order to capture old status for email notification
       const currentOrder = await storage.getOrderWithFullDetails(id);
       const oldStatus = currentOrder?.status;
-      
+
       const order = await storage.updateOrderStatus(
         id, 
         status, 
@@ -944,25 +944,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         undefined, // bulkOperationId
         false // Don't send automatic email - we'll handle it manually based on sendEmail parameter
       );
-      
+
       if (!order) {
         return res.status(404).json({ message: "Pedido não encontrado" });
       }
-      
+
       // For admin status changes, let the automatic system handle specific emails
       // Only send generic status updates for non-specific statuses when requested
       if (currentOrder && oldStatus !== status && sendEmail && !['confirmado', 'em_transito', 'entregue'].includes(status)) {
         console.log('📧 Sending generic status update email because sendEmail is true');
         const emailService = new EmailService(storage);
         const { EmailDataMapper } = await import("./email/email-data-mapper");
-        
+
         // Prepare status update data using the mapper
         const statusUpdateData = EmailDataMapper.mapToStatusUpdate(
           currentOrder, 
           oldStatus || '', 
           status
         );
-        
+
         // Send email asynchronously (don't block the response)
         emailService.sendStatusUpdateEmail(
           statusUpdateData,
@@ -975,7 +975,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (currentOrder && oldStatus !== status) {
         console.log(`📧 Status change to ${status} - specific email will be handled by automatic system`);
       }
-      
+
       res.json(order);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -986,13 +986,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/orders/:id/status-history", requireAdmin, async (req, res) => {
     try {
       const orderId = parseInt(req.params.id);
-      
+
       if (!orderId || isNaN(orderId)) {
         return res.status(400).json({ message: "ID do pedido inválido" });
       }
 
       const history = await storage.getOrderStatusHistory(orderId);
-      
+
       res.json({
         success: true,
         history
@@ -1008,13 +1008,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const updateData = req.body;
-      
+
       const order = await storage.updateOrder(id, updateData);
-      
+
       if (!order) {
         return res.status(404).json({ message: "Pedido não encontrado" });
       }
-      
+
       res.json(order);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -1025,14 +1025,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/test-email", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { email } = req.body;
-      
+
       if (!email) {
         return res.status(400).json({ message: "Email é obrigatório" });
       }
-      
+
       const emailService = new EmailService(storage);
       const success = await emailService.sendTestEmail(email);
-      
+
       if (success) {
         res.json({ 
           message: "Email de teste enviado com sucesso", 
@@ -1052,19 +1052,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/email-logs", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { page = 1, limit = 50, orderId, customerId, emailType, status } = req.query;
-      
+
       const filters: any = {
         limit: parseInt(limit as string),
         offset: (parseInt(page as string) - 1) * parseInt(limit as string)
       };
-      
+
       if (orderId) filters.orderId = parseInt(orderId as string);
       if (customerId) filters.customerId = parseInt(customerId as string);
       if (emailType) filters.emailType = emailType as string;
       if (status) filters.status = status as string;
-      
+
       const emailLogs = await storage.getEmailLogs(filters);
-      
+
       res.json({
         success: true,
         logs: emailLogs,
@@ -1111,7 +1111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const stats = await storage.getAdminStats();
       const orderStats = await storage.getOrderStats();
-      
+
       // Return comprehensive stats with real data from database
       const response = {
         totalCustomers: stats.totalCustomers,
@@ -1124,7 +1124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         inTransitOrders: orderStats.inTransitOrders,
         deliveredOrders: orderStats.deliveredOrders,
       };
-      
+
       console.log('Sending admin stats response:', response);
       res.json(response);
     } catch (error: any) {
@@ -1153,14 +1153,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const orderId = parseInt(req.params.id);
       const order = await storage.getOrderWithFullDetails(orderId);
-      
+
       if (!order) {
         return res.status(404).json({ message: "Pedido não encontrado" });
       }
-      
+
       const { generateDeliveryLabel } = await import('./label-generator');
       const pdfBuffer = await generateDeliveryLabel(order);
-      
+
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="etiqueta-${order.orderNumber}.pdf"`);
       res.send(pdfBuffer);
@@ -1175,29 +1175,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const eventId = parseInt(req.params.eventId);
       const orders = await storage.getOrdersByEventId(eventId);
-      
+
       if (!orders || orders.length === 0) {
         return res.status(404).json({ message: "Nenhum pedido encontrado para este evento" });
       }
-      
+
       // Get full details for each order
       const ordersWithDetails = await Promise.all(
         orders.map(order => storage.getOrderWithFullDetails(order.id))
       );
-      
+
       const validOrders = ordersWithDetails.filter(order => order !== undefined);
-      
+
       if (validOrders.length === 0) {
         return res.status(404).json({ message: "Nenhum pedido válido encontrado" });
       }
-      
+
       const { generateMultipleLabels } = await import('./label-generator');
       const pdfBuffer = await generateMultipleLabels(validOrders);
-      
+
       // Get event name for filename
       const event = await storage.getEvent(eventId);
       const eventName = event?.name.replace(/[^a-zA-Z0-9]/g, '-') || 'evento';
-      
+      const currentDate = new Date().toISOString().split('T')[0];
+
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="etiquetas-${eventName}.pdf"`);
       res.send(pdfBuffer);
@@ -1211,25 +1212,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/orders/labels", async (req, res) => {
     try {
       const { orderIds } = req.body;
-      
+
       if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
         return res.status(400).json({ message: "Lista de pedidos é obrigatória" });
       }
-      
+
       // Get full details for each order
       const ordersWithDetails = await Promise.all(
         orderIds.map((id: number) => storage.getOrderWithFullDetails(id))
       );
-      
+
       const validOrders = ordersWithDetails.filter(order => order !== undefined);
-      
+
       if (validOrders.length === 0) {
         return res.status(404).json({ message: "Nenhum pedido válido encontrado" });
       }
-      
+
       const { generateMultipleLabels } = await import('./label-generator');
       const pdfBuffer = await generateMultipleLabels(validOrders);
-      
+
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="etiquetas-selecionadas.pdf"`);
       res.send(pdfBuffer);
@@ -1240,16 +1241,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin Customer Management Routes
-  
+
   // Get all customers with addresses and order count
   app.get("/api/admin/customers", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { page = 1, limit = 10, search, paginated } = req.query;
       const pageNum = parseInt(page as string);
       const limitNum = parseInt(limit as string);
-      
+
       console.log("🚀 API called for /api/admin/customers", { page: pageNum, limit: limitNum, search, paginated });
-      
+
       // Check if pagination is requested
       if (req.query.paginated === 'true') {
         const result = await storage.getAllCustomersWithAddressesPaginated(pageNum, limitNum, search as string);
@@ -1270,15 +1271,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new customer (admin)
   app.post("/api/admin/customers", async (req, res) => {
     try {
-      const customerData = customerRegistrationSchema.parse(req.body);
-      
+      const registrationData = customerRegistrationSchema.parse(req.body);
+
       // Check if CPF already exists
-      const existingCustomer = await storage.getCustomerByCPF(customerData.cpf);
+      const existingCustomer = await storage.getCustomerByCPF(registrationData.cpf.replace(/\D/g, ''));
       if (existingCustomer) {
-        return res.status(400).json({ message: "CPF já cadastrado no sistema" });
+        return res.status(400).json({ 
+          success: false,
+          message: "CPF já cadastrado no sistema",
+          field: "cpf"
+        });
       }
-      
-      const result = await storage.createCustomerWithAddresses(customerData);
+
+      const result = await storage.createCustomerWithAddresses(registrationData);
       res.json(result);
     } catch (error: any) {
       if (error.name === "ZodError") {
@@ -1293,13 +1298,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const updateData = req.body;
-      
+
       const customer = await storage.updateCustomer(id, updateData);
-      
+
       if (!customer) {
         return res.status(404).json({ message: "Cliente não encontrado" });
       }
-      
+
       res.json(customer);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -1310,7 +1315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/admin/customers/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       // Check if customer has orders
       const orders = await storage.getOrdersByCustomerId(id);
       if (orders.length > 0) {
@@ -1318,13 +1323,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Não é possível excluir cliente com pedidos associados" 
         });
       }
-      
+
       const success = await storage.deleteCustomer(id);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Cliente não encontrado" });
       }
-      
+
       res.json({ message: "Cliente excluído com sucesso" });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -1336,11 +1341,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const customer = await storage.getCustomerWithAddresses(id);
-      
+
       if (!customer) {
         return res.status(404).json({ message: "Cliente não encontrado" });
       }
-      
+
       res.json(customer);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -1348,7 +1353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reports Routes
-  
+
   // Get events for reports dropdown
   app.get("/api/admin/reports/events", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
@@ -1365,19 +1370,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/reports/kits/:eventId", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const eventId = parseInt(req.params.eventId);
-      
+
       if (isNaN(eventId)) {
         return res.status(400).json({ message: "ID do evento inválido" });
       }
 
       const { generateKitsReport } = await import('./report-generator');
       const excelBuffer = await generateKitsReport(eventId);
-      
+
       // Get event name for filename
       const event = await storage.getEvent(eventId);
       const eventName = event?.name.replace(/[^a-zA-Z0-9]/g, '-') || 'evento';
       const currentDate = new Date().toISOString().split('T')[0];
-      
+
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', `attachment; filename="relatorio-kits-${eventName}-${currentDate}.xlsx"`);
       res.send(excelBuffer);
@@ -1397,7 +1402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🔍 Debug public key request - process.env.MERCADO_PAGO_PUBLIC_KEY:', process.env.MERCADO_PAGO_PUBLIC_KEY ? '[MASKED]' : 'UNDEFINED');
       const publicKey = getPublicKey();
       console.log('🔍 Debug getPublicKey() result:', publicKey ? '[MASKED]' : 'UNDEFINED');
-      
+
       if (!publicKey) {
         return res.status(500).json({ message: "Chave pública do Mercado Pago não configurada" });
       }
@@ -1412,7 +1417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/mercadopago/process-card-payment", paymentRateLimit, async (req, res) => {
     try {
       const { token, paymentMethodId, amount, email, customerName, cpf, orderData } = req.body;
-      
+
       console.log('Card payment request data:', { 
         token: token ? '[MASKED_TOKEN]' : 'NO_TOKEN', 
         paymentMethodId, 
@@ -1422,7 +1427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cpf: cpf ? '[MASKED_CPF]' : 'NO_CPF', 
         hasOrderData: !!orderData 
       });
-      
+
       if (!token || !paymentMethodId || !amount || !orderData) {
         return res.status(400).json({ 
           message: "Dados obrigatórios não fornecidos",
@@ -1470,13 +1475,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`🧪 Processing payment FIRST - temp reference: ${tempOrderReference}`);
       const result = await MercadoPagoService.processCardPayment(paymentData);
-      
+
       console.log(`💳 Payment result: success=${result.success}, status=${result.status}`);
 
       // ONLY create order if payment is approved or pending
       if (result.success && (result.status === 'approved' || result.status === 'pending')) {
         console.log(`✅ Payment ${result.status} - creating order now`);
-        
+
         try {
           // Convert numeric values to strings for schema validation
           const orderDataForValidation = {
@@ -1488,13 +1493,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             totalCost: typeof orderData.totalCost === 'number' ? orderData.totalCost.toString() : orderData.totalCost,
             donationAmount: typeof orderData.donationAmount === 'number' ? orderData.donationAmount.toString() : orderData.donationAmount,
           };
-          
+
           // Parse and validate order data
           const validatedOrderData = orderCreationSchema.parse(orderDataForValidation);
-          
+
           // Create the order now that payment is confirmed
           const orderNumber = `KR${new Date().getFullYear()}${String(Date.now() + Math.random() * 1000).slice(-6)}`;
-          
+
           const selectedEvent = await storage.getEvent(validatedOrderData.eventId);
           if (!selectedEvent) {
             return res.status(404).json({ message: "Evento não encontrado" });
@@ -1508,7 +1513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Get customer address for delivery calculation
           const customerAddress = await storage.getAddress(validatedOrderData.addressId);
-          
+
           if (selectedEvent.fixedPrice) {
             baseCost = Number(selectedEvent.fixedPrice);
             deliveryCost = 0;
@@ -1571,7 +1576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (result.status === 'approved') {
             // Cancel any scheduled payment pending email since payment was approved
             PaymentReminderScheduler.cancelScheduledEmail(order.orderNumber);
-            
+
             await storage.updateOrderStatus(
               order.id, 
               'confirmado', 
@@ -1580,15 +1585,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               'Pagamento aprovado'
             );
             console.log(`✅ Order ${order.orderNumber} status updated to confirmado - payment approved`);
-            
+
             // Send service confirmation email when payment is confirmed
             try {
               const emailService = new EmailService(storage);
               const fullOrder = await storage.getOrderByIdWithDetails(order.id);
-              
+
               if (fullOrder && fullOrder.customer?.email) {
                 const serviceConfirmationData = EmailDataMapper.mapToServiceConfirmation(fullOrder);
-                
+
                 await emailService.sendServiceConfirmation(
                   serviceConfirmationData,
                   fullOrder.customer.email,
@@ -1619,7 +1624,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             paymentId: result.id 
           });
         }
-        
+
       } else {
         // Payment rejected or failed - do NOT create order
         console.log(`❌ Payment ${result.status} - NOT creating order`);
@@ -1640,9 +1645,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/mercadopago/create-pix-payment", paymentRateLimit, async (req, res) => {
     try {
       const { orderId, amount, email, customerName, cpf } = req.body;
-      
+
       console.log('PIX payment request data:', { orderId, amount, email, customerName, cpf });
-      
+
       if (!orderId || !amount || !email || !customerName || !cpf) {
         return res.status(400).json({ message: "Dados obrigatórios não fornecidos" });
       }
@@ -1650,7 +1655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if orderId is numeric ID or orderNumber string
       let order;
       const orderIdNum = parseInt(orderId);
-      
+
       if (isNaN(orderIdNum)) {
         // If not a number, assume it's an orderNumber (like "KR2025575306")
         console.log(`Looking up PIX order by orderNumber: ${orderId}`);
@@ -1685,17 +1690,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const result = await MercadoPagoService.createPIXPayment(paymentData);
-      
+
       if (result) {
         console.log(`💳 PIX payment created for order ${orderId} (${order.orderNumber}) - Payment ID: ${result.id}`);
-        
+
         // Update order status to awaiting payment
         try {
           console.log(`Status: aguardando_pagamento`);
         } catch (error) {
           console.log('Note: Order status update temporarily disabled for testing');
         }
-        
+
         res.json({
           success: true,
           paymentId: result.id,
@@ -1719,19 +1724,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/mercadopago/payment-status/:paymentId", async (req, res) => {
     try {
       const paymentId = parseInt(req.params.paymentId);
-      
+
       if (!paymentId) {
         return res.status(400).json({ message: "ID de pagamento inválido" });
       }
 
       const result = await MercadoPagoService.getPaymentStatus(paymentId);
-      
+
       if (result.success && result.payment) {
         // Get order by payment external reference
         const orderId = result.payment.external_reference;
-        
+
         console.log(`🔍 Payment ${paymentId} status: ${result.status} for order: ${orderId}`);
-        
+
         // Update order status based on payment status
         if (orderId) {
           try {
@@ -1742,7 +1747,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log(`✅ Payment approved for order ${orderId} (ID: ${order.id}) - updating to confirmado`);
                 await storage.updateOrderStatus(order.id, 'confirmado', 'mercadopago', 'Mercado Pago', 'Pagamento aprovado via verificação de status');
                 console.log(`✅ Order ${orderId} status successfully updated to confirmado`);
-                
+
                 // Send payment confirmation email
                 try {
                   const emailService = new EmailService(storage);
@@ -1751,10 +1756,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   const event = await storage.getEvent(fullOrder.eventId);
                   const address = await storage.getAddress(fullOrder.addressId);
                   const kits = await storage.getKitsByOrderId(fullOrder.id);
-                  
+
                   if (fullOrder.customer?.email) {
                     const eventDate = fullOrder.event?.date ? new Date(fullOrder.event.date).toLocaleDateString('pt-BR') : 'A definir';
-                    
+
                     const paymentConfirmationData = {
                       orderNumber: fullOrder.orderNumber,
                       customerName: fullOrder.customer.name,
@@ -1779,7 +1784,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         name: kit.name, cpf: kit.cpf, shirtSize: kit.shirtSize
                       })) || []
                     };
-                    
+
                     await emailService.sendPaymentConfirmation(
                       paymentConfirmationData,
                       fullOrder.customer.email,
@@ -1805,7 +1810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error('Error updating order status:', error);
           }
         }
-        
+
         res.json({
           success: true,
           status: result.status,
@@ -1832,17 +1837,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/mercadopago/webhook", async (req, res) => {
     try {
       console.log('📬 Webhook received from IP:', req.ip);
-      
+
       // Security: Validate webhook signature
       const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
-      
+
       if (!webhookSecret) {
         console.warn('🔒 SECURITY WARNING: MERCADOPAGO_WEBHOOK_SECRET not configured - webhook validation disabled');
         // Continue processing for development, but log warning
       } else {
         const signature = req.headers['x-signature'] as string;
         const requestId = req.headers['x-request-id'] as string;
-        
+
         if (!signature || !requestId) {
           console.warn('🔒 Webhook rejected: Missing signature or request ID');
           return res.status(401).json({ error: 'Unauthorized: Missing signature' });
@@ -1880,7 +1885,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Rate limiting: Check for excessive requests
         const now = Date.now();
         const timestampMs = parseInt(ts) * 1000;
-        
+
         // Reject old requests (older than 5 minutes)
         if (now - timestampMs > 5 * 60 * 1000) {
           console.warn('🔒 Webhook rejected: Request too old');
@@ -1891,22 +1896,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { action, data } = req.body;
-      
+
       if (action === 'payment.updated' && data?.id) {
         const result = await MercadoPagoService.getPaymentStatus(data.id);
-        
+
         if (result.success && result.payment) {
           const orderId = result.payment.external_reference;
-          
+
           // Update order status based on payment status
           if (orderId) {
             const order = await storage.getOrderByNumber(orderId);
             if (order) {
               if (result.status === 'approved') {
-                console.log(`✅ Webhook: Payment approved for order ${orderId} (ID: ${order.id}) - updating to confirmado`);
+                console.log(`✅ Webhook: Payment approved for order ${orderId} (ID: ${order.id}) - updating to confirmed`);
                 await storage.updateOrderStatus(order.id, 'confirmado', 'mercadopago', 'Mercado Pago', 'Pagamento aprovado via webhook');
-                console.log(`✅ Webhook: Order ${orderId} status successfully updated to confirmado`);
-                
+                console.log(`✅ Webhook: Order ${orderId} status successfully updated to confirmed`);
+
                 // Send payment confirmation email
                 try {
                   const emailService = new EmailService(storage);
@@ -1915,10 +1920,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   const event = await storage.getEvent(fullOrder.eventId);
                   const address = await storage.getAddress(fullOrder.addressId);
                   const kits = await storage.getKitsByOrderId(fullOrder.id);
-                  
+
                   if (fullOrder.customer?.email) {
                     const eventDate = fullOrder.event?.date ? new Date(fullOrder.event.date).toLocaleDateString('pt-BR') : 'A definir';
-                    
+
                     const paymentConfirmationData = {
                       orderNumber: fullOrder.orderNumber,
                       customerName: fullOrder.customer.name,
@@ -1943,7 +1948,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         name: kit.name, cpf: kit.cpf, shirtSize: kit.shirtSize
                       })) || []
                     };
-                    
+
                     await emailService.sendPaymentConfirmation(
                       paymentConfirmationData,
                       fullOrder.customer.email,
@@ -1956,11 +1961,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   console.error('Webhook: Error sending payment confirmation email:', emailError);
                 }
               } else if (result.status === 'cancelled' || result.status === 'rejected') {
-                console.log(`❌ Webhook: Payment failed for order ${orderId} (ID: ${order.id}) - updating to cancelado`);
+                console.log(`❌ Webhook: Payment failed for order ${orderId} (ID: ${order.id}) - updating to canceled`);
                 await storage.updateOrderStatus(order.id, 'cancelado', 'mercadopago', 'Mercado Pago', 'Pagamento rejeitado via webhook');
-                console.log(`❌ Webhook: Order ${orderId} status successfully updated to cancelado`);
+                console.log(`❌ Webhook: Order ${orderId} status successfully updated to canceled`);
               } else if (result.status === 'pending') {
-                console.log(`⏳ Webhook: Payment pending for order ${orderId} - keeping aguardando_pagamento`);
+                console.log(`⏳ Webhook: Payment pending for order ${orderId} - keeping awaiting_payment`);
               }
             } else {
               console.error(`Webhook: Order not found with orderNumber: ${orderId}`);
@@ -1968,7 +1973,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
-      
+
       res.status(200).send('OK');
     } catch (error) {
       console.error('Webhook error:', error);
@@ -1980,13 +1985,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/orders/:orderId/status-history", requireOwnership('orderId', 'order'), async (req: AuthenticatedRequest, res) => {
     try {
       const orderId = parseInt(req.params.orderId);
-      
+
       if (!orderId || isNaN(orderId)) {
         return res.status(400).json({ message: "ID do pedido inválido" });
       }
 
       const history = await storage.getOrderStatusHistory(orderId);
-      
+
       res.json({
         success: true,
         history
@@ -2001,7 +2006,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/orders/number/:orderNumber/status-history", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const orderNumber = req.params.orderNumber;
-      
+
       if (!orderNumber) {
         return res.status(400).json({ message: "Número do pedido inválido" });
       }
@@ -2013,7 +2018,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const history = await storage.getOrderStatusHistory(order.id);
-      
+
       res.json({
         success: true,
         history
@@ -2028,7 +2033,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/orders/bulk-status-change", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { orderIds, newStatus, sendEmails, reason } = req.body;
-      
+
       // Validate input
       if (!Array.isArray(orderIds) || orderIds.length === 0) {
         return res.status(400).json({ error: 'Lista de pedidos inválida' });
@@ -2065,7 +2070,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate bulk operation ID for tracking
       const bulkOperationId = `bulk_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       let successCount = 0;
       let errors: any[] = [];
       let emailsSent = 0;
@@ -2074,7 +2079,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const order of orders) {
         try {
           const previousStatus = order.status;
-          
+
           // Skip if already at target status
           if (previousStatus === newStatus) {
             continue;
@@ -2225,9 +2230,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/test-sendgrid", async (req, res) => {
     try {
       console.log('🧪 Testing SendGrid integration...');
-      
+
       const { email } = req.body;
-      
+
       if (!email) {
         return res.status(400).json({
           success: false,
@@ -2237,10 +2242,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create EmailService instance
       const emailService = new EmailService(storage);
-      
+
       // Send test email
       const success = await emailService.sendTestEmail(email);
-      
+
       if (success) {
         console.log('✅ SendGrid test email sent successfully!');
         res.json({
@@ -2268,30 +2273,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // CEP Zones routes are handled in separate router (cepZonesRoutes)
 
   // Event CEP Zone Prices Management - Admin only
-  
+
   // Get CEP zone prices for a specific event
   app.get("/api/admin/events/:id/cep-zone-prices", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const eventId = parseInt(req.params.id);
-      
+
       if (isNaN(eventId)) {
         return res.status(400).json({ error: "ID do evento inválido" });
       }
-      
+
       // Get all CEP zones with their global prices
       const allZones = await storage.getCepZones();
-      
+
       // Get custom prices for this specific event
       const customPrices = await db
         .select()
         .from(eventCepZonePrices)
         .where(eq(eventCepZonePrices.eventId, eventId));
-      
+
       // Create a map of custom prices by zone ID
       const customPricesMap = new Map(
         customPrices.map(cp => [cp.cepZoneId, cp.price])
       );
-      
+
       // Combine zones with their custom prices
       const zonesWithPrices = allZones.map(zone => ({
         id: zone.id,
@@ -2303,7 +2308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           : null,
         active: zone.active
       }));
-      
+
       res.json({
         success: true,
         zones: zonesWithPrices
@@ -2313,30 +2318,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
-  
+
   // Update CEP zone prices for a specific event
   app.put("/api/admin/events/:id/cep-zone-prices", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const eventId = parseInt(req.params.id);
       const { customPrices } = req.body;
-      
+
       if (isNaN(eventId)) {
         return res.status(400).json({ error: "ID do evento inválido" });
       }
-      
+
       if (!Array.isArray(customPrices)) {
         return res.status(400).json({ error: "customPrices deve ser um array" });
       }
-      
+
       // Validate event exists
       const event = await storage.getEvent(eventId);
       if (!event) {
         return res.status(404).json({ error: "Evento não encontrado" });
       }
-      
+
       // Start transaction - first delete existing custom prices for this event
       await db.delete(eventCepZonePrices).where(eq(eventCepZonePrices.eventId, eventId));
-      
+
       // Insert new custom prices (only those with valid prices)
       const validCustomPrices = customPrices.filter(cp => 
         cp.cepZoneId && 
@@ -2344,44 +2349,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         !isNaN(parseFloat(cp.price)) && 
         parseFloat(cp.price) > 0
       );
-      
+
       if (validCustomPrices.length > 0) {
         const priceData = validCustomPrices.map(cp => ({
           eventId,
           cepZoneId: parseInt(cp.cepZoneId),
           price: cp.price.toString()
         }));
-        
+
         await db.insert(eventCepZonePrices).values(priceData);
       }
-      
+
       res.json({
         success: true,
         message: `${validCustomPrices.length} preços personalizados salvos com sucesso`,
         updatedCount: validCustomPrices.length
       });
-      
+
     } catch (error: any) {
       console.error("Error updating event CEP zone prices:", error);
       res.status(500).json({ error: error.message });
     }
   });
-  
+
   // Get detailed event information including CEP zone prices
   app.get("/api/admin/events/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const eventId = parseInt(req.params.id);
-      
+
       if (isNaN(eventId)) {
         return res.status(400).json({ error: "ID do evento inválido" });
       }
-      
+
       // Get basic event information
       const event = await storage.getEvent(eventId);
       if (!event) {
         return res.status(404).json({ error: "Evento não encontrado" });
       }
-      
+
       // If event uses CEP zones pricing, get the custom prices
       let cepZonePrices = null;
       if (event.pricingType === 'cep_zones') {
@@ -2394,19 +2399,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .from(eventCepZonePrices)
           .leftJoin(cepZones, eq(eventCepZonePrices.cepZoneId, cepZones.id))
           .where(eq(eventCepZonePrices.eventId, eventId));
-          
+
         cepZonePrices = customPrices.map(cp => ({
           zoneId: cp.cepZoneId,
           zoneName: cp.zoneName,
           customPrice: Number(cp.price)
         }));
       }
-      
+
       res.json({
         ...event,
         cepZonePrices
       });
-      
+
     } catch (error: any) {
       console.error("Error getting event details:", error);
       res.status(500).json({ error: error.message });
@@ -2418,21 +2423,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { zipCode } = req.params;
       const { eventName } = req.query;
-      
+
       // Get all active zones for calculation  
       const zones = await storage.getCepZones(true);
-      
+
       // Inline CEP zone calculation logic
       const cleanZip = zipCode.replace(/\D/g, '').padStart(8, '0');
       let foundZone = null;
-      
+
       for (const zone of zones) {
         try {
           const ranges = JSON.parse(zone.cepRanges);
           for (const range of ranges) {
             const zoneStart = range.start.replace(/\D/g, '').padStart(8, '0');
             const zoneEnd = range.end.replace(/\D/g, '').padStart(8, '0');
-            
+
             if (cleanZip >= zoneStart && cleanZip <= zoneEnd) {
               foundZone = zone;
               break;
@@ -2443,7 +2448,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('Error parsing CEP ranges for zone:', zone.id, error);
         }
       }
-      
+
       const calculation = foundZone 
         ? {
             zoneName: foundZone.name,
@@ -2458,7 +2463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             deliveryCost: 0,
             found: false
           };
-      
+
       if (!calculation.found) {
         // Generate WhatsApp URL for unsupported CEP
         const baseUrl = 'https://wa.me/5583981302961';
@@ -2488,4 +2493,3 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   return httpServer;
 }
-
