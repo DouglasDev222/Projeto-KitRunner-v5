@@ -87,7 +87,7 @@ export default function MyOrders() {
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header showBackButton onBack={() => setLocation("/")} />
+        <Header showBackButton onBack={() => setLocation("/eventos")} />
         <div className="p-4 text-center">
           <p className="text-neutral-600">Carregando...</p>
         </div>
@@ -99,7 +99,7 @@ export default function MyOrders() {
   if (!isAuthenticated && !showOrders && !customer) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header showBackButton onBack={() => setLocation("/")} />
+        <Header showBackButton onBack={() => setLocation("/eventos")} />
         <div className="p-4 text-center">
           <p className="text-neutral-600">Redirecionando para login...</p>
         </div>
@@ -111,7 +111,7 @@ export default function MyOrders() {
   if (isAuthenticated || (showOrders && customer)) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header showBackButton onBack={() => setLocation("/")} />
+        <Header showBackButton onBack={() => setLocation("/eventos")} />
         <div className="p-4">
           <div className="flex items-center mb-6">
             <User className="w-6 h-6 text-primary mr-2" />
@@ -196,7 +196,7 @@ export default function MyOrders() {
                 <Button 
                   variant="outline" 
                   className="mt-4"
-                  onClick={() => setLocation("/")}
+                  onClick={() => setLocation("/eventos")}
                 >
                   Fazer Novo Pedido
                 </Button>
@@ -211,7 +211,7 @@ export default function MyOrders() {
   // Guest identification form
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
-      <Header showBackButton onBack={() => setLocation("/")} />
+      <Header showBackButton onBack={() => setLocation("/eventos")} />
       <div className="p-4">
         <h2 className="text-2xl font-bold text-neutral-800 mb-2">Meus Pedidos</h2>
         <p className="text-neutral-600 mb-6">
