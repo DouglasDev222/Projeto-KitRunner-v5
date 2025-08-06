@@ -188,7 +188,24 @@ export default function CustomerRegistration() {
                             onChange={(e) => {
                               const value = e.target.value.replace(/\D/g, "");
                               field.onChange(value);
+                              
+                              // Validate CPF if it has 11 digits
+                              if (value.length === 11) {
+                                if (!isValidCPF(value)) {
+                                  form.setError("cpf", {
+                                    type: "manual",
+                                    message: "CPF inválido"
+                                  });
+                                } else {
+                                  form.clearErrors("cpf");
+                                }
+                              }
                             }}
+                            className={
+                              field.value.length === 11 && !isValidCPF(field.value) 
+                                ? "border-red-500" 
+                                : ""
+                            }
                           />
                         </FormControl>
                         <FormMessage />

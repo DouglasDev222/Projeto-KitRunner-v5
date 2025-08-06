@@ -282,7 +282,37 @@ export const orderCreationSchema = z.object({
 // Customer registration validation
 export const customerRegistrationSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
-  cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(11, "CPF deve ter 11 dígitos"),
+  cpf: z.string()
+    .min(11, "CPF deve ter 11 dígitos")
+    .max(11, "CPF deve ter 11 dígitos")
+    .refine((cpf) => {
+      // Basic CPF validation logic
+      const cleanCPF = cpf.replace(/\D/g, "");
+      if (cleanCPF.length !== 11) return false;
+      
+      // Check for repeated digits
+      if (/^(\d)\1{10}$/.test(cleanCPF)) return false;
+      
+      // Validate first check digit
+      let sum = 0;
+      for (let i = 0; i < 9; i++) {
+        sum += parseInt(cleanCPF.charAt(i)) * (10 - i);
+      }
+      let remainder = (sum * 10) % 11;
+      if (remainder === 10 || remainder === 11) remainder = 0;
+      if (remainder !== parseInt(cleanCPF.charAt(9))) return false;
+      
+      // Validate second check digit
+      sum = 0;
+      for (let i = 0; i < 10; i++) {
+        sum += parseInt(cleanCPF.charAt(i)) * (11 - i);
+      }
+      remainder = (sum * 10) % 11;
+      if (remainder === 10 || remainder === 11) remainder = 0;
+      if (remainder !== parseInt(cleanCPF.charAt(10))) return false;
+      
+      return true;
+    }, "CPF inválido"),
   birthDate: z.string().min(10, "Data de nascimento é obrigatória").max(10, "Data inválida"),
   email: z.string().email("Email inválido"),
   phone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos"),
