@@ -39,7 +39,7 @@ export default function Profile() {
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header showBackButton onBack={() => setLocation("/")} />
+        <Header showBackButton onBack={() => setLocation("/eventos")} />
         <div className="p-4 text-center">
           <p className="text-neutral-600">Carregando...</p>
         </div>
@@ -51,7 +51,7 @@ export default function Profile() {
   if (!isAuthenticated) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header showBackButton onBack={() => setLocation("/")} />
+        <Header showBackButton onBack={() => setLocation("/eventos")} />
         <div className="p-4 text-center">
           <p className="text-neutral-600">Redirecionando para login...</p>
         </div>
@@ -61,7 +61,7 @@ export default function Profile() {
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen pb-20">
-      <Header showBackButton onBack={() => setLocation("/")} />
+      <Header showBackButton onBack={() => setLocation("/eventos")} />
       <div className="p-4">
         <div className="flex items-center mb-6">
           <User className="w-8 h-8 text-primary mr-3" />
@@ -176,8 +176,8 @@ export default function Profile() {
               <div className="text-center py-6">
                 <MapPin className="w-12 h-12 text-neutral-400 mx-auto mb-3" />
                 <p className="text-neutral-600 mb-4">Nenhum endereço cadastrado</p>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setLocation("/profile/address/new?from=profile")}
                 >
                   <Plus className="w-4 h-4 mr-2" />
