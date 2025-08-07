@@ -1,4 +1,5 @@
 import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -217,6 +218,7 @@ export default function OrderDetails() {
         {/* Order Status History */}
         <OrderStatusHistory orderNumber={order.orderNumber} />
       </div>
+      <Footer />
     </div>
   );
 }
