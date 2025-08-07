@@ -379,8 +379,12 @@ export default function AddressConfirmation() {
                 {(addresses as Address[]).map((address: Address) => (
                   <Button
                     key={address.id}
-                    variant={selectedAddress?.id === address.id ? "default" : "outline"}
-                    className="w-full text-left justify-start h-auto p-3"
+                    variant="outline"
+                    className={`w-full text-left justify-start h-auto p-3 ${
+                      selectedAddress?.id === address.id 
+                        ? "border-primary border-2 bg-white text-black" 
+                        : "border-gray-200 bg-white text-black hover:bg-gray-50"
+                    }`}
                     onClick={() => handleAddressSelect(address)}
                   >
                     <div className="flex items-center justify-between w-full">
