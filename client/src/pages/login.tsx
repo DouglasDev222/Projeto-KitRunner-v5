@@ -159,7 +159,7 @@ export default function Login() {
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
-      <Header showBackButton onBack={() => setLocation("/")} />
+      <Header showBackButton onBack={() => setLocation("/eventos")} />
       <div className="p-4">
         <Card>
           <CardHeader className="text-center">

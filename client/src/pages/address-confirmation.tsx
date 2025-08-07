@@ -423,19 +423,7 @@ export default function AddressConfirmation() {
         </div>
         <p className="text-neutral-600 mb-6">Confirme o endereço de entrega para os kits</p>
         
-        {/* CEP Zones User Guidance */}
-        {event?.pricingType === 'cep_zones' && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Info className="h-4 w-4 text-blue-600" />
-              <h4 className="font-medium text-blue-900">Entregas por Zona CEP</h4>
-            </div>
-            <p className="text-sm text-blue-700">
-              Este evento usa preços baseados em zonas de CEP. Digite seu endereço 
-              para verificar se atendemos sua região e conhecer o valor da entrega.
-            </p>
-          </div>
-        )}
+        
 
         {/* Enhanced Loading States */}
         {(isCheckingCepZone || pricingValidationStatus === 'validating') && (
