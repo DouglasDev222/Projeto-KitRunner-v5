@@ -41,8 +41,14 @@ export default function Profile() {
   // Delete address mutation
   const deleteAddressMutation = useMutation({
     mutationFn: async (addressId: number) => {
+      // Get the JWT token from localStorage
+      const token = localStorage.getItem('authToken');
+      
       const response = await fetch(`/api/addresses/${addressId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {

@@ -7,6 +7,23 @@ KitRunner is a mobile-first web application for managing event kit pickup and de
 Preferred communication style: Simple, everyday language.
 
 ## Recent Fixes (August 7, 2025)
+- **Customer Profile Editing System**: Successfully implemented comprehensive profile editing with security restrictions
+  - **Backend Implementation**: Added PUT endpoint `/api/customers/:id` with restricted field access (customers cannot edit CPF or ID)
+  - **Frontend Profile Edit**: Created dedicated `/profile/edit` page with form validation and authentication
+  - **Security Measures**: CPF field displayed as read-only, ownership validation prevents cross-customer editing
+  - **Profile Management**: Added edit button to profile page, proper navigation and error handling
+
+- **Address Limit System**: Implemented 2-address maximum per customer across all interfaces
+  - **Backend Validation**: Address creation endpoints validate maximum 2 addresses with appropriate error responses
+  - **Frontend Restrictions**: Hide/disable "Add Address" buttons when limit reached
+  - **Address Deletion**: Added delete functionality with safety checks (cannot delete last address)
+  - **Multi-screen Coverage**: Applied limits in profile page, event address selection, and new address creation
+  - **User Experience**: Clear messaging when limits reached, smooth deletion workflow
+
+- **Authentication Fixes**: Resolved JWT token transmission issues in profile editing requests
+  - **Token Management**: Added proper Authorization headers to profile update and address deletion requests
+  - **Error Handling**: Improved authentication error messages and user feedback
+
 - **Replit Migration Completed**: Successfully migrated project from Replit Agent to standard Replit environment
   - **Database Configuration**: Configured Supabase PostgreSQL connection via DATABASE_URL environment variable
   - **Security Implementation**: Added HTTP security headers, content security policy, and proper client/server separation

@@ -62,10 +62,14 @@ export default function ProfileEdit() {
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: ProfileEditFormData) => {
+      // Get the JWT token from localStorage
+      const token = localStorage.getItem('authToken');
+      
       const response = await fetch(`/api/customers/${user?.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(data),
       });
