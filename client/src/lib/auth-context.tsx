@@ -5,6 +5,7 @@ interface AuthContextType {
   user: Customer | null;
   login: (customer: Customer) => void;
   logout: () => void;
+  updateUser: (customer: Customer) => void;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -66,10 +67,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateUser = (customer: Customer) => {
+    setUser(customer);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('kitrunner_user', JSON.stringify(customer));
+    }
+  };
+
   const isAuthenticated = !!user;
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, isAuthenticated, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

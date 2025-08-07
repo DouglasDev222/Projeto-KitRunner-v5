@@ -20,7 +20,7 @@ type ProfileEditFormData = z.infer<typeof customerProfileEditSchema>;
 
 export default function ProfileEdit() {
   const [, setLocation] = useLocation();
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, updateUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,8 +94,19 @@ export default function ProfileEdit() {
         variant: "default",
       });
 
-      // Update the auth context and invalidate queries
+      // Update auth context with new user data for immediate UI refresh
+      if (updatedCustomer) {
+        updateUser(updatedCustomer);
+      }
+
+      // Comprehensive cache invalidation following reatividade solution pattern
       queryClient.invalidateQueries({ queryKey: ["/api/customers", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] }); // General customers cache
+      queryClient.invalidateQueries({ queryKey: ["customer", user?.id] }); // Legacy support
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", user?.id, "addresses"] }); // Address data
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", user?.id, "orders"] }); // Orders data
+      
+
       
       // Navigate back to profile
       setLocation("/profile");
