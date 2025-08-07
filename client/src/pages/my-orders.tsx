@@ -3,7 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Package, Calendar, MapPin, ChevronRight, User } from "lucide-react";
@@ -12,7 +19,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { customerIdentificationSchema, type CustomerIdentification, type Order, type Kit } from "@shared/schema";
+import {
+  customerIdentificationSchema,
+  type CustomerIdentification,
+  type Order,
+  type Kit,
+} from "@shared/schema";
 import { formatCPF, isValidCPF } from "@/lib/cpf-validator";
 import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
 import { apiRequest } from "@/lib/queryClient";
@@ -44,20 +56,29 @@ export default function MyOrders() {
 
   const identifyMutation = useMutation({
     mutationFn: async (data: CustomerIdentification) => {
-      const response = await apiRequest("POST", "/api/customers/identify", data);
+      const response = await apiRequest(
+        "POST",
+        "/api/customers/identify",
+        data,
+      );
       return response.json();
     },
     onSuccess: (customerData) => {
       // Invalidate relevant caches for customer identification
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerData.id, "orders"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerData.id, "addresses"] });
-      
+      queryClient.invalidateQueries({
+        queryKey: ["/api/customers", customerData.id, "orders"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/customers", customerData.id, "addresses"],
+      });
+
       setCustomer(customerData);
       setShowOrders(true);
     },
     onError: () => {
       form.setError("root", {
-        message: "Cliente não encontrado. Verifique seu CPF e data de nascimento.",
+        message:
+          "Cliente não encontrado. Verifique seu CPF e data de nascimento.",
       });
     },
   });
@@ -87,7 +108,7 @@ export default function MyOrders() {
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header showBackButton onBack={() => setLocation("/eventos")} />
+        <Header showBackButton onBack={() => setLocation("/profile")} />
         <div className="p-4 text-center">
           <p className="text-neutral-600">Carregando...</p>
         </div>
@@ -99,7 +120,7 @@ export default function MyOrders() {
   if (!isAuthenticated && !showOrders && !customer) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header showBackButton onBack={() => setLocation("/eventos")} />
+        <Header showBackButton onBack={() => setLocation("/profile")} />
         <div className="p-4 text-center">
           <p className="text-neutral-600">Redirecionando para login...</p>
         </div>
@@ -111,90 +132,112 @@ export default function MyOrders() {
   if (isAuthenticated || (showOrders && customer)) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header showBackButton onBack={() => setLocation("/eventos")} />
+        <Header showBackButton onBack={() => setLocation("/profile")} />
         <div className="p-4">
           <div className="flex items-center mb-6">
             <User className="w-6 h-6 text-primary mr-2" />
             <div>
-              <h2 className="text-xl font-bold text-neutral-800">{effectiveCustomer!.name}</h2>
-              <p className="text-sm text-neutral-600">{formatCPF(effectiveCustomer!.cpf)}</p>
+              <h2 className="text-xl font-bold text-neutral-800">
+                {effectiveCustomer!.name}
+              </h2>
+              <p className="text-sm text-neutral-600">
+                {formatCPF(effectiveCustomer!.cpf)}
+              </p>
             </div>
           </div>
 
-          <h3 className="text-lg font-semibold text-neutral-800 mb-4">Meus Pedidos</h3>
+          <h3 className="text-lg font-semibold text-neutral-800 mb-4">
+            Meus Pedidos
+          </h3>
 
           {ordersLoading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-24 bg-gray-200 rounded-lg animate-pulse" />
+                <div
+                  key={i}
+                  className="h-24 bg-gray-200 rounded-lg animate-pulse"
+                />
               ))}
             </div>
           ) : orders && Array.isArray(orders) && orders.length > 0 ? (
             <div className="space-y-4">
               {orders
-                .sort((a: Order, b: Order) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .sort(
+                  (a: Order, b: Order) =>
+                    new Date(b.createdAt).getTime() -
+                    new Date(a.createdAt).getTime(),
+                )
                 .map((order: Order) => (
-                <Card 
-                  key={order.id} 
-                  className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => handleOrderClick(order.orderNumber)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="font-semibold text-neutral-800">#{order.orderNumber}</p>
-                          {getStatusBadge(order.status)}
-                        </div>
-                        
-                        {/* Event name - more prominent */}
-                        <div className="mb-2">
-                          <p className="font-medium text-neutral-800 text-sm">
-                            {order.event?.name || `Evento ID: ${order.eventId}` || 'Evento não identificado'}
+                  <Card
+                    key={order.id}
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => handleOrderClick(order.orderNumber)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="font-semibold text-neutral-800">
+                              #{order.orderNumber}
+                            </p>
+                            {getStatusBadge(order.status)}
+                          </div>
+
+                          {/* Event name - more prominent */}
+                          <div className="mb-2">
+                            <p className="font-medium text-neutral-800 text-sm">
+                              {order.event?.name ||
+                                `Evento ID: ${order.eventId}` ||
+                                "Evento não identificado"}
+                            </p>
+                          </div>
+
+                          {/* Kit quantity and date on same line */}
+                          <div className="flex items-center justify-between text-sm text-neutral-600 mb-2">
+                            <div className="flex items-center">
+                              <Package className="w-4 h-4 mr-1" />
+                              {order.kitQuantity} kit
+                              {order.kitQuantity > 1 ? "s" : ""}
+                            </div>
+                            <div className="flex items-center">
+                              <Calendar className="w-4 h-4 mr-1" />
+                              {(() => {
+                                try {
+                                  const dateStr = order.createdAt
+                                    ? (typeof order.createdAt === "string"
+                                        ? order.createdAt
+                                        : new Date(
+                                            order.createdAt,
+                                          ).toISOString()
+                                      ).split("T")[0]
+                                    : new Date().toISOString().split("T")[0];
+                                  return formatDate(dateStr);
+                                } catch {
+                                  return formatDate(
+                                    new Date().toISOString().split("T")[0],
+                                  );
+                                }
+                              })()}
+                            </div>
+                          </div>
+
+                          <p className="text-lg font-bold text-primary">
+                            {formatCurrency(parseFloat(order.totalCost))}
                           </p>
                         </div>
-                        
-                        {/* Kit quantity and date on same line */}
-                        <div className="flex items-center justify-between text-sm text-neutral-600 mb-2">
-                          <div className="flex items-center">
-                            <Package className="w-4 h-4 mr-1" />
-                            {order.kitQuantity} kit{order.kitQuantity > 1 ? 's' : ''}
-                          </div>
-                          <div className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-1" />
-                            {(() => {
-                              try {
-                                const dateStr = order.createdAt ? 
-                                  (typeof order.createdAt === 'string' ? 
-                                    order.createdAt : 
-                                    new Date(order.createdAt).toISOString()
-                                  ).split('T')[0] : 
-                                  new Date().toISOString().split('T')[0];
-                                return formatDate(dateStr);
-                              } catch {
-                                return formatDate(new Date().toISOString().split('T')[0]);
-                              }
-                            })()}
-                          </div>
-                        </div>
-                        
-                        <p className="text-lg font-bold text-primary">
-                          {formatCurrency(parseFloat(order.totalCost))}
-                        </p>
+                        <ChevronRight className="w-5 h-5 text-neutral-400 ml-4" />
                       </div>
-                      <ChevronRight className="w-5 h-5 text-neutral-400 ml-4" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
             </div>
           ) : (
             <Card>
               <CardContent className="p-6 text-center">
                 <Package className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
                 <p className="text-neutral-600">Nenhum pedido encontrado</p>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="mt-4"
                   onClick={() => setLocation("/eventos")}
                 >
@@ -213,7 +256,9 @@ export default function MyOrders() {
     <div className="max-w-md mx-auto bg-white min-h-screen">
       <Header showBackButton onBack={() => setLocation("/eventos")} />
       <div className="p-4">
-        <h2 className="text-2xl font-bold text-neutral-800 mb-2">Meus Pedidos</h2>
+        <h2 className="text-2xl font-bold text-neutral-800 mb-2">
+          Meus Pedidos
+        </h2>
         <p className="text-neutral-600 mb-6">
           Digite seu CPF e data de nascimento para acessar seus pedidos
         </p>
@@ -249,11 +294,7 @@ export default function MyOrders() {
                 <FormItem>
                   <FormLabel>Data de Nascimento</FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                      type="date"
-                      placeholder="DD/MM/AAAA"
-                    />
+                    <Input {...field} type="date" placeholder="DD/MM/AAAA" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -266,12 +307,14 @@ export default function MyOrders() {
               </div>
             )}
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full"
               disabled={identifyMutation.isPending}
             >
-              {identifyMutation.isPending ? "Verificando..." : "Acessar Pedidos"}
+              {identifyMutation.isPending
+                ? "Verificando..."
+                : "Acessar Pedidos"}
             </Button>
           </form>
         </Form>

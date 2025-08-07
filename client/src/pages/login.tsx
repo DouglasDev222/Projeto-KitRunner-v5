@@ -1,7 +1,14 @@
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogIn, User } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -9,7 +16,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { customerIdentificationSchema, type CustomerIdentification } from "@shared/schema";
+import {
+  customerIdentificationSchema,
+  type CustomerIdentification,
+} from "@shared/schema";
 import { formatCPF, isValidCPF } from "@/lib/cpf-validator";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth-context";
@@ -22,7 +32,7 @@ export default function Login() {
   // Handle URL redirect parameter
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const redirectParam = urlParams.get('redirect');
+    const redirectParam = urlParams.get("redirect");
     if (redirectParam) {
       sessionStorage.setItem("loginReturnPath", redirectParam);
     }
@@ -52,7 +62,11 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: CustomerIdentification) => {
-      const response = await apiRequest("POST", "/api/customers/identify", data);
+      const response = await apiRequest(
+        "POST",
+        "/api/customers/identify",
+        data,
+      );
       if (!response.ok) {
         throw new Error("Customer not found");
       }
@@ -61,13 +75,13 @@ export default function Login() {
     onSuccess: (customer) => {
       // Mark that we've manually logged in to prevent double redirect
       setHasRedirected(true);
-      
+
       // Get return path before calling login
       const returnPath = sessionStorage.getItem("loginReturnPath");
       sessionStorage.removeItem("loginReturnPath");
-      
+
       login(customer);
-      
+
       // Navigate after a small delay to ensure state is updated
       setTimeout(() => {
         if (returnPath) {
@@ -95,7 +109,7 @@ export default function Login() {
 
   const handleRegister = () => {
     // Clear form and go to events to start registration flow
-    setLocation("/");
+    setLocation("/register");
   };
 
   const handleCreateAccount = () => {
@@ -123,7 +137,10 @@ export default function Login() {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 <FormField
                   control={form.control}
                   name="cpf"
@@ -168,9 +185,9 @@ export default function Login() {
                   <div className="text-red-500 text-sm text-center mb-4">
                     {form.formState.errors.root.message}
                     <div className="mt-2">
-                      <Button 
+                      <Button
                         type="button"
-                        variant="outline" 
+                        variant="outline"
                         size="sm"
                         className="w-full"
                         onClick={handleCreateAccount}
@@ -182,8 +199,8 @@ export default function Login() {
                   </div>
                 )}
 
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full"
                   disabled={loginMutation.isPending}
                 >
@@ -196,13 +213,13 @@ export default function Login() {
               <p className="text-sm text-neutral-600 mb-4">
                 Ainda não tem uma conta?
               </p>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full"
                 onClick={handleRegister}
               >
                 <User className="w-4 h-4 mr-2" />
-                Fazer Primeiro Pedido
+                Fazer Primeiro Acesso
               </Button>
             </div>
           </CardContent>
