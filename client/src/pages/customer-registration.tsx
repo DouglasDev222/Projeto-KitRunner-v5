@@ -269,28 +269,11 @@ export default function CustomerRegistration() {
             {/* Addresses */}
             <Card>
               <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
+                <div className="mb-3">
                   <h3 className="font-semibold text-lg text-neutral-800 flex items-center">
                     <MapPin className="w-5 h-5 mr-2" />
                     Endereços
                   </h3>
-                  {fields.length < 2 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addAddress}
-                      className="flex items-center"
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Adicionar
-                    </Button>
-                  )}
-                  {fields.length >= 2 && (
-                    <p className="text-sm text-neutral-500">
-                      Máximo de 2 endereços permitidos
-                    </p>
-                  )}
                 </div>
                 
                 <div className="space-y-4">
