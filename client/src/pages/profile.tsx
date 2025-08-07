@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { User, Package, LogOut, MapPin, Edit3, Plus, Home } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { formatCPF } from "@/lib/cpf-validator";
 import { formatZipCode } from "@/lib/brazilian-formatter";
@@ -40,13 +40,22 @@ export default function Profile() {
       );
       
       if (hasChanges) {
-        console.log('🔄 Detected admin changes, updating user data');
+        console.log('🔄 Detected changes, updating user data');
         updateUser(serverUserData);
-        toast({
-          title: "Dados atualizados",
-          description: "Suas informações foram atualizadas pelo administrador.",
-          variant: "default",
-        });
+        
+        // Check if user just edited their own profile (flag set by profile-edit page)
+        const userEditFlag = localStorage.getItem('user_just_edited_profile');
+        if (userEditFlag && Date.now() - parseInt(userEditFlag) < 3000) {
+          // User edited within last 3 seconds, don't show admin notification
+          localStorage.removeItem('user_just_edited_profile');
+        } else {
+          // Show admin notification only if it wasn't a user edit
+          toast({
+            title: "Dados atualizados",
+            description: "Suas informações foram atualizadas pelo administrador.",
+            variant: "default",
+          });
+        }
       }
     }
   }, [serverUserData, user, updateUser, toast]);
