@@ -24,10 +24,38 @@ import { formatCPF, isValidCPF } from "@/lib/cpf-validator";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth-context";
 
+// Função para formatar data brasileira (DD/MM/AAAA)
+const formatBrazilianDate = (value: string): string => {
+  const numbers = value.replace(/\D/g, "");
+  if (numbers.length <= 2) return numbers;
+  if (numbers.length <= 4) return `${numbers.slice(0, 2)}/${numbers.slice(2)}`;
+  return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
+};
+
+// Função para converter data brasileira para formato ISO
+const brazilianToIsoDate = (brazilianDate: string): string => {
+  const numbers = brazilianDate.replace(/\D/g, "");
+  if (numbers.length === 8) {
+    const day = numbers.slice(0, 2);
+    const month = numbers.slice(2, 4);
+    const year = numbers.slice(4, 8);
+    return `${year}-${month}-${day}`;
+  }
+  return "";
+};
+
+// Função para converter data ISO para formato brasileiro
+const isoToBrazilianDate = (isoDate: string): string => {
+  if (!isoDate) return "";
+  const [year, month, day] = isoDate.split("-");
+  return `${day}/${month}/${year}`;
+};
+
 export default function Login() {
   const [, setLocation] = useLocation();
   const { login, isAuthenticated } = useAuth();
   const [hasRedirected, setHasRedirected] = useState(false);
+  const [formattedBirthDate, setFormattedBirthDate] = useState("");
 
   // Handle URL redirect parameter
   useEffect(() => {
@@ -104,7 +132,15 @@ export default function Login() {
       form.setError("cpf", { message: "CPF inválido" });
       return;
     }
-    loginMutation.mutate({ ...data, cpf: cleanCPF });
+    
+    // Converter data brasileira para formato ISO
+    const isoDate = brazilianToIsoDate(formattedBirthDate);
+    if (!isoDate) {
+      form.setError("birthDate", { message: "Data de nascimento inválida" });
+      return;
+    }
+    
+    loginMutation.mutate({ ...data, cpf: cleanCPF, birthDate: isoDate });
   };
 
   const handleRegister = () => {
@@ -171,9 +207,17 @@ export default function Login() {
                       <FormLabel>Data de Nascimento</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
-                          type="date"
+                          type="text"
                           placeholder="DD/MM/AAAA"
+                          value={formattedBirthDate}
+                          onChange={(e) => {
+                            const formatted = formatBrazilianDate(e.target.value);
+                            setFormattedBirthDate(formatted);
+                            // Atualizar o campo do formulário com a data ISO para validação
+                            const isoDate = brazilianToIsoDate(formatted);
+                            field.onChange(isoDate);
+                          }}
+                          maxLength={10}
                         />
                       </FormControl>
                       <FormMessage />
