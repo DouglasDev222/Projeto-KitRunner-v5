@@ -121,17 +121,20 @@ export default function CustomerRegistration() {
   };
 
   const addAddress = () => {
-    append({
-      label: "Trabalho",
-      street: "",
-      number: "",
-      complement: "",
-      neighborhood: "",
-      city: "",
-      state: "PB",
-      zipCode: "",
-      isDefault: false,
-    });
+    // Only allow adding if less than 2 addresses
+    if (fields.length < 2) {
+      append({
+        label: "Trabalho",
+        street: "",
+        number: "",
+        complement: "",
+        neighborhood: "",
+        city: "",
+        state: "PB",
+        zipCode: "",
+        isDefault: false,
+      });
+    }
   };
 
   const getBackNavigation = () => {
@@ -271,16 +274,23 @@ export default function CustomerRegistration() {
                     <MapPin className="w-5 h-5 mr-2" />
                     Endereços
                   </h3>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addAddress}
-                    className="flex items-center"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Adicionar
-                  </Button>
+                  {fields.length < 2 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addAddress}
+                      className="flex items-center"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Adicionar
+                    </Button>
+                  )}
+                  {fields.length >= 2 && (
+                    <p className="text-sm text-neutral-500">
+                      Máximo de 2 endereços permitidos
+                    </p>
+                  )}
                 </div>
                 
                 <div className="space-y-4">

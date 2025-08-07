@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { User, Package, LogOut, MapPin, Edit3, Plus, Home, Trash2 } from "lucide-react";
+import { User, Package, LogOut, MapPin, Edit3, Plus, Home } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
@@ -31,7 +31,7 @@ export default function Profile() {
   });
 
   // Check if user has reached address limit (2 addresses)
-  const hasReachedAddressLimit = (addressCount as { count: number } | undefined)?.count >= 2;
+  const hasReachedAddressLimit = addressCount ? (addressCount as { count: number }).count >= 2 : false;
 
   const handleLogout = () => {
     logout();
@@ -39,56 +39,7 @@ export default function Profile() {
   };
 
   // Delete address mutation
-  const deleteAddressMutation = useMutation({
-    mutationFn: async (addressId: number) => {
-      // Get user data from localStorage and encode as base64 token
-      const savedUser = localStorage.getItem('kitrunner_user');
-      if (!savedUser) {
-        throw new Error('Usuário não encontrado. Faça login novamente.');
-      }
-      
-      // Create base64 token from user data (same format expected by server)
-      const token = btoa(savedUser);
-      
-      const response = await fetch(`/api/addresses/${addressId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erro ao excluir endereço');
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Endereço excluído",
-        description: "O endereço foi removido com sucesso!",
-        variant: "default",
-      });
-
-      // Invalidate queries to refresh address lists
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", user?.id, "addresses"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", user?.id, "addresses", "count"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro ao excluir endereço",
-        description: error.message || "Não foi possível excluir o endereço. Tente novamente.",
-        variant: "destructive",
-      });
-    }
-  });
-
-  const handleDeleteAddress = (addressId: number) => {
-    if (confirm("Tem certeza que deseja excluir este endereço?")) {
-      deleteAddressMutation.mutate(addressId);
-    }
-  };
 
   // Use effect to handle redirection to avoid React warning
   useEffect(() => {
@@ -237,17 +188,6 @@ export default function Profile() {
                         >
                           <Edit3 className="w-4 h-4" />
                         </Button>
-                        {(addresses as Address[]).length > 1 && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDeleteAddress(address.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            disabled={deleteAddressMutation.isPending}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
                       </div>
                     </div>
                     <div className="text-sm text-neutral-600 space-y-1">
