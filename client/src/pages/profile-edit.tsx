@@ -69,7 +69,7 @@ export default function ProfileEdit() {
       }
       
       // Create base64 token from user data (same format expected by server)
-      const token = Buffer.from(savedUser).toString('base64');
+      const token = btoa(savedUser);
       
       const response = await fetch(`/api/customers/${user?.id}`, {
         method: 'PUT',

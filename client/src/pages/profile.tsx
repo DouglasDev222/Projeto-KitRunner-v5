@@ -48,7 +48,7 @@ export default function Profile() {
       }
       
       // Create base64 token from user data (same format expected by server)
-      const token = Buffer.from(savedUser).toString('base64');
+      const token = btoa(savedUser);
       
       const response = await fetch(`/api/addresses/${addressId}`, {
         method: 'DELETE',
