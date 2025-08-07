@@ -99,10 +99,7 @@ export default function ProfileEdit() {
         updateUser(updatedCustomer);
       }
 
-      // Mark that user just edited their own profile to prevent admin notification
-      localStorage.setItem('user_just_edited_profile', Date.now().toString());
-
-      // Comprehensive cache invalidation following reatividade solution pattern
+      // Comprehensive cache invalidation following reactividade solution pattern
       queryClient.invalidateQueries({ queryKey: ["/api/customers", user?.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] }); // General customers cache
       queryClient.invalidateQueries({ queryKey: ["customer", user?.id] }); // Legacy support

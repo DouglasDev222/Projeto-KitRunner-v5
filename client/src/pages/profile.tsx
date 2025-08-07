@@ -43,22 +43,11 @@ export default function Profile() {
         console.log('🔄 Detected changes, updating user data');
         updateUser(serverUserData);
         
-        // Check if user just edited their own profile (flag set by profile-edit page)
-        const userEditFlag = localStorage.getItem('user_just_edited_profile');
-        if (userEditFlag && Date.now() - parseInt(userEditFlag) < 3000) {
-          // User edited within last 3 seconds, don't show admin notification
-          localStorage.removeItem('user_just_edited_profile');
-        } else {
-          // Show admin notification only if it wasn't a user edit
-          toast({
-            title: "Dados atualizados",
-            description: "Suas informações foram atualizadas pelo administrador.",
-            variant: "default",
-          });
-        }
+        // Clear any user edit flags without showing notifications
+        localStorage.removeItem('user_just_edited_profile');
       }
     }
-  }, [serverUserData, user, updateUser, toast]);
+  }, [serverUserData, user, updateUser]);
 
   const { data: addresses } = useQuery({
     queryKey: ["/api/customers", user?.id, "addresses"],
