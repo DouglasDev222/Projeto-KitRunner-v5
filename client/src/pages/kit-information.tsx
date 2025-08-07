@@ -14,8 +14,8 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { kitInformationSchema, kitSchema, type KitInformation } from "@shared/schema";
-import { formatCPF } from "@/lib/cpf-validator";
-import { formatCurrency } from "@/lib/brazilian-formatter";
+import { formatCPF, isValidCPF } from "@/lib/cpf-validator";
+import { formatCurrency, formatCEP } from "@/lib/brazilian-formatter";
 import { calculatePricing, formatPricingBreakdown } from "@/lib/pricing-calculator";
 import { useAuth } from "@/lib/auth-context";
 
@@ -58,7 +58,7 @@ export default function KitInformation() {
   const customerData = sessionStorage.getItem("customerData");
   const addressData = sessionStorage.getItem("selectedAddress");
   const costsData = sessionStorage.getItem("calculatedCosts");
-  
+
   const customer = customerData ? JSON.parse(customerData) : (user || {});
   const selectedAddress = addressData ? JSON.parse(addressData) : {};
   const calculatedCosts = costsData ? JSON.parse(costsData) : {};
@@ -88,7 +88,7 @@ export default function KitInformation() {
   const deliveryPrice = calculatedCosts.deliveryPrice || 18.50;
   const distance = calculatedCosts.distance || 12.5;
   const cepZonePrice = calculatedCosts.pricingType === 'cep_zones' ? calculatedCosts.deliveryPrice : undefined;
-  
+
   const pricing = event ? calculatePricing({
     event,
     kitQuantity: selectedQuantity,
@@ -112,10 +112,7 @@ export default function KitInformation() {
     setLocation(`/events/${id}/payment`);
   };
 
-  const handleCPFChange = (value: string, index: number) => {
-    const formatted = formatCPF(value);
-    form.setValue(`kits.${index}.cpf`, formatted);
-  };
+  // Removed unused handleCPFChange function as logic is now inline
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
@@ -123,7 +120,7 @@ export default function KitInformation() {
       <div className="p-4">
         <h2 className="text-2xl font-bold text-neutral-800 mb-2">Informações dos Kits</h2>
         <p className="text-neutral-600 mb-6">Informe os dados para cada kit que deseja retirar</p>
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {/* Kit Quantity Selector */}
@@ -168,7 +165,7 @@ export default function KitInformation() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name={`kits.${index}.cpf`}
@@ -177,20 +174,37 @@ export default function KitInformation() {
                             <FormLabel>CPF</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="000.000.000-00"
                                 {...field}
+                                placeholder="000.000.000-00"
                                 value={formatCPF(field.value)}
                                 onChange={(e) => {
                                   const value = e.target.value.replace(/\D/g, "");
                                   field.onChange(value);
+
+                                  // Validate CPF if it has 11 digits
+                                  if (value.length === 11) {
+                                    if (!isValidCPF(value)) {
+                                      form.setError(`kits.${index}.cpf`, {
+                                        type: "manual",
+                                        message: "CPF inválido"
+                                      });
+                                    } else {
+                                      form.clearErrors(`kits.${index}.cpf`);
+                                    }
+                                  }
                                 }}
+                                className={
+                                  field.value.length === 11 && !isValidCPF(field.value)
+                                    ? "border-red-500"
+                                    : ""
+                                }
                               />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name={`kits.${index}.shirtSize`}
@@ -233,7 +247,7 @@ export default function KitInformation() {
                   ) : (
                     <div className="flex justify-between items-center">
                       <span className="text-neutral-600">
-                        {calculatedCosts?.pricingType === 'cep_zones' 
+                        {calculatedCosts?.pricingType === 'cep_zones'
                           ? `Entrega (${calculatedCosts.cepZoneName || 'Zona CEP'})`
                           : `Entrega (${distance.toFixed(1)} km)`
                         }
@@ -241,7 +255,7 @@ export default function KitInformation() {
                       <span className="font-semibold text-neutral-800">{formatCurrency(deliveryPrice)}</span>
                     </div>
                   )}
-                  
+
                   {event?.donationRequired && (
                     <div className="flex justify-between items-center">
                       <div className="flex items-center">
@@ -251,14 +265,14 @@ export default function KitInformation() {
                       <span className="font-semibold text-neutral-800">{formatCurrency(Number(event.donationAmount || 0) * selectedQuantity)}</span>
                     </div>
                   )}
-                  
+
                   {selectedQuantity > 1 && (
                     <div className="flex justify-between items-center">
                       <span className="text-neutral-600">{selectedQuantity - 1} kit{selectedQuantity > 2 ? 's' : ''} adicional{selectedQuantity > 2 ? 'is' : ''}</span>
                       <span className="font-semibold text-neutral-800">{formatCurrency((selectedQuantity - 1) * Number(event?.extraKitPrice || 8))}</span>
                     </div>
                   )}
-                  
+
                   <div className="border-t pt-3">
                     <div className="flex justify-between items-center">
                       <span className="font-semibold text-lg text-neutral-800">Total</span>
@@ -268,10 +282,10 @@ export default function KitInformation() {
                 </div>
               </CardContent>
             </Card>
-            
-            <Button 
+
+            <Button
               type="submit"
-              className="w-full bg-primary text-white hover:bg-primary/90 mt-6" 
+              className="w-full bg-primary text-white hover:bg-primary/90 mt-6"
               size="lg"
             >
               Continuar para Pagamento
