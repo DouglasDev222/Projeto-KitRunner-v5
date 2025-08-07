@@ -73,7 +73,7 @@ export default function AdminCustomers() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Fetch customers with addresses (paginated)
+  // Fetch customers with addresses (paginated) - reactive strategy
   const { data: customersData, isLoading: customersLoading } = useQuery({
     queryKey: ["/api/admin/customers", { 
       page: currentPage, 
@@ -81,6 +81,9 @@ export default function AdminCustomers() {
       paginated: true,
       search: debouncedSearchTerm 
     }],
+    staleTime: 0, // Always fetch fresh data to detect changes
+    refetchOnMount: true, // Refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   });
 
   const customers = customersData?.customers || [];
@@ -157,7 +160,10 @@ export default function AdminCustomers() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "customers"] });
+      // Comprehensive cache invalidation for reactivity
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/customers"] }); // Main customers query
+      queryClient.invalidateQueries({ queryKey: ["admin", "customers"] }); // Legacy compatibility  
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] }); // Any customer-related queries
       setIsCreateDialogOpen(false);
       createForm.reset();
     },
@@ -188,7 +194,10 @@ export default function AdminCustomers() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "customers"] });
+      // Comprehensive cache invalidation for reactivity
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/customers"] }); // Main customers query
+      queryClient.invalidateQueries({ queryKey: ["admin", "customers"] }); // Legacy compatibility
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] }); // Any customer-related queries
       setIsEditDialogOpen(false);
       setSelectedCustomer(null);
     },
@@ -201,7 +210,10 @@ export default function AdminCustomers() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "customers"] });
+      // Comprehensive cache invalidation for reactivity
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/customers"] }); // Main customers query  
+      queryClient.invalidateQueries({ queryKey: ["admin", "customers"] }); // Legacy compatibility
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] }); // Any customer-related queries
       setIsDeleteDialogOpen(false);
       setCustomerToDelete(null);
     },
@@ -214,7 +226,10 @@ export default function AdminCustomers() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "customers"] });
+      // Comprehensive cache invalidation for reactivity
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/customers"] }); // Main customers query
+      queryClient.invalidateQueries({ queryKey: ["admin", "customers"] }); // Legacy compatibility
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] }); // Any customer-related queries
       setIsAddAddressDialogOpen(false);
       addressForm.reset();
     },
@@ -227,7 +242,10 @@ export default function AdminCustomers() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "customers"] });
+      // Comprehensive cache invalidation for reactivity
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/customers"] }); // Main customers query
+      queryClient.invalidateQueries({ queryKey: ["admin", "customers"] }); // Legacy compatibility
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] }); // Any customer-related queries
       setIsEditAddressDialogOpen(false);
       setSelectedAddress(null);
       addressForm.reset();
