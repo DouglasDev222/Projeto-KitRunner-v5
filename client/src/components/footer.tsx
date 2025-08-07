@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Package, User } from "lucide-react";
+import { Package, User, Calendar } from "lucide-react";
 import { useLocation } from "wouter";
 
 export function Footer() {
@@ -7,7 +7,7 @@ export function Footer() {
 
   return (
     <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200 p-4">
-      <div className="flex gap-4">
+      <div className="flex gap-2">
         <Button
           variant="outline"
           className="flex-1 flex items-center gap-2"
@@ -17,7 +17,15 @@ export function Footer() {
           }}
         >
           <Package className="w-4 h-4" />
-          Meus Pedidos
+          Pedidos
+        </Button>
+        <Button
+          variant="outline"
+          className="flex-1 flex items-center gap-2"
+          onClick={() => setLocation("/events")}
+        >
+          <Calendar className="w-4 h-4" />
+          Eventos
         </Button>
         <Button
           variant="outline"
