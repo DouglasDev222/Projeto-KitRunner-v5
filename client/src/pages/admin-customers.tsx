@@ -18,6 +18,7 @@ import { customerRegistrationSchema, addressSchema, type CustomerRegistration, t
 import { formatCPF, isValidCPF } from "@/lib/cpf-validator";
 import { formatDate, formatPhone, isValidPhone } from "@/lib/brazilian-formatter";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { 
   Pagination,
@@ -60,6 +61,7 @@ export default function AdminCustomers() {
   const [pageSize] = useState(10);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Sistema novo: AdminRouteGuard já protege - não precisa de verificação
 
@@ -159,11 +161,20 @@ export default function AdminCustomers() {
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (newCustomer) => {
+      // Show success notification
+      toast({
+        title: "Cliente criado com sucesso",
+        description: `${newCustomer?.name || 'Cliente'} foi adicionado ao sistema.`,
+        variant: "default",
+      });
+      
       // Comprehensive cache invalidation for reactivity
       queryClient.invalidateQueries({ queryKey: ["/api/admin/customers"] }); // Main customers query
       queryClient.invalidateQueries({ queryKey: ["admin", "customers"] }); // Legacy compatibility  
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] }); // Any customer-related queries
+      
+      // Close modal and reset form
       setIsCreateDialogOpen(false);
       createForm.reset();
     },
@@ -193,13 +204,30 @@ export default function AdminCustomers() {
       const response = await apiRequest("PUT", `/api/admin/customers/${data.id}`, data.customer);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedCustomer) => {
+      // Show success notification
+      toast({
+        title: "Cliente editado com sucesso",
+        description: `As informações de ${updatedCustomer?.name || 'cliente'} foram atualizadas.`,
+        variant: "default",
+      });
+      
       // Comprehensive cache invalidation for reactivity
       queryClient.invalidateQueries({ queryKey: ["/api/admin/customers"] }); // Main customers query
       queryClient.invalidateQueries({ queryKey: ["admin", "customers"] }); // Legacy compatibility
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] }); // Any customer-related queries
+      
+      // Close modal and reset states
       setIsEditDialogOpen(false);
       setSelectedCustomer(null);
+    },
+    onError: (error: any) => {
+      // Show error notification
+      toast({
+        title: "Erro ao editar cliente",
+        description: error.message || "Ocorreu um erro ao atualizar as informações do cliente.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -210,12 +238,29 @@ export default function AdminCustomers() {
       return response.json();
     },
     onSuccess: () => {
+      // Show success notification
+      toast({
+        title: "Cliente excluído com sucesso",
+        description: `${customerToDelete?.name || 'Cliente'} foi removido do sistema.`,
+        variant: "default",
+      });
+      
       // Comprehensive cache invalidation for reactivity
       queryClient.invalidateQueries({ queryKey: ["/api/admin/customers"] }); // Main customers query  
       queryClient.invalidateQueries({ queryKey: ["admin", "customers"] }); // Legacy compatibility
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] }); // Any customer-related queries
+      
+      // Close modal and reset states
       setIsDeleteDialogOpen(false);
       setCustomerToDelete(null);
+    },
+    onError: (error: any) => {
+      // Show error notification
+      toast({
+        title: "Erro ao excluir cliente",
+        description: error.message || "Ocorreu um erro ao remover o cliente.",
+        variant: "destructive",
+      });
     },
   });
 
