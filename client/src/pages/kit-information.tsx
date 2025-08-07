@@ -41,11 +41,19 @@ export default function KitInformation() {
   });
 
   useEffect(() => {
-    const newKits = Array.from({ length: selectedQuantity }, () => ({
-      name: "",
-      cpf: "",
-      shirtSize: "",
-    }));
+    const currentKits = form.getValues("kits") || [];
+    const newKits = Array.from({ length: selectedQuantity }, (_, index) => {
+      // Preserva os dados existentes se já houver dados no índice
+      if (index < currentKits.length && currentKits[index]) {
+        return currentKits[index];
+      }
+      // Cria novo kit vazio para novos slots
+      return {
+        name: "",
+        cpf: "",
+        shirtSize: "",
+      };
+    });
     replace(newKits);
     form.setValue("kitQuantity", selectedQuantity);
   }, [selectedQuantity, replace, form]);
