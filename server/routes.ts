@@ -4,7 +4,7 @@ import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { db } from "./db";
 import { sql, eq, and } from "drizzle-orm";
-import { customerIdentificationSchema, customerRegistrationSchema, orderCreationSchema, adminEventCreationSchema, insertCepZoneSchema, eventCepZonePrices, cepZones, events } from "@shared/schema";
+import { customerIdentificationSchema, customerRegistrationSchema, customerProfileEditSchema, orderCreationSchema, adminEventCreationSchema, insertCepZoneSchema, eventCepZonePrices, cepZones, events } from "@shared/schema";
 import { z } from "zod";
 import { calculateDeliveryCost } from "./distance-calculator";
 import { calculateCepZonePrice, calculateCepZoneInfo } from "./cep-zones-calculator";
@@ -206,10 +206,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: registrationData.phone
       });
 
-      // Create addresses from registration form
+      // Create addresses from registration form (max 2)
       const addresses: any[] = [];
       if (registrationData.addresses && registrationData.addresses.length > 0) {
-        for (const addressData of registrationData.addresses) {
+        // Limit to maximum 2 addresses
+        const limitedAddresses = registrationData.addresses.slice(0, 2);
+        
+        for (const addressData of limitedAddresses) {
           const address = await storage.createAddress({
             customerId: customer.id,
             label: addressData.label,
@@ -246,6 +249,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(addresses);
     } catch (error) {
       res.status(500).json({ message: "Erro ao buscar endereços" });
+    }
+  });
+
+  // Get customer addresses count
+  app.get("/api/customers/:id/addresses/count", requireOwnership('id', 'customer'), async (req: AuthenticatedRequest, res) => {
+    try {
+      const customerId = parseInt(req.params.id);
+      const addresses = await storage.getAddressesByCustomerId(customerId);
+      res.json({ count: addresses.length });
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao contar endereços" });
+    }
+  });
+
+  // Update customer profile (restricted for customers)
+  app.put("/api/customers/:id", requireOwnership('id', 'customer'), async (req: AuthenticatedRequest, res) => {
+    try {
+      const customerId = parseInt(req.params.id);
+      const user = req.user;
+
+      // Validate that customer is editing their own profile
+      if (user?.id !== customerId) {
+        return res.status(403).json({ message: "Não autorizado a editar este perfil" });
+      }
+
+      // Parse and validate only allowed fields for customer profile edit
+      const updateData = customerProfileEditSchema.parse(req.body);
+
+      // Remove any CPF from request data (security measure)
+      const sanitizedData = { ...updateData };
+      delete (sanitizedData as any).cpf;
+      delete (sanitizedData as any).id;
+
+      const customer = await storage.updateCustomer(customerId, sanitizedData);
+
+      if (!customer) {
+        return res.status(404).json({ message: "Cliente não encontrado" });
+      }
+
+      res.json(customer);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Dados inválidos",
+          errors: error.errors 
+        });
+      }
+      res.status(500).json({ message: "Erro ao atualizar perfil" });
     }
   });
 
@@ -505,15 +556,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create new address
+  // Create new address (with limit validation)
   app.post("/api/customers/:id/addresses", async (req, res) => {
     try {
       const customerId = parseInt(req.params.id);
       const addressData = req.body;
 
+      // Check address limit (max 2 addresses per customer)
+      const currentAddresses = await storage.getAddressesByCustomerId(customerId);
+      if (currentAddresses.length >= 2) {
+        return res.status(400).json({ 
+          message: "Limite máximo de 2 endereços por cliente atingido",
+          code: "ADDRESS_LIMIT_EXCEEDED"
+        });
+      }
+
       // If setting as default, unset other defaults first
       if (addressData.isDefault) {
-        const currentAddresses = await storage.getAddressesByCustomerId(customerId);
         for (const addr of currentAddresses) {
           if (addr.isDefault) {
             await storage.updateAddress(addr.id, { isDefault: false });
@@ -572,16 +631,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Address management routes
+  // Address management routes (with limit validation)
   app.post("/api/customers/:customerId/addresses", requireOwnership('customerId', 'customer'), async (req: AuthenticatedRequest, res) => {
     try {
       const customerId = parseInt(req.params.customerId);
       const addressData = req.body;
 
+      // Check address limit (max 2 addresses per customer)
+      const existingAddresses = await storage.getAddressesByCustomerId(customerId);
+      if (existingAddresses.length >= 2) {
+        return res.status(400).json({ 
+          message: "Limite máximo de 2 endereços por cliente atingido",
+          code: "ADDRESS_LIMIT_EXCEEDED"
+        });
+      }
+
       // If this address is being set as default, update other addresses
       if (addressData.isDefault) {
         // First get all customer addresses and set them to non-default
-        const existingAddresses = await storage.getAddressesByCustomerId(customerId);
         for (const addr of existingAddresses) {
           if (addr.isDefault) {
             await storage.updateAddress(addr.id, { isDefault: false });
@@ -623,6 +690,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const address = await storage.updateAddress(id, addressData);
       res.json(address);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Delete address endpoint
+  app.delete("/api/addresses/:id", requireOwnership('id', 'address'), async (req: AuthenticatedRequest, res) => {
+    try {
+      const id = parseInt(req.params.id);
+
+      // Get the current address to verify ownership
+      const currentAddress = await storage.getAddress(id);
+      if (!currentAddress) {
+        return res.status(404).json({ message: "Endereço não encontrado" });
+      }
+
+      // Prevent deletion if this is the only address
+      const existingAddresses = await storage.getAddressesByCustomerId(currentAddress.customerId);
+      if (existingAddresses.length === 1) {
+        return res.status(400).json({ 
+          message: "Não é possível excluir o último endereço",
+          code: "CANNOT_DELETE_LAST_ADDRESS"
+        });
+      }
+
+      // If this was the default address, set another one as default
+      if (currentAddress.isDefault) {
+        const otherAddress = existingAddresses.find(addr => addr.id !== id);
+        if (otherAddress) {
+          await storage.updateAddress(otherAddress.id, { isDefault: true });
+        }
+      }
+
+      // Delete the address
+      await storage.deleteAddress(id);
+
+      res.json({ message: "Endereço excluído com sucesso" });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

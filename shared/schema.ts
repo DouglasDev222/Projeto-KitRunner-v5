@@ -279,6 +279,14 @@ export const orderCreationSchema = z.object({
   idempotencyKey: z.string().optional(),
 });
 
+// Customer profile edit validation (restricted fields for customers)
+export const customerProfileEditSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  email: z.string().email("Email inválido"),
+  phone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos"),
+  birthDate: z.string().min(10, "Data de nascimento é obrigatória").max(10, "Data inválida"),
+});
+
 // Customer registration validation
 export const customerRegistrationSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),

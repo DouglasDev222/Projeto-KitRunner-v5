@@ -18,6 +18,7 @@ import OrderConfirmation from "@/pages/order-confirmation";
 import MyOrders from "@/pages/my-orders";
 import OrderDetails from "@/pages/order-details";
 import Profile from "@/pages/profile";
+import ProfileEdit from "@/pages/profile-edit";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import AdminDashboard from "@/pages/admin-dashboard";
@@ -53,6 +54,7 @@ function Router() {
       <Route path="/my-orders" component={MyOrders} />
       <Route path="/orders/:orderNumber" component={OrderDetails} />
       <Route path="/profile" component={Profile} />
+      <Route path="/profile/edit" component={ProfileEdit} />
       <Route path="/profile/address/new" component={NewAddress} />
       <Route path="/profile/address/:id/edit" component={NewAddress} />
       <Route path="/login" component={Login} />

@@ -63,6 +63,15 @@ export default function NewAddress() {
     enabled: Boolean(id && id.match(/^\d+$/) && isEditRoute),
   });
 
+  // Get address count for limit checking (only for new addresses)
+  const { data: addressCount } = useQuery({
+    queryKey: ["/api/customers", customer?.id, "addresses", "count"],
+    enabled: Boolean(customer?.id && !isEditing),
+  });
+
+  // Check if user has reached address limit (2 addresses)
+  const hasReachedAddressLimit = !isEditing && (addressCount as { count: number } | undefined)?.count >= 2;
+
   useEffect(() => {
     if (existingAddress && isEditRoute) {
       setIsEditing(true);
@@ -151,6 +160,30 @@ export default function NewAddress() {
   const handleCancel = () => {
     setLocation(getNavigationTarget());
   };
+
+  // If trying to create a new address but limit is reached, show message
+  if (hasReachedAddressLimit) {
+    return (
+      <div className="max-w-md mx-auto bg-white min-h-screen">
+        <Header showBackButton onBack={handleCancel} />
+        <div className="p-4">
+          <h2 className="text-2xl font-bold text-neutral-800 mb-2">Limite Atingido</h2>
+          <p className="text-neutral-600 mb-6">
+            Você já possui o número máximo de endereços permitidos (2). 
+            Para adicionar um novo endereço, você deve primeiro excluir um dos endereços existentes.
+          </p>
+          
+          <Button 
+            onClick={handleCancel}
+            className="w-full"
+            variant="outline"
+          >
+            Voltar para Perfil
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">

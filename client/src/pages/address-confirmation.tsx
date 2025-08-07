@@ -56,6 +56,15 @@ export default function AddressConfirmation() {
     enabled: !!customer?.id,
   });
 
+  // Get address count for limit checking
+  const { data: addressCount } = useQuery({
+    queryKey: ["/api/customers", customer?.id, "addresses", "count"],
+    enabled: !!customer?.id,
+  });
+
+  // Check if user has reached address limit (2 addresses)
+  const hasReachedAddressLimit = (addressCount as { count: number } | undefined)?.count >= 2;
+
   // Fetch event data to determine pricing type
   const { data: event } = useQuery<Event>({
     queryKey: ["/api/events", id],
@@ -583,16 +592,25 @@ export default function AddressConfirmation() {
           </Card>
         )}
         
-        {/* Add New Address Button */}
+        {/* Add New Address Button - with limit validation */}
         <div className="mb-6">
-          <Button 
-            variant="outline"
-            onClick={() => setLocation(`/events/${id}/address/new`)}
-            className="w-full flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Adicionar Novo Endereço
-          </Button>
+          {hasReachedAddressLimit ? (
+            <Alert>
+              <Info className="w-4 h-4" />
+              <AlertDescription>
+                Você atingiu o limite máximo de 2 endereços. Para adicionar um novo, exclua um endereço existente no seu perfil.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <Button 
+              variant="outline"
+              onClick={() => setLocation(`/events/${id}/address/new?from=event&eventId=${id}`)}
+              className="w-full flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Adicionar Novo Endereço
+            </Button>
+          )}
         </div>
         
         <Button 

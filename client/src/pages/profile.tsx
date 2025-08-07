@@ -3,28 +3,79 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { User, Package, LogOut, MapPin, Edit3, Plus, Home } from "lucide-react";
+import { User, Package, LogOut, MapPin, Edit3, Plus, Home, Trash2 } from "lucide-react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { formatCPF } from "@/lib/cpf-validator";
 import { formatZipCode } from "@/lib/brazilian-formatter";
+import { useToast } from "@/hooks/use-toast";
 import type { Address } from "@shared/schema";
 
 
 export default function Profile() {
   const [, setLocation] = useLocation();
   const { user, logout, isAuthenticated, isLoading } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: addresses } = useQuery({
     queryKey: ["/api/customers", user?.id, "addresses"],
     enabled: !!user?.id,
   });
 
+  const { data: addressCount } = useQuery({
+    queryKey: ["/api/customers", user?.id, "addresses", "count"],
+    enabled: !!user?.id,
+  });
+
+  // Check if user has reached address limit (2 addresses)
+  const hasReachedAddressLimit = (addressCount as { count: number } | undefined)?.count >= 2;
+
   const handleLogout = () => {
     logout();
     setLocation("/");
+  };
+
+  // Delete address mutation
+  const deleteAddressMutation = useMutation({
+    mutationFn: async (addressId: number) => {
+      const response = await fetch(`/api/addresses/${addressId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao excluir endereço');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Endereço excluído",
+        description: "O endereço foi removido com sucesso!",
+        variant: "default",
+      });
+
+      // Invalidate queries to refresh address lists
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", user?.id, "addresses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", user?.id, "addresses", "count"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao excluir endereço",
+        description: error.message || "Não foi possível excluir o endereço. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleDeleteAddress = (addressId: number) => {
+    if (confirm("Tem certeza que deseja excluir este endereço?")) {
+      deleteAddressMutation.mutate(addressId);
+    }
   };
 
   // Use effect to handle redirection to avoid React warning
@@ -93,10 +144,20 @@ export default function Profile() {
         {/* User Data Section */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center">
-              <User className="w-5 h-5 mr-2" />
-              Meus Dados
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center">
+                <User className="w-5 h-5 mr-2" />
+                Meus Dados
+              </CardTitle>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setLocation("/profile/edit")}
+              >
+                <Edit3 className="w-4 h-4 mr-1" />
+                Editar
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
@@ -130,20 +191,22 @@ export default function Profile() {
                 <MapPin className="w-5 h-5 mr-2" />
                 Endereços
               </CardTitle>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setLocation("/profile/address/new?from=profile")}
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Adicionar
-              </Button>
+              {!hasReachedAddressLimit && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setLocation("/profile/address/new?from=profile")}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Adicionar
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent>
-            {addresses && addresses.length > 0 ? (
+            {(addresses as Address[] | undefined) && (addresses as Address[]).length > 0 ? (
               <div className="space-y-4">
-                {addresses.map((address: Address) => (
+                {(addresses as Address[]).map((address: Address) => (
                   <div key={address.id} className="border rounded-lg p-4">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
@@ -154,13 +217,26 @@ export default function Profile() {
                           </Badge>
                         )}
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setLocation(`/profile/address/${address.id}/edit?from=profile`)}
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setLocation(`/profile/address/${address.id}/edit?from=profile`)}
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </Button>
+                        {(addresses as Address[]).length > 1 && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteAddress(address.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            disabled={deleteAddressMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     <div className="text-sm text-neutral-600 space-y-1">
                       <p>{address.street}, {address.number}</p>
@@ -176,13 +252,15 @@ export default function Profile() {
               <div className="text-center py-6">
                 <MapPin className="w-12 h-12 text-neutral-400 mx-auto mb-3" />
                 <p className="text-neutral-600 mb-4">Nenhum endereço cadastrado</p>
-                <Button
-                  variant="outline"
-                  onClick={() => setLocation("/profile/address/new?from=profile")}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Adicionar Primeiro Endereço
-                </Button>
+                {!hasReachedAddressLimit && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setLocation("/profile/address/new?from=profile")}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Adicionar Primeiro Endereço
+                  </Button>
+                )}
               </div>
             )}
           </CardContent>
