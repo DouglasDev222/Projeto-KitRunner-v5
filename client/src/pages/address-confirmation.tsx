@@ -443,9 +443,7 @@ export default function AddressConfirmation() {
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               <div className="font-medium mb-1">CEP não disponível para entrega</div>
-              <div className="text-sm [&_p]:leading-relaxed">
-                <div>CEP não atendido nas zonas disponíveis. Se acha que isso pode ser um erro, entre em contato conosco.</div>
-              </div>
+              <div className="text-sm">CEP não atendido nas zonas disponíveis. Se acha que isso pode ser um erro, entre em contato conosco.</div>
             </AlertDescription>
           </Alert>
         )}
