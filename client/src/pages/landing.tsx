@@ -1,13 +1,42 @@
 import { Button } from "@/components/ui/button";
-import { Package, Zap, ChevronDown } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Package, Zap, ChevronDown, Calendar, MapPin, ChevronRight } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { formatDate } from "@/lib/brazilian-formatter";
+import type { Event } from "@shared/schema";
 
 const Landing = () => {
   const [, setLocation] = useLocation();
 
+  // Fetch upcoming events for the landing page
+  const { data: events } = useQuery<Event[]>({
+    queryKey: ["/api/events"],
+  });
+
+  // Filter and sort events to show upcoming events first
+  const upcomingEvents = events ? events
+    .filter(event => {
+      const eventDate = new Date(event.date);
+      const now = new Date();
+      return eventDate >= now; // Only upcoming events
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return dateA.getTime() - dateB.getTime(); // Earliest first
+    })
+    .slice(0, 6) // Limit to 6 events for display
+    : [];
+
   const handleSolicitarRetirada = () => {
-    setLocation("/eventos");
+    setLocation("/events");
+  };
+
+  const handleEventClick = (eventId: number) => {
+    setLocation(`/events/${eventId}`);
   };
 
   return <div className="min-h-screen bg-background">
@@ -44,6 +73,104 @@ const Landing = () => {
             </Button>
           </div>
         </div>
+
+        {/* Próximos Eventos Section */}
+        {upcomingEvents.length > 0 && (
+          <div className="max-w-6xl mx-auto mt-20 space-y-8">
+            <div className="text-center">
+              <h2 className="text-3xl font-bold text-foreground mb-4">Próximos Eventos</h2>
+              <p className="text-muted-foreground mb-6">Selecione o evento que deseja solicitar a retirada do kit</p>
+            </div>
+
+            {/* Desktop Grid: 2 rows x 2 columns with horizontal scroll for overflow */}
+            <div className="hidden md:block">
+              <div className="overflow-x-auto">
+                <div className="grid grid-rows-2 grid-flow-col gap-4 min-w-max">
+                  {upcomingEvents.map((event) => (
+                    <Card
+                      key={event.id}
+                      className="w-80 cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+                      onClick={() => handleEventClick(event.id)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-lg text-foreground mb-2 line-clamp-2">{event.name}</h3>
+                            <div className="space-y-1">
+                              <p className="text-sm text-muted-foreground flex items-center">
+                                <Calendar className="w-4 h-4 mr-2" />
+                                {formatDate(event.date)}
+                              </p>
+                              <p className="text-sm text-muted-foreground flex items-center">
+                                <MapPin className="w-4 h-4 mr-2" />
+                                {event.location}, {event.city} - {event.state}
+                              </p>
+                            </div>
+                            <div className="flex items-center mt-3">
+                              <Badge
+                                variant={event.available ? "default" : "secondary"}
+                                className={event.available ? "bg-primary hover:bg-primary/80" : ""}
+                              >
+                                {event.available ? "Disponível" : "Em Breve"}
+                              </Badge>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-5 h-5 text-muted-foreground ml-2" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile: Single row with horizontal scroll */}
+            <div className="md:hidden">
+              <div className="flex gap-4 overflow-x-auto pb-4 scroll-smooth">
+                {upcomingEvents.map((event) => (
+                  <Card
+                    key={event.id}
+                    className="w-72 flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => handleEventClick(event.id)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <h3 className="font-semibold text-lg text-foreground line-clamp-2">{event.name}</h3>
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground flex items-center">
+                            <Calendar className="w-4 h-4 mr-2" />
+                            {formatDate(event.date)}
+                          </p>
+                          <p className="text-sm text-muted-foreground flex items-center">
+                            <MapPin className="w-4 h-4 mr-2" />
+                            {event.location}, {event.city} - {event.state}
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Badge
+                            variant={event.available ? "default" : "secondary"}
+                            className={event.available ? "bg-primary hover:bg-primary/80" : ""}
+                          >
+                            {event.available ? "Disponível" : "Em Breve"}
+                          </Badge>
+                          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* View All Events Button */}
+            <div className="text-center">
+              <Button variant="outline" onClick={() => setLocation("/events")} className="mt-4">
+                Ver Todos os Eventos
+                <ChevronRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Seção como funciona */}
         <div className="max-w-4xl mx-auto mt-24 space-y-16">

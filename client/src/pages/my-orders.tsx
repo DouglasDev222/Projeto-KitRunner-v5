@@ -94,7 +94,7 @@ export default function MyOrders() {
     if (orders) {
       setLastKnownOrders([...orders]);
     }
-  }, [orders, lastKnownOrders, toast]);
+  }, [orders, toast]); // Remove lastKnownOrders from dependencies to prevent infinite loop
 
   // Helper function to convert status to readable text
   const getStatusText = (status: string) => {
