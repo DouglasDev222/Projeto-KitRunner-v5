@@ -11,23 +11,56 @@ import { useAuth } from "@/lib/auth-context";
 import { formatCPF } from "@/lib/cpf-validator";
 import { formatZipCode } from "@/lib/brazilian-formatter";
 import { useToast } from "@/hooks/use-toast";
-import type { Address } from "@shared/schema";
+import type { Address, Customer } from "@shared/schema";
 
 
 export default function Profile() {
   const [, setLocation] = useLocation();
-  const { user, logout, isAuthenticated, isLoading } = useAuth();
+  const { user, logout, isAuthenticated, isLoading, updateUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Query to fetch fresh user data from server to detect admin changes
+  const { data: serverUserData } = useQuery<Customer>({
+    queryKey: ["/api/customers", user?.id],
+    enabled: !!user?.id,
+    staleTime: 0, // Always fetch fresh data
+    refetchOnMount: true, // Refetch when component mounts
+  });
+
+  // Effect to update user context if server data differs from local data
+  useEffect(() => {
+    if (serverUserData && user && serverUserData.id === user.id) {
+      // Compare key fields to detect changes made by admin
+      const hasChanges = (
+        serverUserData.name !== user.name ||
+        serverUserData.email !== user.email ||
+        serverUserData.phone !== user.phone ||
+        serverUserData.birthDate !== user.birthDate
+      );
+      
+      if (hasChanges) {
+        console.log('🔄 Detected admin changes, updating user data');
+        updateUser(serverUserData);
+        toast({
+          title: "Dados atualizados",
+          description: "Suas informações foram atualizadas pelo administrador.",
+          variant: "default",
+        });
+      }
+    }
+  }, [serverUserData, user, updateUser, toast]);
 
   const { data: addresses } = useQuery({
     queryKey: ["/api/customers", user?.id, "addresses"],
     enabled: !!user?.id,
+    refetchOnMount: true, // Always refetch addresses on mount
   });
 
   const { data: addressCount } = useQuery({
     queryKey: ["/api/customers", user?.id, "addresses", "count"],
     enabled: !!user?.id,
+    refetchOnMount: true, // Always refetch count on mount
   });
 
   // Check if user has reached address limit (2 addresses)

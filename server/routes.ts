@@ -263,6 +263,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get customer profile (customers can only access their own profiles)
+  app.get("/api/customers/:id", requireOwnership('id', 'customer'), async (req: AuthenticatedRequest, res) => {
+    try {
+      const customerId = parseInt(req.params.id);
+      const customer = await storage.getCustomer(customerId);
+
+      if (!customer) {
+        return res.status(404).json({ message: "Cliente não encontrado" });
+      }
+
+      res.json(customer);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar perfil" });
+    }
+  });
+
   // Update customer profile (restricted for customers)
   app.put("/api/customers/:id", requireOwnership('id', 'customer'), async (req: AuthenticatedRequest, res) => {
     try {
