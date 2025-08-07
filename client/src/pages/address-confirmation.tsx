@@ -119,6 +119,16 @@ export default function AddressConfirmation() {
     }
   }, [customer, id, setLocation]);
   
+  // Force pricing recheck on page reload/mount
+  useEffect(() => {
+    if (event?.pricingType === 'cep_zones') {
+      setForcePricingRecheck(true);
+      setPricingValidationStatus('idle');
+      setCalculatedCosts(null);
+      setCepZoneError(null);
+    }
+  }, [event?.pricingType]);
+
   useEffect(() => {
     if (addresses && Array.isArray(addresses) && addresses.length > 0) {
       // Auto-select the default address or the first one
@@ -135,17 +145,29 @@ export default function AddressConfirmation() {
         label: defaultAddress.label
       });
       
-      // Enhanced: Await pricing calculation for default address
+      // Enhanced: Always force validation on address load, regardless of cache
       (async () => {
+        console.log('🔄 Page loaded - forcing pricing validation for address:', defaultAddress.zipCode);
         setPricingValidationStatus('validating');
-        await handleAddressSelectSecure(defaultAddress);
-        setPricingValidationStatus('validated');
+        setCalculatedCosts(null); // Clear any cached costs
+        try {
+          const result = await handleAddressSelectSecure(defaultAddress);
+          if (result?.validated) {
+            setPricingValidationStatus('validated');
+          } else {
+            setPricingValidationStatus('failed');
+          }
+        } catch (error) {
+          console.error('❌ Failed to validate pricing on page load:', error);
+          setPricingValidationStatus('failed');
+        }
       })();
     }
-  }, [addresses, form]);
+  }, [addresses, form, event?.pricingType]);
   
   // Enhanced secure address selection with validation
   const handleAddressSelectSecure = async (address: Address) => {
+    console.log('🔄 handleAddressSelectSecure called for:', address.zipCode);
     setSelectedAddress(address);
     form.reset({
       street: address.street,
@@ -159,13 +181,18 @@ export default function AddressConfirmation() {
     });
     setIsEditing(false);
     
-    // Reset pricing validation states
+    // Reset pricing validation states - always start fresh
     setPricingValidationStatus('validating');
     setCepZoneError(null);
     setCalculatedCosts(null);
     
+    // Store address BEFORE pricing calculation
+    sessionStorage.setItem('selectedAddress', JSON.stringify(address));
+    
     // Calculate real delivery costs based on event pricing type
-    return await calculateDeliveryCosts(address);
+    const result = await calculateDeliveryCosts(address);
+    console.log('✅ handleAddressSelectSecure completed with result:', result?.validated);
+    return result;
   };
 
   const handleAddressSelect = async (address: Address) => {
@@ -174,14 +201,15 @@ export default function AddressConfirmation() {
   
   // Enhanced delivery costs calculation with proper validation
   const calculateDeliveryCosts = async (address: Address) => {
+      console.log('🔄 calculateDeliveryCosts called for CEP:', address.zipCode, 'Event type:', event?.pricingType);
       try {
         // Check if event uses CEP zones pricing
         if (event?.pricingType === 'cep_zones') {
           setIsCheckingCepZone(true);
           setCepZoneError(null);
           
-          // Use CEP zones API for pricing with event-specific pricing support
-          console.log("🔍 Checking CEP zone for:", address.zipCode, "with event ID:", id);
+          // Force fresh API call - ignore any cached data
+          console.log("🔍 FORCING fresh CEP zone check for:", address.zipCode, "with event ID:", id);
           const cepResult = await checkCepZone(address.zipCode, parseInt(id!));
           console.log("📊 CEP zone result:", cepResult);
           setIsCheckingCepZone(false);
@@ -318,7 +346,7 @@ export default function AddressConfirmation() {
         setPricingValidationStatus('validating');
         try {
           const result = await calculateDeliveryCosts(selectedAddress);
-          if (!result?.validated || result.error) {
+          if (!result?.validated || (result as any)?.error) {
             // Block advance - pricing validation failed
             return;
           }
@@ -703,7 +731,7 @@ export default function AddressConfirmation() {
           onClick={handleConfirmAddress}
           disabled={!selectedAddress || isEditing || !canContinue || pricingValidationStatus === 'validating'}
         >
-          {pricingValidationStatus === 'validating' ? (
+          {pricingValidationStatus === 'validating' || isCheckingCepZone ? (
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
               Validando...

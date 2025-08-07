@@ -22,12 +22,25 @@ export async function checkCepZone(zipCode: string, eventId?: number): Promise<C
     }
 
     // Use the enhanced calculate-cep-price API that supports event-specific pricing
-    const queryParams = new URLSearchParams({ cep: cleanZip });
+    const queryParams = new URLSearchParams({ 
+      cep: cleanZip,
+      // Add timestamp to force fresh request and prevent caching
+      _t: Date.now().toString()
+    });
     if (eventId) {
       queryParams.append('eventId', eventId.toString());
     }
     
-    const response = await fetch(`/api/calculate-cep-price?${queryParams}`);
+    console.log('🚀 Making FRESH API call to /api/calculate-cep-price with params:', queryParams.toString());
+    
+    const response = await fetch(`/api/calculate-cep-price?${queryParams}`, {
+      // Force no cache to ensure fresh data
+      cache: 'no-cache',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
     
     if (!response.ok) {
       if (response.status === 404) {
