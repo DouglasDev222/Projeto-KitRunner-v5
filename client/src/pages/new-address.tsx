@@ -40,11 +40,11 @@ export default function NewAddress() {
       return `/events/${eventId}/address`;
     } else if (from === 'profile') {
       return '/profile';
-    } else if (id && id.match(/^\d+$/) && !isEditing) {
-      // Legacy behavior: if id is numeric and not editing, assume event flow
+    } else if (from === 'event' && id && id.match(/^\d+$/)) {
+      // Only treat ID as event ID if explicitly coming from event context
       return `/events/${id}/address`;
     } else {
-      // Default to profile for editing or no clear context
+      // Default to profile for all other cases (including address editing)
       return '/profile';
     }
   };
