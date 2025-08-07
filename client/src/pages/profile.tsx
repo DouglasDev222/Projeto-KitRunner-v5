@@ -12,6 +12,7 @@ import { formatCPF } from "@/lib/cpf-validator";
 import { formatZipCode, formatPhone } from "@/lib/brazilian-formatter";
 import { useToast } from "@/hooks/use-toast";
 import type { Address, Customer } from "@shared/schema";
+import { Footer } from "@/components/footer";
 
 
 export default function Profile() {
@@ -38,11 +39,11 @@ export default function Profile() {
         serverUserData.phone !== user.phone ||
         serverUserData.birthDate !== user.birthDate
       );
-      
+
       if (hasChanges) {
         console.log('🔄 Detected changes, updating user data');
         updateUser(serverUserData);
-        
+
         // Clear any user edit flags without showing notifications
         localStorage.removeItem('user_just_edited_profile');
       }
@@ -265,6 +266,7 @@ export default function Profile() {
           </Button>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

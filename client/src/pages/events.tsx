@@ -53,11 +53,11 @@ export default function Events() {
             Admin
           </Button>
         </div>
-        
+
         <div className="space-y-4">
           {events?.map((event) => (
-            <Card 
-              key={event.id} 
+            <Card
+              key={event.id}
               className="cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => handleEventClick(event.id)}
             >
@@ -74,7 +74,7 @@ export default function Events() {
                       {event.location}, {event.city} - {event.state}
                     </p>
                     <div className="flex items-center mt-2">
-                      <Badge 
+                      <Badge
                         variant={event.available ? "default" : "secondary"}
                         className={event.available ? "bg-secondary hover:bg-secondary/80" : ""}
                       >

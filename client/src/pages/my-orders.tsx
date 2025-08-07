@@ -31,6 +31,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth-context";
 import { getStatusBadge } from "@/lib/status-utils";
 import { useToast } from "@/hooks/use-toast";
+import { Footer } from "@/components/footer";
 
 export default function MyOrders() {
   // ALL hooks must be at the very top, before any conditional logic
@@ -64,7 +65,7 @@ export default function MyOrders() {
     if (orders && orders.length > 0 && lastKnownOrders) {
       // Compare current orders with last known orders to detect status changes
       const statusChanges: { orderNumber: string, oldStatus: string, newStatus: string }[] = [];
-      
+
       orders.forEach(currentOrder => {
         const previousOrder = lastKnownOrders.find(o => o.id === currentOrder.id);
         if (previousOrder && previousOrder.status !== currentOrder.status) {
@@ -88,7 +89,7 @@ export default function MyOrders() {
         });
       }
     }
-    
+
     // Update last known orders after checking for changes
     if (orders) {
       setLastKnownOrders([...orders]);
@@ -168,6 +169,7 @@ export default function MyOrders() {
         <div className="p-4 text-center">
           <p className="text-neutral-600">Carregando...</p>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -180,6 +182,7 @@ export default function MyOrders() {
         <div className="p-4 text-center">
           <p className="text-neutral-600">Redirecionando para login...</p>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -187,9 +190,9 @@ export default function MyOrders() {
   // Authenticated or identified customer view
   if (isAuthenticated || (showOrders && customer)) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen">
+      <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
         <Header showBackButton onBack={() => setLocation("/profile")} />
-        <div className="p-4">
+        <div className="p-4 flex-grow">
           <div className="flex items-center mb-6">
             <User className="w-6 h-6 text-primary mr-2" />
             <div>
@@ -303,15 +306,16 @@ export default function MyOrders() {
             </Card>
           )}
         </div>
+        <Footer />
       </div>
     );
   }
 
   // Guest identification form
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen">
+    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       <Header showBackButton onBack={() => setLocation("/eventos")} />
-      <div className="p-4">
+      <div className="p-4 flex-grow">
         <h2 className="text-2xl font-bold text-neutral-800 mb-2">
           Meus Pedidos
         </h2>
@@ -375,6 +379,7 @@ export default function MyOrders() {
           </form>
         </Form>
       </div>
+      <Footer />
     </div>
   );
 }
