@@ -62,8 +62,14 @@ export default function ProfileEdit() {
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: ProfileEditFormData) => {
-      // Get the JWT token from localStorage
-      const token = localStorage.getItem('authToken');
+      // Get user data from localStorage and encode as base64 token
+      const savedUser = localStorage.getItem('kitrunner_user');
+      if (!savedUser) {
+        throw new Error('Usuário não encontrado. Faça login novamente.');
+      }
+      
+      // Create base64 token from user data (same format expected by server)
+      const token = Buffer.from(savedUser).toString('base64');
       
       const response = await fetch(`/api/customers/${user?.id}`, {
         method: 'PUT',
