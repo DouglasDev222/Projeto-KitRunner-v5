@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth-context";
 import { AdminAuthProvider } from "@/contexts/admin-auth-context";
+import { ScrollToTop } from "@/components/scroll-to-top";
 import { AdminRouteGuard } from "@/components/admin-auth/admin-route-guard";
 import Events from "@/pages/events";
 import EventDetails from "@/pages/event-details";
@@ -39,9 +40,10 @@ import Landing from "@/pages/landing";
 
 function Router() {
   return (
-    <Switch>
-      <Route path="/" component={Landing} />
-      <Route path="/eventos" component={Events} />
+    <ScrollToTop>
+      <Switch>
+        <Route path="/" component={Landing} />
+        <Route path="/eventos" component={Events} />
       <Route path="/events/:id" component={EventDetails} />
       <Route path="/events/:id/register" component={CustomerRegistration} />
       <Route path="/events/:id/address" component={AddressConfirmation} />
@@ -155,6 +157,7 @@ function Router() {
       </Route>
       <Route component={NotFound} />
     </Switch>
+    </ScrollToTop>
   );
 }
 
