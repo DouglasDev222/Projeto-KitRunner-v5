@@ -142,12 +142,12 @@ export default function NewAddress() {
         // Event flow - redirect to login with proper return path
         sessionStorage.setItem("loginReturnPath", `/events/${eventId}/address`);
         setLocation("/login");
-      } else if (id && id.match(/^\d+$/) && !isEditing) {
-        // Legacy event flow
+      } else if (from === 'event' && id && id.match(/^\d+$/)) {
+        // Legacy event flow - only if explicitly from event context
         sessionStorage.setItem("loginReturnPath", `/events/${id}/address`);
         setLocation("/login");
       } else {
-        // Profile flow or default
+        // Profile flow or default - includes address editing
         setLocation("/profile");
       }
     }
