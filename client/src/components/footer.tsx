@@ -22,7 +22,7 @@ export function Footer() {
         <Button
           variant="outline"
           className="flex-1 flex items-center gap-2"
-          onClick={() => setLocation("/events")}
+          onClick={() => setLocation("/eventos")}
         >
           <Calendar className="w-4 h-4" />
           Eventos
