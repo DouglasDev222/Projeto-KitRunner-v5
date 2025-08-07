@@ -70,7 +70,7 @@ export default function EventDetails() {
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
       <Header showBackButton />
-      <div className="p-4">
+      <div className="p-4 pb-20">
         {/* Hero Section */}
         <div className="relative h-48 bg-gradient-to-br from-primary to-secondary rounded-lg mb-6 flex items-center justify-center">
           <div className="text-center text-white">
