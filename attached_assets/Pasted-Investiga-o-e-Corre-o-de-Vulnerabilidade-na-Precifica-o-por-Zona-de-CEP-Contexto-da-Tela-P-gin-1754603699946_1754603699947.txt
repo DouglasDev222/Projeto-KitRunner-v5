@@ -1,0 +1,113 @@
+Investigação e Correção de Vulnerabilidade na Precificação por Zona de CEP
+📍 Contexto da Tela
+Página: /events/{id}/address (Tela de confirmação de endereço)
+
+Função: Confirmar endereço e calcular valor de entrega
+
+Tipos de precificação disponíveis:
+
+cep_zone – calcula o valor com base na zona definida para o CEP
+
+cep_distance – calcula o valor com base na distância
+
+🐞 Descrição do Problema
+Existe uma vulnerabilidade crítica relacionada à precificação por zona (cep_zone). Em determinadas situações, o sistema permite que o usuário avance sem que a API de precificação por zona seja consultada corretamente, resultando em:
+
+Pedido sem valor de entrega definido
+
+Possível bypass da verificação de cobertura de entrega
+
+Queda para fallback (cep_distance) mesmo quando o evento é cep_zone
+
+💡 Comportamentos suspeitos identificados
+Recarregando a página (F5):
+
+Às vezes, a precificação por zona não é chamada, ou é chamada tarde demais, e o sistema assume outro método ou nenhum.
+
+Tempo de carregamento:
+
+Parece haver uma condição de corrida (race condition) ou um delay de execução na chamada da API logo após o reload.
+
+Confirmação prematura:
+
+O botão de “Confirmar Endereço” permite o avanço mesmo sem garantir que o cálculo de entrega foi feito corretamente.
+
+🧪 Objetivo da tarefa
+Investigar e corrigir o bug que permite avanço sem precificação válida por zona.
+
+Impedir completamente o avanço sem que:
+
+O tipo de precificação do evento (cep_zone) seja respeitado.
+
+A resposta da API de zona de CEP tenha sido processada com sucesso.
+
+Evitar fallback incorreto para cep_distance em eventos configurados para cep_zone.
+
+✅ Soluções sugeridas
+1. Verificação explícita no botão "Confirmar Endereço"
+Ao clicar no botão, antes de continuar, forçar uma chamada invisível à API de precificação por zona, se o evento for desse tipo.
+
+Fluxo:
+
+plaintext
+Copiar
+Editar
+Se evento.tipo_entrega == 'cep_zone':
+    → disparar (em background) uma nova chamada da API de precificação por zona
+    → bloquear temporariamente o botão "Confirmar"
+    → só permitir avanço se a resposta for válida e com preço
+    → se sem cobertura ou erro → exibir mensagem clara e impedir avanço
+2. Estado de carregamento obrigatório
+Adicionar um estado global (ou local com debounce) que garanta que a precificação tenha sido carregada com sucesso antes de liberar qualquer ação.
+
+Exemplo:
+
+javascript
+Copiar
+Editar
+const [zonePricingStatus, setZonePricingStatus] = useState('idle'); // 'loading' | 'success' | 'error'
+
+useEffect(() => {
+  if (event.tipo_entrega === 'cep_zone') {
+    setZonePricingStatus('loading');
+    fetchZonePricing().then(resp => {
+      if (resp.valid) {
+        setZonePricingStatus('success');
+      } else {
+        setZonePricingStatus('error');
+      }
+    });
+  }
+}, [address]); // address confirmed or changed
+
+// Desabilitar botão enquanto não estiver "success"
+3. Bloqueio da submissão se tipo de entrega for cep_zone e precificação não for válida
+No backend (opcional para segurança total):
+
+Ao receber a confirmação de endereço/pedido:
+
+Se evento exige cep_zone, e não há preço vinculado ou zona válida, bloquear criação do pedido.
+
+Segurança extra contra manipulação de frontend.
+
+🛡️ Boas práticas recomendadas
+✅ Desabilitar botão de confirmação enquanto a API de precificação estiver carregando.
+
+✅ Evitar fallback automático para cep_distance sem confirmação explícita de que cep_zone falhou.
+
+✅ Adicionar indicador de carregamento (spinner) quando a API estiver sendo consultada após atualização da página.
+
+✅ Registrar logs em caso de falha silenciosa para ajudar a depurar.
+
+✅ Forçar nova consulta em caso de reload da página, garantindo que os dados carregados não estejam em cache ou incompletos.
+
+📌 Resumo do que precisa ser feito
+ Garantir que a API de precificação por zona seja chamada e concluída com sucesso ao entrar ou recarregar a página
+
+ Impedir que o botão “Confirmar Endereço” funcione antes disso
+
+ Bloquear avanços sem precificação válida
+
+ Adicionar fallback seguro com aviso ao usuário, e não silenciosamente
+
+ (Opcional) Validar no backend se cep_zone foi realmente respeitado no pedido
