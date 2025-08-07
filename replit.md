@@ -7,6 +7,19 @@ KitRunner is a mobile-first web application for managing event kit pickup and de
 Preferred communication style: Simple, everyday language.
 
 ## Recent Fixes (August 7, 2025)
+
+- **Vulnerabilidade de Precificação CEP Corrigida**: Implementada correção completa da vulnerabilidade crítica na tela de confirmação de endereço
+  - **Problema Identificado**: Sistema permitia avanço sem validação correta da precificação por zona CEP, permitindo pedidos com valores incorretos
+  - **Race Conditions Eliminadas**: Corrigido useEffect assíncrono e estado de carregamento não sincronizado no handleConfirmAddress  
+  - **Validação Frontend**: Implementado sistema obrigatório de validação com estados `pricingValidationStatus` e verificação explícita no botão
+  - **Validação Backend**: Adicionada validação de segurança na criação de pedidos que bloqueia pedidos com precificação CEP inválida
+  - **Estados Visuais**: Indicadores de carregamento aprimorados e mensagens claras para o usuário durante validação
+  - **Logs de Auditoria**: Sistema completo de logs para monitoramento e debugging de tentativas de bypass
+  - **Fallback Controlado**: Eventos CEP zones nunca fazem fallback silencioso para outros tipos de precificação
+  - **Arquivos Modificados**: `client/src/pages/address-confirmation.tsx`, `server/routes.ts`, `server/cep-zones-calculator.ts`
+  - **Status**: ✅ Vulnerabilidade completamente resolvida com medidas preventivas ativas
+
+## Recent Fixes (August 7, 2025)
 - **Comprehensive Reactivity System**: Implemented complete real-time data updates across client interfaces
   - **Profile Page Reactivity**: Created GET endpoint `/api/customers/:id` for fetching fresh user data from server
   - **Admin Changes Detection**: Profile page automatically detects and applies changes made by administrators

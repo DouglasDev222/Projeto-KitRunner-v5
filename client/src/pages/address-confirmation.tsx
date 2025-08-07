@@ -43,6 +43,10 @@ export default function AddressConfirmation() {
   const [cepZoneError, setCepZoneError] = useState<string | null>(null);
   const [isCheckingCepZone, setIsCheckingCepZone] = useState(false);
   const [calculatedCosts, setCalculatedCosts] = useState<any>(null);
+  
+  // Enhanced state for pricing validation
+  const [pricingValidationStatus, setPricingValidationStatus] = useState<'idle' | 'validating' | 'validated' | 'failed'>('idle');
+  const [forcePricingRecheck, setForcePricingRecheck] = useState(false);
   const queryClient = useQueryClient();
   const { user: authUser } = useAuth();
   
@@ -63,7 +67,8 @@ export default function AddressConfirmation() {
   });
 
   // Check if user has reached address limit (2 addresses)
-  const hasReachedAddressLimit = (addressCount as { count: number } | undefined)?.count >= 2;
+  const hasReachedAddressLimit = (addressCount as { count: number } | undefined)?.count ? 
+    (addressCount as { count: number }).count >= 2 : false;
 
   // Fetch event data to determine pricing type
   const { data: event } = useQuery<Event>({
@@ -130,12 +135,17 @@ export default function AddressConfirmation() {
         label: defaultAddress.label
       });
       
-      // Automatically calculate delivery costs for the default address
-      handleAddressSelect(defaultAddress);
+      // Enhanced: Await pricing calculation for default address
+      (async () => {
+        setPricingValidationStatus('validating');
+        await handleAddressSelectSecure(defaultAddress);
+        setPricingValidationStatus('validated');
+      })();
     }
   }, [addresses, form]);
   
-  const handleAddressSelect = (address: Address) => {
+  // Enhanced secure address selection with validation
+  const handleAddressSelectSecure = async (address: Address) => {
     setSelectedAddress(address);
     form.reset({
       street: address.street,
@@ -149,11 +159,21 @@ export default function AddressConfirmation() {
     });
     setIsEditing(false);
     
-    // Store address and calculate delivery costs
-    sessionStorage.setItem('selectedAddress', JSON.stringify(address));
+    // Reset pricing validation states
+    setPricingValidationStatus('validating');
+    setCepZoneError(null);
+    setCalculatedCosts(null);
     
     // Calculate real delivery costs based on event pricing type
-    const calculateDeliveryCosts = async () => {
+    return await calculateDeliveryCosts(address);
+  };
+
+  const handleAddressSelect = async (address: Address) => {
+    await handleAddressSelectSecure(address);
+  };
+  
+  // Enhanced delivery costs calculation with proper validation
+  const calculateDeliveryCosts = async (address: Address) => {
       try {
         // Check if event uses CEP zones pricing
         if (event?.pricingType === 'cep_zones') {
@@ -170,11 +190,13 @@ export default function AddressConfirmation() {
             const calculatedCosts = {
               deliveryPrice: cepResult.price,
               cepZoneName: cepResult.zoneName,
-              pricingType: 'cep_zones'
+              pricingType: 'cep_zones',
+              validated: true
             };
             sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
             setCalculatedCosts(calculatedCosts);
-            return;
+            setPricingValidationStatus('validated');
+            return calculatedCosts;
           } else {
             // CEP not found in any zone - show error and block flow
             const errorMessage = cepResult.error || 'CEP não encontrado nas zonas de entrega';
@@ -182,11 +204,13 @@ export default function AddressConfirmation() {
             const calculatedCosts = {
               deliveryPrice: 0,
               error: errorMessage,
-              pricingType: 'cep_zones'
+              pricingType: 'cep_zones',
+              validated: false
             };
             sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
             setCalculatedCosts(calculatedCosts);
-            return;
+            setPricingValidationStatus('failed');
+            return calculatedCosts;
           }
         } else {
           // Use distance-based calculation API for distance/fixed pricing
@@ -206,34 +230,55 @@ export default function AddressConfirmation() {
             const calculatedCosts = {
               deliveryPrice: data.deliveryCost,
               distance: data.distance,
-              pricingType: event?.pricingType || 'distance'
+              pricingType: event?.pricingType || 'distance',
+              validated: true
             };
             sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
             setCalculatedCosts(calculatedCosts);
+            setPricingValidationStatus('validated');
+            return calculatedCosts;
           } else {
             // Fallback to default values if API fails
             const calculatedCosts = {
               deliveryPrice: 18.50,
               distance: 12.5,
-              pricingType: 'distance'
+              pricingType: 'distance',
+              validated: true
             };
             sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
             setCalculatedCosts(calculatedCosts);
+            setPricingValidationStatus('validated');
+            return calculatedCosts;
           }
         }
       } catch (error) {
-        // Fallback to default values if request fails
-        const calculatedCosts = {
-          deliveryPrice: 18.50,
-          distance: 12.5,
-          pricingType: 'distance'
-        };
-        sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
-        setCalculatedCosts(calculatedCosts);
+        // For CEP zones events, don't fallback - show error
+        if (event?.pricingType === 'cep_zones') {
+          const errorMessage = 'Erro ao verificar zona de entrega. Tente novamente.';
+          setCepZoneError(errorMessage);
+          setPricingValidationStatus('failed');
+          const calculatedCosts = {
+            deliveryPrice: 0,
+            error: errorMessage,
+            pricingType: 'cep_zones',
+            validated: false
+          };
+          setCalculatedCosts(calculatedCosts);
+          return calculatedCosts;
+        } else {
+          // Fallback only for non-CEP zone events
+          const calculatedCosts = {
+            deliveryPrice: 18.50,
+            distance: 12.5,
+            pricingType: 'distance',
+            validated: true
+          };
+          sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
+          setCalculatedCosts(calculatedCosts);
+          setPricingValidationStatus('validated');
+          return calculatedCosts;
+        }
       }
-    };
-
-    calculateDeliveryCosts();
   };
   
   const handleEditAddress = () => {
@@ -260,16 +305,46 @@ export default function AddressConfirmation() {
     setIsEditing(false);
   };
   
-  const handleConfirmAddress = () => {
-    if (selectedAddress && !cepZoneError) {
-      // Store selected address in session storage
-      sessionStorage.setItem("selectedAddress", JSON.stringify(selectedAddress));
-      setLocation(`/events/${id}/kits`);
+  // Enhanced secure confirmation with explicit pricing validation
+  const handleConfirmAddress = async () => {
+    if (!selectedAddress) {
+      return;
     }
+
+    // For CEP zone events, force revalidation before allowing advance
+    if (event?.pricingType === 'cep_zones') {
+      // If not validated or still validating, force new validation
+      if (pricingValidationStatus !== 'validated' || isCheckingCepZone) {
+        setPricingValidationStatus('validating');
+        try {
+          const result = await calculateDeliveryCosts(selectedAddress);
+          if (!result?.validated || result.error) {
+            // Block advance - pricing validation failed
+            return;
+          }
+        } catch (error) {
+          console.error('Failed to validate pricing:', error);
+          setCepZoneError('Erro ao validar precificação. Tente novamente.');
+          return;
+        }
+      }
+      
+      // Final check - ensure no errors and pricing is validated
+      if (cepZoneError || pricingValidationStatus !== 'validated' || !calculatedCosts?.validated) {
+        return;
+      }
+    }
+
+    // Store selected address and proceed only after validation
+    sessionStorage.setItem("selectedAddress", JSON.stringify(selectedAddress));
+    setLocation(`/events/${id}/kits`);
   };
 
-  // Check if user can continue (no CEP zone errors)
+  // Enhanced validation for user continuation
   const canContinue = !cepZoneError && 
+    !isCheckingCepZone &&
+    pricingValidationStatus === 'validated' &&
+    (calculatedCosts?.validated === true) &&
     (calculatedCosts?.deliveryPrice > 0 || calculatedCosts?.pricingType !== 'cep_zones');
   
   const handleZipCodeChange = (value: string) => {
@@ -334,12 +409,14 @@ export default function AddressConfirmation() {
           </div>
         )}
 
-        {/* CEP Zone Loading State */}
-        {isCheckingCepZone && (
+        {/* Enhanced Loading States */}
+        {(isCheckingCepZone || pricingValidationStatus === 'validating') && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin text-yellow-600" />
-              <span className="text-sm text-yellow-800">Verificando zona de entrega...</span>
+              <span className="text-sm text-yellow-800">
+                {isCheckingCepZone ? 'Verificando zona de entrega...' : 'Validando precificação...'}
+              </span>
             </div>
           </div>
         )}
@@ -385,7 +462,10 @@ export default function AddressConfirmation() {
                         ? "border-primary border-2 bg-white text-black" 
                         : "border-gray-200 bg-white text-black hover:bg-gray-50"
                     }`}
-                    onClick={() => handleAddressSelect(address)}
+                    onClick={() => {
+                      setPricingValidationStatus('validating');
+                      handleAddressSelect(address);
+                    }}
                   >
                     <div className="flex items-center justify-between w-full">
                       <div>
@@ -621,9 +701,14 @@ export default function AddressConfirmation() {
           className="w-full bg-primary text-white hover:bg-primary/90" 
           size="lg"
           onClick={handleConfirmAddress}
-          disabled={!selectedAddress || isEditing || !canContinue}
+          disabled={!selectedAddress || isEditing || !canContinue || pricingValidationStatus === 'validating'}
         >
-          {cepZoneError ? 'CEP não disponível' : 'Confirmar Endereço'}
+          {pricingValidationStatus === 'validating' ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Validando...
+            </div>
+          ) : cepZoneError ? 'CEP não disponível' : 'Confirmar Endereço'}
         </Button>
       </div>
     </div>

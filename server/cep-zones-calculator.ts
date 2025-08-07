@@ -205,8 +205,12 @@ export async function calculateCepZonePrice(cep: string, eventId?: number): Prom
     const cleanedCep = cep.replace(/\D/g, '').padStart(8, '0');
     
     if (!isValidCep(cleanedCep)) {
+      console.error(`🚨 CEP zone validation failed: Invalid CEP format ${cep}`);
       return null;
     }
+    
+    console.log(`🔍 Validating CEP ${cleanedCep} for event ${eventId || 'global'}`);
+  
     
     // If eventId provided, try to find event-specific pricing first
     if (eventId) {
@@ -235,6 +239,7 @@ export async function calculateCepZonePrice(cep: string, eventId?: number): Prom
           const endCepClean = cleanCep(range.end);
           
           if (cleanedCep >= startCepClean && cleanedCep <= endCepClean) {
+            console.log(`✅ CEP ${cleanedCep} found in event-specific zone: ${zonePrice.price}`);
             return parseFloat(zonePrice.price);
           }
         }
@@ -250,13 +255,15 @@ export async function calculateCepZonePrice(cep: string, eventId?: number): Prom
     
     for (const zone of zones) {
       if (validateCepInZone(cleanedCep, zone)) {
+        console.log(`✅ CEP ${cleanedCep} found in global zone ${zone.name}: ${zone.price}`);
         return parseFloat(zone.price);
       }
     }
     
+    console.warn(`⚠️ CEP ${cleanedCep} not found in any zones`);
     return null;
   } catch (error) {
-    console.error('Erro ao calcular preço por CEP:', error);
+    console.error('🚨 Critical error calculating CEP zone price:', error);
     return null;
   }
 }

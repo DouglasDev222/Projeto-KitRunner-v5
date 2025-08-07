@@ -462,6 +462,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Evento não encontrado" });
       }
 
+      // Enhanced validation: CEP zones pricing security check
+      if (selectedEvent.pricingType === 'cep_zones') {
+        const customerAddress = await storage.getAddress(orderData.addressId);
+        if (!customerAddress) {
+          console.error(`🚨 SECURITY: Order creation blocked - Address not found for order ${orderData.eventId}`);
+          return res.status(400).json({ message: "Endereço não encontrado" });
+        }
+
+        // Validate CEP zone pricing
+        const { calculateCepZonePrice } = await import('./cep-zones-calculator');
+        const validatedPrice = await calculateCepZonePrice(customerAddress.zipCode, orderData.eventId);
+        
+        if (validatedPrice === null) {
+          console.error(`🚨 SECURITY: Order creation blocked - CEP ${customerAddress.zipCode} not found in zones for event ${orderData.eventId}`);
+          return res.status(400).json({ 
+            message: "CEP não atendido nas zonas de entrega disponíveis para este evento",
+            code: "CEP_ZONE_NOT_FOUND"
+          });
+        }
+
+        // Validate provided delivery cost matches calculated price
+        if (orderData.deliveryCost && Math.abs(Number(orderData.deliveryCost) - validatedPrice) > 0.01) {
+          console.error(`🚨 SECURITY: Order creation blocked - Delivery cost mismatch. Provided: ${orderData.deliveryCost}, Calculated: ${validatedPrice}`);
+          return res.status(400).json({ 
+            message: "Valor de entrega não corresponde à zona CEP",
+            code: "DELIVERY_COST_MISMATCH" 
+          });
+        }
+
+        console.log(`✅ CEP zone validation passed for ${customerAddress.zipCode} - Price: R$ ${validatedPrice}`);
+      }
+
       let totalCost = 0;
       let baseCost = 0;
       let deliveryCost = 0;
