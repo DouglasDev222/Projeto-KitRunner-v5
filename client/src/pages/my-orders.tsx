@@ -30,6 +30,7 @@ import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth-context";
 import { getStatusBadge } from "@/lib/status-utils";
+import { useToast } from "@/hooks/use-toast";
 
 export default function MyOrders() {
   // ALL hooks must be at the very top, before any conditional logic
@@ -37,7 +38,9 @@ export default function MyOrders() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [customer, setCustomer] = useState(null);
   const [showOrders, setShowOrders] = useState(false);
+  const [lastKnownOrders, setLastKnownOrders] = useState<Order[] | null>(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const form = useForm<CustomerIdentification>({
     resolver: zodResolver(customerIdentificationSchema),
@@ -49,10 +52,63 @@ export default function MyOrders() {
 
   const effectiveCustomer = user || customer;
 
-  const { data: orders, isLoading: ordersLoading } = useQuery({
+  const { data: orders, isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ["/api/customers", effectiveCustomer?.id, "orders"],
     enabled: !!effectiveCustomer?.id && (isAuthenticated || showOrders),
+    staleTime: 0, // Always fetch fresh data to detect admin changes
+    refetchOnMount: true, // Refetch when component mounts
   });
+
+  // Effect to detect status changes and notify user
+  useEffect(() => {
+    if (orders && orders.length > 0 && lastKnownOrders) {
+      // Compare current orders with last known orders to detect status changes
+      const statusChanges: { orderNumber: string, oldStatus: string, newStatus: string }[] = [];
+      
+      orders.forEach(currentOrder => {
+        const previousOrder = lastKnownOrders.find(o => o.id === currentOrder.id);
+        if (previousOrder && previousOrder.status !== currentOrder.status) {
+          statusChanges.push({
+            orderNumber: currentOrder.orderNumber,
+            oldStatus: previousOrder.status,
+            newStatus: currentOrder.status
+          });
+        }
+      });
+
+      // Show notifications for status changes
+      if (statusChanges.length > 0) {
+        statusChanges.forEach(change => {
+          console.log('📋 Status updated for order', change.orderNumber, 'from', change.oldStatus, 'to', change.newStatus);
+          toast({
+            title: "Status do pedido atualizado",
+            description: `Pedido ${change.orderNumber} foi atualizado para: ${getStatusText(change.newStatus)}`,
+            variant: "default",
+          });
+        });
+      }
+    }
+    
+    // Update last known orders after checking for changes
+    if (orders) {
+      setLastKnownOrders([...orders]);
+    }
+  }, [orders, lastKnownOrders, toast]);
+
+  // Helper function to convert status to readable text
+  const getStatusText = (status: string) => {
+    const statusMap = {
+      'pending_payment': 'Aguardando Pagamento',
+      'payment_approved': 'Pagamento Aprovado',
+      'confirmed': 'Confirmado',
+      'in_production': 'Em Produção',
+      'ready_for_pickup': 'Pronto para Retirada',
+      'in_transit': 'Em Trânsito',
+      'delivered': 'Entregue',
+      'cancelled': 'Cancelado'
+    };
+    return statusMap[status as keyof typeof statusMap] || status;
+  };
 
   const identifyMutation = useMutation({
     mutationFn: async (data: CustomerIdentification) => {
