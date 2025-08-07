@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { formatCPF } from "@/lib/cpf-validator";
-import { formatZipCode } from "@/lib/brazilian-formatter";
+import { formatZipCode, formatPhone } from "@/lib/brazilian-formatter";
 import { useToast } from "@/hooks/use-toast";
 import type { Address, Customer } from "@shared/schema";
 
@@ -164,11 +164,13 @@ export default function Profile() {
             </div>
             <div>
               <p className="text-sm text-neutral-600">Data de Nascimento</p>
-              <p className="font-medium text-neutral-800">{user?.birthDate}</p>
+              <p className="font-medium text-neutral-800">
+                {user?.birthDate ? new Date(user.birthDate + 'T00:00:00').toLocaleDateString('pt-BR') : ''}
+              </p>
             </div>
             <div>
               <p className="text-sm text-neutral-600">Telefone</p>
-              <p className="font-medium text-neutral-800">{user?.phone}</p>
+              <p className="font-medium text-neutral-800">{formatPhone(user?.phone || "")}</p>
             </div>
             <div>
               <p className="text-sm text-neutral-600">Email</p>
