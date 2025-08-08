@@ -107,6 +107,23 @@ export default function EventDetails() {
           </CardContent>
         </Card>
 
+        {/* Important Information */}
+        <Alert className="mb-4 border-blue-200 bg-blue-50">
+          <Shield className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800">
+            <div className="space-y-2">
+              <p className="font-medium">⚠️ Importante:</p>
+              <p className="text-sm">
+                Para utilizar nosso serviço, você precisa estar devidamente inscrito no evento através da página oficial da organização. 
+                Após a inscrição, basta solicitar a retirada conosco com seu número de inscrição e dados necessários.
+              </p>
+              <p className="text-sm font-medium">
+                🔹 Este é um serviço independente, sem vínculo com a organização do evento. Nossa missão é facilitar sua experiência!
+              </p>
+            </div>
+          </AlertDescription>
+        </Alert>
+
         {/* KitRunner Service */}
         <Card className="mb-4">
           <CardContent className="p-4">
