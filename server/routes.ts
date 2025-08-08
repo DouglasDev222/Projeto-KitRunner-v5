@@ -2424,6 +2424,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // CEP Zones routes are handled in separate router (cepZonesRoutes)
 
+  // Get minimum delivery price for a specific event (public endpoint)
+  app.get("/api/events/:id/minimum-price", async (req, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+
+      if (isNaN(eventId)) {
+        return res.status(400).json({ error: "ID do evento inválido" });
+      }
+
+      // Get the event details first
+      const event = await storage.findEventById(eventId);
+      if (!event) {
+        return res.status(404).json({ error: "Evento não encontrado" });
+      }
+
+      // Only calculate for cep_zones pricing type
+      if (event.pricingType !== 'cep_zones') {
+        if (event.pricingType === 'fixed') {
+          return res.json({ 
+            minimumPrice: Number(event.fixedPrice),
+            pricingType: 'fixed'
+          });
+        } else {
+          // For distance pricing, return a default minimum
+          return res.json({ 
+            minimumPrice: 10.00,
+            pricingType: 'distance'
+          });
+        }
+      }
+
+      // Get all active CEP zones
+      const allZones = await storage.getCepZones(true); // Only active zones
+
+      if (!allZones.length) {
+        return res.json({ 
+          minimumPrice: 0,
+          pricingType: 'cep_zones'
+        });
+      }
+
+      // Get custom prices for this specific event
+      const customPrices = await db
+        .select()
+        .from(eventCepZonePrices)
+        .where(eq(eventCepZonePrices.eventId, eventId));
+
+      // Create a map of custom prices by zone ID
+      const customPricesMap = new Map(
+        customPrices.map(cp => [cp.cepZoneId, Number(cp.price)])
+      );
+
+      // Find minimum price considering both global and custom prices
+      let minimumPrice = Infinity;
+
+      for (const zone of allZones) {
+        const customPrice = customPricesMap.get(zone.id);
+        const priceToCompare = customPrice !== undefined ? customPrice : Number(zone.price);
+        
+        if (priceToCompare < minimumPrice) {
+          minimumPrice = priceToCompare;
+        }
+      }
+
+      res.json({ 
+        minimumPrice: minimumPrice === Infinity ? 0 : minimumPrice,
+        pricingType: 'cep_zones'
+      });
+
+    } catch (error) {
+      console.error("Error getting minimum price for event:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
   // Event CEP Zone Prices Management - Admin only
 
   // Get CEP zone prices for a specific event

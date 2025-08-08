@@ -27,6 +27,19 @@ export default function EventDetails() {
     },
   });
 
+  // Get minimum price for dynamic pricing display
+  const { data: minimumPriceData } = useQuery<{ minimumPrice: number; pricingType: string }>({
+    queryKey: ["/api/events", id, "minimum-price"],
+    queryFn: async () => {
+      const response = await fetch(`/api/events/${id}/minimum-price`);
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      return response.json();
+    },
+    enabled: !!event, // Only run when event is loaded
+  });
+
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
@@ -162,7 +175,7 @@ export default function EventDetails() {
               <DollarSign className="w-5 h-5 text-primary" />
             </div>
             
-            {event.fixedPrice ? (
+            {event.pricingType === 'fixed' ? (
               <div className="text-center p-4 bg-blue-50 rounded-lg">
                 <Badge variant="secondary" className="mb-2">Preço Fixo</Badge>
                 <p className="text-2xl font-bold text-primary mb-2">{formatCurrency(Number(event.fixedPrice))}</p>
@@ -178,8 +191,12 @@ export default function EventDetails() {
             ) : (
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-neutral-600">Entrega (varia por distância):</span>
-                  <span className="font-medium">A partir de R$ 10,00</span>
+                  <span className="text-neutral-600">
+                    {event.pricingType === 'cep_zones' ? 'Entrega (varia por zona):' : 'Entrega (varia por distância):'}
+                  </span>
+                  <span className="font-medium">
+                    A partir de {minimumPriceData ? formatCurrency(minimumPriceData.minimumPrice) : 'R$ 10,00'}
+                  </span>
                 </div>
                 {event.extraKitPrice && (
                   <div className="flex justify-between text-sm">
