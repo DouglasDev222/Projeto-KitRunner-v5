@@ -168,7 +168,7 @@ const Landing = () => {
 
             {/* Mobile: 2 rows with horizontal scroll */}
             <div className="md:hidden">
-              <div className="overflow-x-auto pb-4 scroll-smooth scrollbar-hide events-scroll-container">
+              <div className="overflow-x-auto pb-4 scroll-smooth scrollbar-hide">
                 <div className="grid grid-rows-2 grid-flow-col gap-4" style={{ gridAutoColumns: '280px' }}>
                   {upcomingEvents.map((event) => (
                     <Card

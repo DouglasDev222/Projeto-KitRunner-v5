@@ -33,15 +33,15 @@ button, a, input, select, textarea {
   display: none;
 }
 
-/* Fix touch scrolling conflicts on mobile */
-.events-scroll-container {
-  touch-action: pan-x;
-  -webkit-overflow-scrolling: touch;
+/* Ensure smooth scrolling on mobile */
+.events-section {
+  /* Allow all touch gestures */
+  touch-action: manipulation;
 }
 
-/* Ensure parent can still scroll vertically */
-.events-section {
-  touch-action: manipulation;
+/* Enable momentum scrolling on mobile */
+.scrollbar-hide {
+  -webkit-overflow-scrolling: touch;
 }
 
 :root {
