@@ -8,6 +8,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Fixes (August 8, 2025)
 
+- **Correção do Fluxo de Pagamento PIX**: Resolvido problema onde usuários eram redirecionados prematuramente para página de "Pagamento Aprovado" sem ver o QR code PIX
+  - **Problema Principal**: `createOrderMutation.onSuccess` automaticamente marcava `paymentCompleted = true` mesmo para PIX pendente
+  - **Solução Implementada**: Modificada lógica para só marcar pagamento completo quando método não for PIX
+  - **Correção URL Confirmação**: Adicionado `orderNumber` no retorno do PIX quando aprovado para evitar `/order/undefined/confirmation`
+  - **Arquivo Corrigido**: `client/src/pages/payment.tsx`, `client/src/components/payment/pix-payment.tsx`
+  - **Fluxo PIX**: Agora mostra QR code corretamente e só redireciona após aprovação real do pagamento
+  - **Status**: ✅ PIX funcionando corretamente com QR code visível e redirecionamento adequado
+
+## Recent Fixes (August 8, 2025)
+
 - **Correção Completa de Fuso Horário em Datas de Eventos**: Resolvido problema onde datas dos eventos apareciam com 1 dia a menos no frontend E problema de filtro de eventos próximos
   - **Problema Principal**: Sistema convertia datas para UTC (`T00:00:00.000Z`) causando deslocamento de -3 horas (fuso brasileiro), resultando em data anterior
   - **Problema Secundário**: Filtro de eventos próximos comparava data completa (com horas) vs meia-noite, fazendo eventos de hoje desaparecerem da listagem

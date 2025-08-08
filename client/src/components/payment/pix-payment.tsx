@@ -70,10 +70,15 @@ export function PIXPayment({
       setCheckingStatus(false);
       if (data.success) {
         if (data.status === 'approved') {
+          // Get orderNumber from payment external reference
+          const orderNumber = data.payment?.external_reference;
+          console.log('PIX Payment approved - Order Number:', orderNumber);
+          
           onSuccess({
             success: true,
             status: 'approved',
             paymentId: data.payment.id,
+            orderNumber: orderNumber,
             message: 'Pagamento PIX aprovado!'
           });
         } else if (data.status === 'cancelled' || data.status === 'rejected') {
