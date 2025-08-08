@@ -19,6 +19,7 @@ interface PIXPaymentProps {
   onError: (error: string) => void;
   isProcessing: boolean;
   setIsProcessing: (processing: boolean) => void;
+  policyAccepted?: boolean;
 }
 
 export function PIXPayment({ 
@@ -29,7 +30,8 @@ export function PIXPayment({
   onSuccess, 
   onError, 
   isProcessing, 
-  setIsProcessing 
+  setIsProcessing,
+  policyAccepted = true
 }: PIXPaymentProps) {
   const [pixData, setPixData] = useState<any>(null);
   const [paymentId, setPaymentId] = useState<number | null>(null);
@@ -206,11 +208,17 @@ export function PIXPayment({
         <Button 
           onClick={handleCreatePIXPayment}
           className="w-full bg-green-600 hover:bg-green-700"
-          disabled={isProcessing}
+          disabled={isProcessing || !policyAccepted}
         >
           <QrCode className="h-4 w-4 mr-2" />
           {isProcessing ? 'Gerando PIX...' : 'Gerar Código PIX'}
         </Button>
+        
+        {!policyAccepted && (
+          <p className="text-sm text-red-600 text-center mt-2">
+            É necessário aceitar a política de pedidos para continuar
+          </p>
+        )}
       </div>
     );
   }

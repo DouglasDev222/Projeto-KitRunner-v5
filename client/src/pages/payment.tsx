@@ -486,6 +486,7 @@ export default function Payment() {
                 onError={handlePaymentError}
                 isProcessing={isProcessing}
                 setIsProcessing={setIsProcessing}
+                policyAccepted={policyAccepted}
               />
             )}
             
@@ -519,6 +520,7 @@ export default function Payment() {
                 onError={handlePaymentError}
                 isProcessing={isProcessing}
                 setIsProcessing={setIsProcessing}
+                policyAccepted={policyAccepted}
               />
             )}
           </CardContent>

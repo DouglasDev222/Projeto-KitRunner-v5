@@ -27,6 +27,7 @@ interface CardPaymentProps {
   onError: (error: string) => void;
   isProcessing: boolean;
   setIsProcessing: (processing: boolean) => void;
+  policyAccepted?: boolean;
 }
 
 export function CardPayment({ 
@@ -37,7 +38,8 @@ export function CardPayment({
   onSuccess, 
   onError, 
   isProcessing, 
-  setIsProcessing 
+  setIsProcessing,
+  policyAccepted = true
 }: CardPaymentProps) {
   const [mp, setMp] = useState<any>(null);
   const [cardForm, setCardForm] = useState<any>(null);
@@ -365,11 +367,17 @@ export function CardPayment({
         <Button 
           type="submit" 
           className="w-full" 
-          disabled={!isFormReady || isProcessing}
+          disabled={!isFormReady || isProcessing || !policyAccepted}
         >
           <CreditCard className="h-4 w-4 mr-2" />
           {isProcessing ? 'Processando...' : `Pagar ${amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
         </Button>
+        
+        {!policyAccepted && (
+          <p className="text-sm text-red-600 text-center mt-2">
+            É necessário aceitar a política de pedidos para continuar
+          </p>
+        )}
       </form>
     </div>
   );
