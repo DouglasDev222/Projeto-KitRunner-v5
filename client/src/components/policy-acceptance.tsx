@@ -70,12 +70,12 @@ export function PolicyAcceptance({
           checked={checked}
           onCheckedChange={onCheckedChange}
           required={required}
-          className="flex-shrink-0 self-start mt-0.5"
+          className="flex-shrink-0"
         />
         <div className="flex-1 min-w-0">
           <label 
             htmlFor={`policy-${type}`}
-            className="text-sm font-medium text-neutral-700 cursor-pointer flex flex-wrap items-start gap-2 leading-relaxed"
+            className="text-sm font-medium text-neutral-700 cursor-pointer flex flex-wrap items-center gap-2 leading-normal"
           >
             <span className="leading-tight">
               {getAcceptanceText(type)}
