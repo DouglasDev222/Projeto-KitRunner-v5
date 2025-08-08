@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { User, Package, LogOut, MapPin, Edit3, Plus, Home } from "lucide-react";
+import { User, Package, LogOut, MapPin, Edit3, Plus, Home, MessageCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -13,6 +13,7 @@ import { formatZipCode, formatPhone } from "@/lib/brazilian-formatter";
 import { useToast } from "@/hooks/use-toast";
 import type { Address, Customer } from "@shared/schema";
 import { Footer } from "@/components/footer";
+import { SupportModal } from "@/components/support-modal";
 
 
 export default function Profile() {
@@ -20,6 +21,7 @@ export default function Profile() {
   const { user, logout, isAuthenticated, isLoading, updateUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   // Query to fetch fresh user data from server to detect admin changes
   const { data: serverUserData } = useQuery<Customer>({
@@ -252,9 +254,18 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        {/* Logout Section */}
+        {/* Support and Logout Section */}
         <div className="space-y-4">
           <Separator />
+
+          <Button
+            variant="outline"
+            className="w-full flex items-center justify-start gap-3 h-12 text-primary border-primary/20 hover:bg-primary/5"
+            onClick={() => setIsSupportModalOpen(true)}
+          >
+            <MessageCircle className="w-5 h-5" />
+            <span>Suporte</span>
+          </Button>
 
           <Button
             variant="outline"
@@ -267,6 +278,10 @@ export default function Profile() {
         </div>
       </div>
       <Footer />
+      <SupportModal 
+        isOpen={isSupportModalOpen} 
+        onClose={() => setIsSupportModalOpen(false)} 
+      />
     </div>
   );
 }
