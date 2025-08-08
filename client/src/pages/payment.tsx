@@ -388,8 +388,9 @@ export default function Payment() {
           <CardContent className="p-4">
             <h3 className="font-semibold text-lg text-neutral-800 mb-4">Forma de Pagamento</h3>
             
-            <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "credit" | "debit" | "pix")}>
-              <div className="space-y-3">
+            <div className="[&_[role=radio]]:h-4 [&_[role=radio]]:w-4 [&_[role=radio]]:min-h-[1rem] [&_[role=radio]]:min-w-[1rem] [&_[role=radio]]:max-h-[1rem] [&_[role=radio]]:max-w-[1rem] [&_[role=radio]]:flex-shrink-0 [&_[role=radio]]:rounded-sm">
+              <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "credit" | "debit" | "pix")}>
+                <div className="space-y-3"></div>
                 <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-neutral-50">
                   <RadioGroupItem value="credit" id="credit" />
                   <Label htmlFor="credit" className="flex items-center gap-3 cursor-pointer w-full">
@@ -422,8 +423,8 @@ export default function Payment() {
                     </div>
                   </Label>
                 </div>
-              </div>
-            </RadioGroup>
+              </RadioGroup>
+            </div>
           </CardContent>
         </Card>
 
