@@ -2434,7 +2434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get the event details first
-      const event = await storage.findEventById(eventId);
+      const event = await storage.getEvent(eventId);
       if (!event) {
         return res.status(404).json({ error: "Evento não encontrado" });
       }
