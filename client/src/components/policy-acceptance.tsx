@@ -70,14 +70,14 @@ export function PolicyAcceptance({
           checked={checked}
           onCheckedChange={onCheckedChange}
           required={required}
-          className="mt-1"
+          className="mt-0.5 flex-shrink-0"
         />
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <label 
             htmlFor={`policy-${type}`}
-            className="text-sm font-medium text-neutral-700 cursor-pointer flex items-center gap-2"
+            className="text-sm font-medium text-neutral-700 cursor-pointer flex flex-wrap items-center gap-2"
           >
-            <span>
+            <span className="leading-tight">
               {getAcceptanceText(type)}
               {required && <span className="text-red-500 ml-1">*</span>}
             </span>
@@ -86,7 +86,7 @@ export function PolicyAcceptance({
               variant="link"
               size="sm"
               onClick={() => setIsModalOpen(true)}
-              className="h-auto p-0 text-xs text-blue-600 hover:text-blue-800 underline"
+              className="h-auto p-0 text-xs text-blue-600 hover:text-blue-800 underline inline-flex items-center"
             >
               <ExternalLink className="w-3 h-3 mr-1" />
               Ler
