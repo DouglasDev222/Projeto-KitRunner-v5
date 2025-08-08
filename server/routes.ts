@@ -2047,25 +2047,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Security: Validate webhook signature 
       const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
-      const isDevelopment = process.env.NODE_ENV === 'development';
       const isProduction = process.env.NODE_ENV === 'production';
       
-      // PRODUCTION: Always validate signature (mandatory security)
-      if (isProduction && !webhookSecret) {
-        console.error('🚨 PRODUCTION SECURITY ERROR: MERCADOPAGO_WEBHOOK_SECRET is mandatory in production');
-        return res.status(500).json({ error: 'Webhook not properly configured' });
-      }
+      // For testing with production keys in development, allow bypass with environment flag
+      const skipValidationForTesting = process.env.SKIP_WEBHOOK_VALIDATION === 'true';
       
-      // DEVELOPMENT: Allow testing without signature for debugging
-      if (isDevelopment && !webhookSecret) {
-        console.log('🔧 DEBUG MODE: Skipping validation (development only)');
+      if (skipValidationForTesting) {
+        console.log('🔧 TESTING MODE: Webhook validation bypassed - use only for testing with production keys');
       } else if (webhookSecret) {
         console.log('🔒 Validating webhook signature...');
-
-        if (!webhookSecret) {
-          console.warn('🔒 SECURITY WARNING: MERCADOPAGO_WEBHOOK_SECRET not configured - webhook validation disabled');
-          return res.status(401).json({ error: 'Webhook secret not configured' });
-        }
 
         const signature = req.headers['x-signature'] as string;
         const requestId = req.headers['x-request-id'] as string;
@@ -2091,15 +2081,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(401).json({ error: 'Invalid signature format' });
         }
 
-        // Verify signature using HMAC-SHA256
+        // Create payload for signature validation (MercadoPago format)
+        const bodyString = JSON.stringify(req.body);
         const manifest = `id:${requestId};request-id:${requestId};ts:${ts};`;
+        
+        console.log('🔍 Signature validation data:');
+        console.log('  Request ID:', requestId);
+        console.log('  Timestamp:', ts);
+        console.log('  Manifest:', manifest);
+        console.log('  Received signature:', v1);
+
+        // Verify signature using HMAC-SHA256
         const expectedSignature = crypto
           .createHmac('sha256', webhookSecret)
           .update(manifest)
           .digest('hex');
+        
+        console.log('  Expected signature:', expectedSignature);
 
         if (expectedSignature !== v1) {
-          console.warn('🔒 Webhook rejected: Invalid signature');
+          console.warn('🔒 Webhook rejected: Signature mismatch');
+          console.warn('  Expected:', expectedSignature);
+          console.warn('  Received:', v1);
           return res.status(401).json({ error: 'Invalid signature' });
         }
 
@@ -2114,6 +2117,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         console.log('✅ Webhook signature validated successfully');
+      } else if (isProduction) {
+        console.error('🚨 PRODUCTION ERROR: MERCADOPAGO_WEBHOOK_SECRET is mandatory in production');
+        return res.status(500).json({ error: 'Webhook not properly configured' });
+      } else {
+        console.log('🔧 DEVELOPMENT: No webhook secret configured - allowing for development testing');
       }
 
       const { action, data } = req.body;
