@@ -25,13 +25,19 @@ const Landing = () => {
   // Filter and sort events to show upcoming events first
   const upcomingEvents = events ? events
     .filter(event => {
-      const eventDate = new Date(event.date);
+      // Parse date in Brazilian timezone to avoid timezone issues
+      const [year, month, day] = event.date.split('-');
+      const eventDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
       const now = new Date();
-      return eventDate >= now; // Only upcoming events
+      now.setHours(0, 0, 0, 0); // Set to start of today for proper comparison
+      return eventDate >= now; // Only upcoming events (including today)
     })
     .sort((a, b) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
+      // Parse dates in Brazilian timezone to avoid timezone issues
+      const [yearA, monthA, dayA] = a.date.split('-');
+      const [yearB, monthB, dayB] = b.date.split('-');
+      const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1, parseInt(dayA));
+      const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1, parseInt(dayB));
       return dateA.getTime() - dateB.getTime(); // Earliest first
     })
     .slice(0, 8) // Limit to 8 events for better grid display

@@ -34,11 +34,16 @@ export default function Events() {
     
     // Sort by date: upcoming events first
     const now = new Date();
+    now.setHours(0, 0, 0, 0); // Set to start of today for proper comparison
+    
     return filtered.sort((a, b) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
+      // Parse dates in Brazilian timezone to avoid timezone issues
+      const [yearA, monthA, dayA] = a.date.split('-');
+      const [yearB, monthB, dayB] = b.date.split('-');
+      const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1, parseInt(dayA));
+      const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1, parseInt(dayB));
       
-      // Events in the future come first, sorted by date (earliest first)
+      // Events in the future (including today) come first, sorted by date (earliest first)
       // Past events come last, sorted by date (most recent first)
       const isAfuture = dateA >= now;
       const isBfuture = dateB >= now;

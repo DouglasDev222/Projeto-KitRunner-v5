@@ -8,7 +8,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Fixes (August 8, 2025)
 
-- **Correção de Fuso Horário em Datas de Eventos**: Resolvido problema onde datas dos eventos apareciam com 1 dia a menos no frontend
+- **Correção Completa de Fuso Horário em Datas de Eventos**: Resolvido problema onde datas dos eventos apareciam com 1 dia a menos no frontend E problema de filtro de eventos próximos
+  - **Problema Principal**: Sistema convertia datas para UTC (`T00:00:00.000Z`) causando deslocamento de -3 horas (fuso brasileiro), resultando em data anterior
+  - **Problema Secundário**: Filtro de eventos próximos comparava data completa (com horas) vs meia-noite, fazendo eventos de hoje desaparecerem da listagem
+  - **Solução Frontend**: Função `formatDate()` em `brazilian-formatter.ts` agora faz parse correto em timezone brasileiro
+  - **Solução Filtros**: Corrigida lógica de comparação nas páginas `/eventos` e landing page para comparar apenas datas (sem horas)
+  - **Páginas Corrigidas**: `/events/{id}`, `/eventos`, landing page (`/`), painel admin `/admin/events`
+  - **Filtro Aprimorado**: Eventos de hoje e amanhã agora aparecem corretamente na lista de próximos eventos
   - **Problema Identificado**: Sistema convertia datas para UTC (`T00:00:00.000Z`) causando deslocamento de -3 horas (fuso brasileiro), resultando em data anterior
   - **Solução Implementada**: Criada função `parseLocalDate()` que usa timezone brasileiro (`T00:00:00-03:00`) na edição de eventos
   - **Formatação Consistente**: Implementada função `formatEventDate()` para garantir formato correto de data em todos os endpoints de eventos
