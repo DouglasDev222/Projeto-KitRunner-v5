@@ -2048,12 +2048,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Security: Validate webhook signature 
       const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
       const isDevelopment = process.env.NODE_ENV === 'development';
+      const isProduction = process.env.NODE_ENV === 'production';
       
+      // PRODUCTION: Always validate signature (mandatory security)
+      if (isProduction && !webhookSecret) {
+        console.error('🚨 PRODUCTION SECURITY ERROR: MERCADOPAGO_WEBHOOK_SECRET is mandatory in production');
+        return res.status(500).json({ error: 'Webhook not properly configured' });
+      }
+      
+      // DEVELOPMENT: Allow testing without signature for debugging
       if (isDevelopment && !webhookSecret) {
-        console.log('🔧 DEBUG MODE: No webhook secret - skipping validation for development');
+        console.log('🔧 DEBUG MODE: Skipping validation (development only)');
       } else if (webhookSecret) {
-        // Security: Validate webhook signature (PRODUCTION ONLY)
-        const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+        console.log('🔒 Validating webhook signature...');
 
         if (!webhookSecret) {
           console.warn('🔒 SECURITY WARNING: MERCADOPAGO_WEBHOOK_SECRET not configured - webhook validation disabled');
