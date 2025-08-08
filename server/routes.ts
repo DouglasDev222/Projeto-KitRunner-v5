@@ -2045,17 +2045,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('📬 Headers:', JSON.stringify(req.headers, null, 2));
       console.log('📬 Body:', JSON.stringify(req.body, null, 2));
 
-      // Security: Validate webhook signature
+      // Security: Validate webhook signature 
       const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      
+      if (isDevelopment && !webhookSecret) {
+        console.log('🔧 DEBUG MODE: No webhook secret - skipping validation for development');
+      } else if (webhookSecret) {
+        // Security: Validate webhook signature (PRODUCTION ONLY)
+        const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
 
-      // TEMPORARY DEBUG MODE: Skip signature validation for testing
-      if (req.body && req.body.action === 'payment.updated' && process.env.NODE_ENV === 'development') {
-        console.log('🔧 DEBUG MODE: Skipping signature validation for testing');
-        // Continue processing for development testing
-      } else if (!webhookSecret) {
-        console.warn('🔒 SECURITY WARNING: MERCADOPAGO_WEBHOOK_SECRET not configured - webhook validation disabled');
-        // Continue processing for development, but log warning
-      } else {
+        if (!webhookSecret) {
+          console.warn('🔒 SECURITY WARNING: MERCADOPAGO_WEBHOOK_SECRET not configured - webhook validation disabled');
+          return res.status(401).json({ error: 'Webhook secret not configured' });
+        }
+
         const signature = req.headers['x-signature'] as string;
         const requestId = req.headers['x-request-id'] as string;
 
