@@ -64,18 +64,18 @@ export function PolicyAcceptance({
 
   return (
     <div className={`space-y-3 ${className}`}>
-      <div className="flex items-start space-x-3">
+      <div className="flex items-center space-x-3">
         <Checkbox
           id={`policy-${type}`}
           checked={checked}
           onCheckedChange={onCheckedChange}
           required={required}
-          className="mt-0.5 flex-shrink-0"
+          className="flex-shrink-0 self-start mt-0.5"
         />
         <div className="flex-1 min-w-0">
           <label 
             htmlFor={`policy-${type}`}
-            className="text-sm font-medium text-neutral-700 cursor-pointer flex flex-wrap items-center gap-2"
+            className="text-sm font-medium text-neutral-700 cursor-pointer flex flex-wrap items-start gap-2 leading-relaxed"
           >
             <span className="leading-tight">
               {getAcceptanceText(type)}
