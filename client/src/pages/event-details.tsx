@@ -25,6 +25,9 @@ export default function EventDetails() {
       }
       return response.json();
     },
+    staleTime: 0, // Always fetch fresh data to detect changes
+    refetchOnMount: true, // Refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   });
 
   // Get minimum price for dynamic pricing display
@@ -38,6 +41,9 @@ export default function EventDetails() {
       return response.json();
     },
     enabled: !!event, // Only run when event is loaded
+    staleTime: 0, // Always fetch fresh data to detect changes
+    refetchOnMount: true, // Refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   });
 
   if (isLoading) {

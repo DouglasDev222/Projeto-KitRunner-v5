@@ -16,6 +16,9 @@ export default function Events() {
 
   const { data: events, isLoading } = useQuery<Event[]>({
     queryKey: ["/api/events"],
+    staleTime: 0, // Always fetch fresh data to detect changes
+    refetchOnMount: true, // Refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   });
 
   // Filter and sort events: search + upcoming events first

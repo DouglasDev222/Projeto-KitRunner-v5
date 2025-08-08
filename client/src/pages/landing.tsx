@@ -17,6 +17,9 @@ const Landing = () => {
   // Fetch upcoming events for the landing page
   const { data: events } = useQuery<Event[]>({
     queryKey: ["/api/events"],
+    staleTime: 0, // Always fetch fresh data to detect changes
+    refetchOnMount: true, // Refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   });
 
   // Filter and sort events to show upcoming events first

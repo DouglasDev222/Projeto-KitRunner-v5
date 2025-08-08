@@ -185,9 +185,12 @@ const mutationExample = useMutation({
 
 - ✅ Endereços: Criação e edição
 - ✅ Pedidos: Criação  
-- ✅ Eventos: Criação e edição
+- ✅ Eventos: Criação e edição (Admin)
+- ✅ Lista de Eventos: Reatividade para mudanças (Cliente)
+- ✅ Detalhes de Eventos: Reatividade para atualizações (Cliente)
 - ✅ Meus Pedidos: Identificação de cliente com invalidação automática
 - ✅ Confirmação de Endereços: Query keys padronizadas
+- ✅ Landing Page: Lista de eventos reativos
 - ⚠️ Pendente: Exclusão de endereços (funcionalidade não existe ainda)
 - ⚠️ Pendente: Outras operações de exclusão conforme necessário
 
@@ -198,13 +201,23 @@ const mutationExample = useMutation({
 2. **address-confirmation.tsx** - Seleção e edição de endereços em contexto de evento  
 3. **payment.tsx** - Criação de pedidos
 4. **my-orders.tsx** - Lista de pedidos do cliente
-5. **admin-event-form.tsx** - Criação de eventos
-6. **admin-event-edit.tsx** - Edição de eventos
+5. **events.tsx** - Lista de eventos com reatividade
+6. **event-details.tsx** - Detalhes de eventos com preços atualizados
+7. **landing.tsx** - Landing page com lista de eventos reativos
+8. **admin-event-form.tsx** - Criação de eventos
+9. **admin-event-edit.tsx** - Edição de eventos
 
 ### 🔄 Invalidações Implementadas:
 - **Endereços**: Invalidação tripla (`/api/customers/:id/addresses`, `addresses/:id`, `/api/addresses`)
 - **Pedidos**: Invalidação abrangente (customer orders, admin orders, stats, events)
-- **Eventos**: Invalidação pública e admin (public events, admin events, admin stats)
+- **Eventos (Admin)**: Invalidação pública e admin (public events, admin events, admin stats)
+- **Eventos (Cliente)**: Queries configuradas para sempre buscar dados frescos
+- **Detalhes de Eventos**: Revalidação automática de preços e informações
 - **Identificação**: Invalidação proativa de orders e addresses do cliente
+
+### 🆕 Configurações de Reatividade para Eventos (Cliente):
+- **staleTime: 0** - Sempre busca dados frescos
+- **refetchOnMount: true** - Revalida quando componente monta
+- **refetchOnWindowFocus: true** - Revalida quando janela ganha foco
 
 Este guia garante reatividade completa no sistema e serve como referência para implementações futuras.
