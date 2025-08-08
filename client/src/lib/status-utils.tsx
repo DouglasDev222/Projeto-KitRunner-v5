@@ -16,6 +16,17 @@ export const statusOptions: StatusConfig[] = [
   { value: 'entregue', label: 'Entregue', color: 'bg-green-600 text-white' }
 ];
 
+// Versões abreviadas para mobile
+export const statusMobileLabels: Record<string, string> = {
+  'todos_os_status': 'Todos',
+  'confirmado': 'Confirmado',
+  'aguardando_pagamento': 'Aguard. Pag.',
+  'cancelado': 'Cancelado',
+  'kits_sendo_retirados': 'Retirada',
+  'em_transito': 'Trânsito',
+  'entregue': 'Entregue'
+};
+
 export const getStatusLabel = (status: string): string => {
   const statusConfig = statusOptions.find(s => s.value === status);
   return statusConfig ? statusConfig.label : status;
@@ -26,11 +37,21 @@ export const getStatusColor = (status: string): string => {
   return statusConfig ? statusConfig.color : 'bg-gray-100 text-gray-800';
 };
 
-export const getStatusBadge = (status: string) => {
+export const getStatusBadge = (status: string, isMobile?: boolean) => {
   const statusConfig = statusOptions.find(s => s.value === status) || statusOptions[0];
+  const mobileLabel = statusMobileLabels[status] || statusConfig.label;
+  
   return (
-    <Badge className={statusConfig.color}>
-      {statusConfig.label}
+    <Badge 
+      className={`${statusConfig.color} text-xs sm:text-sm whitespace-nowrap`}
+      title={statusConfig.label} // Tooltip com texto completo no hover
+    >
+      <span className="block sm:hidden">
+        {mobileLabel}
+      </span>
+      <span className="hidden sm:block">
+        {statusConfig.label}
+      </span>
     </Badge>
   );
 };

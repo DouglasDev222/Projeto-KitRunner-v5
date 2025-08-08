@@ -32,6 +32,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getStatusBadge } from "@/lib/status-utils";
 import { useToast } from "@/hooks/use-toast";
 import { Footer } from "@/components/footer";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function MyOrders() {
   // ALL hooks must be at the very top, before any conditional logic
@@ -42,6 +43,7 @@ export default function MyOrders() {
   const [lastKnownOrders, setLastKnownOrders] = useState<Order[] | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const form = useForm<CustomerIdentification>({
     resolver: zodResolver(customerIdentificationSchema),
@@ -239,7 +241,7 @@ export default function MyOrders() {
                             <p className="font-semibold text-neutral-800">
                               #{order.orderNumber}
                             </p>
-                            {getStatusBadge(order.status)}
+                            {getStatusBadge(order.status, isMobile)}
                           </div>
 
                           {/* Event name - more prominent */}
