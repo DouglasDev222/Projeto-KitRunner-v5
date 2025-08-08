@@ -35,7 +35,7 @@ const Landing = () => {
     : [];
 
   const handleSolicitarRetirada = () => {
-    setLocation("/events");
+    setLocation("/eventos");
   };
 
   const handleEventClick = (eventId: number) => {
