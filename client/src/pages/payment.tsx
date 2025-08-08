@@ -420,15 +420,6 @@ export default function Payment() {
           </CardContent>
         </Card>
 
-        {/* Payment Error */}
-        {paymentError && (
-          <Alert className="mb-6 border-red-200 bg-red-50">
-            <AlertDescription className="text-red-700">
-              {paymentError}
-            </AlertDescription>
-          </Alert>
-        )}
-
         {/* Policy Acceptance */}
         <Card className="mb-6">
           <CardContent className="p-4">
@@ -455,6 +446,15 @@ export default function Payment() {
             <h3 className="font-semibold text-lg text-neutral-800 mb-4">
               {paymentMethod === 'pix' ? 'Pagamento PIX' : 'Pagamento com Cartão'}
             </h3>
+            
+            {/* Payment Error - Moved here to be closer to payment section */}
+            {paymentError && (
+              <Alert className="mb-4 border-red-200 bg-red-50">
+                <AlertDescription className="text-red-700">
+                  {paymentError}
+                </AlertDescription>
+              </Alert>
+            )}
             
             {(paymentMethod === 'credit' || paymentMethod === 'debit') && (
               <CardPayment
