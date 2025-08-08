@@ -94,7 +94,7 @@ const Landing = () => {
 
         {/* Próximos Eventos Section */}
         {upcomingEvents.length > 0 && (
-          <div className="max-w-6xl mx-auto mt-20 space-y-8">
+          <div className="max-w-6xl mx-auto mt-20 space-y-8 events-section">
             <div className="text-center">
               <h2 className="text-3xl font-bold text-foreground mb-4">Próximos Eventos</h2>
               <p className="text-muted-foreground mb-6">Selecione o evento que deseja solicitar a retirada do kit</p>
@@ -168,7 +168,7 @@ const Landing = () => {
 
             {/* Mobile: 2 rows with horizontal scroll */}
             <div className="md:hidden">
-              <div className="overflow-x-auto pb-4 scroll-smooth scrollbar-hide touch-pan-x">
+              <div className="overflow-x-auto pb-4 scroll-smooth scrollbar-hide events-scroll-container">
                 <div className="grid grid-rows-2 grid-flow-col gap-4" style={{ gridAutoColumns: '280px' }}>
                   {upcomingEvents.map((event) => (
                     <Card
