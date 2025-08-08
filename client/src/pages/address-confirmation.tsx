@@ -698,7 +698,7 @@ export default function AddressConfirmation() {
             <Alert>
               <Info className="w-4 h-4" />
               <AlertDescription>
-                Você atingiu o limite máximo de 2 endereços. Para adicionar um novo, exclua um endereço existente no seu perfil.
+                Você atingiu o limite máximo de 2 endereços. Mas você pode editar endereços existentes em seu perfil.
               </AlertDescription>
             </Alert>
           ) : (
