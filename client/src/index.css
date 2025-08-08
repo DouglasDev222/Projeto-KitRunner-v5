@@ -113,3 +113,14 @@ button, a, input, select, textarea {
     min-height: 44px;
   }
 }
+
+/* Prevent footer from overlapping content */
+.page-with-footer {
+  padding-bottom: 100px;
+}
+
+@media (max-width: 768px) {
+  .page-with-footer {
+    padding-bottom: 120px;
+  }
+}

@@ -106,7 +106,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen pb-20">
+    <div className="max-w-md mx-auto bg-white min-h-screen pb-20 page-with-footer">
       <Header showBackButton onBack={() => setLocation("/eventos")} />
       <div className="p-4">
         <div className="flex items-center mb-6">

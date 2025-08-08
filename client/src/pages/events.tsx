@@ -24,33 +24,33 @@ export default function Events() {
   // Filter and sort events: search + upcoming events first
   const filteredAndSortedEvents = useMemo(() => {
     if (!events) return [];
-    
+
     // Filter by search term
     const filtered = events.filter(event =>
       event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       event.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
       event.city.toLowerCase().includes(searchTerm.toLowerCase())
     );
-    
+
     // Sort by date: upcoming events first
     const now = new Date();
     now.setHours(0, 0, 0, 0); // Set to start of today for proper comparison
-    
+
     return filtered.sort((a, b) => {
       // Parse dates in Brazilian timezone to avoid timezone issues
       const [yearA, monthA, dayA] = a.date.split('-');
       const [yearB, monthB, dayB] = b.date.split('-');
       const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1, parseInt(dayA));
       const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1, parseInt(dayB));
-      
+
       // Events in the future (including today) come first, sorted by date (earliest first)
       // Past events come last, sorted by date (most recent first)
       const isAfuture = dateA >= now;
       const isBfuture = dateB >= now;
-      
+
       if (isAfuture && !isBfuture) return -1;
       if (!isAfuture && isBfuture) return 1;
-      
+
       if (isAfuture && isBfuture) {
         return dateA.getTime() - dateB.getTime(); // Earliest upcoming first
       } else {
@@ -79,13 +79,13 @@ export default function Events() {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen pb-20">
+    <div className="max-w-md mx-auto bg-white min-h-screen page-with-footer">
       <Header />
-      <div className="p-4">
+      <main className="p-4">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-neutral-800 mb-2">Próximos Eventos</h2>
           <p className="text-neutral-600 mb-4">Selecione o evento para retirar seu kit</p>
-          
+
           {/* Search Input */}
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-neutral-400" />
@@ -105,7 +105,7 @@ export default function Events() {
               <p className="text-sm text-neutral-500 mt-1">Tente buscar por nome, local ou cidade</p>
             </div>
           )}
-          
+
           {filteredAndSortedEvents.map((event) => (
             <Card
               key={event.id}
@@ -139,7 +139,7 @@ export default function Events() {
             </Card>
           ))}
         </div>
-      </div>
+      </main>
       <Footer />
     </div>
   );

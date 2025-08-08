@@ -166,7 +166,7 @@ export default function MyOrders() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen">
+      <div className="max-w-md mx-auto bg-white min-h-screen page-with-footer">
         <Header showBackButton onBack={() => setLocation("/profile")} />
         <div className="p-4 text-center">
           <p className="text-neutral-600">Carregando...</p>
@@ -179,7 +179,7 @@ export default function MyOrders() {
   // Redirect state
   if (!isAuthenticated && !showOrders && !customer) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen">
+      <div className="max-w-md mx-auto bg-white min-h-screen page-with-footer">
         <Header showBackButton onBack={() => setLocation("/profile")} />
         <div className="p-4 text-center">
           <p className="text-neutral-600">Redirecionando para login...</p>
@@ -192,7 +192,7 @@ export default function MyOrders() {
   // Authenticated or identified customer view
   if (isAuthenticated || (showOrders && customer)) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
+      <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col page-with-footer">
         <Header showBackButton onBack={() => setLocation("/profile")} />
         <div className="p-4 flex-grow">
           <div className="flex items-center mb-6">
@@ -315,7 +315,7 @@ export default function MyOrders() {
 
   // Guest identification form
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
+    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col page-with-footer">
       <Header showBackButton onBack={() => setLocation("/eventos")} />
       <div className="p-4 flex-grow">
         <h2 className="text-2xl font-bold text-neutral-800 mb-2">
