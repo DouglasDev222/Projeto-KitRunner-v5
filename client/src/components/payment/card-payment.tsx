@@ -115,24 +115,44 @@ export function CardPayment({
   const detectCardBrand = (cardNumber: string) => {
     const cleanNumber = cardNumber.replace(/\s/g, '');
     
-    // Mastercard: starts with 5031, 5100-5599
-    if (/^5[1-5]/.test(cleanNumber) || /^5031/.test(cleanNumber)) {
+    console.log('🔍 Detecting card brand for number:', cleanNumber.substring(0, 6) + '...');
+    
+    // Mastercard: More comprehensive detection
+    // Mastercard ranges: 2221-2720, 51-55, plus some specific BINs
+    if (/^5[1-5]/.test(cleanNumber) || 
+        /^2(22[1-9]|2[3-9][0-9]|[3-6][0-9][0-9]|7[01][0-9]|720)/.test(cleanNumber) ||
+        /^5031/.test(cleanNumber)) {
+      console.log('✅ Detected: Mastercard');
       return 'master'; // MercadoPago payment method ID for Mastercard
     }
+    
     // Visa: starts with 4
     if (/^4/.test(cleanNumber)) {
+      console.log('✅ Detected: Visa');
       return 'visa'; // MercadoPago payment method ID for Visa
     }
+    
     // American Express: starts with 34 or 37
     if (/^3[47]/.test(cleanNumber)) {
+      console.log('✅ Detected: American Express');
       return 'amex'; // MercadoPago uses 'amex' for American Express
     }
-    // Elo: starts with 5067, 4011, 4312, 4389, 4514, 4573, 6277, 6362, 6363, 6550
-    if (/^(5067|4011|4312|4389|4514|4573|6277|6362|6363|6550)/.test(cleanNumber)) {
+    
+    // Elo: comprehensive BIN detection
+    if (/^(5067|4011|4312|4389|4514|4573|6277|6362|6363|6550|5090|6516|5041|5043|6363)/.test(cleanNumber)) {
+      console.log('✅ Detected: Elo');
       return 'elo'; // MercadoPago uses 'elo' for Elo
     }
     
-    return 'visa'; // Default fallback
+    // Hipercard: starts with 606282
+    if (/^606282/.test(cleanNumber)) {
+      console.log('✅ Detected: Hipercard');
+      return 'hipercard';
+    }
+    
+    // If no match found, let's be more cautious
+    console.log('⚠️ Card brand not definitively detected, returning null for manual detection');
+    return null; // Don't default to visa if unsure
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -196,6 +216,11 @@ export function CardPayment({
 
       // Detect payment method from card number
       const paymentMethodId = detectCardBrand(formData.cardNumber);
+      
+      // Validate that we detected a valid payment method
+      if (!paymentMethodId) {
+        throw new Error('Bandeira do cartão não foi detectada. Verifique se o número está correto.');
+      }
 
       // Process payment FIRST with order data (do NOT create order yet)
       const paymentData = {
