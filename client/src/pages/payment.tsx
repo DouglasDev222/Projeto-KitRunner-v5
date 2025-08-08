@@ -430,12 +430,14 @@ export default function Payment() {
         {/* Policy Acceptance */}
         <Card className="mb-6">
           <CardContent className="p-4">
-            <PolicyAcceptance
-              type="order"
-              checked={policyAccepted}
-              onCheckedChange={setPolicyAccepted}
-              required={true}
-            />
+            <div className="[&_[role=checkbox]]:h-4 [&_[role=checkbox]]:w-4 [&_[role=checkbox]]:min-h-[1rem] [&_[role=checkbox]]:min-w-[1rem] [&_[role=checkbox]]:max-h-[1rem] [&_[role=checkbox]]:max-w-[1rem] [&_[role=checkbox]]:flex-shrink-0">
+              <PolicyAcceptance
+                type="order"
+                checked={policyAccepted}
+                onCheckedChange={setPolicyAccepted}
+                required={true}
+              />
+            </div>
           </CardContent>
         </Card>
 
