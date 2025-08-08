@@ -25,10 +25,10 @@ export function Footer() {
     <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200 p-4">
       <div className="flex gap-2">
         <Button
-          variant={isRouteActive(['/my-orders']) ? "default" : "outline"}
+          variant="outline"
           className={`flex-1 flex items-center gap-2 ${
             isRouteActive(['/my-orders']) 
-              ? "bg-primary text-primary-foreground" 
+              ? "bg-white text-purple-600 border-purple-600" 
               : ""
           }`}
           onClick={() => {
@@ -40,10 +40,10 @@ export function Footer() {
           Pedidos
         </Button>
         <Button
-          variant={isRouteActive(['/eventos']) ? "default" : "outline"}
+          variant="outline"
           className={`flex-1 flex items-center gap-2 ${
             isRouteActive(['/eventos']) 
-              ? "bg-primary text-primary-foreground" 
+              ? "bg-white text-purple-600 border-purple-600" 
               : ""
           }`}
           onClick={() => setLocation("/eventos")}
@@ -52,10 +52,10 @@ export function Footer() {
           Eventos
         </Button>
         <Button
-          variant={isRouteActive(['/profile']) ? "default" : "outline"}
+          variant="outline"
           className={`flex-1 flex items-center gap-2 ${
             isRouteActive(['/profile']) 
-              ? "bg-primary text-primary-foreground" 
+              ? "bg-white text-purple-600 border-purple-600" 
               : ""
           }`}
           onClick={() => setLocation("/profile")}
