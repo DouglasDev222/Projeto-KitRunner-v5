@@ -35,9 +35,19 @@ export function PIXPayment({
   const [paymentId, setPaymentId] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(false);
+  const [statusCheckInterval, setStatusCheckInterval] = useState<NodeJS.Timeout | null>(null);
   
   // Generate unique idempotency key for this payment attempt
   const [idempotencyKey] = useState(() => `pix_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+      }
+    };
+  }, [statusCheckInterval]);
 
   const createPIXPaymentMutation = useMutation({
     mutationFn: async (paymentData: any) => {
@@ -70,6 +80,12 @@ export function PIXPayment({
       setCheckingStatus(false);
       if (data.success) {
         if (data.status === 'approved') {
+          // Stop the status checking interval
+          if (statusCheckInterval) {
+            clearInterval(statusCheckInterval);
+            setStatusCheckInterval(null);
+          }
+          
           // Get orderNumber from payment external reference
           const orderNumber = data.payment?.external_reference;
           console.log('PIX Payment approved - Order Number:', orderNumber);
@@ -82,6 +98,11 @@ export function PIXPayment({
             message: 'Pagamento PIX aprovado!'
           });
         } else if (data.status === 'cancelled' || data.status === 'rejected') {
+          // Stop the status checking interval
+          if (statusCheckInterval) {
+            clearInterval(statusCheckInterval);
+            setStatusCheckInterval(null);
+          }
           onError('Pagamento PIX foi cancelado ou rejeitado');
         }
         // For pending status, continue checking
@@ -100,9 +121,12 @@ export function PIXPayment({
       }
     }, 3000); // Check every 3 seconds
 
+    setStatusCheckInterval(interval);
+
     // Clear interval after 10 minutes
     setTimeout(() => {
       clearInterval(interval);
+      setStatusCheckInterval(null);
     }, 600000);
 
     return interval;

@@ -14,7 +14,9 @@ Preferred communication style: Simple, everyday language.
   - **Correção URL Confirmação**: Adicionado `orderNumber` no retorno do PIX quando aprovado para evitar `/order/undefined/confirmation`
   - **Arquivo Corrigido**: `client/src/pages/payment.tsx`, `client/src/components/payment/pix-payment.tsx`
   - **Fluxo PIX**: Agora mostra QR code corretamente e só redireciona após aprovação real do pagamento
-  - **Status**: ✅ PIX funcionando corretamente com QR code visível e redirecionamento adequado
+  - **Correção Polling**: Adicionado controle de intervalo para parar checagem de status após pagamento aprovado/cancelado
+  - **Cleanup Memory**: Implementado cleanup de intervalos no desmonte do componente para evitar vazamentos
+  - **Status**: ✅ PIX funcionando corretamente com QR code visível, redirecionamento adequado e sem spam no console
 
 ## Recent Fixes (August 8, 2025)
 
