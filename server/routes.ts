@@ -1722,12 +1722,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (selectedEvent.fixedPrice) {
             baseCost = Number(selectedEvent.fixedPrice);
             deliveryCost = 0;
+          } else if (selectedEvent.pricingType === 'cep_zones') {
+            // Use CEP zones pricing for card payments (same as order creation logic)
+            const { calculateCepZonePrice } = await import('./cep-zones-calculator');
+            const calculatedPrice = await calculateCepZonePrice(customerAddress?.zipCode || '', selectedEvent.id);
+            
+            if (calculatedPrice === null) {
+              console.error(`🚨 CEP ${customerAddress?.zipCode} not found in zones for event ${selectedEvent.id}`);
+              return res.status(400).json({ 
+                success: false,
+                message: "CEP não atendido nas zonas de entrega disponíveis para este evento",
+                code: "CEP_ZONE_NOT_FOUND"
+              });
+            }
+            
+            deliveryCost = calculatedPrice;
+            baseCost = 0;
+            console.log(`✅ Card payment using CEP zone pricing: R$ ${calculatedPrice} for CEP ${customerAddress?.zipCode}`);
           } else {
+            // Distance-based pricing
             const deliveryCalculation = calculateDeliveryCost(
               selectedEvent.pickupZipCode || '58000000',
               customerAddress?.zipCode || '58030000'
             );
             deliveryCost = deliveryCalculation.deliveryCost;
+            baseCost = 0;
           }
 
           if (validatedOrderData.kitQuantity > 1 && selectedEvent.extraKitPrice) {
