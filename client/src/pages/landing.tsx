@@ -1,15 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package, Zap, ChevronDown, Calendar, MapPin, ChevronRight } from "lucide-react";
+import { Package, Zap, ChevronDown, Calendar, MapPin, ChevronRight, ChevronLeft } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { formatDate } from "@/lib/brazilian-formatter";
 import type { Event } from "@shared/schema";
+import { useState, useRef } from "react";
 
 const Landing = () => {
   const [, setLocation] = useLocation();
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Fetch upcoming events for the landing page
   const { data: events } = useQuery<Event[]>({
@@ -28,7 +31,7 @@ const Landing = () => {
       const dateB = new Date(b.date);
       return dateA.getTime() - dateB.getTime(); // Earliest first
     })
-    .slice(0, 6) // Limit to 6 events for display
+    .slice(0, 8) // Limit to 8 events for better grid display
     : [];
 
   const handleSolicitarRetirada = () => {
@@ -37,6 +40,21 @@ const Landing = () => {
 
   const handleEventClick = (eventId: number) => {
     setLocation(`/events/${eventId}`);
+  };
+
+  // Navigation functions for desktop
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = 320; // Card width + gap
+      scrollContainerRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = 320; // Card width + gap
+      scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
   };
 
   return <div className="min-h-screen bg-background">
@@ -82,83 +100,109 @@ const Landing = () => {
               <p className="text-muted-foreground mb-6">Selecione o evento que deseja solicitar a retirada do kit</p>
             </div>
 
-            {/* Desktop Grid: 2 rows x 2 columns with horizontal scroll for overflow */}
-            <div className="hidden md:block">
-              <div className="overflow-x-auto">
-                <div className="grid grid-rows-2 grid-flow-col gap-4 min-w-max">
+            {/* Desktop Grid: 2 rows x 2 columns with navigation buttons */}
+            <div className="hidden md:block relative">
+              <div className="relative overflow-hidden">
+                {/* Navigation Buttons */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/80 backdrop-blur border shadow-lg hover:bg-background"
+                  onClick={scrollLeft}
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background/80 backdrop-blur border shadow-lg hover:bg-background"
+                  onClick={scrollRight}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+
+                {/* Cards Container */}
+                <div 
+                  ref={scrollContainerRef}
+                  className="overflow-x-auto scroll-smooth scrollbar-hide"
+                >
+                  <div className="grid grid-rows-2 grid-flow-col gap-4" style={{ gridAutoColumns: '320px' }}>
+                    {upcomingEvents.map((event) => (
+                      <Card
+                        key={event.id}
+                        className="w-80 cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+                        onClick={() => handleEventClick(event.id)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-lg text-foreground mb-2 line-clamp-2">{event.name}</h3>
+                              <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground flex items-center">
+                                  <Calendar className="w-4 h-4 mr-2" />
+                                  {formatDate(event.date)}
+                                </p>
+                                <p className="text-sm text-muted-foreground flex items-center">
+                                  <MapPin className="w-4 h-4 mr-2" />
+                                  {event.location}, {event.city} - {event.state}
+                                </p>
+                              </div>
+                              <div className="flex items-center mt-3">
+                                <Badge
+                                  variant={event.available ? "default" : "secondary"}
+                                  className={event.available ? "bg-primary hover:bg-primary/80" : ""}
+                                >
+                                  {event.available ? "Disponível" : "Em Breve"}
+                                </Badge>
+                              </div>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-muted-foreground ml-2" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile: 2 rows with horizontal scroll */}
+            <div className="md:hidden">
+              <div className="overflow-x-auto pb-4 scroll-smooth scrollbar-hide touch-pan-x">
+                <div className="grid grid-rows-2 grid-flow-col gap-4" style={{ gridAutoColumns: '280px' }}>
                   {upcomingEvents.map((event) => (
                     <Card
                       key={event.id}
-                      className="w-80 cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+                      className="w-70 cursor-pointer hover:shadow-lg transition-shadow"
                       onClick={() => handleEventClick(event.id)}
                     >
                       <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-lg text-foreground mb-2 line-clamp-2">{event.name}</h3>
-                            <div className="space-y-1">
-                              <p className="text-sm text-muted-foreground flex items-center">
-                                <Calendar className="w-4 h-4 mr-2" />
-                                {formatDate(event.date)}
-                              </p>
-                              <p className="text-sm text-muted-foreground flex items-center">
-                                <MapPin className="w-4 h-4 mr-2" />
-                                {event.location}, {event.city} - {event.state}
-                              </p>
-                            </div>
-                            <div className="flex items-center mt-3">
-                              <Badge
-                                variant={event.available ? "default" : "secondary"}
-                                className={event.available ? "bg-primary hover:bg-primary/80" : ""}
-                              >
-                                {event.available ? "Disponível" : "Em Breve"}
-                              </Badge>
-                            </div>
+                        <div className="space-y-3">
+                          <h3 className="font-semibold text-lg text-foreground line-clamp-2">{event.name}</h3>
+                          <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground flex items-center">
+                              <Calendar className="w-4 h-4 mr-2" />
+                              {formatDate(event.date)}
+                            </p>
+                            <p className="text-sm text-muted-foreground flex items-center">
+                              <MapPin className="w-4 h-4 mr-2" />
+                              {event.location}, {event.city} - {event.state}
+                            </p>
                           </div>
-                          <ChevronRight className="w-5 h-5 text-muted-foreground ml-2" />
+                          <div className="flex items-center justify-between">
+                            <Badge
+                              variant={event.available ? "default" : "secondary"}
+                              className={event.available ? "bg-primary hover:bg-primary/80" : ""}
+                            >
+                              {event.available ? "Disponível" : "Em Breve"}
+                            </Badge>
+                            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
-              </div>
-            </div>
-
-            {/* Mobile: Single row with horizontal scroll */}
-            <div className="md:hidden">
-              <div className="flex gap-4 overflow-x-auto pb-4 scroll-smooth">
-                {upcomingEvents.map((event) => (
-                  <Card
-                    key={event.id}
-                    className="w-72 flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
-                    onClick={() => handleEventClick(event.id)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="space-y-3">
-                        <h3 className="font-semibold text-lg text-foreground line-clamp-2">{event.name}</h3>
-                        <div className="space-y-1">
-                          <p className="text-sm text-muted-foreground flex items-center">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            {formatDate(event.date)}
-                          </p>
-                          <p className="text-sm text-muted-foreground flex items-center">
-                            <MapPin className="w-4 h-4 mr-2" />
-                            {event.location}, {event.city} - {event.state}
-                          </p>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <Badge
-                            variant={event.available ? "default" : "secondary"}
-                            className={event.available ? "bg-primary hover:bg-primary/80" : ""}
-                          >
-                            {event.available ? "Disponível" : "Em Breve"}
-                          </Badge>
-                          <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
               </div>
             </div>
 
