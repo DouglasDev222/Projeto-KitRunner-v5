@@ -53,6 +53,13 @@ export default function Payment() {
   
   const acceptPolicyMutation = useAcceptPolicy();
 
+  // Clear payment error when payment method changes
+  useEffect(() => {
+    if (paymentError) {
+      setPaymentError(null);
+    }
+  }, [paymentMethod]);
+
   // Helper function to record policy acceptance
   const recordPolicyAcceptance = async (orderId: number) => {
     try {
