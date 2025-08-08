@@ -146,15 +146,33 @@ export function CardPayment({
     setIsProcessing(true);
 
     try {
-      // Create card token
+      // Validate and clean card data before tokenization
+      const cleanCardNumber = formData.cardNumber.replace(/\s/g, '');
+      const cleanCpf = customerData.cpf.replace(/\D/g, '');
+      const cleanName = formData.cardholderName.trim().toUpperCase();
+      
+      // Additional validations to prevent diff_param_bins error
+      if (cleanCardNumber.length < 13 || cleanCardNumber.length > 19) {
+        throw new Error('Número do cartão deve ter entre 13 e 19 dígitos');
+      }
+      
+      if (cleanCpf.length !== 11) {
+        throw new Error('CPF deve ter exatamente 11 dígitos');
+      }
+      
+      if (cleanName.length < 2) {
+        throw new Error('Nome do portador deve ter pelo menos 2 caracteres');
+      }
+      
+      // Create card token with cleaned and validated data
       const cardData = {
-        cardNumber: formData.cardNumber.replace(/\s/g, ''),
-        cardholderName: formData.cardholderName,
+        cardNumber: cleanCardNumber,
+        cardholderName: cleanName,
         cardExpirationMonth: formData.expiryDate.split('/')[0],
         cardExpirationYear: `20${formData.expiryDate.split('/')[1]}`,
         securityCode: formData.securityCode,
         identificationType: 'CPF',
-        identificationNumber: customerData.cpf.replace(/\D/g, '')
+        identificationNumber: cleanCpf
       };
 
       console.log('Creating card token with data:', cardData);

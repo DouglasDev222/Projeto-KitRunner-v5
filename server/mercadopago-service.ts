@@ -89,13 +89,28 @@ export class MercadoPagoService {
         }
       }, null, 2));
       
-      // Validate required fields before sending to MercadoPago
+      // Enhanced validation to prevent diff_param_bins error
       if (!paymentData.token || paymentData.token.length < 10) {
         throw new Error('Token do cartão inválido ou muito curto');
       }
       
-      if (!paymentData.payer.identification.number || paymentData.payer.identification.number.length < 11) {
-        throw new Error('CPF inválido - deve ter 11 dígitos');
+      const cleanCpf = paymentData.payer.identification.number?.replace(/\D/g, '') || '';
+      if (cleanCpf.length !== 11) {
+        throw new Error('CPF inválido - deve ter exatamente 11 dígitos');
+      }
+      
+      // Validate and clean payer name to prevent conflicts
+      const cleanName = paymentData.payer.name?.trim() || '';
+      const cleanSurname = paymentData.payer.surname?.trim() || '';
+      
+      if (cleanName.length < 1 || cleanSurname.length < 1) {
+        throw new Error('Nome e sobrenome são obrigatórios');
+      }
+      
+      // Additional validation for email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(paymentData.payer.email)) {
+        throw new Error('Email inválido');
       }
 
       const paymentResult = await payment.create({
@@ -107,11 +122,11 @@ export class MercadoPagoService {
           payment_method_id: paymentData.paymentMethodId,
           payer: {
             email: paymentData.payer.email,
-            first_name: paymentData.payer.name,
-            last_name: paymentData.payer.surname,
+            first_name: cleanName,
+            last_name: cleanSurname,
             identification: {
               type: paymentData.payer.identification.type,
-              number: paymentData.payer.identification.number,
+              number: cleanCpf,
             },
           },
           external_reference: paymentData.orderId,
@@ -219,10 +234,24 @@ export class MercadoPagoService {
         errorMessage = 'Número do cartão inválido. Use um cartão de teste válido.';
       } else if (error.message?.includes('invalid_card')) {
         errorMessage = 'Dados do cartão inválidos. Verifique número, data de validade e CVV.';
+      } else if (error.message?.includes('diff_param_bins')) {
+        errorMessage = 'Conflito nos parâmetros do cartão. Verifique se os dados do cartão (número, nome, CPF) estão corretos e consistentes.';
       } else if (error.message?.includes('internal_error')) {
         errorMessage = 'Erro interno do Mercado Pago. Verifique as credenciais e tente novamente.';
       } else if (error.cause?.length > 0) {
-        errorMessage = error.cause[0].description || errorMessage;
+        const errorCode = error.cause[0].code;
+        const errorDesc = error.cause[0].description;
+        
+        // Handle specific error codes
+        if (errorCode === 10103) {
+          errorMessage = 'Parâmetros conflitantes do cartão (código 10103). Verifique se:' +
+            '\n• O nome no cartão está exatamente como no cartão físico' +
+            '\n• O CPF está correto e pertence ao portador do cartão' +
+            '\n• O número do cartão foi digitado corretamente' +
+            '\n• Todos os dados foram preenchidos sem erro de digitação';
+        } else {
+          errorMessage = errorDesc || errorMessage;
+        }
       } else if (error.message) {
         errorMessage = error.message;
       }
