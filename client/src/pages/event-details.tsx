@@ -109,7 +109,12 @@ export default function EventDetails() {
                 <Calendar className="w-5 h-5 text-primary mr-3" />
                 <div>
                   <p className="font-medium text-neutral-800">Data</p>
-                  <p className="text-neutral-600 text-sm">{new Date(event.date).toLocaleDateString('pt-BR')}</p>
+                  <p className="text-neutral-600 text-sm">{(() => {
+                    // Parse date in Brazilian timezone to avoid date shifting issue
+                    const [year, month, day] = event.date.split('-');
+                    const brasilianDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    return brasilianDate.toLocaleDateString('pt-BR');
+                  })()}</p>
                 </div>
               </div>
               <div className="flex items-center">

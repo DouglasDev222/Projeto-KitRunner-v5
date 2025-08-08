@@ -6,7 +6,11 @@ export function formatCurrency(value: number): string {
 }
 
 export function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString('pt-BR', {
+  // Parse date in Brazilian timezone to avoid date shifting issue
+  const [year, month, day] = date.split('-');
+  const brasilianDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  
+  return brasilianDate.toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
