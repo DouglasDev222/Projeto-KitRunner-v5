@@ -13,6 +13,7 @@ import { EmailService } from "./email/email-service";
 import { EmailDataMapper } from "./email/email-data-mapper";
 import { PaymentReminderScheduler } from "./email/payment-reminder-scheduler";
 import path from "path";
+import crypto from "crypto";
 import { requireAuth, requireAdmin, requireOwnership, type AuthenticatedRequest } from './middleware/auth';
 import adminAuthRoutes from './routes/admin-auth';
 import cepZonesRoutes from './routes/cep-zones';
@@ -2074,7 +2075,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Verify signature using HMAC-SHA256
-        const crypto = require('crypto');
         const manifest = `id:${requestId};request-id:${requestId};ts:${ts};`;
         const expectedSignature = crypto
           .createHmac('sha256', webhookSecret)
