@@ -6,6 +6,16 @@ KitRunner is a mobile-first web application for managing event kit pickup and de
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Fixes (August 8, 2025)
+
+- **Correção de Fuso Horário em Datas de Eventos**: Resolvido problema onde datas dos eventos apareciam com 1 dia a menos no frontend
+  - **Problema Identificado**: Sistema convertia datas para UTC (`T00:00:00.000Z`) causando deslocamento de -3 horas (fuso brasileiro), resultando em data anterior
+  - **Solução Implementada**: Criada função `parseLocalDate()` que usa timezone brasileiro (`T00:00:00-03:00`) na edição de eventos
+  - **Formatação Consistente**: Implementada função `formatEventDate()` para garantir formato correto de data em todos os endpoints de eventos
+  - **Endpoints Corrigidos**: `/api/events`, `/api/events/:id`, `/api/admin/events`, `/api/admin/events/:id`, criação e edição de eventos
+  - **Validação**: Teste confirma datas retornando corretamente como `"2025-02-15"` ao invés de dia anterior
+  - **Status**: ✅ Problema de fuso horário completamente resolvido
+
 ## Recent Fixes (August 7, 2025)
 
 - **Vulnerabilidade de Precificação CEP Corrigida**: Implementada correção completa da vulnerabilidade crítica na tela de confirmação de endereço

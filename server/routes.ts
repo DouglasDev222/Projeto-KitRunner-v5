@@ -127,7 +127,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/events", async (req, res) => {
     try {
       const events = await storage.getEvents();
-      res.json(events);
+      // Format dates properly for Brazilian timezone to avoid frontend date shifting
+      const formattedEvents = events.map(event => ({
+        ...event,
+        date: formatEventDate(event.date)
+      }));
+      res.json(formattedEvents);
     } catch (error) {
       res.status(500).json({ message: "Erro ao buscar eventos" });
     }
@@ -143,7 +148,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Evento não encontrado" });
       }
 
-      res.json(event);
+      // Format date properly for Brazilian timezone to avoid frontend date shifting
+      const formattedEvent = {
+        ...event,
+        date: event.date instanceof Date ? event.date.toISOString().split('T')[0] : event.date
+      };
+
+      res.json(formattedEvent);
     } catch (error) {
       res.status(500).json({ message: "Erro ao buscar evento" });
     }
@@ -787,7 +798,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/events", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const events = await storage.getAllEvents();
-      res.json(events);
+      // Format dates properly for Brazilian timezone to avoid frontend date shifting
+      const formattedEvents = events.map(event => ({
+        ...event,
+        date: event.date instanceof Date ? event.date.toISOString().split('T')[0] : event.date
+      }));
+      res.json(formattedEvents);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -814,7 +830,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const event = await storage.createEvent(dataToSave);
       console.log("🎉 Created event:", JSON.stringify(event, null, 2));
-      res.json(event);
+      
+      // Format date properly for Brazilian timezone to avoid frontend date shifting
+      const formattedEvent = {
+        ...event,
+        date: event.date instanceof Date ? event.date.toISOString().split('T')[0] : event.date
+      };
+      
+      res.json(formattedEvent);
     } catch (error: any) {
       console.error("❌ Error creating event:", error);
       res.status(400).json({ error: error.message });
@@ -831,11 +854,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Evento não encontrado" });
       }
 
-      res.json(event);
+      // Format date properly for Brazilian timezone to avoid frontend date shifting
+      const formattedEvent = {
+        ...event,
+        date: event.date instanceof Date ? event.date.toISOString().split('T')[0] : event.date
+      };
+
+      res.json(formattedEvent);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
+
+  // Utility function to parse local Brazilian date correctly 
+  function parseLocalDate(dateString: string, endOfDay = false): Date {
+    const time = endOfDay ? 'T23:59:59-03:00' : 'T00:00:00-03:00';
+    return new Date(dateString + time);
+  }
+
+  // Utility function to format event dates properly for Brazilian timezone
+  function formatEventDate(date: any): string {
+    if (typeof date === 'string') return date;
+    if (date && typeof date === 'object' && date.toISOString) {
+      return date.toISOString().split('T')[0];
+    }
+    return date;
+  }
 
   // Update event
   app.put("/api/admin/events/:id", async (req, res) => {
@@ -843,9 +887,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const updateData = req.body;
 
-      // Convert date format if needed
+      // Convert date format using Brazilian timezone to avoid date shifting
       if (updateData.date && !updateData.date.includes('T')) {
-        updateData.date = updateData.date + 'T00:00:00.000Z';
+        // Parse the date in Brazilian timezone instead of UTC to avoid -1 day issue
+        const parsedDate = parseLocalDate(updateData.date);
+        updateData.date = parsedDate.toISOString().split('T')[0]; // Keep only date part
       }
 
       // Clean up the data - ensure proper types
@@ -866,7 +912,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Evento não encontrado" });
       }
 
-      res.json(event);
+      // Format date properly for Brazilian timezone to avoid frontend date shifting
+      const formattedEvent = {
+        ...event,
+        date: event.date instanceof Date ? event.date.toISOString().split('T')[0] : event.date
+      };
+
+      res.json(formattedEvent);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
