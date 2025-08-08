@@ -60,7 +60,7 @@ export default function Payment() {
       if (policyResponse.ok) {
         const policyData = await policyResponse.json();
         await acceptPolicyMutation.mutateAsync({
-          userId: customer.id,
+          userId: customer!.id,
           policyId: policyData.policy.id,
           context: 'order',
           orderId: orderId
@@ -120,15 +120,19 @@ export default function Payment() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/events"] }); // May affect event stats
       
-      setOrderNumber(data.order.orderNumber);
-      setPaymentCompleted(true);
-      setPaymentError(null);
-      // Store order confirmation data
-      sessionStorage.setItem("orderConfirmation", JSON.stringify(data));
-      // Redirect to confirmation page using order number after a short delay
-      setTimeout(() => {
-        setLocation(`/order/${data.order.orderNumber}/confirmation`);
-      }, 2000);
+      // Only auto-complete for non-PIX payments
+      // PIX payments will handle completion via handlePaymentSuccess when actually approved
+      if (paymentMethod !== 'pix') {
+        setOrderNumber(data.order.orderNumber);
+        setPaymentCompleted(true);
+        setPaymentError(null);
+        // Store order confirmation data
+        sessionStorage.setItem("orderConfirmation", JSON.stringify(data));
+        // Redirect to confirmation page using order number after a short delay
+        setTimeout(() => {
+          setLocation(`/order/${data.order.orderNumber}/confirmation`);
+        }, 2000);
+      }
     },
     onError: (error: any) => {
       setPaymentError(error.message || "Erro ao criar pedido");
