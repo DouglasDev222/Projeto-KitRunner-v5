@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, ChevronRight, Search, Filter, Package, Clock, Star } from "lucide-react";
+import { Calendar, MapPin, ChevronRight, Search, Filter, Package, Clock, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { formatDate } from "@/lib/brazilian-formatter";
@@ -85,12 +85,12 @@ export default function Events() {
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto bg-gray-50 min-h-screen">
-        <div className="bg-gradient-to-br from-purple-600 to-purple-700 h-40 animate-pulse"></div>
-        <div className="p-6 space-y-4">
-          <div className="h-12 bg-gray-200 rounded-lg animate-pulse"></div>
-          <div className="h-32 bg-gray-200 rounded-lg animate-pulse"></div>
+        <div className="bg-gradient-to-br from-purple-600 to-purple-700 h-32 animate-pulse"></div>
+        <div className="p-4 space-y-3">
+          <div className="h-10 bg-gray-200 rounded-xl animate-pulse"></div>
+          <div className="h-20 bg-gray-200 rounded-xl animate-pulse"></div>
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 bg-gray-200 rounded-lg animate-pulse" />
+            <div key={i} className="h-24 bg-gray-200 rounded-xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -106,74 +106,59 @@ export default function Events() {
   return (
     <div className="max-w-md mx-auto bg-gray-50 min-h-screen page-with-footer">
       
-      {/* Modern Header Section */}
-      <div className="relative bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 bg-black/10">
-          <div className="absolute top-0 left-0 w-full h-full opacity-20">
-            <div className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
-            <div className="absolute top-20 right-8 w-16 h-16 bg-white/10 rounded-full blur-xl"></div>
-            <div className="absolute bottom-10 left-1/2 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-          </div>
+      {/* Compact Mobile Header */}
+      <div className="bg-gradient-to-br from-purple-600 to-purple-700 relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 bg-black/5">
+          <div className="absolute top-4 right-4 w-12 h-12 bg-white/10 rounded-full blur-lg"></div>
+          <div className="absolute bottom-6 left-6 w-8 h-8 bg-white/10 rounded-full blur-lg"></div>
         </div>
         
-        <div className="relative px-6 pt-12 pb-8">
-          <div className="text-center text-white">
-            {/* Brand Section */}
-            <div className="mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl mb-4">
-                <Package className="w-8 h-8 text-white" />
-              </div>
-              <h1 className="text-3xl font-bold mb-2">KitRunner</h1>
-              <p className="text-purple-100 text-lg font-medium">Encontre e retire seus kits de corrida</p>
+        <div className="relative px-4 pt-8 pb-6">
+          {/* Brand */}
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-white/20 rounded-xl mb-3">
+              <Package className="w-6 h-6 text-white" />
             </div>
-            
-            {/* Search Section */}
-            <div className="relative mb-6">
-              <Search className="absolute left-4 top-4 h-5 w-5 text-gray-400 z-10" />
-              <Input
-                placeholder="Buscar por evento, local ou cidade..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 pr-16 py-4 w-full bg-white/95 backdrop-blur-sm text-gray-900 border-0 rounded-2xl shadow-xl focus:ring-2 focus:ring-white/50 focus:shadow-2xl transition-all duration-300 placeholder:text-gray-500"
-              />
-              <Button
-                size="sm"
-                variant="ghost"
-                className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-200"
-              >
-                <Filter className="h-5 w-5" />
-              </Button>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="flex items-center justify-center space-x-6 text-sm">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                <span className="text-purple-100">{availableEventsCount} disponíveis</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Star className="w-4 h-4 text-yellow-400" />
-                <span className="text-purple-100">Entrega gratuita</span>
-              </div>
-            </div>
+            <h1 className="text-2xl font-bold text-white mb-1">KitRunner</h1>
+            <p className="text-purple-100 text-sm">Encontre e retire seus kits</p>
+          </div>
+          
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400 z-10" />
+            <Input
+              placeholder="Buscar eventos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-12 py-3 w-full bg-white/95 text-gray-900 border-0 rounded-xl shadow-sm focus:ring-2 focus:ring-white/30 placeholder:text-gray-500"
+            />
+            <Button
+              size="sm"
+              variant="ghost"
+              className="absolute right-2 top-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+            >
+              <Filter className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Status Card - Floating */}
-      <div className="px-6 -mt-6 relative z-10 mb-6">
-        <Card className="bg-white border-0 shadow-2xl rounded-3xl overflow-hidden backdrop-blur-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-4 rounded-2xl shadow-lg">
-                <Package className="h-8 w-8 text-white" />
+      {/* Quick Stats */}
+      <div className="px-4 -mt-3 relative z-10 mb-4">
+        <Card className="bg-white border-0 shadow-lg rounded-xl">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-3 rounded-xl">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Seus kits prontos!</h3>
+                  <p className="text-gray-600 text-sm">Confira os eventos disponíveis</p>
+                </div>
               </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-gray-900 mb-1">Seus kits estão prontos!</h3>
-                <p className="text-gray-600 text-sm">Confira os eventos disponíveis para retirada</p>
-              </div>
-              <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 px-4 py-2 rounded-full shadow-lg">
+              <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 px-3 py-1 rounded-full">
                 {availableEventsCount} kit{availableEventsCount !== 1 ? 's' : ''}
               </Badge>
             </div>
@@ -181,89 +166,79 @@ export default function Events() {
         </Card>
       </div>
 
-      <main className="px-6 pb-8">
-        {/* Enhanced Filter Section */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Filtrar eventos</h2>
-          <div className="flex gap-3 overflow-x-auto pb-2">
+      <main className="px-4 pb-8">
+        {/* Mobile Filter Tabs */}
+        <div className="mb-6">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
             <Button
               variant={filterType === "all" ? "default" : "outline"}
               size="sm"
               onClick={() => setFilterType("all")}
-              className={`whitespace-nowrap rounded-full px-6 py-3 font-medium transition-all duration-300 ${
+              className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 filterType === "all" 
-                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg transform scale-105" 
-                  : "border-gray-200 hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700"
+                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md" 
+                  : "border-gray-200 hover:border-purple-300 hover:bg-purple-50"
               }`}
             >
-              Todos os Eventos
+              Todos
             </Button>
             <Button
               variant={filterType === "week" ? "default" : "outline"}
               size="sm"
               onClick={() => setFilterType("week")}
-              className={`whitespace-nowrap rounded-full px-6 py-3 font-medium transition-all duration-300 ${
+              className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 filterType === "week" 
-                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg transform scale-105" 
-                  : "border-gray-200 hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700"
+                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md" 
+                  : "border-gray-200 hover:border-purple-300 hover:bg-purple-50"
               }`}
             >
-              <Clock className="h-4 w-4 mr-2" />
-              Esta Semana
+              <Clock className="h-3 w-3 mr-1" />
+              Semana
             </Button>
             <Button
               variant={filterType === "month" ? "default" : "outline"}
               size="sm"
               onClick={() => setFilterType("month")}
-              className={`whitespace-nowrap rounded-full px-6 py-3 font-medium transition-all duration-300 ${
+              className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 filterType === "month" 
-                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg transform scale-105" 
-                  : "border-gray-200 hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700"
+                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md" 
+                  : "border-gray-200 hover:border-purple-300 hover:bg-purple-50"
               }`}
             >
-              <Calendar className="h-4 w-4 mr-2" />
-              Este Mês
+              <Calendar className="h-3 w-3 mr-1" />
+              Mês
             </Button>
           </div>
         </div>
 
-        {/* Results Summary */}
+        {/* Results Info */}
         {(searchTerm || filterType !== "all") && (
-          <div className="mb-6 p-5 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl border border-blue-100/50 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-base font-semibold text-blue-900 mb-1">
-                  {filteredAndSortedEvents.length} evento{filteredAndSortedEvents.length !== 1 ? 's' : ''} encontrado{filteredAndSortedEvents.length !== 1 ? 's' : ''}
-                </p>
-                {searchTerm && (
-                  <p className="text-sm text-blue-700">
-                    Resultados para "<span className="font-medium">{searchTerm}</span>"
-                  </p>
-                )}
-              </div>
-              {availableEventsCount > 0 && (
-                <Badge className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white border-0 px-3 py-1 rounded-full">
-                  {availableEventsCount} disponível{availableEventsCount !== 1 ? 'eis' : ''}
-                </Badge>
-              )}
-            </div>
+          <div className="mb-4 p-3 bg-blue-50 rounded-xl border border-blue-100">
+            <p className="text-sm font-medium text-blue-900">
+              {filteredAndSortedEvents.length} evento{filteredAndSortedEvents.length !== 1 ? 's' : ''} encontrado{filteredAndSortedEvents.length !== 1 ? 's' : ''}
+            </p>
+            {searchTerm && (
+              <p className="text-xs text-blue-700 mt-1">
+                Busca por "{searchTerm}"
+              </p>
+            )}
           </div>
         )}
 
-        {/* Enhanced Empty States */}
+        {/* Empty States */}
         {filteredAndSortedEvents.length === 0 && searchTerm && (
-          <div className="text-center py-20">
-            <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-full p-8 w-32 h-32 mx-auto mb-8 flex items-center justify-center shadow-lg">
-              <Search className="h-12 w-12 text-gray-400" />
+          <div className="text-center py-16">
+            <div className="bg-gray-100 rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+              <Search className="h-8 w-8 text-gray-400" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">Nenhum evento encontrado</h3>
-            <p className="text-gray-600 mb-6 text-lg">
-              Não encontramos eventos com "<span className="font-medium">{searchTerm}</span>"
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum evento encontrado</h3>
+            <p className="text-gray-600 mb-4 text-sm">
+              Não encontramos eventos com "{searchTerm}"
             </p>
             <Button 
               variant="outline" 
               onClick={() => setSearchTerm("")}
-              className="rounded-full px-8 py-3 border-2 border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300 transition-all duration-300"
+              className="rounded-full px-6 py-2 text-sm"
             >
               Limpar busca
             </Button>
@@ -271,28 +246,28 @@ export default function Events() {
         )}
 
         {filteredAndSortedEvents.length === 0 && !searchTerm && filterType !== "all" && (
-          <div className="text-center py-20">
-            <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-full p-8 w-32 h-32 mx-auto mb-8 flex items-center justify-center shadow-lg">
-              <Calendar className="h-12 w-12 text-gray-400" />
+          <div className="text-center py-16">
+            <div className="bg-gray-100 rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+              <Calendar className="h-8 w-8 text-gray-400" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">
-              Nenhum evento {filterType === "week" ? "nesta semana" : "neste mês"}
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Nenhum evento {filterType === "week" ? "esta semana" : "este mês"}
             </h3>
-            <p className="text-gray-600 mb-6 text-lg">
-              Experimente selecionar "Todos os Eventos"
+            <p className="text-gray-600 mb-4 text-sm">
+              Experimente ver todos os eventos
             </p>
             <Button 
               variant="outline" 
               onClick={() => setFilterType("all")}
-              className="rounded-full px-8 py-3 border-2 border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300 transition-all duration-300"
+              className="rounded-full px-6 py-2 text-sm"
             >
-              Ver todos os eventos
+              Ver todos
             </Button>
           </div>
         )}
 
-        {/* Enhanced Events List */}
-        <div className="space-y-5">
+        {/* Mobile-Optimized Events List */}
+        <div className="space-y-3">
           {filteredAndSortedEvents.map((event) => {
             const [year, month, day] = event.date.split('-');
             const eventDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -303,70 +278,55 @@ export default function Events() {
             return (
               <Card
                 key={event.id}
-                className={`cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 border-0 shadow-lg rounded-3xl overflow-hidden group ${
+                className={`cursor-pointer transition-all duration-200 hover:shadow-lg border-0 shadow-sm rounded-xl overflow-hidden ${
                   isPastEvent ? "opacity-70" : ""
                 } ${event.available ? "bg-white" : "bg-gray-50"}`}
                 onClick={() => handleEventClick(event.id)}
               >
-                <CardContent className="p-0 relative">
-                  {/* Enhanced Status Bar */}
-                  <div className={`h-2 w-full ${
+                <CardContent className="p-4 relative">
+                  {/* Status indicator */}
+                  <div className={`absolute top-0 left-0 w-1 h-full ${
                     event.available 
-                      ? "bg-gradient-to-r from-green-400 via-emerald-500 to-green-600" 
-                      : "bg-gradient-to-r from-gray-300 via-gray-400 to-gray-500"
+                      ? "bg-gradient-to-b from-green-400 to-emerald-500" 
+                      : "bg-gradient-to-b from-gray-300 to-gray-400"
                   }`} />
                   
-                  {/* Hover Effect Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 to-indigo-500/0 group-hover:from-purple-500/5 group-hover:to-indigo-500/5 transition-all duration-300 pointer-events-none" />
-                  
-                  <div className="p-7 relative">
-                    <div className="flex items-start justify-between">
+                  <div className="pl-3">
+                    <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-4">
-                          <h3 className="font-bold text-xl text-gray-900 truncate group-hover:text-purple-700 transition-colors duration-300">
-                            {event.name}
-                          </h3>
-                          {isPastEvent && (
-                            <Badge variant="secondary" className="text-xs bg-gray-200 text-gray-600 rounded-full px-3 py-1">
-                              Finalizado
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        <div className="space-y-4 mb-6">
-                          <div className="flex items-center text-gray-600">
-                            <div className="bg-purple-100 p-2 rounded-xl mr-4">
-                              <Calendar className="w-5 h-5 text-purple-600" />
-                            </div>
-                            <span className="text-base font-medium">{formatDate(event.date)}</span>
-                          </div>
-                          <div className="flex items-center text-gray-600">
-                            <div className="bg-purple-100 p-2 rounded-xl mr-4">
-                              <MapPin className="w-5 h-5 text-purple-600" />
-                            </div>
-                            <span className="text-base truncate">{event.location}, {event.city} - {event.state}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <Badge
-                            variant={event.available ? "default" : "secondary"}
-                            className={`rounded-full px-5 py-2 font-semibold text-sm ${
-                              event.available 
-                                ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-md" 
-                                : "bg-gray-200 text-gray-600 border-0"
-                            }`}
-                          >
-                            {event.available ? "✓ Disponível para retirada" : "⏳ Em breve"}
+                        <h3 className="font-semibold text-base text-gray-900 truncate mb-1">
+                          {event.name}
+                        </h3>
+                        {isPastEvent && (
+                          <Badge variant="secondary" className="text-xs bg-gray-200 text-gray-600 rounded-full mb-2">
+                            Finalizado
                           </Badge>
-                        </div>
+                        )}
                       </div>
-                      <div className="ml-6 flex items-center">
-                        <div className="bg-purple-100 group-hover:bg-purple-200 p-3 rounded-2xl transition-all duration-300">
-                          <ChevronRight className="w-6 h-6 text-purple-600 group-hover:translate-x-1 transition-transform duration-300" />
-                        </div>
+                      <ChevronRight className="w-5 h-5 text-gray-400 ml-2 flex-shrink-0" />
+                    </div>
+                    
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center text-gray-600 text-sm">
+                        <Calendar className="w-4 h-4 mr-2 text-purple-500" />
+                        <span>{formatDate(event.date)}</span>
+                      </div>
+                      <div className="flex items-center text-gray-600 text-sm">
+                        <MapPin className="w-4 h-4 mr-2 text-purple-500" />
+                        <span className="truncate">{event.location}, {event.city} - {event.state}</span>
                       </div>
                     </div>
+                    
+                    <Badge
+                      variant={event.available ? "default" : "secondary"}
+                      className={`text-xs rounded-full px-3 py-1 ${
+                        event.available 
+                          ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0" 
+                          : "bg-gray-200 text-gray-600 border-0"
+                      }`}
+                    >
+                      {event.available ? "✓ Disponível" : "⏳ Em breve"}
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>
@@ -374,11 +334,11 @@ export default function Events() {
           })}
         </div>
 
-        {/* Show some events message when there are results */}
+        {/* Results count */}
         {filteredAndSortedEvents.length > 0 && (
-          <div className="text-center mt-8 py-6">
-            <p className="text-gray-500 text-sm">
-              Mostrando {filteredAndSortedEvents.length} evento{filteredAndSortedEvents.length !== 1 ? 's' : ''}
+          <div className="text-center mt-6 py-4">
+            <p className="text-gray-500 text-xs">
+              {filteredAndSortedEvents.length} evento{filteredAndSortedEvents.length !== 1 ? 's' : ''} listado{filteredAndSortedEvents.length !== 1 ? 's' : ''}
             </p>
           </div>
         )}
