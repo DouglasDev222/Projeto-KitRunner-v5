@@ -2892,19 +2892,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await db
         .update(orders)
         .set({
-          paymentId: pixPayment.id.toString(),
+          paymentId: (pixPayment.id || pixPayment.paymentId)?.toString() || null,
           pixQrCode: pixPayment.qr_code_base64 || null,
           pixCopyPaste: pixPayment.qr_code || null,
           pixExpirationDate: pixExpiration,
           paymentCreatedAt: order.paymentCreatedAt || new Date() // Keep original creation time
         })
-        .where(eq(storage.orders.id, order.id));
+        .where(eq(orders.id, order.id));
 
       res.json({
         success: true,
-        paymentId: pixPayment.id,
-        qrCodeBase64: pixPayment.qr_code_base64,
-        pixCopyPaste: pixPayment.qr_code,
+        paymentId: pixPayment.id || pixPayment.paymentId,
+        qrCodeBase64: pixPayment.qr_code_base64 || pixPayment.qrCodeBase64,
+        pixCopyPaste: pixPayment.qr_code || pixPayment.pixCopyPaste,
         expirationDate: pixExpiration.toISOString(),
         message: "PIX renovado com sucesso"
       });
