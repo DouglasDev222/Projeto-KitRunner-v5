@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, ChevronRight, Search, Filter, Package } from "lucide-react";
+import { Calendar, MapPin, ChevronRight, Search, Filter, Package, Clock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { formatDate } from "@/lib/brazilian-formatter";
@@ -84,15 +84,20 @@ export default function Events() {
 
   if (isLoading) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header />
-        <div className="bg-gradient-to-br from-purple-600 to-purple-700 px-6 py-8 text-white">
-          <div className="animate-pulse">
-            <div className="h-8 bg-purple-300 rounded w-3/4 mb-4"></div>
-            <div className="h-4 bg-purple-300 rounded w-1/2"></div>
+      <div className="max-w-md mx-auto bg-gray-50 min-h-screen">
+        <div className="bg-gradient-to-br from-purple-600 to-purple-700 px-6 py-12">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-purple-300 rounded-lg w-3/4 mx-auto"></div>
+            <div className="h-4 bg-purple-300 rounded w-1/2 mx-auto"></div>
           </div>
         </div>
-        <div className="p-4">
+        <div className="bg-white px-6 py-8">
+          <div className="animate-pulse">
+            <div className="h-12 bg-gray-200 rounded-lg mb-6"></div>
+            <div className="h-32 bg-gray-200 rounded-lg"></div>
+          </div>
+        </div>
+        <div className="p-6">
           <div className="animate-pulse space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-24 bg-gray-200 rounded-lg" />
@@ -110,110 +115,163 @@ export default function Events() {
   const availableEventsCount = filteredAndSortedEvents.filter(event => event.available).length;
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen page-with-footer">
+    <div className="max-w-md mx-auto bg-gray-50 min-h-screen page-with-footer">
       
-      {/* Hero Section - Split Layout */}
-      <div className="relative">
-        {/* Purple Background - Top Half */}
-        <div className="bg-gradient-to-br from-purple-600 to-purple-700 px-6 pt-8 pb-4 text-white">
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold mb-2">KitRunner</h1>
-            <p className="text-purple-100">Encontre e retire seus kits de corrida</p>
-          </div>
-        </div>
-
-        {/* White Background - Bottom Half with Search */}
-        <div className="bg-white px-6 pt-2 pb-6">
-          {/* Search Input */}
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+      {/* Header Section */}
+      <div className="bg-gradient-to-br from-purple-600 to-purple-700 px-6 pt-12 pb-8">
+        <div className="text-center text-white">
+          <h1 className="text-3xl font-bold mb-3">KitRunner</h1>
+          <p className="text-purple-100 text-lg mb-8">Encontre e retire seus kits de corrida</p>
+          
+          {/* Search Section */}
+          <div className="relative">
+            <Search className="absolute left-4 top-4 h-5 w-5 text-gray-400" />
             <Input
-              placeholder="Buscar eventos por nome, local..."
+              placeholder="Buscar por evento, local ou cidade..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-3 w-full bg-white text-gray-900 border border-gray-200 focus:ring-2 focus:ring-purple-300 shadow-sm"
+              className="pl-12 pr-16 py-4 w-full bg-white text-gray-900 border-0 rounded-xl shadow-lg focus:ring-2 focus:ring-purple-300 focus:shadow-xl transition-all duration-200"
             />
             <Button
               size="sm"
               variant="ghost"
-              className="absolute right-2 top-2 text-gray-500 hover:text-gray-700"
+              className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
             >
-              <Filter className="h-4 w-4" />
+              <Filter className="h-5 w-5" />
             </Button>
           </div>
-
-          {/* Status Card */}
-          <Card className="bg-purple-500 border-purple-400 text-white">
-            <CardContent className="p-6 text-center">
-              <Package className="h-12 w-12 mx-auto mb-4 text-purple-100" />
-              <h3 className="text-lg font-semibold mb-2">Seus kits estão prontos!</h3>
-              <p className="text-purple-100 text-sm">
-                Confira os eventos disponíveis para retirada
-              </p>
-            </CardContent>
-          </Card>
         </div>
       </div>
 
-      <main className="p-4">
-        {/* Filter Buttons */}
-        <div className="flex gap-2 mb-6">
-          <Button
-            variant={filterType === "week" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilterType("week")}
-            className={filterType === "week" ? "bg-purple-600 hover:bg-purple-700" : "border-purple-200"}
-          >
-            Esta Semana
-          </Button>
-          <Button
-            variant={filterType === "month" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilterType("month")}
-            className={filterType === "month" ? "bg-purple-600 hover:bg-purple-700" : "border-purple-200"}
-          >
-            Este Mês
-          </Button>
-          <Button
-            variant={filterType === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilterType("all")}
-            className={filterType === "all" ? "bg-purple-600 hover:bg-purple-700" : "border-purple-200"}
-          >
-            Todos
-          </Button>
+      {/* Status Card */}
+      <div className="px-6 -mt-8 relative z-10">
+        <Card className="bg-white border-0 shadow-xl rounded-2xl overflow-hidden">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="bg-purple-100 p-3 rounded-xl">
+                  <Package className="h-8 w-8 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Seus kits estão prontos!</h3>
+                  <p className="text-gray-600 text-sm">Confira os eventos disponíveis</p>
+                </div>
+              </div>
+              <Badge className="bg-green-100 text-green-700 border-green-200 px-3 py-1">
+                {availableEventsCount} disponível{availableEventsCount !== 1 ? 'eis' : ''}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <main className="px-6 pt-6 pb-8">
+        {/* Filter Section */}
+        <div className="mb-6">
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            <Button
+              variant={filterType === "all" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilterType("all")}
+              className={`whitespace-nowrap rounded-full px-4 py-2 transition-all duration-200 ${
+                filterType === "all" 
+                  ? "bg-purple-600 hover:bg-purple-700 text-white shadow-md" 
+                  : "border-gray-200 hover:border-purple-300 hover:bg-purple-50"
+              }`}
+            >
+              Todos os Eventos
+            </Button>
+            <Button
+              variant={filterType === "week" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilterType("week")}
+              className={`whitespace-nowrap rounded-full px-4 py-2 transition-all duration-200 ${
+                filterType === "week" 
+                  ? "bg-purple-600 hover:bg-purple-700 text-white shadow-md" 
+                  : "border-gray-200 hover:border-purple-300 hover:bg-purple-50"
+              }`}
+            >
+              <Clock className="h-4 w-4 mr-1" />
+              Esta Semana
+            </Button>
+            <Button
+              variant={filterType === "month" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilterType("month")}
+              className={`whitespace-nowrap rounded-full px-4 py-2 transition-all duration-200 ${
+                filterType === "month" 
+                  ? "bg-purple-600 hover:bg-purple-700 text-white shadow-md" 
+                  : "border-gray-200 hover:border-purple-300 hover:bg-purple-50"
+              }`}
+            >
+              <Calendar className="h-4 w-4 mr-1" />
+              Este Mês
+            </Button>
+          </div>
         </div>
 
         {/* Results Summary */}
-        <div className="mb-4">
-          <p className="text-sm text-gray-600">
-            {searchTerm && `Resultados para "${searchTerm}" • `}
-            {filteredAndSortedEvents.length} evento(s) encontrado(s)
-            {availableEventsCount > 0 && ` • ${availableEventsCount} disponível(eis)`}
-          </p>
-        </div>
+        {(searchTerm || filterType !== "all") && (
+          <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-900">
+                  {filteredAndSortedEvents.length} evento{filteredAndSortedEvents.length !== 1 ? 's' : ''} encontrado{filteredAndSortedEvents.length !== 1 ? 's' : ''}
+                </p>
+                {searchTerm && (
+                  <p className="text-xs text-blue-700 mt-1">
+                    Resultados para "{searchTerm}"
+                  </p>
+                )}
+              </div>
+              {availableEventsCount > 0 && (
+                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                  {availableEventsCount} disponível{availableEventsCount !== 1 ? 'eis' : ''}
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Events List */}
         <div className="space-y-4">
           {filteredAndSortedEvents.length === 0 && searchTerm && (
-            <div className="text-center py-12">
-              <Package className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-600 mb-2">Nenhum evento encontrado</p>
-              <p className="text-sm text-gray-500">
-                Tente buscar por nome, local ou cidade
+            <div className="text-center py-16">
+              <div className="bg-gray-100 rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+                <Search className="h-10 w-10 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum evento encontrado</h3>
+              <p className="text-gray-600 mb-4">
+                Não encontramos eventos com "{searchTerm}"
               </p>
+              <Button 
+                variant="outline" 
+                onClick={() => setSearchTerm("")}
+                className="rounded-full"
+              >
+                Limpar busca
+              </Button>
             </div>
           )}
 
           {filteredAndSortedEvents.length === 0 && !searchTerm && filterType !== "all" && (
-            <div className="text-center py-12">
-              <Calendar className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-600 mb-2">
+            <div className="text-center py-16">
+              <div className="bg-gray-100 rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+                <Calendar className="h-10 w-10 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Nenhum evento {filterType === "week" ? "nesta semana" : "neste mês"}
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Experimente selecionar "Todos os Eventos"
               </p>
-              <p className="text-sm text-gray-500">
-                Tente selecionar "Todos" para ver mais eventos
-              </p>
+              <Button 
+                variant="outline" 
+                onClick={() => setFilterType("all")}
+                className="rounded-full"
+              >
+                Ver todos os eventos
+              </Button>
             </div>
           )}
 
@@ -227,50 +285,57 @@ export default function Events() {
             return (
               <Card
                 key={event.id}
-                className={`cursor-pointer transition-all duration-200 hover:shadow-lg border-l-4 ${
-                  event.available 
-                    ? "border-l-purple-500 hover:border-l-purple-600" 
-                    : "border-l-gray-300"
-                } ${isPastEvent ? "opacity-70" : ""}`}
+                className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1 border-0 shadow-md rounded-2xl overflow-hidden ${
+                  isPastEvent ? "opacity-60" : ""
+                }`}
                 onClick={() => handleEventClick(event.id)}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-lg text-gray-800">{event.name}</h3>
-                        {isPastEvent && (
-                          <Badge variant="secondary" className="text-xs">
-                            Passado
+                <CardContent className="p-0">
+                  {/* Event Status Bar */}
+                  <div className={`h-1 w-full ${
+                    event.available 
+                      ? "bg-gradient-to-r from-green-400 to-green-500" 
+                      : "bg-gradient-to-r from-gray-300 to-gray-400"
+                  }`} />
+                  
+                  <div className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-3">
+                          <h3 className="font-semibold text-xl text-gray-900 truncate">{event.name}</h3>
+                          {isPastEvent && (
+                            <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600">
+                              Finalizado
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-3 mb-4">
+                          <div className="flex items-center text-gray-600">
+                            <Calendar className="w-5 h-5 mr-3 text-purple-500 flex-shrink-0" />
+                            <span className="text-sm font-medium">{formatDate(event.date)}</span>
+                          </div>
+                          <div className="flex items-center text-gray-600">
+                            <MapPin className="w-5 h-5 mr-3 text-purple-500 flex-shrink-0" />
+                            <span className="text-sm truncate">{event.location}, {event.city} - {event.state}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <Badge
+                            variant={event.available ? "default" : "secondary"}
+                            className={`rounded-full px-3 py-1 font-medium ${
+                              event.available 
+                                ? "bg-green-100 text-green-700 border-green-200" 
+                                : "bg-gray-100 text-gray-600 border-gray-200"
+                            }`}
+                          >
+                            {event.available ? "Disponível para retirada" : "Em breve"}
                           </Badge>
-                        )}
+                        </div>
                       </div>
-                      
-                      <div className="space-y-2 mb-3">
-                        <p className="text-gray-600 text-sm flex items-center">
-                          <Calendar className="w-4 h-4 mr-2 text-purple-500" />
-                          {formatDate(event.date)}
-                        </p>
-                        <p className="text-gray-600 text-sm flex items-center">
-                          <MapPin className="w-4 h-4 mr-2 text-purple-500" />
-                          {event.location}, {event.city} - {event.state}
-                        </p>
-                      </div>
-                      
-                      <div className="flex items-center">
-                        <Badge
-                          variant={event.available ? "default" : "secondary"}
-                          className={
-                            event.available 
-                              ? "bg-purple-100 text-purple-800 hover:bg-purple-200" 
-                              : "bg-gray-100 text-gray-600"
-                          }
-                        >
-                          {event.available ? "Disponível" : "Em Breve"}
-                        </Badge>
-                      </div>
+                      <ChevronRight className="w-6 h-6 text-gray-400 ml-4 flex-shrink-0" />
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 ml-4 flex-shrink-0" />
                   </div>
                 </CardContent>
               </Card>
@@ -278,6 +343,7 @@ export default function Events() {
           })}
         </div>
       </main>
+      
       <Footer />
     </div>
   );
