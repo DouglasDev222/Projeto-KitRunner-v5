@@ -1923,11 +1923,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (result) {
         console.log(`💳 PIX payment created for order ${orderId} (${order.orderNumber}) - Payment ID: ${result.id}`);
 
-        // Update order status to awaiting payment
+        // Calculate PIX expiration date (30 minutes from now) with proper timezone handling
+        const pixExpiration = new Date();
+        pixExpiration.setMinutes(pixExpiration.getMinutes() + 30);
+        
+        // Current timestamp for payment creation tracking
+        const paymentCreatedAt = new Date();
+
+        // Update order with PIX payment data and status
         try {
-          console.log(`Status: aguardando_pagamento`);
-        } catch (error) {
-          console.log('Note: Order status update temporarily disabled for testing');
+          await db
+            .update(orders)
+            .set({
+              status: 'aguardando_pagamento',
+              paymentId: result.id?.toString() || null,
+              pixQrCode: result.qr_code_base64 || null,
+              pixCopyPaste: result.qr_code || null,
+              pixExpirationDate: pixExpiration,
+              paymentCreatedAt: paymentCreatedAt
+            })
+            .where(eq(orders.id, order.id));
+          
+          console.log(`✅ Order ${order.orderNumber} updated with PIX data and status: aguardando_pagamento`);
+          console.log(`📅 PIX expiration set to: ${pixExpiration.toISOString()}`);
+          console.log(`📅 Payment created at: ${paymentCreatedAt.toISOString()}`);
+        } catch (updateError) {
+          console.error('Error updating order with PIX data:', updateError);
         }
 
         res.json({
@@ -1935,7 +1956,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           paymentId: result.id,
           qrCode: result.qr_code,
           qrCodeBase64: result.qr_code_base64,
-          ticketUrl: result.ticket_url
+          ticketUrl: result.ticket_url,
+          expirationDate: pixExpiration.toISOString()
         });
       } else {
         res.status(400).json({
