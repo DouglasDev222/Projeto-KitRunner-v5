@@ -360,14 +360,16 @@ export default function Events() {
                     </div>
 
                     <Badge
-                      variant={event.available ? "default" : "secondary"}
+                      variant={isPastEvent && event.available ? "secondary" : event.available ? "default" : "secondary"}
                       className={`text-xs rounded-full px-3 py-1 ${
-                        event.available
+                        isPastEvent && event.available
+                          ? "bg-gray-200 text-gray-600 border-0"
+                          : event.available
                           ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0"
                           : "bg-gray-200 text-gray-600 border-0"
                       }`}
                     >
-                      {event.available ? "✓ Disponível" : "⏳ Em breve"}
+                      {isPastEvent && event.available ? "✓ Finalizado" : event.available ? "✓ Disponível" : "⏳ Em breve"}
                     </Badge>
                   </div>
                 </CardContent>
