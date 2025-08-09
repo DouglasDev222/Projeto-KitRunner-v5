@@ -49,11 +49,16 @@ export default function AdminEvents() {
 
   const { data: events = [], isLoading: eventsLoading } = useQuery<Event[]>({
     queryKey: ["/api/admin/events"],
+    staleTime: 0, // Sempre busca dados frescos
+    refetchOnMount: true, // Revalida quando componente monta
+    refetchOnWindowFocus: true, // Revalida quando janela ganha foco
   });
 
   const { data: eventOrders = [], isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ["/api/admin/events", selectedEvent?.id, "orders"],
     enabled: !!selectedEvent?.id && showOrdersDialog,
+    staleTime: 0, // Sempre busca dados frescos para pedidos
+    refetchOnMount: true,
   });
 
   const toggleEventMutation = useMutation({
@@ -62,7 +67,11 @@ export default function AdminEvents() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidação abrangente para garantir reatividade completa
       queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] }); // Lista pública de eventos
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] }); // Estatísticas do dashboard
       toast({
         title: "Sucesso",
         description: "Status do evento alterado com sucesso!",
