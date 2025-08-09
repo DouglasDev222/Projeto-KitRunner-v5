@@ -1,10 +1,17 @@
-
 import { Footer } from "@/components/footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, ChevronRight, Search, Package, Clock, Users } from "lucide-react";
+import {
+  Calendar,
+  MapPin,
+  ChevronRight,
+  Search,
+  Package,
+  Clock,
+  Users,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { formatDate } from "@/lib/brazilian-formatter";
@@ -35,23 +42,28 @@ export default function Events() {
     // Get date ranges for filters
     const oneWeekFromNow = new Date();
     oneWeekFromNow.setDate(now.getDate() + 7);
-    
+
     const oneMonthFromNow = new Date();
     oneMonthFromNow.setMonth(now.getMonth() + 1);
 
     // Filter by search term
-    let filtered = events.filter(event =>
-      event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.city.toLowerCase().includes(searchTerm.toLowerCase())
+    let filtered = events.filter(
+      (event) =>
+        event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.city.toLowerCase().includes(searchTerm.toLowerCase()),
     );
 
     // Apply date filters
     if (filterType !== "all") {
-      filtered = filtered.filter(event => {
-        const [year, month, day] = event.date.split('-');
-        const eventDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        
+      filtered = filtered.filter((event) => {
+        const [year, month, day] = event.date.split("-");
+        const eventDate = new Date(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(day),
+        );
+
         if (filterType === "week") {
           return eventDate >= now && eventDate <= oneWeekFromNow;
         } else if (filterType === "month") {
@@ -63,10 +75,18 @@ export default function Events() {
 
     // Sort by date: upcoming events first
     return filtered.sort((a, b) => {
-      const [yearA, monthA, dayA] = a.date.split('-');
-      const [yearB, monthB, dayB] = b.date.split('-');
-      const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1, parseInt(dayA));
-      const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1, parseInt(dayB));
+      const [yearA, monthA, dayA] = a.date.split("-");
+      const [yearB, monthB, dayB] = b.date.split("-");
+      const dateA = new Date(
+        parseInt(yearA),
+        parseInt(monthA) - 1,
+        parseInt(dayA),
+      );
+      const dateB = new Date(
+        parseInt(yearB),
+        parseInt(monthB) - 1,
+        parseInt(dayB),
+      );
 
       const isAfuture = dateA >= now;
       const isBfuture = dateB >= now;
@@ -90,7 +110,10 @@ export default function Events() {
           <div className="h-10 bg-gray-200 rounded-xl animate-pulse"></div>
           <div className="h-20 bg-gray-200 rounded-xl animate-pulse"></div>
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 bg-gray-200 rounded-xl animate-pulse" />
+            <div
+              key={i}
+              className="h-24 bg-gray-200 rounded-xl animate-pulse"
+            />
           ))}
         </div>
       </div>
@@ -101,11 +124,12 @@ export default function Events() {
     setLocation(`/events/${eventId}`);
   };
 
-  const availableEventsCount = filteredAndSortedEvents.filter(event => event.available).length;
+  const availableEventsCount = filteredAndSortedEvents.filter(
+    (event) => event.available,
+  ).length;
 
   return (
     <div className="max-w-md mx-auto bg-gray-50 min-h-screen page-with-footer">
-      
       {/* Compact Mobile Header */}
       <div className="bg-gradient-to-br from-purple-600 to-purple-700 relative overflow-hidden">
         {/* Background decoration */}
@@ -113,7 +137,7 @@ export default function Events() {
           <div className="absolute top-4 right-4 w-12 h-12 bg-white/10 rounded-full blur-lg"></div>
           <div className="absolute bottom-6 left-6 w-8 h-8 bg-white/10 rounded-full blur-lg"></div>
         </div>
-        
+
         <div className="relative px-4 pt-8 pb-6">
           {/* Brand */}
           <div className="text-center mb-6">
@@ -121,9 +145,11 @@ export default function Events() {
               <Package className="w-6 h-6 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-1">KitRunner</h1>
-            <p className="text-purple-100 text-sm">Encontre e retire seus kits</p>
+            <p className="text-purple-100 text-sm">
+              Retirada e Entrega de Kits de Corrida
+            </p>
           </div>
-          
+
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400 z-10" />
@@ -147,12 +173,17 @@ export default function Events() {
                   <Users className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Seus kits prontos!</h3>
-                  <p className="text-gray-600 text-sm">Confira os eventos disponíveis</p>
+                  <h3 className="font-semibold text-gray-900">
+                    Receba seu kit em casa
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    Confira os eventos disponíveis
+                  </p>
                 </div>
               </div>
               <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 px-3 py-1 rounded-full">
-                {availableEventsCount} kit{availableEventsCount !== 1 ? 's' : ''}
+                {availableEventsCount} 
+                {availableEventsCount !== 1 ? "" : ""}
               </Badge>
             </div>
           </CardContent>
@@ -168,8 +199,8 @@ export default function Events() {
               size="sm"
               onClick={() => setFilterType("all")}
               className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                filterType === "all" 
-                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md" 
+                filterType === "all"
+                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md"
                   : "border-gray-200 hover:border-purple-300 hover:bg-purple-50"
               }`}
             >
@@ -180,8 +211,8 @@ export default function Events() {
               size="sm"
               onClick={() => setFilterType("week")}
               className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                filterType === "week" 
-                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md" 
+                filterType === "week"
+                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md"
                   : "border-gray-200 hover:border-purple-300 hover:bg-purple-50"
               }`}
             >
@@ -193,8 +224,8 @@ export default function Events() {
               size="sm"
               onClick={() => setFilterType("month")}
               className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                filterType === "month" 
-                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md" 
+                filterType === "month"
+                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md"
                   : "border-gray-200 hover:border-purple-300 hover:bg-purple-50"
               }`}
             >
@@ -208,7 +239,9 @@ export default function Events() {
         {(searchTerm || filterType !== "all") && (
           <div className="mb-4 p-3 bg-blue-50 rounded-xl border border-blue-100">
             <p className="text-sm font-medium text-blue-900">
-              {filteredAndSortedEvents.length} evento{filteredAndSortedEvents.length !== 1 ? 's' : ''} encontrado{filteredAndSortedEvents.length !== 1 ? 's' : ''}
+              {filteredAndSortedEvents.length} evento
+              {filteredAndSortedEvents.length !== 1 ? "s" : ""} encontrado
+              {filteredAndSortedEvents.length !== 1 ? "s" : ""}
             </p>
             {searchTerm && (
               <p className="text-xs text-blue-700 mt-1">
@@ -224,12 +257,14 @@ export default function Events() {
             <div className="bg-gray-100 rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
               <Search className="h-8 w-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum evento encontrado</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Nenhum evento encontrado
+            </h3>
             <p className="text-gray-600 mb-4 text-sm">
               Não encontramos eventos com "{searchTerm}"
             </p>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setSearchTerm("")}
               className="rounded-full px-6 py-2 text-sm"
             >
@@ -238,32 +273,39 @@ export default function Events() {
           </div>
         )}
 
-        {filteredAndSortedEvents.length === 0 && !searchTerm && filterType !== "all" && (
-          <div className="text-center py-16">
-            <div className="bg-gray-100 rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-              <Calendar className="h-8 w-8 text-gray-400" />
+        {filteredAndSortedEvents.length === 0 &&
+          !searchTerm &&
+          filterType !== "all" && (
+            <div className="text-center py-16">
+              <div className="bg-gray-100 rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+                <Calendar className="h-8 w-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Nenhum evento{" "}
+                {filterType === "week" ? "esta semana" : "este mês"}
+              </h3>
+              <p className="text-gray-600 mb-4 text-sm">
+                Experimente ver todos os eventos
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => setFilterType("all")}
+                className="rounded-full px-6 py-2 text-sm"
+              >
+                Ver todos
+              </Button>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Nenhum evento {filterType === "week" ? "esta semana" : "este mês"}
-            </h3>
-            <p className="text-gray-600 mb-4 text-sm">
-              Experimente ver todos os eventos
-            </p>
-            <Button 
-              variant="outline" 
-              onClick={() => setFilterType("all")}
-              className="rounded-full px-6 py-2 text-sm"
-            >
-              Ver todos
-            </Button>
-          </div>
-        )}
+          )}
 
         {/* Mobile-Optimized Events List */}
         <div className="space-y-3">
           {filteredAndSortedEvents.map((event) => {
-            const [year, month, day] = event.date.split('-');
-            const eventDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            const [year, month, day] = event.date.split("-");
+            const eventDate = new Date(
+              parseInt(year),
+              parseInt(month) - 1,
+              parseInt(day),
+            );
             const now = new Date();
             now.setHours(0, 0, 0, 0);
             const isPastEvent = eventDate < now;
@@ -278,12 +320,14 @@ export default function Events() {
               >
                 <CardContent className="p-4 relative">
                   {/* Status indicator */}
-                  <div className={`absolute top-0 left-0 w-1 h-full ${
-                    event.available 
-                      ? "bg-gradient-to-b from-green-400 to-emerald-500" 
-                      : "bg-gradient-to-b from-gray-300 to-gray-400"
-                  }`} />
-                  
+                  <div
+                    className={`absolute top-0 left-0 w-1 h-full ${
+                      event.available
+                        ? "bg-gradient-to-b from-green-400 to-emerald-500"
+                        : "bg-gradient-to-b from-gray-300 to-gray-400"
+                    }`}
+                  />
+
                   <div className="pl-3">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
@@ -291,14 +335,17 @@ export default function Events() {
                           {event.name}
                         </h3>
                         {isPastEvent && (
-                          <Badge variant="secondary" className="text-xs bg-gray-200 text-gray-600 rounded-full mb-2">
+                          <Badge
+                            variant="secondary"
+                            className="text-xs bg-gray-200 text-gray-600 rounded-full mb-2"
+                          >
                             Finalizado
                           </Badge>
                         )}
                       </div>
                       <ChevronRight className="w-5 h-5 text-gray-400 ml-2 flex-shrink-0" />
                     </div>
-                    
+
                     <div className="space-y-2 mb-3">
                       <div className="flex items-center text-gray-600 text-sm">
                         <Calendar className="w-4 h-4 mr-2 text-purple-500" />
@@ -306,15 +353,17 @@ export default function Events() {
                       </div>
                       <div className="flex items-center text-gray-600 text-sm">
                         <MapPin className="w-4 h-4 mr-2 text-purple-500" />
-                        <span className="truncate">{event.location}, {event.city} - {event.state}</span>
+                        <span className="truncate">
+                          {event.location}, {event.city} - {event.state}
+                        </span>
                       </div>
                     </div>
-                    
+
                     <Badge
                       variant={event.available ? "default" : "secondary"}
                       className={`text-xs rounded-full px-3 py-1 ${
-                        event.available 
-                          ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0" 
+                        event.available
+                          ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0"
                           : "bg-gray-200 text-gray-600 border-0"
                       }`}
                     >
@@ -331,12 +380,14 @@ export default function Events() {
         {filteredAndSortedEvents.length > 0 && (
           <div className="text-center mt-6 py-4">
             <p className="text-gray-500 text-xs">
-              {filteredAndSortedEvents.length} evento{filteredAndSortedEvents.length !== 1 ? 's' : ''} listado{filteredAndSortedEvents.length !== 1 ? 's' : ''}
+              {filteredAndSortedEvents.length} evento
+              {filteredAndSortedEvents.length !== 1 ? "s" : ""} listado
+              {filteredAndSortedEvents.length !== 1 ? "s" : ""}
             </p>
           </div>
         )}
       </main>
-      
+
       <Footer />
     </div>
   );
