@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, ChevronRight, Search, Filter, Package, Clock, Users } from "lucide-react";
+import { Calendar, MapPin, ChevronRight, Search, Package, Clock, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { formatDate } from "@/lib/brazilian-formatter";
@@ -131,15 +131,8 @@ export default function Events() {
               placeholder="Buscar eventos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-12 py-3 w-full bg-white/95 text-gray-900 border-0 rounded-xl shadow-sm focus:ring-2 focus:ring-white/30 placeholder:text-gray-500"
+              className="pl-10 pr-4 py-3 w-full bg-white/95 text-gray-900 border-0 rounded-xl shadow-sm focus:ring-2 focus:ring-white/30 placeholder:text-gray-500"
             />
-            <Button
-              size="sm"
-              variant="ghost"
-              className="absolute right-2 top-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-            >
-              <Filter className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </div>
