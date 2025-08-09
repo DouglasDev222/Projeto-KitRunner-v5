@@ -540,6 +540,12 @@ export class DatabaseStorage implements IStorage {
       status: orders.status,
       donationAmount: orders.donationAmount,
       createdAt: orders.createdAt,
+      // PIX payment fields
+      paymentId: orders.paymentId,
+      pixQrCode: orders.pixQrCode,
+      pixCopyPaste: orders.pixCopyPaste,
+      pixExpirationDate: orders.pixExpirationDate,
+      paymentCreatedAt: orders.paymentCreatedAt,
       customer: {
         id: customers.id,
         name: customers.name,

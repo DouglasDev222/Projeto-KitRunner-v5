@@ -1947,6 +1947,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`✅ Order ${order.orderNumber} updated with PIX data and status: aguardando_pagamento`);
           console.log(`📅 PIX expiration set to: ${pixExpiration.toISOString()}`);
           console.log(`📅 Payment created at: ${paymentCreatedAt.toISOString()}`);
+          console.log(`💾 PIX QR Code saved: ${result.qr_code_base64 ? 'Yes' : 'No'}`);
+          console.log(`💾 PIX Copy/Paste saved: ${result.qr_code ? 'Yes' : 'No'}`);
+          console.log(`💾 Payment ID saved: ${result.id}`);
         } catch (updateError) {
           console.error('Error updating order with PIX data:', updateError);
         }
@@ -2924,9 +2927,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        paymentId: pixPayment.id || pixPayment.paymentId,
-        qrCodeBase64: pixPayment.qr_code_base64 || pixPayment.qrCodeBase64,
-        pixCopyPaste: pixPayment.qr_code || pixPayment.pixCopyPaste,
+        paymentId: pixPayment.id,
+        qrCodeBase64: pixPayment.qr_code_base64,
+        pixCopyPaste: pixPayment.qr_code,
         expirationDate: pixExpiration.toISOString(),
         message: "PIX renovado com sucesso"
       });
