@@ -1,5 +1,4 @@
 
-import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -112,43 +111,48 @@ export default function Events() {
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen page-with-footer">
-      <Header />
       
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-purple-600 to-purple-700 px-6 py-8 text-white">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold mb-2">KitRunner</h1>
-          <p className="text-purple-100">Encontre e retire seus kits de corrida</p>
+      {/* Hero Section - Split Layout */}
+      <div className="relative">
+        {/* Purple Background - Top Half */}
+        <div className="bg-gradient-to-br from-purple-600 to-purple-700 px-6 pt-8 pb-4 text-white">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold mb-2">KitRunner</h1>
+            <p className="text-purple-100">Encontre e retire seus kits de corrida</p>
+          </div>
         </div>
 
-        {/* Search Input */}
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Buscar eventos por nome, local..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-3 w-full bg-white text-gray-900 border-0 focus:ring-2 focus:ring-purple-300"
-          />
-          <Button
-            size="sm"
-            variant="ghost"
-            className="absolute right-2 top-2 text-gray-500 hover:text-gray-700"
-          >
-            <Filter className="h-4 w-4" />
-          </Button>
-        </div>
+        {/* White Background - Bottom Half with Search */}
+        <div className="bg-white px-6 pt-2 pb-6">
+          {/* Search Input */}
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Buscar eventos por nome, local..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-3 w-full bg-white text-gray-900 border border-gray-200 focus:ring-2 focus:ring-purple-300 shadow-sm"
+            />
+            <Button
+              size="sm"
+              variant="ghost"
+              className="absolute right-2 top-2 text-gray-500 hover:text-gray-700"
+            >
+              <Filter className="h-4 w-4" />
+            </Button>
+          </div>
 
-        {/* Status Card */}
-        <Card className="bg-purple-500 border-purple-400 text-white">
-          <CardContent className="p-6 text-center">
-            <Package className="h-12 w-12 mx-auto mb-4 text-purple-100" />
-            <h3 className="text-lg font-semibold mb-2">Seus kits estão prontos!</h3>
-            <p className="text-purple-100 text-sm">
-              Confira os eventos disponíveis para retirada
-            </p>
-          </CardContent>
-        </Card>
+          {/* Status Card */}
+          <Card className="bg-purple-500 border-purple-400 text-white">
+            <CardContent className="p-6 text-center">
+              <Package className="h-12 w-12 mx-auto mb-4 text-purple-100" />
+              <h3 className="text-lg font-semibold mb-2">Seus kits estão prontos!</h3>
+              <p className="text-purple-100 text-sm">
+                Confira os eventos disponíveis para retirada
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <main className="p-4">
