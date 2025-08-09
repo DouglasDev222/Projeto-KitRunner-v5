@@ -335,6 +335,54 @@ export class MercadoPagoService {
   }
 
   /**
+   * Renew PIX payment - create a new PIX for existing order
+   */
+  static async renewPIXPayment(orderId: string, paymentData: PaymentData): Promise<PIXPaymentResponse | null> {
+    try {
+      console.log('🔄 Renewing PIX payment for orderId:', orderId);
+      
+      // Create new PIX payment
+      const renewedPayment = await this.createPIXPayment(paymentData);
+      
+      if (renewedPayment) {
+        console.log('✅ PIX payment renewed successfully:', renewedPayment.id);
+      } else {
+        console.log('❌ Failed to renew PIX payment');
+      }
+      
+      return renewedPayment;
+    } catch (error) {
+      console.error('PIX renewal error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Check if PIX QR code is still valid (30 minutes)
+   */
+  static isPixExpired(expirationDate: string | null): boolean {
+    if (!expirationDate) return true;
+    
+    const expiration = new Date(expirationDate);
+    const now = new Date();
+    
+    return now > expiration;
+  }
+
+  /**
+   * Check if order payment is expired (24 hours)
+   */
+  static isPaymentTimeout(paymentCreatedAt: string | null): boolean {
+    if (!paymentCreatedAt) return false;
+    
+    const created = new Date(paymentCreatedAt);
+    const now = new Date();
+    const diffHours = (now.getTime() - created.getTime()) / (1000 * 60 * 60);
+    
+    return diffHours >= 24;
+  }
+
+  /**
    * Get public key for frontend
    */
   static getPublicKey() {

@@ -4,7 +4,7 @@ import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { db } from "./db";
 import { sql, eq, and } from "drizzle-orm";
-import { customerIdentificationSchema, customerRegistrationSchema, customerProfileEditSchema, orderCreationSchema, adminEventCreationSchema, insertCepZoneSchema, eventCepZonePrices, cepZones, events } from "@shared/schema";
+import { customerIdentificationSchema, customerRegistrationSchema, customerProfileEditSchema, orderCreationSchema, adminEventCreationSchema, insertCepZoneSchema, eventCepZonePrices, cepZones, events, orders } from "@shared/schema";
 import { z } from "zod";
 import { calculateDeliveryCost } from "./distance-calculator";
 import { calculateCepZonePrice, calculateCepZoneInfo } from "./cep-zones-calculator";
@@ -12,6 +12,7 @@ import { MercadoPagoService, getPublicKey } from "./mercadopago-service";
 import { EmailService } from "./email/email-service";
 import { EmailDataMapper } from "./email/email-data-mapper";
 import { PaymentReminderScheduler } from "./email/payment-reminder-scheduler";
+import { paymentTimeoutScheduler } from "./payment-timeout-scheduler";
 import path from "path";
 import crypto from "crypto";
 import { requireAuth, requireAdmin, requireOwnership, type AuthenticatedRequest } from './middleware/auth';
@@ -95,6 +96,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const emailService = new EmailService(storage);
   PaymentReminderScheduler.initialize(emailService, storage);
   console.log('📧 Payment Reminder Scheduler initialized');
+
+  // Initialize payment timeout scheduler
+  paymentTimeoutScheduler.start();
+  console.log('⏰ Payment Timeout Scheduler initialized');
 
   // Apply general rate limiting to all API routes
   app.use('/api', generalRateLimit);
@@ -2810,6 +2815,213 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error checking CEP zone:", error);
       res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Renew PIX payment for existing order
+  app.post("/api/orders/:orderNumber/renew-pix", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { orderNumber } = req.params;
+      
+      // Get order details
+      const order = await storage.getOrderByNumber(orderNumber);
+      if (!order) {
+        return res.status(404).json({ message: "Pedido não encontrado" });
+      }
+
+      // Verify ownership
+      if (order.customerId !== req.user?.id) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      // Check if order status allows payment renewal
+      if (order.status !== "aguardando_pagamento") {
+        return res.status(400).json({ 
+          message: "Pedido não está aguardando pagamento",
+          currentStatus: order.status 
+        });
+      }
+
+      // Check if payment timed out (24 hours)
+      if (MercadoPagoService.isPaymentTimeout(order.paymentCreatedAt?.toISOString() || null)) {
+        // Auto-cancel the order
+        await storage.updateOrderStatus(order.id, "cancelado", "system", "Pagamento expirou (24h)");
+        return res.status(400).json({ 
+          message: "Tempo limite de pagamento expirado (24 horas). Pedido cancelado automaticamente."
+        });
+      }
+
+      // Get customer and event details for payment
+      const customer = await storage.getCustomer(order.customerId);
+      const event = await storage.getEvent(order.eventId);
+
+      if (!customer || !event) {
+        return res.status(404).json({ message: "Dados do pedido não encontrados" });
+      }
+
+      // Prepare payment data
+      const paymentData = {
+        paymentMethodId: "pix",
+        email: customer.email,
+        amount: parseFloat(order.totalCost),
+        description: `Kit ${event.name} - Pedido #${order.orderNumber}`,
+        orderId: order.orderNumber,
+        payer: {
+          name: customer.name.split(' ')[0] || customer.name,
+          surname: customer.name.split(' ').slice(1).join(' ') || '',
+          email: customer.email,
+          identification: {
+            type: "CPF",
+            number: customer.cpf.replace(/\D/g, '')
+          }
+        }
+      };
+
+      // Create new PIX payment
+      const pixPayment = await MercadoPagoService.renewPIXPayment(order.orderNumber, paymentData);
+      
+      if (!pixPayment) {
+        return res.status(500).json({ message: "Erro ao renovar pagamento PIX" });
+      }
+
+      // Calculate new expiration date (30 minutes from now)
+      const pixExpiration = new Date();
+      pixExpiration.setMinutes(pixExpiration.getMinutes() + 30);
+
+      // Update order with new PIX data
+      await db
+        .update(orders)
+        .set({
+          paymentId: pixPayment.id.toString(),
+          pixQrCode: pixPayment.qr_code_base64 || null,
+          pixCopyPaste: pixPayment.qr_code || null,
+          pixExpirationDate: pixExpiration,
+          paymentCreatedAt: order.paymentCreatedAt || new Date() // Keep original creation time
+        })
+        .where(eq(storage.orders.id, order.id));
+
+      res.json({
+        success: true,
+        paymentId: pixPayment.id,
+        qrCodeBase64: pixPayment.qr_code_base64,
+        pixCopyPaste: pixPayment.qr_code,
+        expirationDate: pixExpiration.toISOString(),
+        message: "PIX renovado com sucesso"
+      });
+
+    } catch (error) {
+      console.error('Error renewing PIX payment:', error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Change payment method for existing order
+  app.put("/api/orders/:orderNumber/payment-method", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { orderNumber } = req.params;
+      const { newPaymentMethod } = req.body;
+
+      if (!["credit", "debit", "pix"].includes(newPaymentMethod)) {
+        return res.status(400).json({ message: "Método de pagamento inválido" });
+      }
+
+      // Get order details
+      const order = await storage.getOrderByNumber(orderNumber);
+      if (!order) {
+        return res.status(404).json({ message: "Pedido não encontrado" });
+      }
+
+      // Verify ownership
+      if (order.customerId !== req.user?.id) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      // Check if order status allows payment method change
+      if (order.status !== "aguardando_pagamento") {
+        return res.status(400).json({ 
+          message: "Não é possível alterar método de pagamento deste pedido",
+          currentStatus: order.status 
+        });
+      }
+
+      // Update payment method in database
+      await db
+        .update(orders)
+        .set({
+          paymentMethod: newPaymentMethod,
+          // Clear PIX data when switching to card payment
+          paymentId: newPaymentMethod === "pix" ? order.paymentId : null,
+          pixQrCode: newPaymentMethod === "pix" ? order.pixQrCode : null,
+          pixCopyPaste: newPaymentMethod === "pix" ? order.pixCopyPaste : null,
+          pixExpirationDate: newPaymentMethod === "pix" ? order.pixExpirationDate : null
+        })
+        .where(eq(orders.id, order.id));
+
+      res.json({
+        success: true,
+        newPaymentMethod,
+        message: "Método de pagamento alterado com sucesso",
+        redirectToPayment: newPaymentMethod !== "pix" // Redirect to payment page for cards
+      });
+
+    } catch (error) {
+      console.error('Error changing payment method:', error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Get detailed payment status for order
+  app.get("/api/orders/:orderNumber/payment-status", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { orderNumber } = req.params;
+      
+      // Get order details
+      const order = await storage.getOrderByNumber(orderNumber);
+      if (!order) {
+        return res.status(404).json({ message: "Pedido não encontrado" });
+      }
+
+      // Verify ownership
+      if (order.customerId !== req.user?.id) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const response: any = {
+        orderStatus: order.status,
+        paymentMethod: order.paymentMethod,
+        totalAmount: parseFloat(order.totalCost)
+      };
+
+      // Add PIX specific data if applicable
+      if (order.paymentMethod === "pix" && order.status === "aguardando_pagamento") {
+        const isPixExpired = MercadoPagoService.isPixExpired(order.pixExpirationDate?.toISOString() || null);
+        const isPaymentTimedOut = MercadoPagoService.isPaymentTimeout(order.paymentCreatedAt?.toISOString() || null);
+
+        response.pix = {
+          qrCodeBase64: order.pixQrCode,
+          pixCopyPaste: order.pixCopyPaste,
+          expirationDate: order.pixExpirationDate,
+          isExpired: isPixExpired,
+          isTimedOut: isPaymentTimedOut,
+          canRenew: !isPaymentTimedOut
+        };
+
+        // Check payment status with MercadoPago if we have paymentId
+        if (order.paymentId) {
+          try {
+            const paymentStatus = await MercadoPagoService.getPaymentStatus(parseInt(order.paymentId));
+            response.mercadoPagoStatus = paymentStatus.status;
+          } catch (error) {
+            console.error('Error checking MercadoPago status:', error);
+          }
+        }
+      }
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('Error getting payment status:', error);
+      res.status(500).json({ message: "Erro interno do servidor" });
     }
   });
 

@@ -11,6 +11,7 @@ import { formatCPF } from "@/lib/cpf-validator";
 import { calculatePricing, formatPricingBreakdown } from "@/lib/pricing-calculator";
 import { getStatusBadge } from "@/lib/status-utils";
 import { OrderStatusHistory } from "@/components/order-status-history";
+import { PendingPayment } from "@/components/pending-payment";
 import type { Order, Kit, Address, Event } from "@shared/schema";
 
 export default function OrderDetails() {
@@ -214,6 +215,20 @@ export default function OrderDetails() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Pending Payment Section - Show only for orders awaiting payment */}
+        {order.status === "aguardando_pagamento" && (
+          <PendingPayment 
+            order={order}
+            onPaymentSuccess={() => {
+              // Invalidate queries to refresh order data
+              window.location.reload();
+            }}
+            onPaymentError={(error) => {
+              console.error('Payment error:', error);
+            }}
+          />
+        )}
 
         {/* Order Status History */}
         <OrderStatusHistory orderNumber={order.orderNumber} />

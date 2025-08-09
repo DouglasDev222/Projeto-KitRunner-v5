@@ -62,6 +62,12 @@ export const orders = pgTable("orders", {
   status: text("status").notNull().default("confirmado"), // "confirmado", "aguardando_pagamento", "cancelado", "kits_sendo_retirados", "em_transito", "entregue"
   donationAmount: decimal("donation_amount", { precision: 10, scale: 2 }).notNull().default("0"), // Valor da doação
   idempotencyKey: text("idempotency_key").unique(), // Chave para evitar duplicação
+  // PIX payment tracking fields
+  paymentId: text("payment_id"), // MercadoPago payment ID
+  pixQrCode: text("pix_qr_code"), // QR code base64 para PIX
+  pixCopyPaste: text("pix_copy_paste"), // Código PIX para copiar/colar
+  pixExpirationDate: timestamp("pix_expiration_date"), // Data de expiração do QR PIX (30 min)
+  paymentCreatedAt: timestamp("payment_created_at"), // Para cálculo de timeout 24h
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
