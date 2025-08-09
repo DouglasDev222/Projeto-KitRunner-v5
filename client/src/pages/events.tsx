@@ -323,7 +323,7 @@ export default function Events() {
                   <div
                     className={`absolute top-0 left-0 w-1 h-full ${
                       event.available
-                        ? "bg-gradient-to-b from-gray-400 to-gray-500"
+                        ? "bg-gradient-to-b from-green-400 to-green-500"
                         : "bg-gradient-to-b from-yellow-400 to-yellow-500"
                     }`}
                   />
