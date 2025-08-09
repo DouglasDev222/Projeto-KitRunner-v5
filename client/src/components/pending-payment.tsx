@@ -62,28 +62,7 @@ export function PendingPayment({ order, onPaymentSuccess, onPaymentError }: Pend
     }
   });
 
-  // Change payment method mutation
-  const changePaymentMethodMutation = useMutation({
-    mutationFn: (newMethod: string) => 
-      apiRequest("PUT", `/api/orders/${order.orderNumber}/payment-method`, { newPaymentMethod: newMethod }),
-    onSuccess: (data) => {
-      toast({ title: "Método de pagamento alterado!" });
-      if (data.redirectToPayment) {
-        // Redirect to payment page with pre-filled data
-        window.location.href = `/payment?orderNumber=${order.orderNumber}&method=${data.newPaymentMethod}`;
-      } else {
-        refetchPaymentStatus();
-        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      }
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro ao alterar método de pagamento",
-        description: error.message || "Tente novamente",
-        variant: "destructive",
-      });
-    }
-  });
+
 
   // Calculate time remaining for order timeout (24 hours)
   useEffect(() => {
@@ -206,28 +185,24 @@ export function PendingPayment({ order, onPaymentSuccess, onPaymentError }: Pend
                         </p>
                         
                         <div className="space-y-3">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <Button
-                              onClick={() => renewPixMutation.mutate()}
-                              disabled={renewPixMutation.isPending || !pix?.canRenew}
-                              className="w-full"
-                            >
-                              {renewPixMutation.isPending ? (
-                                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                              ) : (
-                                <QrCode className="w-4 h-4 mr-2" />
-                              )}
-                              Gerar novo PIX
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => changePaymentMethodMutation.mutate("credit")}
-                              disabled={changePaymentMethodMutation.isPending}
-                              className="w-full"
-                            >
-                              <CreditCard className="w-4 h-4 mr-2" />
-                              Pagar com Cartão
-                            </Button>
+                          <Button
+                            onClick={() => renewPixMutation.mutate()}
+                            disabled={renewPixMutation.isPending || !pix?.canRenew}
+                            className="w-full"
+                          >
+                            {renewPixMutation.isPending ? (
+                              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <QrCode className="w-4 h-4 mr-2" />
+                            )}
+                            Gerar novo PIX
+                          </Button>
+                          
+                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="text-sm text-blue-700">
+                              <strong>Quer pagar de outra forma?</strong><br />
+                              Para usar cartão de crédito ou débito, você precisará fazer um novo pedido.
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -282,32 +257,16 @@ export function PendingPayment({ order, onPaymentSuccess, onPaymentError }: Pend
 
                       <Separator />
 
-                      {/* Alternative Payment Options */}
-                      <div className="space-y-3">
-                        <p className="text-sm font-medium text-neutral-800">
-                          Prefere pagar de outra forma?
-                        </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => changePaymentMethodMutation.mutate("credit")}
-                            disabled={changePaymentMethodMutation.isPending}
-                            className="w-full"
-                          >
-                            <CreditCard className="w-4 h-4 mr-2" />
-                            Cartão de Crédito
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => changePaymentMethodMutation.mutate("debit")}
-                            disabled={changePaymentMethodMutation.isPending}
-                            className="w-full"
-                          >
-                            <CreditCard className="w-4 h-4 mr-2" />
-                            Cartão de Débito
-                          </Button>
+                      {/* Alternative Payment Notice */}
+                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-start">
+                          <CreditCard className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="font-medium text-blue-800 mb-1">Quer pagar de outra forma?</p>
+                            <p className="text-sm text-blue-700">
+                              Este pedido foi criado para pagamento PIX. Para usar cartão de crédito ou débito, você precisará fazer um novo pedido.
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
