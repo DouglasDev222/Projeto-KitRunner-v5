@@ -323,8 +323,8 @@ export default function Events() {
                   <div
                     className={`absolute top-0 left-0 w-1 h-full ${
                       event.available
-                        ? "bg-gradient-to-b from-green-400 to-emerald-500"
-                        : "bg-gradient-to-b from-gray-300 to-gray-400"
+                        ? "bg-gradient-to-b from-gray-400 to-gray-500"
+                        : "bg-gradient-to-b from-yellow-400 to-yellow-500"
                     }`}
                   />
 
@@ -334,14 +334,6 @@ export default function Events() {
                         <h3 className="font-semibold text-base text-gray-900 truncate mb-1">
                           {event.name}
                         </h3>
-                        {isPastEvent && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs bg-gray-200 text-gray-600 rounded-full mb-2"
-                          >
-                            Finalizado
-                          </Badge>
-                        )}
                       </div>
                       <ChevronRight className="w-5 h-5 text-gray-400 ml-2 flex-shrink-0" />
                     </div>
