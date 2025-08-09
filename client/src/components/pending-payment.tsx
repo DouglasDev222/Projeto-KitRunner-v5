@@ -150,7 +150,7 @@ export function PendingPayment({ order, onPaymentSuccess, onPaymentError }: Pend
   const { pix } = paymentStatus;
 
   return (
-    <div className="w-full max-w-full mx-2 my-4">
+    <div className="w-full max-w-full my-4">
       <Card className="border-orange-200 bg-orange-50 overflow-hidden">
         <CardHeader className="pb-4">
           <CardTitle className="text-lg flex items-center text-orange-800">
