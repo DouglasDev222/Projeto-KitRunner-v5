@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -135,7 +136,7 @@ export function PendingPayment({ order, onPaymentSuccess, onPaymentError }: Pend
 
   if (!paymentStatus) {
     return (
-      <Card>
+      <Card className="mx-2 my-4">
         <CardContent className="p-6">
           <div className="animate-pulse space-y-4">
             <div className="h-6 bg-gray-200 rounded w-1/2" />
@@ -149,160 +150,174 @@ export function PendingPayment({ order, onPaymentSuccess, onPaymentError }: Pend
   const { pix } = paymentStatus;
 
   return (
-    <Card className="border-orange-200 bg-orange-50 p-4 m-2">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg flex items-center text-orange-800">
-          <Clock className="w-5 h-5 mr-2" />
-          Pagamento Pendente
-        </CardTitle>
-        <div className="flex items-center justify-between">
-          <Badge variant="outline" className="bg-orange-100 text-orange-800">
-            Aguardando pagamento
-          </Badge>
-          {timeRemaining && timeRemaining !== "Expirado" && (
-            <span className="text-sm text-orange-700">
-              Expira em: <strong>{timeRemaining}</strong>
-            </span>
-          )}
-        </div>
-      </CardHeader>
-      
-      <CardContent className="space-y-6">
-        {/* Order timeout warning */}
-        {pix?.isTimedOut ? (
-          <div className="flex items-center p-4 bg-red-50 border border-red-200 rounded-lg">
-            <AlertTriangle className="w-5 h-5 text-red-600 mr-3" />
-            <div>
-              <p className="font-medium text-red-800">Tempo limite expirado</p>
-              <p className="text-sm text-red-700">
-                Este pedido foi cancelado automaticamente após 24 horas sem pagamento.
-              </p>
-            </div>
+    <div className="w-full max-w-full mx-2 my-4">
+      <Card className="border-orange-200 bg-orange-50 overflow-hidden">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg flex items-center text-orange-800">
+            <Clock className="w-5 h-5 mr-2" />
+            Pagamento Pendente
+          </CardTitle>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <Badge variant="outline" className="bg-orange-100 text-orange-800">
+              Aguardando pagamento
+            </Badge>
+            {timeRemaining && timeRemaining !== "Expirado" && (
+              <span className="text-sm text-orange-700">
+                Expira em: <strong>{timeRemaining}</strong>
+              </span>
+            )}
           </div>
-        ) : (
-          <>
-            {/* PIX Payment Section */}
-            {order.paymentMethod === "pix" && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-neutral-800">Pagamento PIX</h3>
-                  <Badge variant="outline">
-                    {formatCurrency(parseFloat(order.totalCost))}
-                  </Badge>
-                </div>
-
-                {pix?.isExpired || !pix?.qrCodeBase64 ? (
-                  // PIX Expired - Show renewal options
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div className="flex items-center mb-3">
-                      <Clock className="w-5 h-5 text-yellow-600 mr-2" />
-                      <h4 className="font-medium text-yellow-800">QR Code PIX Expirado</h4>
-                    </div>
-                    <p className="text-sm text-yellow-700 mb-4">
-                      O QR code PIX expirou (30 minutos). Escolha uma opção para continuar:
-                    </p>
-                    <div className="flex flex-col gap-3 sm:flex-row">
-                      <Button
-                        onClick={() => renewPixMutation.mutate()}
-                        disabled={renewPixMutation.isPending || !pix?.canRenew}
-                        className="flex-1"
-                      >
-                        {renewPixMutation.isPending ? (
-                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                          <QrCode className="w-4 h-4 mr-2" />
-                        )}
-                        Gerar novo PIX
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => changePaymentMethodMutation.mutate("credit")}
-                        disabled={changePaymentMethodMutation.isPending}
-                        className="flex-1"
-                      >
-                        <CreditCard className="w-4 h-4 mr-2" />
-                        Pagar com Cartão
-                      </Button>
-                    </div>
+        </CardHeader>
+        
+        <CardContent className="space-y-6">
+          {/* Order timeout warning */}
+          {pix?.isTimedOut ? (
+            <div className="flex items-start p-4 bg-red-50 border border-red-200 rounded-lg">
+              <AlertTriangle className="w-5 h-5 text-red-600 mr-3 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="font-medium text-red-800">Tempo limite expirado</p>
+                <p className="text-sm text-red-700">
+                  Este pedido foi cancelado automaticamente após 24 horas sem pagamento.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* PIX Payment Section */}
+              {order.paymentMethod === "pix" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-neutral-800">Pagamento PIX</h3>
+                    <Badge variant="outline">
+                      {formatCurrency(parseFloat(order.totalCost))}
+                    </Badge>
                   </div>
-                ) : (
-                  // PIX Active - Show QR Code
-                  <div className="space-y-4">
-                    {/* QR Code */}
-                    <div className="flex flex-col items-center p-4 bg-white border border-neutral-200 rounded-lg">
-                      {pix.qrCodeBase64 && (
-                        <img 
-                          src={`data:image/png;base64,${pix.qrCodeBase64}`}
-                          alt="QR Code PIX"
-                          className="w-48 h-48 mb-4"
-                        />
-                      )}
-                      <p className="text-sm text-center text-neutral-600 mb-2">
-                        Escaneie o código com o app do seu banco
-                      </p>
-                      {pix.expirationDate && (
-                        <p className="text-xs text-neutral-500">
-                          Válido até: {new Date(pix.expirationDate).toLocaleString('pt-BR')}
-                        </p>
-                      )}
-                    </div>
 
-                    {/* Copy/Paste Code */}
-                    {pix.pixCopyPaste && (
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-neutral-800">
-                          Ou copie e cole o código PIX:
+                  {pix?.isExpired || !pix?.qrCodeBase64 ? (
+                    // PIX Expired - Show renewal options
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg overflow-hidden">
+                      <div className="p-4">
+                        <div className="flex items-center mb-3">
+                          <Clock className="w-5 h-5 text-yellow-600 mr-2" />
+                          <h4 className="font-medium text-yellow-800">QR Code PIX Expirado</h4>
+                        </div>
+                        <p className="text-sm text-yellow-700 mb-4">
+                          O QR code PIX expirou (30 minutos). Escolha uma opção para continuar:
                         </p>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 p-3 bg-neutral-100 rounded border text-xs font-mono break-all">
-                            {pix.pixCopyPaste}
+                        
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <Button
+                              onClick={() => renewPixMutation.mutate()}
+                              disabled={renewPixMutation.isPending || !pix?.canRenew}
+                              className="w-full"
+                            >
+                              {renewPixMutation.isPending ? (
+                                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                              ) : (
+                                <QrCode className="w-4 h-4 mr-2" />
+                              )}
+                              Gerar novo PIX
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => changePaymentMethodMutation.mutate("credit")}
+                              disabled={changePaymentMethodMutation.isPending}
+                              className="w-full"
+                            >
+                              <CreditCard className="w-4 h-4 mr-2" />
+                              Pagar com Cartão
+                            </Button>
                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    // PIX Active - Show QR Code
+                    <div className="space-y-4">
+                      {/* QR Code Container */}
+                      <div className="bg-white border border-neutral-200 rounded-lg p-6">
+                        <div className="flex flex-col items-center">
+                          {pix.qrCodeBase64 && (
+                            <img 
+                              src={`data:image/png;base64,${pix.qrCodeBase64}`}
+                              alt="QR Code PIX"
+                              className="w-48 h-48 mb-4"
+                            />
+                          )}
+                          <p className="text-sm text-center text-neutral-600 mb-2">
+                            Escaneie o código com o app do seu banco
+                          </p>
+                          {pix.expirationDate && (
+                            <p className="text-xs text-neutral-500">
+                              Válido até: {new Date(pix.expirationDate).toLocaleString('pt-BR')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Copy/Paste Code */}
+                      {pix.pixCopyPaste && (
+                        <div className="space-y-3">
+                          <p className="text-sm font-medium text-neutral-800">
+                            Ou copie e cole o código PIX:
+                          </p>
+                          <div className="bg-neutral-100 border border-neutral-200 rounded-lg p-3">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 text-xs font-mono break-all text-neutral-700">
+                                {pix.pixCopyPaste}
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => copyPixCode(pix.pixCopyPaste!)}
+                                className="flex-shrink-0"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <Separator />
+
+                      {/* Alternative Payment Options */}
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium text-neutral-800">
+                          Prefere pagar de outra forma?
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <Button
-                            size="sm"
                             variant="outline"
-                            onClick={() => copyPixCode(pix.pixCopyPaste!)}
+                            size="sm"
+                            onClick={() => changePaymentMethodMutation.mutate("credit")}
+                            disabled={changePaymentMethodMutation.isPending}
+                            className="w-full"
                           >
-                            <Copy className="w-4 h-4" />
+                            <CreditCard className="w-4 h-4 mr-2" />
+                            Cartão de Crédito
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => changePaymentMethodMutation.mutate("debit")}
+                            disabled={changePaymentMethodMutation.isPending}
+                            className="w-full"
+                          >
+                            <CreditCard className="w-4 h-4 mr-2" />
+                            Cartão de Débito
                           </Button>
                         </div>
                       </div>
-                    )}
-
-                    <Separator />
-
-                    {/* Alternative Payment Options */}
-                    <div className="space-y-3">
-                      <p className="text-sm font-medium text-neutral-800">
-                        Prefere pagar de outra forma?
-                      </p>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => changePaymentMethodMutation.mutate("credit")}
-                          disabled={changePaymentMethodMutation.isPending}
-                        >
-                          <CreditCard className="w-4 h-4 mr-2" />
-                          Cartão de Crédito
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => changePaymentMethodMutation.mutate("debit")}
-                          disabled={changePaymentMethodMutation.isPending}
-                        >
-                          <CreditCard className="w-4 h-4 mr-2" />
-                          Cartão de Débito
-                        </Button>
-                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
