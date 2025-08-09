@@ -482,4 +482,44 @@ Sistema: KitRunner Email Notification System
   async sendPaymentConfirmation(data: ServiceConfirmationData, recipientEmail: string, orderId?: number, customerId?: number): Promise<boolean> {
     return this.sendServiceConfirmation(data, recipientEmail, orderId, customerId);
   }
+
+  /**
+   * Send order timeout notification email
+   */
+  static async sendOrderTimeoutNotification(data: any): Promise<boolean> {
+    try {
+      if (!SENDGRID_ENABLED) {
+        console.log('📧 Email service disabled - would send timeout notification to:', data.customerEmail);
+        return false;
+      }
+
+      const msg = {
+        to: data.customerEmail,
+        from: {
+          email: process.env.SENDGRID_FROM_EMAIL || 'contato@kitrunner.com.br',
+          name: process.env.SENDGRID_FROM_NAME || 'KitRunner'
+        },
+        subject: data.subject || `Pedido ${data.orderNumber} foi cancelado`,
+        text: `Olá ${data.customerName}, seu pedido ${data.orderNumber} para o evento ${data.eventName} foi cancelado automaticamente após ${data.timeoutHours} horas sem pagamento.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #dc2626;">Pedido Cancelado Automaticamente</h2>
+            <p>Olá <strong>${data.customerName}</strong>,</p>
+            <p>Seu pedido <strong>${data.orderNumber}</strong> para o evento <strong>${data.eventName}</strong> foi cancelado automaticamente após ${data.timeoutHours} horas sem confirmação de pagamento.</p>
+            <p>Se ainda tiver interesse no kit, você pode fazer um novo pedido através do nosso site.</p>
+            <p>Atenciosamente,<br>Equipe KitRunner</p>
+          </div>
+        `
+      };
+
+      console.log('📧 Sending timeout notification email to:', data.customerEmail);
+      await sgMail.send(msg);
+      
+      console.log(`⏰ Timeout notification sent successfully to ${data.customerEmail} for order ${data.orderNumber}`);
+      return true;
+    } catch (error) {
+      console.error(`⏰ Error sending timeout notification for order ${data.orderNumber}:`, error);
+      return false;
+    }
+  }
 }

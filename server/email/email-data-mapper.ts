@@ -327,6 +327,31 @@ export class EmailDataMapper {
   }
 
   /**
+   * Map data for order timeout notification
+   */
+  static mapOrderTimeout(data: {
+    orderNumber: string;
+    customerName: string;
+    customerEmail: string;
+    eventName: string;
+    eventDate: string;
+    totalAmount: number;
+    timeoutHours: number;
+  }) {
+    return {
+      orderNumber: data.orderNumber,
+      customerName: data.customerName,
+      customerEmail: data.customerEmail,
+      eventName: data.eventName,
+      eventDate: data.eventDate,
+      totalAmount: data.totalAmount,
+      timeoutHours: data.timeoutHours,
+      subject: `Pedido ${data.orderNumber} foi cancelado - ${data.eventName}`,
+      heading: 'Pedido Cancelado Automaticamente'
+    };
+  }
+
+  /**
    * Map order status change data for bulk updates
    */
   static mapOrderStatusChange(data: {

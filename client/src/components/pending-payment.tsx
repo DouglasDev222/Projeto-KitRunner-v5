@@ -45,7 +45,7 @@ export function PendingPayment({ order, onPaymentSuccess, onPaymentError }: Pend
 
   // Renew PIX mutation
   const renewPixMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/orders/${order.orderNumber}/renew-pix`, { method: "POST" }),
+    mutationFn: () => apiRequest("POST", `/api/orders/${order.orderNumber}/renew-pix`),
     onSuccess: () => {
       toast({ title: "PIX renovado com sucesso!" });
       refetchPaymentStatus();
@@ -64,10 +64,7 @@ export function PendingPayment({ order, onPaymentSuccess, onPaymentError }: Pend
   // Change payment method mutation
   const changePaymentMethodMutation = useMutation({
     mutationFn: (newMethod: string) => 
-      apiRequest(`/api/orders/${order.orderNumber}/payment-method`, { 
-        method: "PUT", 
-        body: { newPaymentMethod: newMethod } 
-      }),
+      apiRequest("PUT", `/api/orders/${order.orderNumber}/payment-method`, { newPaymentMethod: newMethod }),
     onSuccess: (data) => {
       toast({ title: "Método de pagamento alterado!" });
       if (data.redirectToPayment) {
