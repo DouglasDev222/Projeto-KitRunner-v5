@@ -181,7 +181,7 @@ export function EventDetailsModal({ event, trigger }: EventDetailsModalProps) {
                       <div className="flex items-center gap-2">
                         <Package className="h-4 w-4 text-blue-600" />
                         <span className="text-sm">
-                          <span className="font-semibold">{eventDetails.currentOrders || 0}</span> / {eventDetails.maxOrders || '∞'} kits vendidos
+                          <span className="font-semibold">{eventDetails.currentOrders || 0}</span> / {eventDetails.maxOrders || '∞'} pedidos realizados
                         </span>
                       </div>
                       {eventDetails.maxOrders && (

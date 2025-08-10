@@ -552,7 +552,7 @@ export default function AdminEventEdit() {
                       name="maxOrders"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Limite Máximo de Kits</FormLabel>
+                          <FormLabel>Limite Máximo de Pedidos</FormLabel>
                           <FormControl>
                             <Input
                               placeholder="100"
@@ -563,7 +563,7 @@ export default function AdminEventEdit() {
                             />
                           </FormControl>
                           <FormDescription>
-                            Número máximo de kits que podem ser vendidos
+                            Número máximo de pedidos que podem ser aceitos
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -575,7 +575,7 @@ export default function AdminEventEdit() {
                       name="currentOrders"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Kits Vendidos Atualmente</FormLabel>
+                          <FormLabel>Pedidos Realizados Atualmente</FormLabel>
                           <FormControl>
                             <Input
                               type="number"
@@ -585,7 +585,7 @@ export default function AdminEventEdit() {
                             />
                           </FormControl>
                           <FormDescription>
-                            Número atual de kits já vendidos (somente leitura)
+                            Número atual de pedidos já realizados (somente leitura)
                           </FormDescription>
                           <FormMessage />
                         </FormItem>

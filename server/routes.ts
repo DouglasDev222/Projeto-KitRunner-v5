@@ -606,11 +606,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         kits.push(kit);
       }
 
-      // NEW: Update event stock after successful order creation
+      // NEW: Update event stock after successful order creation (increment by 1 order, not kit quantity)
       if (selectedEvent.stockEnabled) {
         try {
-          await storage.updateEventStock(orderData.eventId, orderData.kitQuantity);
-          console.log(`📦 Stock updated for event ${orderData.eventId}: +${orderData.kitQuantity} orders`);
+          await storage.updateEventStock(orderData.eventId, 1);
+          console.log(`📦 Stock updated for event ${orderData.eventId}: +1 order (${orderData.kitQuantity} kits)`);
         } catch (error) {
           console.error(`❌ Error updating event stock for event ${orderData.eventId}:`, error);
           // Log error but don't fail the order creation

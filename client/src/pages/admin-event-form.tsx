@@ -461,7 +461,7 @@ export default function AdminEventForm() {
                       name="maxOrders"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Limite Máximo de Kits</FormLabel>
+                          <FormLabel>Limite Máximo de Pedidos</FormLabel>
                           <FormControl>
                             <Input
                               placeholder="100"
@@ -472,7 +472,7 @@ export default function AdminEventForm() {
                             />
                           </FormControl>
                           <FormDescription>
-                            Número máximo de kits que podem ser vendidos neste evento
+                            Número máximo de pedidos que podem ser aceitos neste evento
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
