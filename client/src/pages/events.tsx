@@ -20,6 +20,56 @@ import type { Event } from "@shared/schema";
 
 type FilterType = "all" | "week" | "month";
 
+// Helper functions for event status logic
+const getEventStatusLabel = (event: Event, isPastEvent: boolean): string => {
+  if (isPastEvent) {
+    return "✓ Finalizado";
+  }
+  
+  switch (event.status) {
+    case 'ativo':
+      return "✓ Disponível";
+    case 'inativo':
+      return "⏳ Em breve";
+    case 'fechado_pedidos':
+      return "🚫 Fechado para pedidos";
+    default:
+      return "⏳ Em breve";
+  }
+};
+
+const getEventStatusVariant = (event: Event, isPastEvent: boolean) => {
+  if (isPastEvent) {
+    return "secondary";
+  }
+  
+  switch (event.status) {
+    case 'ativo':
+      return "default";
+    case 'inativo':
+    case 'fechado_pedidos':
+    default:
+      return "secondary";
+  }
+};
+
+const getEventStatusColor = (event: Event, isPastEvent: boolean): string => {
+  if (isPastEvent) {
+    return "bg-gray-200 text-gray-600 border-0";
+  }
+  
+  switch (event.status) {
+    case 'ativo':
+      return "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0";
+    case 'inativo':
+      return "bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0";
+    case 'fechado_pedidos':
+      return "bg-gradient-to-r from-orange-500 to-orange-600 text-white border-0";
+    default:
+      return "bg-gray-200 text-gray-600 border-0";
+  }
+};
+
 export default function Events() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
@@ -352,16 +402,10 @@ export default function Events() {
                     </div>
 
                     <Badge
-                      variant={isPastEvent && event.available ? "secondary" : event.available ? "default" : "secondary"}
-                      className={`text-xs rounded-full px-3 py-1 ${
-                        isPastEvent && event.available
-                          ? "bg-gray-200 text-gray-600 border-0"
-                          : event.available
-                          ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0"
-                          : "bg-gray-200 text-gray-600 border-0"
-                      }`}
+                      variant={getEventStatusVariant(event, isPastEvent)}
+                      className={`text-xs rounded-full px-3 py-1 ${getEventStatusColor(event, isPastEvent)}`}
                     >
-                      {isPastEvent && event.available ? "✓ Finalizado" : event.available ? "✓ Disponível" : "⏳ Em breve"}
+                      {getEventStatusLabel(event, isPastEvent)}
                     </Badge>
                   </div>
                 </CardContent>
