@@ -372,9 +372,15 @@ export default function Events() {
                   {/* Status indicator */}
                   <div
                     className={`absolute top-0 left-0 w-1 h-full ${
-                      event.available
+                      isPastEvent
+                        ? "bg-gradient-to-b from-gray-400 to-gray-500"
+                        : event.status === 'ativo'
                         ? "bg-gradient-to-b from-green-400 to-green-500"
-                        : "bg-gradient-to-b from-yellow-400 to-yellow-500"
+                        : event.status === 'inativo'
+                        ? "bg-gradient-to-b from-yellow-400 to-yellow-500"
+                        : event.status === 'fechado_pedidos'
+                        ? "bg-gradient-to-b from-orange-400 to-orange-500"
+                        : "bg-gradient-to-b from-gray-400 to-gray-500"
                     }`}
                   />
 
