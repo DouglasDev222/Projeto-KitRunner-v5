@@ -11,6 +11,44 @@ import { formatDateTime, formatCurrency } from "@/lib/brazilian-formatter";
 import { useAuth } from "@/lib/auth-context";
 import type { Event } from "@shared/schema";
 
+// Helper functions for event status logic
+const getEventStatusMessage = (event: Event, isPastEvent: boolean): string | null => {
+  if (isPastEvent) {
+    return "Este evento já foi finalizado e não aceita mais pedidos.";
+  }
+  
+  switch (event.status) {
+    case 'inativo':
+      return "Este evento ainda não está disponível para pedidos. Em breve!";
+    case 'fechado_pedidos':
+      return "Este evento está fechado para novos pedidos.";
+    case 'ativo':
+      return null; // No message needed
+    default:
+      return "Este evento não está disponível para pedidos no momento.";
+  }
+};
+
+const isEventAvailable = (event: Event, isPastEvent: boolean): boolean => {
+  if (isPastEvent) return false;
+  return event.status === 'ativo';
+};
+
+const getButtonText = (event: Event, isPastEvent: boolean): string => {
+  if (isPastEvent) return "Evento Finalizado";
+  
+  switch (event.status) {
+    case 'ativo':
+      return "Solicitar Retirada do Kit";
+    case 'inativo':
+      return "Em Breve";
+    case 'fechado_pedidos':
+      return "Fechado para Pedidos";
+    default:
+      return "Indisponível";
+  }
+};
+
 export default function EventDetails() {
   const [, setLocation] = useLocation();
   const { id } = useParams<{ id: string }>();
@@ -85,6 +123,19 @@ export default function EventDetails() {
       setLocation(`/events/${id}/address`);
     }
   };
+
+  // Check if event is in the past
+  const isPastEvent = (() => {
+    const [year, month, day] = event.date.split('-');
+    const eventDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return eventDate < today;
+  })();
+
+  const statusMessage = getEventStatusMessage(event, isPastEvent);
+  const eventAvailable = isEventAvailable(event, isPastEvent);
+  const buttonText = getButtonText(event, isPastEvent);
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
@@ -235,13 +286,23 @@ export default function EventDetails() {
           </Alert>
         )}
 
+        {/* Status Warning */}
+        {statusMessage && (
+          <Alert className="mb-4 border-orange-200 bg-orange-50">
+            <Shield className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800">
+              <span className="font-medium">Status do Evento:</span> {statusMessage}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Button 
-          className="w-full bg-primary text-white hover:bg-primary/90" 
+          className="w-full bg-primary text-white hover:bg-primary/90 disabled:bg-gray-400 disabled:cursor-not-allowed" 
           size="lg"
           onClick={handleRequestPickup}
-          disabled={!event.available}
+          disabled={!eventAvailable}
         >
-          {event.available ? "Solicitar Retirada do Kit" : "Indisponível"}
+          {buttonText}
         </Button>
       </div>
       <Footer />
