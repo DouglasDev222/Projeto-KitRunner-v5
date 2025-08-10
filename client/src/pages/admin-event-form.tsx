@@ -50,6 +50,10 @@ export default function AdminEventForm() {
       donationRequired: false,
       donationAmount: "",
       donationDescription: "",
+      status: "ativo",
+      stockEnabled: false,
+      maxOrders: undefined,
+      currentOrders: 0,
     },
   });
 
@@ -110,6 +114,7 @@ export default function AdminEventForm() {
 
   const watchDonationRequired = form.watch("donationRequired");
   const watchPricingType = form.watch("pricingType");
+  const watchStockEnabled = form.watch("stockEnabled");
 
   // Sistema novo: AdminRouteGuard já protege - não precisa de verificação
 
@@ -394,6 +399,85 @@ export default function AdminEventForm() {
                         )}
                       />
                     </>
+                  )}
+                </div>
+
+                {/* Status e Controle de Estoque */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900">Status e Controle de Estoque</h3>
+                  
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status do Evento</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="ativo">Ativo - Disponível para pedidos</SelectItem>
+                            <SelectItem value="inativo">Inativo - Temporariamente indisponível</SelectItem>
+                            <SelectItem value="fechado_pedidos">Fechado para pedidos</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Controla a disponibilidade do evento para novos pedidos
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="stockEnabled"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>
+                            Habilitar Controle de Estoque
+                          </FormLabel>
+                          <FormDescription>
+                            Ativa limite máximo de pedidos para este evento
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
+                  {watchStockEnabled && (
+                    <FormField
+                      control={form.control}
+                      name="maxOrders"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Limite Máximo de Kits</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="100"
+                              type="number"
+                              min="1"
+                              {...field}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Número máximo de kits que podem ser vendidos neste evento
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   )}
                 </div>
 

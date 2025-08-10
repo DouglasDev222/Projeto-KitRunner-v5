@@ -33,6 +33,10 @@ const eventSchema = z.object({
   donationAmount: z.string().optional(),
   donationDescription: z.string().optional(),
   available: z.boolean().default(true),
+  status: z.enum(["ativo", "inativo", "fechado_pedidos"]).default("ativo"),
+  stockEnabled: z.boolean().default(false),
+  maxOrders: z.number().optional(),
+  currentOrders: z.number().default(0),
 }).refine((data) => {
   if (data.pricingType === "fixed") {
     if (!data.fixedPrice || data.fixedPrice.trim() === "") {
@@ -81,11 +85,16 @@ export default function AdminEventEdit() {
       donationAmount: "",
       donationDescription: "",
       available: true,
+      status: "ativo",
+      stockEnabled: false,
+      maxOrders: undefined,
+      currentOrders: 0,
     },
   });
 
   const donationRequired = form.watch("donationRequired");
   const watchPricingType = form.watch("pricingType");
+  const watchStockEnabled = form.watch("stockEnabled");
 
   useEffect(() => {
     if (event) {
@@ -103,6 +112,10 @@ export default function AdminEventEdit() {
         donationAmount: event.donationAmount || "",
         donationDescription: event.donationDescription || "",
         available: event.available,
+        status: event.status || "ativo",
+        stockEnabled: event.stockEnabled || false,
+        maxOrders: event.maxOrders || undefined,
+        currentOrders: event.currentOrders || 0,
       });
     }
   }, [event, form]);
@@ -477,29 +490,133 @@ export default function AdminEventEdit() {
                 )}
               </div>
 
-              {/* Event Status */}
-              <FormField
-                control={form.control}
-                name="available"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">
-                        Evento Disponível
-                      </FormLabel>
+              {/* Status e Controle de Estoque */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <h3 className="text-lg font-semibold">Status e Controle de Estoque</h3>
+                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status do Evento</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="ativo">Ativo - Disponível para pedidos</SelectItem>
+                          <SelectItem value="inativo">Inativo - Temporariamente indisponível</SelectItem>
+                          <SelectItem value="fechado_pedidos">Fechado para pedidos</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormDescription>
-                        Controla se o evento aparece para os usuários
+                        Controla a disponibilidade do evento para novos pedidos
                       </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="stockEnabled"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border p-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="text-base">
+                          Habilitar Controle de Estoque
+                        </FormLabel>
+                        <FormDescription>
+                          Ativa limite máximo de pedidos para este evento
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                {watchStockEnabled && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="maxOrders"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Limite Máximo de Kits</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="100"
+                              type="number"
+                              min="1"
+                              value={field.value || ''}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Número máximo de kits que podem ser vendidos
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="currentOrders"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Kits Vendidos Atualmente</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={field.value || 0}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Número atual de kits já vendidos (somente leitura)
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 )}
-              />
+
+                <FormField
+                  control={form.control}
+                  name="available"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">
+                          Evento Visível (Compatibilidade)
+                        </FormLabel>
+                        <FormDescription>
+                          Mantém compatibilidade com sistema antigo
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               {/* Submit Button */}
               <div className="flex justify-end">

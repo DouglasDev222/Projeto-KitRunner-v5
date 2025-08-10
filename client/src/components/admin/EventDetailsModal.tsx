@@ -149,16 +149,54 @@ export function EventDetailsModal({ event, trigger }: EventDetailsModalProps) {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Status</label>
-                  <div className="mt-1">
+                  <label className="text-sm font-medium text-gray-500">Status do Evento</label>
+                  <div className="mt-1 flex gap-2">
                     <Badge 
-                      variant={eventDetails.available ? "secondary" : "outline"}
-                      className={eventDetails.available ? "bg-green-100 text-green-800" : ""}
+                      variant={eventDetails.status === 'ativo' ? "default" : "secondary"}
+                      className={
+                        eventDetails.status === 'ativo' 
+                          ? "bg-green-100 text-green-800" 
+                          : eventDetails.status === 'fechado_pedidos'
+                          ? "bg-orange-100 text-orange-800"
+                          : "bg-gray-100 text-gray-800"
+                      }
                     >
-                      {eventDetails.available ? "Ativo" : "Inativo"}
+                      {eventDetails.status === 'ativo' 
+                        ? "Ativo" 
+                        : eventDetails.status === 'fechado_pedidos'
+                        ? "Fechado para Pedidos"
+                        : "Inativo"
+                      }
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {eventDetails.available ? "Visível" : "Oculto"}
                     </Badge>
                   </div>
                 </div>
+
+                {eventDetails.stockEnabled && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Controle de Estoque</label>
+                    <div className="mt-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Package className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm">
+                          <span className="font-semibold">{eventDetails.currentOrders || 0}</span> / {eventDetails.maxOrders || '∞'} kits vendidos
+                        </span>
+                      </div>
+                      {eventDetails.maxOrders && (
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full" 
+                            style={{ 
+                              width: `${Math.min(((eventDetails.currentOrders || 0) / eventDetails.maxOrders) * 100, 100)}%` 
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="text-sm font-medium text-gray-500">Preço Kit Extra</label>

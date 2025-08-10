@@ -146,11 +146,27 @@ export default function AdminEvents() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge 
-                        variant={event.available ? "default" : "secondary"}
-                        className={event.available ? "bg-green-100 text-green-800 hover:bg-green-200" : ""}
+                        variant={event.status === 'ativo' ? "default" : "secondary"}
+                        className={
+                          event.status === 'ativo' 
+                            ? "bg-green-100 text-green-800 hover:bg-green-200" 
+                            : event.status === 'fechado_pedidos'
+                            ? "bg-orange-100 text-orange-800"
+                            : "bg-gray-100 text-gray-800"
+                        }
                       >
-                        {event.available ? "Ativo" : "Inativo"}
+                        {event.status === 'ativo' 
+                          ? "Ativo" 
+                          : event.status === 'fechado_pedidos'
+                          ? "Fechado"
+                          : "Inativo"
+                        }
                       </Badge>
+                      {event.stockEnabled && (
+                        <Badge variant="outline" className="text-xs">
+                          {event.currentOrders || 0}/{event.maxOrders || '∞'} kits
+                        </Badge>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
