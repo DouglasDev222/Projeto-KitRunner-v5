@@ -479,6 +479,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Evento não encontrado" });
       }
 
+      // NEW: Check event availability and stock
+      const eventAvailability = await storage.checkEventAvailability(
+        orderData.eventId, 
+        orderData.kitQuantity
+      );
+      
+      if (!eventAvailability.available) {
+        const errorMessages = {
+          'inativo': 'Este evento não está disponível no momento',
+          'fechado_pedidos': 'Este evento está fechado para novos pedidos',
+          'not_found': 'Evento não encontrado'
+        };
+        
+        const message = errorMessages[eventAvailability.status as keyof typeof errorMessages] || 
+          (eventAvailability.remainingStock === 0 
+            ? 'Este evento não possui mais kits disponíveis' 
+            : 'Este evento não está disponível para pedidos');
+            
+        return res.status(400).json({
+          success: false,
+          error: message,
+          remainingStock: eventAvailability.remainingStock,
+          status: eventAvailability.status
+        });
+      }
+
       // Enhanced validation: CEP zones pricing security check
       if (selectedEvent.pricingType === 'cep_zones') {
         const customerAddress = await storage.getAddress(orderData.addressId);
@@ -578,6 +604,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           shirtSize: kitData.shirtSize
         });
         kits.push(kit);
+      }
+
+      // NEW: Update event stock after successful order creation
+      if (selectedEvent.stockEnabled) {
+        try {
+          await storage.updateEventStock(orderData.eventId, orderData.kitQuantity);
+          console.log(`📦 Stock updated for event ${orderData.eventId}: +${orderData.kitQuantity} orders`);
+        } catch (error) {
+          console.error(`❌ Error updating event stock for event ${orderData.eventId}:`, error);
+          // Log error but don't fail the order creation
+        }
       }
 
       // If a coupon was used, increment its usage count
@@ -981,6 +1018,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Evento excluído com sucesso" });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // NEW: Update event status (admin endpoint)
+  app.patch("/api/admin/events/:id/status", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status } = req.body;
+
+      if (!status) {
+        return res.status(400).json({ message: "Status é obrigatório" });
+      }
+
+      const validStatuses = ['ativo', 'inativo', 'fechado_pedidos'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ 
+          message: "Status inválido",
+          validStatuses 
+        });
+      }
+
+      const updatedEvent = await storage.updateEventStatus(id, status);
+      console.log(`📊 Event ${id} status updated to: ${status}`);
+      
+      res.json(updatedEvent);
+    } catch (error) {
+      console.error('Error updating event status:', error);
+      res.status(500).json({ message: "Erro ao atualizar status do evento" });
+    }
+  });
+
+  // NEW: Update event stock settings (admin endpoint)
+  app.patch("/api/admin/events/:id/stock", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { stockEnabled, maxOrders, currentOrders } = req.body;
+
+      const updateData: any = {};
+      
+      if (typeof stockEnabled === 'boolean') {
+        updateData.stockEnabled = stockEnabled;
+      }
+      
+      if (maxOrders !== undefined) {
+        updateData.maxOrders = maxOrders;
+      }
+      
+      if (currentOrders !== undefined) {
+        updateData.currentOrders = currentOrders;
+      }
+
+      const updatedEvent = await storage.updateEvent(id, updateData);
+      
+      if (!updatedEvent) {
+        return res.status(404).json({ message: "Evento não encontrado" });
+      }
+
+      console.log(`📦 Event ${id} stock settings updated:`, updateData);
+      res.json(updatedEvent);
+    } catch (error) {
+      console.error('Error updating event stock:', error);
+      res.status(500).json({ message: "Erro ao atualizar controle de estoque" });
+    }
+  });
+
+  // NEW: Get event availability info (admin endpoint)
+  app.get("/api/admin/events/:id/availability", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const requestedQuantity = parseInt(req.query.quantity as string) || 1;
+
+      const availability = await storage.checkEventAvailability(id, requestedQuantity);
+      
+      res.json({
+        eventId: id,
+        requestedQuantity,
+        ...availability
+      });
+    } catch (error) {
+      console.error('Error checking event availability:', error);
+      res.status(500).json({ message: "Erro ao verificar disponibilidade do evento" });
     }
   });
 

@@ -16,7 +16,18 @@ export const events = pgTable("events", {
   donationRequired: boolean("donation_required").default(false), // Se requer doação
   donationAmount: decimal("donation_amount", { precision: 10, scale: 2 }), // Valor da doação se obrigatória
   donationDescription: text("donation_description"), // Ex: "1 kg de alimento"
+  
+  // Novo sistema de status (substitui available)
+  status: varchar("status", { length: 20 }).notNull().default("ativo"), // 'ativo', 'inativo', 'fechado_pedidos'
+  
+  // Controle de estoque
+  stockEnabled: boolean("stock_enabled").notNull().default(false), // Se o controle de estoque está habilitado
+  maxOrders: integer("max_orders"), // Limite máximo de pedidos (null = ilimitado)
+  currentOrders: integer("current_orders").notNull().default(0), // Quantidade atual de pedidos
+  
+  // Manter available por compatibilidade (deprecated)
   available: boolean("available").notNull().default(true),
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -215,8 +226,22 @@ export const eventCepZonePrices = pgTable("event_cep_zone_prices", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Event status enum and types
+export const eventStatusEnum = z.enum(['ativo', 'inativo', 'fechado_pedidos']);
+export type EventStatus = z.infer<typeof eventStatusEnum>;
+
 // Validation schemas
-export const insertEventSchema = createInsertSchema(events).omit({ id: true, createdAt: true });
+export const insertEventSchema = createInsertSchema(events).omit({ id: true, createdAt: true }).extend({
+  status: eventStatusEnum.optional(),
+  stockEnabled: z.boolean().optional(),
+  maxOrders: z.number().int().min(1).nullable().optional(),
+});
+
+export const eventUpdateSchema = createInsertSchema(events).extend({
+  status: eventStatusEnum,
+  stockEnabled: z.boolean(),
+  maxOrders: z.number().int().min(1).nullable(),
+}).partial();
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true });
 export const insertAddressSchema = createInsertSchema(addresses).omit({ id: true, createdAt: true });
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, orderNumber: true, createdAt: true });

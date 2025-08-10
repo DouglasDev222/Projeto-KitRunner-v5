@@ -92,6 +92,15 @@ export interface IStorage {
   deleteEvent(id: number): Promise<boolean>;
   getOrdersByEventId(eventId: number): Promise<(Order & { customer: Customer })[]>;
   
+  // Event stock control methods
+  updateEventStock(eventId: number, increment: number): Promise<Event>;
+  checkEventAvailability(eventId: number, requestedQuantity: number): Promise<{
+    available: boolean;
+    remainingStock: number | null;
+    status: string;
+  }>;
+  updateEventStatus(eventId: number, status: string): Promise<Event>;
+  
   // Order statistics
   getOrderStats(): Promise<{
     totalOrders: number;
@@ -1209,7 +1218,83 @@ export class DatabaseStorage implements IStorage {
     return null; // No overlap found
   }
 
+  // Event stock control methods implementation
+  async updateEventStock(eventId: number, increment: number): Promise<Event> {
+    const [event] = await db
+      .update(events)
+      .set({ 
+        currentOrders: sql`${events.currentOrders} + ${increment}` 
+      })
+      .where(eq(events.id, eventId))
+      .returning();
+    
+    if (!event) {
+      throw new Error(`Event with ID ${eventId} not found`);
+    }
+    
+    return event;
+  }
 
+  async checkEventAvailability(eventId: number, requestedQuantity: number): Promise<{
+    available: boolean;
+    remainingStock: number | null;
+    status: string;
+  }> {
+    const [event] = await db
+      .select()
+      .from(events)
+      .where(eq(events.id, eventId));
+    
+    if (!event) {
+      return {
+        available: false,
+        remainingStock: null,
+        status: 'not_found'
+      };
+    }
+
+    // Check event status
+    if (event.status !== 'ativo') {
+      return {
+        available: false,
+        remainingStock: event.stockEnabled ? event.maxOrders ? (event.maxOrders - event.currentOrders) : null : null,
+        status: event.status
+      };
+    }
+
+    // Check stock if enabled
+    if (event.stockEnabled && event.maxOrders !== null) {
+      const remainingStock = event.maxOrders - event.currentOrders;
+      const hasStock = remainingStock >= requestedQuantity;
+      
+      return {
+        available: hasStock,
+        remainingStock,
+        status: event.status
+      };
+    }
+
+    // Event is active and no stock limit or stock control disabled
+    return {
+      available: true,
+      remainingStock: null,
+      status: event.status
+    };
+  }
+
+  async updateEventStatus(eventId: number, status: string): Promise<Event> {
+    const [event] = await db
+      .update(events)
+      .set({ status })
+      .where(eq(events.id, eventId))
+      .returning();
+    
+    if (!event) {
+      throw new Error(`Event with ID ${eventId} not found`);
+    }
+    
+    return event;
+  }
 }
 
 // Mock implementation for development without database

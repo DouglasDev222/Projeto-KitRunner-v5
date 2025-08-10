@@ -2,10 +2,10 @@
 
 ## Visão Geral
 Implementar melhorias no sistema de gerenciamento de eventos com:
-1. **Status expandidos para eventos** (Ativo, Inativo, Fechado para Pedidos)
+1. **Status expandidos para eventos** (Ativo, Inativo, Fechado para Pedidos e esgotado)
 2. **Controle de estoque** com limite de pedidos por evento
 3. **Atualização automática do estoque** ao criar pedidos
-4. **Interface administrativa** para gerenciar status e estoque
+4. **Interface administrativa** para gerenciar status e estoque (admin/events)
 
 ## Estado Atual
 - Tabela `events` possui apenas coluna `available` (boolean)
