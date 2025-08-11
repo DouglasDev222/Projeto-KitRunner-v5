@@ -164,7 +164,7 @@ export default function AdminEvents() {
                       </Badge>
                       {event.stockEnabled && (
                         <Badge variant="outline" className="text-xs">
-                          {event.currentOrders || 0}/{event.maxOrders || '∞'} kits
+                          {event.currentOrders || 0}/{event.maxOrders || '∞'} Pedidos
                         </Badge>
                       )}
                       <Button
