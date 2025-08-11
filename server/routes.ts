@@ -482,7 +482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // NEW: Check event availability and stock
       const eventAvailability = await storage.checkEventAvailability(
         orderData.eventId, 
-        orderData.kitQuantity
+        1 // Always check for 1 order availability, regardless of kit quantity
       );
       
       if (!eventAvailability.available) {

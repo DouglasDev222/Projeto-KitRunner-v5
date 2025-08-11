@@ -1265,7 +1265,7 @@ export class DatabaseStorage implements IStorage {
     // Check stock if enabled
     if (event.stockEnabled && event.maxOrders !== null) {
       const remainingStock = event.maxOrders - event.currentOrders;
-      const hasStock = remainingStock >= requestedQuantity;
+      const hasStock = remainingStock >= 1; // Only check if there's space for 1 more order
       
       return {
         available: hasStock,
