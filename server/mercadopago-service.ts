@@ -229,15 +229,25 @@ export class MercadoPagoService {
       
       // Better error handling for common errors
       let errorMessage = 'Erro ao processar pagamento com cartão';
+      let errorTitle = 'Erro no Gateway de Pagamento';
+      let errorCode = 'GATEWAY_ERROR';
       
       if (error.message?.includes('bin_not_found')) {
         errorMessage = 'Número do cartão inválido. Use um cartão de teste válido.';
+        errorTitle = 'Cartão Inválido';
+        errorCode = 'INVALID_CARD_NUMBER';
       } else if (error.message?.includes('invalid_card')) {
         errorMessage = 'Dados do cartão inválidos. Verifique número, data de validade e CVV.';
+        errorTitle = 'Dados do Cartão Inválidos';
+        errorCode = 'INVALID_CARD_DATA';
       } else if (error.message?.includes('diff_param_bins')) {
         errorMessage = 'Conflito nos parâmetros do cartão. Verifique se os dados do cartão (número, nome, CPF) estão corretos e consistentes.';
+        errorTitle = 'Conflito nos Dados do Cartão';
+        errorCode = 'CARD_DATA_CONFLICT';
       } else if (error.message?.includes('internal_error')) {
         errorMessage = 'Erro interno do Mercado Pago. Verifique as credenciais e tente novamente.';
+        errorTitle = 'Erro Interno do Gateway';
+        errorCode = 'GATEWAY_INTERNAL_ERROR';
       } else if (error.cause?.length > 0) {
         const errorCode = error.cause[0].code;
         const errorDesc = error.cause[0].description;
@@ -249,17 +259,25 @@ export class MercadoPagoService {
             '\n• O CPF está correto e pertence ao portador do cartão' +
             '\n• O número do cartão foi digitado corretamente' +
             '\n• Todos os dados foram preenchidos sem erro de digitação';
+          errorTitle = 'Dados Conflitantes';
+          errorCode = 'CARD_DATA_MISMATCH';
         } else {
           errorMessage = errorDesc || errorMessage;
+          errorTitle = 'Erro do Gateway';
+          errorCode = 'GATEWAY_ERROR';
         }
       } else if (error.message) {
         errorMessage = error.message;
+        errorTitle = 'Erro de Processamento';
+        errorCode = 'PROCESSING_ERROR';
       }
       
       return {
         success: false,
         error: error,
-        message: errorMessage
+        message: errorMessage,
+        title: errorTitle,
+        code: errorCode
       };
     }
   }

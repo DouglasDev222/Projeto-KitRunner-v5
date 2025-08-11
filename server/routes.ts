@@ -1805,12 +1805,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const eventForPayment = await storage.getEvent(orderData.eventId);
       if (!eventForPayment || eventForPayment.status !== 'ativo') {
         console.log(`🚫 Card payment blocked BEFORE gateway - Event ${orderData.eventId} status: ${eventForPayment?.status || 'not found'}`);
+        
+        let errorMessage = 'Este evento não está mais disponível para pedidos';
+        let errorTitle = 'Evento indisponível';
+        
+        if (eventForPayment?.status === 'fechado_pedidos') {
+          errorMessage = 'Este evento está fechado para novos pedidos. Entre em contato conosco pelo WhatsApp para verificar possibilidades de pagamento.';
+          errorTitle = 'Evento fechado';
+        } else if (eventForPayment?.status === 'inativo') {
+          errorMessage = 'Este evento foi temporariamente desativado.';
+          errorTitle = 'Evento desativado';
+        } else if (!eventForPayment) {
+          errorMessage = 'Evento não encontrado no sistema.';
+          errorTitle = 'Evento não encontrado';
+        }
+        
         return res.status(400).json({
           success: false,
-          message: eventForPayment?.status === 'fechado_pedidos' 
-            ? 'Este evento está fechado para novos pedidos' 
-            : 'Este evento não está mais disponível para pedidos',
-          code: 'EVENT_NOT_AVAILABLE'
+          message: errorMessage,
+          title: errorTitle,
+          code: 'EVENT_NOT_AVAILABLE',
+          eventStatus: eventForPayment?.status || 'not_found'
         });
       }
 

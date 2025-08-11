@@ -104,12 +104,34 @@ export function CardPayment({
       if (data.success) {
         onSuccess(data);
       } else {
-        onError(data.message || 'Erro ao processar pagamento');
+        // Use the title and message from the server response for better error handling
+        const errorTitle = data.title || 'Erro no Pagamento';
+        const errorMessage = data.message || 'Erro ao processar pagamento';
+        const errorCode = data.code || 'UNKNOWN_ERROR';
+        
+        console.log('Payment error details:', { title: errorTitle, message: errorMessage, code: errorCode });
+        
+        // For event-related errors, show more specific feedback
+        if (errorCode === 'EVENT_NOT_AVAILABLE') {
+          onError(`${errorTitle}: ${errorMessage}`);
+        } else {
+          onError(`${errorTitle}: ${errorMessage}`);
+        }
       }
     },
     onError: (error: any) => {
       setIsProcessing(false);
-      onError('Erro ao processar pagamento com cartão');
+      console.log('Card payment mutation error:', error);
+      console.log('Error message:', error.message);
+      
+      // Check if this is an event-related error or gateway error
+      if (error.message && error.message.includes('Entre em contato conosco pelo WhatsApp')) {
+        onError(`Evento fechado: ${error.message}`);
+      } else if (error.message && error.message.includes('evento')) {
+        onError(`Problema com evento: ${error.message}`);
+      } else {
+        onError(`Erro no gateway: ${error.message || 'Erro ao processar pagamento com cartão'}`);
+      }
     }
   });
 
