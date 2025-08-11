@@ -3073,9 +3073,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({
             success: false,
             message: event.status === 'fechado_pedidos' 
-              ? 'Este evento está fechado para novos pagamentos e sem estoque disponível' 
+              ? 'Este evento está fechado e sem estoque disponível. Entre em contato conosco pelo WhatsApp para verificar possibilidades de pagamento.' 
               : 'Este evento não está mais disponível para pagamentos',
-            code: 'EVENT_NOT_AVAILABLE'
+            code: 'EVENT_NOT_AVAILABLE',
+            whatsappContact: event.status === 'fechado_pedidos'
           });
         }
       }

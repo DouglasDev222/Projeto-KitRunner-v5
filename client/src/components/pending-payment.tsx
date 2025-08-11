@@ -53,8 +53,10 @@ export function PendingPayment({ order, onPaymentSuccess, onPaymentError }: Pend
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
     },
     onError: (error: any) => {
+      const isWhatsAppContact = error.message && error.message.includes("Entre em contato conosco pelo WhatsApp");
+      
       toast({
-        title: "Erro ao renovar PIX",
+        title: isWhatsAppContact ? "Evento esgotado" : "Erro ao renovar PIX",
         description: error.message || "Tente novamente",
         variant: "destructive",
       });
