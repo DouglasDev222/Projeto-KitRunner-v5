@@ -3,21 +3,28 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     try {
-      // Clone the response so we can read it twice if needed
-      const resClone = res.clone();
       const data = await res.json();
       
       // If the response has a message field, use it
       if (data && data.message) {
-        throw new Error(data.message);
+        const error = new Error(data.message);
+        // Attach the full response data to the error for additional context
+        (error as any).responseData = data;
+        throw error;
       }
       
       // Otherwise use the whole response as text
       throw new Error(JSON.stringify(data));
     } catch (jsonError) {
-      // If JSON parsing failed, try to get text
+      // If it's already an Error from the JSON parsing above, re-throw it
+      if (jsonError instanceof Error && jsonError.message !== 'Unexpected end of JSON input') {
+        throw jsonError;
+      }
+      
+      // If JSON parsing failed, try to get text from a cloned response
       try {
-        const text = await res.text();
+        const clonedRes = res.clone();
+        const text = await clonedRes.text();
         throw new Error(text || res.statusText || `HTTP ${res.status}`);
       } catch (textError) {
         // Final fallback
