@@ -275,8 +275,8 @@ export class MercadoPagoService {
       return {
         success: false,
         error: error,
-        message: errorMessage,
-        title: errorTitle,
+        message: "Erro ao processar o pagamento", // Generic message for all gateway errors
+        title: "Erro no Pagamento",
         code: errorCode
       };
     }

@@ -115,7 +115,8 @@ export function CardPayment({
         if (errorCode === 'EVENT_NOT_AVAILABLE') {
           onError(`${errorTitle}: ${errorMessage}`);
         } else {
-          onError(`${errorTitle}: ${errorMessage}`);
+          // For gateway errors, show generic message
+          onError("Erro ao processar o pagamento");
         }
       }
     },
@@ -125,12 +126,14 @@ export function CardPayment({
       console.log('Error message:', error.message);
       
       // Check if this is an event-related error or gateway error
-      if (error.message && error.message.includes('Entre em contato conosco pelo WhatsApp')) {
-        onError(`Evento fechado: ${error.message}`);
-      } else if (error.message && error.message.includes('evento')) {
-        onError(`Problema com evento: ${error.message}`);
+      if (error.message && (error.message.includes('Entre em contato conosco pelo WhatsApp') || 
+                            error.message.includes('evento') || 
+                            error.message.includes('fechado') ||
+                            error.message.includes('desativado'))) {
+        onError(error.message);
       } else {
-        onError(`Erro no gateway: ${error.message || 'Erro ao processar pagamento com cartão'}`);
+        // For all gateway/payment processing errors, show generic message
+        onError("Erro ao processar o pagamento");
       }
     }
   });
