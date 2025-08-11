@@ -3063,16 +3063,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Dados do pedido não encontrados" });
       }
 
-      // SECURITY: Check if event is still active before allowing PIX renewal
+      // SECURITY: Check if event allows PIX renewal
       if (event.status !== 'ativo') {
-        console.log(`🚫 PIX renewal blocked - Event ${order.eventId} status: ${event.status}`);
-        return res.status(400).json({
-          success: false,
-          message: event.status === 'fechado_pedidos' 
-            ? 'Este evento está fechado para novos pagamentos' 
-            : 'Este evento não está mais disponível para pagamentos',
-          code: 'EVENT_NOT_AVAILABLE'
-        });
+        // Special case: allow PIX renewal if event is "fechado_pedidos" but still has stock
+        if (event.status === 'fechado_pedidos' && event.stockEnabled && event.maxOrders && event.currentOrders < event.maxOrders) {
+          console.log(`✅ PIX renewal allowed - Event ${order.eventId} is "fechado_pedidos" but has stock: ${event.currentOrders}/${event.maxOrders}`);
+        } else {
+          console.log(`🚫 PIX renewal blocked - Event ${order.eventId} status: ${event.status}, stock: ${event.currentOrders}/${event.maxOrders}`);
+          return res.status(400).json({
+            success: false,
+            message: event.status === 'fechado_pedidos' 
+              ? 'Este evento está fechado para novos pagamentos e sem estoque disponível' 
+              : 'Este evento não está mais disponível para pagamentos',
+            code: 'EVENT_NOT_AVAILABLE'
+          });
+        }
       }
 
       // Prepare payment data
