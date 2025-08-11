@@ -479,6 +479,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Evento não encontrado" });
       }
 
+      // SECURITY: Check if event is active before allowing order creation
+      if (selectedEvent.status !== 'ativo') {
+        console.log(`🚫 Order creation blocked - Event ${orderData.eventId} status: ${selectedEvent.status}`);
+        return res.status(400).json({
+          success: false,
+          error: selectedEvent.status === 'fechado_pedidos' 
+            ? 'Este evento está fechado para novos pedidos' 
+            : 'Este evento não está disponível no momento',
+          status: selectedEvent.status
+        });
+      }
+
       // NEW: Check event availability and stock
       const eventAvailability = await storage.checkEventAvailability(
         orderData.eventId, 
@@ -609,8 +621,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // NEW: Update event stock after successful order creation (increment by 1 order, not kit quantity)
       if (selectedEvent.stockEnabled) {
         try {
-          await storage.updateEventStock(orderData.eventId, 1);
+          const updatedEvent = await storage.updateEventStock(orderData.eventId, 1);
           console.log(`📦 Stock updated for event ${orderData.eventId}: +1 order (${orderData.kitQuantity} kits)`);
+          
+          // Check if this was the last available slot and close orders if needed
+          if (updatedEvent.maxOrders && updatedEvent.currentOrders >= updatedEvent.maxOrders) {
+            await storage.updateEventStatus(orderData.eventId, 'fechado_pedidos');
+            console.log(`🚫 Event ${orderData.eventId} closed for new orders - stock exhausted (${updatedEvent.currentOrders}/${updatedEvent.maxOrders})`);
+          }
         } catch (error) {
           console.error(`❌ Error updating event stock for event ${orderData.eventId}:`, error);
           // Log error but don't fail the order creation
@@ -1830,7 +1848,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const selectedEvent = await storage.getEvent(validatedOrderData.eventId);
           if (!selectedEvent) {
-            return res.status(404).json({ message: "Evento não encontrado" });
+            return res.status(404).json({ 
+              success: false,
+              message: "Evento não encontrado" 
+            });
+          }
+
+          // SECURITY: Check if event is still active before creating order after payment
+          if (selectedEvent.status !== 'ativo') {
+            console.log(`🚫 Order creation after payment blocked - Event ${validatedOrderData.eventId} status: ${selectedEvent.status}`);
+            return res.status(400).json({
+              success: false,
+              message: selectedEvent.status === 'fechado_pedidos' 
+                ? 'Este evento está fechado para novos pedidos' 
+                : 'Este evento não está mais disponível',
+              paymentId: result.id,
+              code: 'EVENT_NOT_AVAILABLE'
+            });
           }
 
           let totalCost = 0;
@@ -2014,6 +2048,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       if (!order) {
         return res.status(404).json({ message: "Pedido não encontrado" });
+      }
+
+      // SECURITY: Check if event is still active before processing PIX payment
+      const event = await storage.getEvent(order.eventId);
+      if (!event || event.status !== 'ativo') {
+        console.log(`🚫 PIX payment blocked - Event ${order.eventId} status: ${event?.status || 'not found'}`);
+        return res.status(400).json({
+          success: false,
+          message: event?.status === 'fechado_pedidos' 
+            ? 'Este evento está fechado para novos pagamentos' 
+            : 'Este evento não está mais disponível para pagamentos',
+          code: 'EVENT_NOT_AVAILABLE'
+        });
       }
 
       const [firstName, ...lastNameParts] = customerName.split(' ');
@@ -3000,6 +3047,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!customer || !event) {
         return res.status(404).json({ message: "Dados do pedido não encontrados" });
+      }
+
+      // SECURITY: Check if event is still active before allowing PIX renewal
+      if (event.status !== 'ativo') {
+        console.log(`🚫 PIX renewal blocked - Event ${order.eventId} status: ${event.status}`);
+        return res.status(400).json({
+          success: false,
+          message: event.status === 'fechado_pedidos' 
+            ? 'Este evento está fechado para novos pagamentos' 
+            : 'Este evento não está mais disponível para pagamentos',
+          code: 'EVENT_NOT_AVAILABLE'
+        });
       }
 
       // Prepare payment data
