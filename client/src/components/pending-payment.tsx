@@ -46,7 +46,10 @@ export function PendingPayment({ order, onPaymentSuccess, onPaymentError }: Pend
 
   // Renew PIX mutation
   const renewPixMutation = useMutation({
-    mutationFn: () => apiRequest("POST", `/api/orders/${order.orderNumber}/renew-pix`),
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/orders/${order.orderNumber}/renew-pix`);
+      return response.json();
+    },
     onSuccess: () => {
       toast({ title: "PIX renovado com sucesso!" });
       refetchPaymentStatus();
