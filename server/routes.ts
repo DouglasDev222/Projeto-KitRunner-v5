@@ -22,6 +22,19 @@ import couponsRoutes from './routes/coupons';
 import policyRoutes from './routes/policies';
 import { CouponService } from './coupon-service';
 
+// Helper function to check and close event if stock is exhausted
+async function checkAndCloseEventIfNeeded(eventId: number) {
+  try {
+    const event = await storage.getEvent(eventId);
+    if (event && event.stockEnabled && event.maxOrders && event.currentOrders >= event.maxOrders) {
+      await storage.updateEventStatus(eventId, 'fechado_pedidos');
+      console.log(`🚫 Event ${eventId} closed for new orders - stock exhausted (${event.currentOrders}/${event.maxOrders})`);
+    }
+  } catch (error) {
+    console.error(`❌ Error checking/closing event ${eventId}:`, error);
+  }
+}
+
 // Security: Rate limiting for payment endpoints
 const paymentRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -624,11 +637,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const updatedEvent = await storage.updateEventStock(orderData.eventId, 1);
           console.log(`📦 Stock updated for event ${orderData.eventId}: +1 order (${orderData.kitQuantity} kits)`);
           
-          // Check if this was the last available slot and close orders if needed
-          if (updatedEvent.maxOrders && updatedEvent.currentOrders >= updatedEvent.maxOrders) {
-            await storage.updateEventStatus(orderData.eventId, 'fechado_pedidos');
-            console.log(`🚫 Event ${orderData.eventId} closed for new orders - stock exhausted (${updatedEvent.currentOrders}/${updatedEvent.maxOrders})`);
-          }
+          // NOTE: Event closure will be handled after payment is successfully created
+          // to avoid blocking the payment process for the current order
         } catch (error) {
           console.error(`❌ Error updating event stock for event ${orderData.eventId}:`, error);
           // Log error but don't fail the order creation
@@ -1950,6 +1960,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           console.log(`✅ Order ${order.orderNumber} created successfully with status: ${order.status}`);
 
+          // After successful order creation, check if event should be closed due to stock exhaustion
+          await checkAndCloseEventIfNeeded(validatedOrderData.eventId);
+
           // Schedule payment pending email if payment is not yet approved
           if (result.status !== 'approved') {
             PaymentReminderScheduler.schedulePaymentPendingEmail(order.orderNumber, 1);
@@ -2089,6 +2102,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (result) {
         console.log(`💳 PIX payment created for order ${orderId} (${order.orderNumber}) - Payment ID: ${result.id}`);
+        
+        // After successful PIX creation, check if event should be closed due to stock exhaustion
+        await checkAndCloseEventIfNeeded(order.eventId);
 
         // Calculate PIX expiration date (30 minutes from now) with proper timezone handling
         const pixExpiration = new Date();
