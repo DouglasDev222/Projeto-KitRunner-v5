@@ -1795,6 +1795,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // SECURITY: Check if event is active BEFORE processing payment
+      const eventForPayment = await storage.getEvent(orderData.eventId);
+      if (!eventForPayment || eventForPayment.status !== 'ativo') {
+        console.log(`🚫 Card payment blocked BEFORE gateway - Event ${orderData.eventId} status: ${eventForPayment?.status || 'not found'}`);
+        return res.status(400).json({
+          success: false,
+          message: eventForPayment?.status === 'fechado_pedidos' 
+            ? 'Este evento está fechado para novos pedidos' 
+            : 'Este evento não está mais disponível para pedidos',
+          code: 'EVENT_NOT_AVAILABLE'
+        });
+      }
+
       const [firstName, ...lastNameParts] = customerName.split(' ');
       const lastName = lastNameParts.join(' ') || '';
 
@@ -1854,18 +1867,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
 
-          // SECURITY: Check if event is still active before creating order after payment
-          if (selectedEvent.status !== 'ativo') {
-            console.log(`🚫 Order creation after payment blocked - Event ${validatedOrderData.eventId} status: ${selectedEvent.status}`);
-            return res.status(400).json({
-              success: false,
-              message: selectedEvent.status === 'fechado_pedidos' 
-                ? 'Este evento está fechado para novos pedidos' 
-                : 'Este evento não está mais disponível',
-              paymentId: result.id,
-              code: 'EVENT_NOT_AVAILABLE'
-            });
-          }
+
 
           let totalCost = 0;
           let baseCost = 0;
