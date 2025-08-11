@@ -56,14 +56,24 @@ export function PendingPayment({ order, onPaymentSuccess, onPaymentError }: Pend
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
     },
     onError: (error: any) => {
+      console.log('PIX renewal error:', error);
+      console.log('Error message:', error.message);
+      console.log('Error details:', JSON.stringify(error, null, 2));
+      
       const isWhatsAppContact = error.message && error.message.includes("Entre em contato conosco pelo WhatsApp");
       
+      // For stock-related errors, show WhatsApp contact message
+      const errorMessage = error.message || error.toString() || "Tente novamente";
+      const isStockIssue = errorMessage.includes("fechado") || errorMessage.includes("estoque") || errorMessage.includes("WhatsApp");
+      
       toast({
-        title: isWhatsAppContact ? "Evento esgotado" : "Erro ao renovar PIX",
-        description: error.message || "Tente novamente",
+        title: isStockIssue ? "Evento esgotado" : "Erro ao renovar PIX",
+        description: isStockIssue 
+          ? "Este evento está fechado e sem estoque disponível. Entre em contato conosco pelo WhatsApp para verificar possibilidades de pagamento."
+          : errorMessage,
         variant: "destructive",
       });
-      onPaymentError(error.message);
+      onPaymentError(errorMessage);
     }
   });
 
