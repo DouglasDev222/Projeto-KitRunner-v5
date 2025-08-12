@@ -586,7 +586,7 @@ Sistema: KitRunner Email Notification System
   async sendAdminOrderConfirmations(data: AdminOrderConfirmationData, orderId?: number): Promise<boolean> {
     try {
       // Get all admins who want to receive order emails
-      const admins = await this.storage.getAdminUsersWithEmailNotifications();
+      const admins = await (this.storage as any).getAdminUsersWithEmailNotifications();
       
       if (admins.length === 0) {
         console.log('📧 No administrators configured to receive order emails');
