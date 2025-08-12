@@ -11,6 +11,7 @@ import {
   Package,
   Clock,
   Users,
+  Zap,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -220,7 +221,7 @@ export default function Events() {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-3 rounded-xl">
-                  <Users className="h-5 w-5 text-white" />
+                  <Zap className="h-5 w-5 text-white" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">
