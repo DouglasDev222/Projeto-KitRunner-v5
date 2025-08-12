@@ -1647,12 +1647,129 @@ export function generateAdminOrderConfirmationTemplate(
   data: AdminOrderConfirmationData,
 ): EmailTemplate {
   const theme = EmailUtils.mergeTheme(data.theme);
-  const fs = require('fs');
-  const path = require('path');
   
-  // Load HTML template
-  const templatePath = path.join(__dirname, 'templates', 'admin-order-confirmation.html');
-  let html = fs.readFileSync(templatePath, 'utf8');
+  // Inline HTML template for admin notifications
+  let html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novo Pedido Confirmado - {{companyName}}</title>
+    <style>
+        body {
+            font-family: {{fontFamily}};
+            margin: 0;
+            padding: 20px;
+            background-color: {{backgroundColor}};
+            color: {{textColor}};
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: {{primaryColor}};
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+        }
+        .order-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid {{accentColor}};
+        }
+        .customer-info, .event-info, .payment-info {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid {{borderColor}};
+            border-radius: 6px;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid {{borderColor}};
+        }
+        .button {
+            display: inline-block;
+            background: {{primaryColor}};
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .status-badge {
+            display: inline-block;
+            background: {{secondaryColor}};
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔔 Novo Pedido Confirmado</h1>
+            <p>Um novo pedido foi confirmado e requer sua atenção</p>
+        </div>
+        
+        <div class="content">
+            <div class="order-info">
+                <h2>📋 Pedido: {{orderNumber}}</h2>
+                <p><strong>Status:</strong> <span class="status-badge">{{status}}</span></p>
+                <p><strong>Data de Criação:</strong> {{orderCreatedAt}}</p>
+                <p><strong>Método de Pagamento:</strong> {{paymentMethod}}</p>
+                <p><strong>Valor Total:</strong> <strong>{{totalCost}}</strong></p>
+            </div>
+
+            <div class="customer-info">
+                <h3>👤 Informações do Cliente</h3>
+                <p><strong>Nome:</strong> {{customerName}}</p>
+                <p><strong>CPF:</strong> {{customerCPF}}</p>
+                <p><strong>Email:</strong> {{customerEmail}}</p>
+                <p><strong>Telefone:</strong> {{customerPhone}}</p>
+            </div>
+
+            <div class="event-info">
+                <h3>🏃‍♂️ Evento</h3>
+                <p><strong>Nome:</strong> {{eventName}}</p>
+                <p><strong>Data:</strong> {{eventDate}}</p>
+                <p><strong>Local:</strong> {{eventLocation}}</p>
+            </div>
+
+            <div class="payment-info">
+                <h3>💰 Resumo Financeiro</h3>
+                <p><strong>Taxa de Entrega:</strong> {{deliveryCost}}</p>
+                <p><strong>Kits Extras:</strong> {{extraKitsCost}}</p>
+                <p><strong>Doação:</strong> {{donationCost}}</p>
+                <p><strong>Total:</strong> <strong>{{totalCost}}</strong></p>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{adminPanelUrl}}" class="button">Ver Detalhes no Painel</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>{{companyName}}</p>
+            <p>{{address}}</p>
+        </div>
+    </div>
+</body>
+</html>`;
   
   // Replace template variables
   html = html.replace(/{{fontFamily}}/g, theme.fontFamily);
