@@ -1984,17 +1984,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Cancel any scheduled payment pending email since payment was approved
             PaymentReminderScheduler.cancelScheduledEmail(order.orderNumber);
 
+            // For card payments, let the webhook handle the confirmation to avoid duplicates
+            // We'll just update the status without triggering email here
             await storage.updateOrderStatus(
               order.id, 
               'confirmado', 
               'mercadopago', 
               'Mercado Pago', 
-              'Pagamento aprovado'
+              'Pagamento aprovado via API direta',
+              undefined,
+              false // Don't send email here - let webhook handle it
             );
-            console.log(`✅ Order ${order.orderNumber} status updated to confirmado - payment approved`);
-
-            // Note: Email will be sent automatically by updateOrderStatus when status changes to 'confirmado'
-            console.log(`📧 Service confirmation email will be sent automatically by status update system for order ${order.orderNumber}`);
+            console.log(`✅ Order ${order.orderNumber} status updated to confirmado - payment approved (email will be sent via webhook)`);
           }
 
           res.json({
@@ -2352,7 +2353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { action, data } = req.body;
 
-      if (action === 'payment.updated' && data?.id) {
+      if ((action === 'payment.updated' || action === 'payment.created') && data?.id) {
         const result = await MercadoPagoService.getPaymentStatus(data.id);
 
         if (result.success && result.payment) {
@@ -2363,18 +2364,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const order = await storage.getOrderByNumber(orderId);
             if (order) {
               if (result.status === 'approved') {
-                // Check if order is already confirmed to avoid duplicate processing
+                console.log(`🔍 Webhook: Checking order ${orderId} current status: ${order.status}`);
+                
+                // For already confirmed orders, just ensure email was sent if needed
                 if (order.status === 'confirmado') {
-                  console.log(`⚠️ Webhook: Order ${orderId} is already confirmed - skipping duplicate processing`);
+                  console.log(`⚠️ Webhook: Order ${orderId} is already confirmed - ensuring email was sent`);
+                  
+                  // Trigger email send since the direct payment API skipped it
+                  const fullOrder = await storage.getOrderByIdWithDetails(order.id);
+                  if (fullOrder && fullOrder.customer?.email) {
+                    try {
+                      const emailService = new EmailService(storage);
+                      const serviceConfirmationData = EmailDataMapper.mapToServiceConfirmation(fullOrder);
+                      await emailService.sendServiceConfirmation(
+                        serviceConfirmationData,
+                        fullOrder.customer.email,
+                        fullOrder.id,
+                        fullOrder.customerId
+                      );
+                      console.log(`📧 Webhook: Service confirmation email sent for order ${fullOrder.orderNumber}`);
+                    } catch (emailError) {
+                      console.error('Webhook: Error sending confirmation email:', emailError);
+                    }
+                  }
                   return res.status(200).send('OK');
                 }
                 
                 console.log(`✅ Webhook: Payment approved for order ${orderId} (ID: ${order.id}) - updating to confirmed`);
                 await storage.updateOrderStatus(order.id, 'confirmado', 'mercadopago', 'Mercado Pago', 'Pagamento aprovado via webhook');
                 console.log(`✅ Webhook: Order ${orderId} status successfully updated to confirmed`);
-
-                // Note: Email will be sent automatically by updateOrderStatus when status changes to 'confirmado'
-                console.log(`📧 Webhook: Service confirmation email will be sent automatically by status update system for order ${orderId}`);
               } else if (result.status === 'cancelled' || result.status === 'rejected') {
                 console.log(`❌ Webhook: Payment failed for order ${orderId} (ID: ${order.id}) - updating to canceled`);
                 await storage.updateOrderStatus(order.id, 'cancelado', 'mercadopago', 'Mercado Pago', 'Pagamento rejeitado via webhook');
