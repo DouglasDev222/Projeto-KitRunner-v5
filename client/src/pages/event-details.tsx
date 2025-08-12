@@ -133,7 +133,7 @@ export default function EventDetails() {
   const handleShare = async () => {
     const shareData = {
       title: `${event?.name} - KitRunner`,
-      text: `Confira este evento: ${event?.name}. Retirada e entrega de kit facilitada!`,
+      text: `🏃‍♂️ ${event?.name}\n\nFaça sua solicitação de retirada e receba seu kit em casa! Sem filas, sem estresse - o KitRunner cuida de tudo para você. 📦✨`,
       url: window.location.href,
     };
 
