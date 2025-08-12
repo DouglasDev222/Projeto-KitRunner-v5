@@ -1,5 +1,8 @@
 import sgMail from '@sendgrid/mail';
 import { DatabaseStorage } from '../storage';
+import { db } from '../db';
+import { adminUsers } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 import { 
   generateServiceConfirmationTemplate, 
   generateStatusUpdateTemplate,
@@ -586,7 +589,14 @@ Sistema: KitRunner Email Notification System
   async sendAdminOrderConfirmations(data: AdminOrderConfirmationData, orderId?: number): Promise<boolean> {
     try {
       // Get all admins who want to receive order emails
-      const admins = await (this.storage as any).getAdminUsersWithEmailNotifications();
+      const admins = await db
+        .select({
+          id: adminUsers.id,
+          email: adminUsers.email,
+          fullName: adminUsers.fullName
+        })
+        .from(adminUsers)
+        .where(eq(adminUsers.receiveOrderEmails, true));
       
       if (admins.length === 0) {
         console.log('📧 No administrators configured to receive order emails');
