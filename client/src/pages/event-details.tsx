@@ -87,7 +87,10 @@ export default function EventDetails() {
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header showBackButton />
+        <Header 
+          showBackButton 
+          title="Detalhes do Evento"
+        />
         <div className="p-4">
           <div className="animate-pulse">
             <div className="h-48 bg-gray-200 rounded-lg mb-6" />
@@ -104,7 +107,10 @@ export default function EventDetails() {
   if (!event) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header showBackButton />
+        <Header 
+          showBackButton 
+          title="Detalhes do Evento"
+        />
         <div className="p-4">
           <p className="text-center text-neutral-600">Evento não encontrado</p>
         </div>
@@ -124,6 +130,34 @@ export default function EventDetails() {
     }
   };
 
+  const handleShare = async () => {
+    const shareData = {
+      title: `${event?.name} - KitRunner`,
+      text: `Confira este evento: ${event?.name}. Retirada e entrega de kit facilitada!`,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(window.location.href);
+        // You could add a toast notification here
+        console.log('Link copiado para a área de transferência!');
+      }
+    } catch (error) {
+      console.error('Erro ao compartilhar:', error);
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        console.log('Link copiado para a área de transferência!');
+      } catch (clipboardError) {
+        console.error('Erro ao copiar para área de transferência:', clipboardError);
+      }
+    }
+  };
+
   // Check if event is in the past
   const isPastEvent = (() => {
     const [year, month, day] = event.date.split('-');
@@ -139,7 +173,12 @@ export default function EventDetails() {
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
-      <Header showBackButton />
+      <Header 
+        showBackButton 
+        title="Detalhes do Evento"
+        showShareButton 
+        onShare={handleShare}
+      />
       <div className="p-4 pb-20">
         {/* Hero Section */}
         <div className="relative h-48 bg-gradient-to-br from-primary to-secondary rounded-lg mb-6 flex items-center justify-center">
