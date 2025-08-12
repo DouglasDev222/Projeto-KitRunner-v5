@@ -1984,18 +1984,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Cancel any scheduled payment pending email since payment was approved
             PaymentReminderScheduler.cancelScheduledEmail(order.orderNumber);
 
-            // For card payments, let the webhook handle the confirmation to avoid duplicates
-            // We'll just update the status without triggering email here
+            // Update order status to confirmado and send emails
             await storage.updateOrderStatus(
               order.id, 
               'confirmado', 
               'mercadopago', 
               'Mercado Pago', 
-              'Pagamento aprovado via API direta',
+              'Pagamento aprovado via cartão',
               undefined,
-              false // Don't send email here - let webhook handle it
+              true // Send customer email
             );
-            console.log(`✅ Order ${order.orderNumber} status updated to confirmado - payment approved (email will be sent via webhook)`);
+
+            // Send admin notifications for card payment
+            try {
+              const orderWithDetails = await storage.getOrderWithFullDetails(order.id);
+              if (orderWithDetails) {
+                const { EmailService } = await import('./email/email-service');
+                const { EmailDataMapper } = await import('./email/email-data-mapper');
+                
+                const emailService = new EmailService(storage);
+                const adminEmailData = EmailDataMapper.mapToAdminOrderConfirmation(
+                  orderWithDetails,
+                  `${req.protocol}://${req.get('host')}/admin/orders/${order.id}`
+                );
+                
+                console.log('📧 Sending admin notifications for card payment approval...');
+                await emailService.sendAdminOrderConfirmations(adminEmailData, order.id);
+              }
+            } catch (emailError) {
+              console.error('❌ Error sending admin notification for card payment:', emailError);
+              // Don't fail the payment process if email fails
+            }
+
+            console.log(`✅ Order ${order.orderNumber} status updated to confirmado - payment approved via card`);
           }
 
           res.json({

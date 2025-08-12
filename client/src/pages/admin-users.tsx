@@ -26,6 +26,7 @@ export default function AdminUsers() {
     password: '',
     fullName: '',
     role: 'admin',
+    receiveOrderEmails: false,
   });
 
   const { admin } = useAdminAuth();
@@ -54,6 +55,7 @@ export default function AdminUsers() {
         password: '',
         fullName: '',
         role: 'admin',
+        receiveOrderEmails: false,
       });
       toast({
         title: "Usuário criado",
@@ -240,6 +242,19 @@ export default function AdminUsers() {
                 </Select>
               </div>
               
+              <div className="flex items-center space-x-2">
+                <input 
+                  type="checkbox" 
+                  id="receiveOrderEmails"
+                  checked={newUser.receiveOrderEmails}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, receiveOrderEmails: e.target.checked }))}
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="receiveOrderEmails" className="text-sm">
+                  Receber emails de novos pedidos
+                </Label>
+              </div>
+              
               <div className="flex gap-2">
                 <Button 
                   type="submit" 
@@ -330,6 +345,19 @@ export default function AdminUsers() {
                 </Select>
               </div>
               
+              <div className="flex items-center space-x-2">
+                <input 
+                  type="checkbox" 
+                  id="edit-receiveOrderEmails"
+                  checked={editingUser?.receiveOrderEmails || false}
+                  onChange={(e) => setEditingUser(prev => prev ? {...prev, receiveOrderEmails: e.target.checked} : null)}
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-receiveOrderEmails" className="text-sm">
+                  Receber emails de novos pedidos
+                </Label>
+              </div>
+              
               <div className="flex gap-2 pt-4">
                 <Button 
                   type="submit" 
@@ -381,6 +409,7 @@ export default function AdminUsers() {
                   <TableHead>Email</TableHead>
                   <TableHead>Função</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Emails</TableHead>
                   <TableHead>Último Acesso</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
@@ -409,6 +438,11 @@ export default function AdminUsers() {
                     <TableCell>
                       <Badge variant={user.isActive ? 'default' : 'destructive'}>
                         {user.isActive ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={user.receiveOrderEmails ? 'default' : 'secondary'}>
+                        {user.receiveOrderEmails ? 'Sim' : 'Não'}
                       </Badge>
                     </TableCell>
                     <TableCell>

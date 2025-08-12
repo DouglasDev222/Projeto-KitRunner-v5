@@ -467,12 +467,16 @@ export interface CreateAdminUser {
   password: string;
   fullName: string;
   role?: string;
+  receiveOrderEmails?: boolean;
 }
 
 export interface UpdateAdminUser {
   username?: string;
   email?: string;
   fullName?: string;
+  role?: string;
+  isActive?: boolean;
+  receiveOrderEmails?: boolean;
   role?: string;
   isActive?: boolean;
 }

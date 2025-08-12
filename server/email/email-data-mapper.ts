@@ -379,36 +379,12 @@ export class EmailDataMapper {
         shirtSize: kit.shirtSize as "PP" | "P" | "M" | "G" | "GG" | "XG" | "XXG",
         category: 'Kit'
       })),
-      address: data.address,
       newStatus: data.newStatus as OrderStatus,
       previousStatus: data.previousStatus as OrderStatus,
       statusDescription: this.getStatusDescription(data.newStatus),
       nextSteps: this.getNextSteps(data.newStatus),
       estimatedTime: this.getEstimatedTime(data.newStatus, data.eventDate),
       trackingCode: undefined // Not used for status updates
-    };
-  }
-
-  /**
-   * Map database order to AdminOrderConfirmationData
-   */
-  static mapToAdminOrderConfirmation(order: DatabaseOrder): AdminOrderConfirmationData {
-    return {
-      customerName: order.customer.name,
-      customerEmail: order.customer.email,
-      customerCPF: order.customer.cpf,
-      customerPhone: order.customer.phone,
-      orderNumber: order.orderNumber,
-      eventName: order.event.name,
-      eventDate: order.event.date,
-      eventLocation: order.event.location,
-      kits: this.mapKits(order.kits || []),
-      address: this.mapAddress(order.address),
-      pricing: this.mapPricing(order),
-      paymentMethod: this.mapPaymentMethod(order.paymentMethod),
-      status: this.mapOrderStatus(order.status),
-      adminPanelUrl: `${process.env.FRONTEND_URL || 'https://kitrunner.com.br'}/admin/orders/${order.id}`,
-      orderCreatedAt: order.createdAt
     };
   }
 
@@ -422,7 +398,7 @@ export class EmailDataMapper {
     const kits: KitItem[] = (order.kits || []).map(kit => ({
       name: kit.name,
       cpf: kit.cpf,
-      shirtSize: kit.shirtSize,
+      shirtSize: kit.shirtSize as "PP" | "P" | "M" | "G" | "GG" | "XG" | "XXG",
       category: 'Participante' // Default category for admin notifications
     }));
 
@@ -472,7 +448,6 @@ export class EmailDataMapper {
         address: 'KitRunner - Sistema de Gestão de Kits',
         supportEmail: 'contato@kitrunner.com.br',
         supportPhone: '(11) 99999-9999',
-        website: 'https://kitrunner.replit.app',
         accentColor: '#F59E0B'
       }
     };
