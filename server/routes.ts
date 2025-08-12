@@ -2212,7 +2212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
                   if (fullOrder.customer?.email) {
                     const { EmailDataMapper } = await import('./email/email-data-mapper');
-                    const paymentConfirmationData = EmailDataMapper.orderToServiceConfirmationData(fullOrder);
+                    const paymentConfirmationData = EmailDataMapper.mapToServiceConfirmation(fullOrder);
 
                     await emailService.sendPaymentConfirmation(
                       paymentConfirmationData,

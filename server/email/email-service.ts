@@ -596,14 +596,14 @@ Sistema: KitRunner Email Notification System
       console.log(`📧 Sending admin order confirmation to ${admins.length} administrator(s)`);
       
       // Send emails in parallel to all admin recipients
-      const emailPromises = admins.map(admin => 
+      const emailPromises = admins.map((admin: { id: number; email: string; fullName: string }) => 
         this.sendAdminOrderConfirmation(data, admin.email, orderId)
       );
       
       const results = await Promise.allSettled(emailPromises);
       
       // Count successful sends
-      const successful = results.filter(result => 
+      const successful = results.filter((result: PromiseSettledResult<boolean>) => 
         result.status === 'fulfilled' && result.value === true
       ).length;
       
