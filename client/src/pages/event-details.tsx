@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { formatDateTime, formatCurrency } from "@/lib/brazilian-formatter";
 import { useAuth } from "@/lib/auth-context";
+import { useState, useEffect } from "react";
 import type { Event } from "@shared/schema";
 
 // Helper functions for event status logic
@@ -53,6 +54,7 @@ export default function EventDetails() {
   const [, setLocation] = useLocation();
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated, user } = useAuth();
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
 
   const { data: event, isLoading } = useQuery<Event>({
     queryKey: ["/api/events", id],
@@ -118,6 +120,23 @@ export default function EventDetails() {
     );
   }
 
+  // Detect if user has scrolled to bottom
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      
+      // Check if user is at or near the bottom (within 50px)
+      if (scrollTop + windowHeight >= documentHeight - 50) {
+        setHasScrolledToBottom(true);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const handleRequestPickup = () => {
     if (!isAuthenticated) {
       // Store the intended destination for after login
@@ -127,6 +146,19 @@ export default function EventDetails() {
       // User is authenticated, store user data and proceed directly to address
       sessionStorage.setItem("customerData", JSON.stringify(user));
       setLocation(`/events/${id}/address`);
+    }
+  };
+
+  const handleFixedCTAClick = () => {
+    if (!hasScrolledToBottom) {
+      // First click: scroll to bottom
+      window.scrollTo({ 
+        top: document.documentElement.scrollHeight, 
+        behavior: 'smooth' 
+      });
+    } else {
+      // Second click: proceed to next step
+      handleRequestPickup();
     }
   };
 
@@ -344,7 +376,24 @@ export default function EventDetails() {
           {buttonText}
         </Button>
       </div>
-      <Footer />
+
+      {/* Fixed CTA Button */}
+      {eventAvailable && (
+        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 p-4 z-50">
+          <Button 
+            className="w-full bg-secondary text-white hover:bg-secondary/90 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg" 
+            size="lg"
+            onClick={handleFixedCTAClick}
+            disabled={!eventAvailable}
+          >
+            {!hasScrolledToBottom ? "Ver Mais Detalhes ↓" : buttonText}
+          </Button>
+        </div>
+      )}
+
+      <div className={eventAvailable ? "pb-20" : ""}>
+        <Footer />
+      </div>
     </div>
   );
 }
