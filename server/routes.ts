@@ -2363,6 +2363,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const order = await storage.getOrderByNumber(orderId);
             if (order) {
               if (result.status === 'approved') {
+                // Check if order is already confirmed to avoid duplicate processing
+                if (order.status === 'confirmado') {
+                  console.log(`⚠️ Webhook: Order ${orderId} is already confirmed - skipping duplicate processing`);
+                  return res.status(200).send('OK');
+                }
+                
                 console.log(`✅ Webhook: Payment approved for order ${orderId} (ID: ${order.id}) - updating to confirmed`);
                 await storage.updateOrderStatus(order.id, 'confirmado', 'mercadopago', 'Mercado Pago', 'Pagamento aprovado via webhook');
                 console.log(`✅ Webhook: Order ${orderId} status successfully updated to confirmed`);
