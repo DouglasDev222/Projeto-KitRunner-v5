@@ -217,7 +217,7 @@ const Landing = () => {
 
             {/* View All Events Button */}
             <div className="text-center">
-              <Button variant="outline" onClick={() => setLocation("/events")} className="mt-4">
+              <Button variant="outline" onClick={() => setLocation("/eventos")} className="mt-4">
                 Ver Todos os Eventos
                 <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
