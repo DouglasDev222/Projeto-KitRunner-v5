@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calendar, MapPin, Users, Truck, Clock, Shield, Heart, DollarSign } from "lucide-react";
+import { Calendar, MapPin, Users, Truck, Clock, Shield, Heart, DollarSign, Zap } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { formatDateTime, formatCurrency } from "@/lib/brazilian-formatter";
@@ -184,7 +184,7 @@ export default function EventDetails() {
         <div className="relative h-48 bg-gradient-to-br from-primary to-secondary rounded-lg mb-6 flex items-center justify-center">
           <div className="text-center text-white">
             <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
-              <Users className="w-8 h-8" />
+              <Zap className="w-8 h-8" />
             </div>
             <h2 className="text-xl font-bold">{event.name}</h2>
           </div>
