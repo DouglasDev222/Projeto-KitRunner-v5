@@ -141,6 +141,22 @@ export interface PaymentPendingData extends BaseEmailData {
   totalAmount: string;
 }
 
+// Admin Order Confirmation Email
+export interface AdminOrderConfirmationData extends BaseEmailData {
+  customerCPF: string;
+  customerPhone: string;
+  eventName: string;
+  eventDate: string;
+  eventLocation: string;
+  kits: KitItem[];
+  address: DeliveryAddress;
+  pricing: PricingInfo;
+  paymentMethod: PaymentMethod;
+  status: OrderStatus;
+  adminPanelUrl: string;
+  orderCreatedAt: string;
+}
+
 // Welcome Email
 export interface WelcomeData extends BaseEmailData {
   // Welcome email is simpler, just basic info
@@ -187,6 +203,7 @@ export type EmailType =
   | 'delivery_confirmation'
   | 'status_update'
   | 'payment_pending'
+  | 'admin_order_confirmation'
   | 'welcome'
   | 'password_reset'
   | 'promotional';

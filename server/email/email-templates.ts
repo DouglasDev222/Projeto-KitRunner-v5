@@ -5,6 +5,7 @@ import {
   DeliveryConfirmationData,
   StatusUpdateData,
   PaymentPendingData,
+  AdminOrderConfirmationData,
   WelcomeData,
   PasswordResetData,
   PromotionalData,
@@ -1636,6 +1637,136 @@ export function generatePaymentPendingTemplate(
 
   return {
     subject: `⏳ Aguardando Pagamento - Finalize seu pedido! ${data.orderNumber}`,
+    html,
+    text,
+  };
+}
+
+// Admin Order Confirmation Email Template
+export function generateAdminOrderConfirmationTemplate(
+  data: AdminOrderConfirmationData,
+): EmailTemplate {
+  const theme = EmailUtils.mergeTheme(data.theme);
+  const fs = require('fs');
+  const path = require('path');
+  
+  // Load HTML template
+  const templatePath = path.join(__dirname, 'templates', 'admin-order-confirmation.html');
+  let html = fs.readFileSync(templatePath, 'utf8');
+  
+  // Replace template variables
+  html = html.replace(/{{fontFamily}}/g, theme.fontFamily);
+  html = html.replace(/{{backgroundColor}}/g, theme.backgroundColor);
+  html = html.replace(/{{primaryColor}}/g, theme.primaryColor);
+  html = html.replace(/{{accentColor}}/g, theme.accentColor);
+  html = html.replace(/{{secondaryColor}}/g, theme.secondaryColor);
+  html = html.replace(/{{textColor}}/g, theme.textColor);
+  html = html.replace(/{{borderColor}}/g, theme.borderColor);
+  html = html.replace(/{{companyName}}/g, theme.companyName);
+  html = html.replace(/{{address}}/g, theme.address);
+  
+  // Replace order data
+  html = html.replace(/{{orderNumber}}/g, data.orderNumber);
+  html = html.replace(/{{customerName}}/g, data.customerName);
+  html = html.replace(/{{customerEmail}}/g, data.customerEmail);
+  html = html.replace(/{{customerCPF}}/g, EmailUtils.formatCPF(data.customerCPF));
+  html = html.replace(/{{customerPhone}}/g, EmailUtils.formatPhone(data.customerPhone));
+  html = html.replace(/{{eventName}}/g, data.eventName);
+  html = html.replace(/{{eventDate}}/g, EmailUtils.formatDate(data.eventDate));
+  html = html.replace(/{{eventLocation}}/g, data.eventLocation);
+  html = html.replace(/{{status}}/g, EmailUtils.getStatusDisplay(data.status).text);
+  html = html.replace(/{{paymentMethod}}/g, EmailUtils.formatPaymentMethod(data.paymentMethod));
+  html = html.replace(/{{totalCost}}/g, EmailUtils.formatCurrency(data.pricing.totalCost));
+  html = html.replace(/{{adminPanelUrl}}/g, data.adminPanelUrl);
+  html = html.replace(/{{orderCreatedAt}}/g, EmailUtils.formatDate(data.orderCreatedAt));
+  
+  // Replace address data
+  html = html.replace(/{{address\.street}}/g, data.address.street);
+  html = html.replace(/{{address\.number}}/g, data.address.number);
+  html = html.replace(/{{address\.complement}}/g, data.address.complement || '');
+  html = html.replace(/{{address\.neighborhood}}/g, data.address.neighborhood);
+  html = html.replace(/{{address\.city}}/g, data.address.city);
+  html = html.replace(/{{address\.state}}/g, data.address.state);
+  html = html.replace(/{{address\.zipCode}}/g, data.address.zipCode);
+  
+  // Replace pricing data
+  html = html.replace(/{{pricing\.deliveryCost}}/g, EmailUtils.formatCurrency(data.pricing.deliveryCost));
+  html = html.replace(/{{pricing\.extraKitsCost}}/g, EmailUtils.formatCurrency(data.pricing.extraKitsCost));
+  html = html.replace(/{{pricing\.donationCost}}/g, data.pricing.donationCost ? EmailUtils.formatCurrency(data.pricing.donationCost) : '');
+  html = html.replace(/{{pricing\.totalCost}}/g, EmailUtils.formatCurrency(data.pricing.totalCost));
+  
+  // Handle kits section with Handlebars-like syntax
+  const kitsSection = data.kits.map(kit => `
+    <div class="kit-item">
+      <div class="kit-grid">
+        <div>
+          <div class="kit-name">${kit.name}</div>
+          <div class="kit-cpf">CPF: ${EmailUtils.formatCPF(kit.cpf)}</div>
+        </div>
+        <div class="kit-size">${kit.shirtSize}</div>
+      </div>
+    </div>
+  `).join('');
+  
+  html = html.replace(/{{#each kits}}[\s\S]*?{{\/each}}/g, kitsSection);
+  
+  // Handle conditional content
+  html = html.replace(/{{#if address\.complement}}[\s\S]*?{{\/if}}/g, 
+    data.address.complement ? `<p>${data.address.complement}</p>` : '');
+  html = html.replace(/{{#if pricing\.extraKitsCost}}[\s\S]*?{{\/if}}/g, 
+    data.pricing.extraKitsCost && Number(data.pricing.extraKitsCost) > 0 ? 
+    `<tr><th>Kits Extras</th><td>${EmailUtils.formatCurrency(data.pricing.extraKitsCost)}</td></tr>` : '');
+  html = html.replace(/{{#if pricing\.donationCost}}[\s\S]*?{{\/if}}/g, 
+    data.pricing.donationCost && Number(data.pricing.donationCost) > 0 ? 
+    `<tr><th>Doação</th><td>${EmailUtils.formatCurrency(data.pricing.donationCost)}</td></tr>` : '');
+
+  const text = `
+    ${theme.companyName} - Novo Pedido Confirmado
+
+    NOTIFICAÇÃO ADMINISTRATIVA
+
+    Um novo pedido foi confirmado e pago no sistema KitRunner.
+
+    INFORMAÇÕES DO PEDIDO
+    Número: ${data.orderNumber}
+    Status: ${EmailUtils.getStatusDisplay(data.status).text}
+    Criado em: ${EmailUtils.formatDate(data.orderCreatedAt)}
+    Pagamento: ${EmailUtils.formatPaymentMethod(data.paymentMethod)}
+    Valor Total: ${EmailUtils.formatCurrency(data.pricing.totalCost)}
+
+    CLIENTE
+    Nome: ${data.customerName}
+    CPF: ${EmailUtils.formatCPF(data.customerCPF)}
+    Email: ${data.customerEmail}
+    Telefone: ${EmailUtils.formatPhone(data.customerPhone)}
+
+    EVENTO
+    Nome: ${data.eventName}
+    Data: ${EmailUtils.formatDate(data.eventDate)}
+    Local: ${data.eventLocation}
+
+    KITS SOLICITADOS
+    ${data.kits.map(kit => `- ${kit.name} (${kit.shirtSize}) - CPF: ${EmailUtils.formatCPF(kit.cpf)}`).join('\n')}
+
+    ENDEREÇO DE ENTREGA
+    ${data.address.street}, ${data.address.number}${data.address.complement ? `, ${data.address.complement}` : ''}
+    ${data.address.neighborhood} - ${data.address.city}/${data.address.state}
+    CEP: ${data.address.zipCode}
+
+    DETALHES DO PAGAMENTO
+    Custo de Entrega: ${EmailUtils.formatCurrency(data.pricing.deliveryCost)}
+    ${data.pricing.extraKitsCost && Number(data.pricing.extraKitsCost) > 0 ? `Kits Extras: ${EmailUtils.formatCurrency(data.pricing.extraKitsCost)}` : ''}
+    ${data.pricing.donationCost && Number(data.pricing.donationCost) > 0 ? `Doação: ${EmailUtils.formatCurrency(data.pricing.donationCost)}` : ''}
+    Total Pago: ${EmailUtils.formatCurrency(data.pricing.totalCost)}
+
+    Ver no painel admin: ${data.adminPanelUrl}
+
+    Este é um email automático do sistema administrativo.
+    ${theme.companyName}
+  `;
+
+  return {
+    subject: `🎯 Novo Pedido Confirmado - ${data.orderNumber}`,
     html,
     text,
   };

@@ -25,6 +25,7 @@ import {
   orderStatusHistory,
   emailLogs,
   cepZones,
+  adminUsers,
   insertEmailLogSchema
 } from "@shared/schema";
 import { db } from "./db";
@@ -143,6 +144,8 @@ export interface IStorage {
   createEmailLog(emailData: any): Promise<any>;
   getEmailLogs(filters?: any): Promise<any[]>;
   
+  // Admin user email notifications
+  getAdminUsersWithEmailNotifications(): Promise<{ id: number; email: string; fullName: string }[]>;
 
 }
 
@@ -1690,6 +1693,20 @@ class MockStorage implements IStorage {
   async getEmailLogs(filters?: any): Promise<any[]> {
     // Mock implementation
     return [];
+  }
+
+  // Admin user email notifications
+  async getAdminUsersWithEmailNotifications(): Promise<{ id: number; email: string; fullName: string }[]> {
+    const result = await db
+      .select({
+        id: adminUsers.id,
+        email: adminUsers.email,
+        fullName: adminUsers.fullName
+      })
+      .from(adminUsers)
+      .where(eq(adminUsers.receiveOrderEmails, true));
+    
+    return result;
   }
 }
 

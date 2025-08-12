@@ -6,6 +6,7 @@ import {
   generateDeliveryConfirmationTemplate,
   generateKitEnRouteTemplate,
   generatePaymentPendingTemplate,
+  generateAdminOrderConfirmationTemplate,
   EmailUtils
 } from './email-templates';
 import { 
@@ -14,6 +15,7 @@ import {
   DeliveryConfirmationData,
   KitEnRouteData,
   PaymentPendingData,
+  AdminOrderConfirmationData,
   EmailType
 } from './email-types';
 
@@ -519,6 +521,105 @@ Sistema: KitRunner Email Notification System
       return true;
     } catch (error) {
       console.error(`⏰ Error sending timeout notification for order ${data.orderNumber}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Send admin order confirmation email
+   */
+  async sendAdminOrderConfirmation(data: AdminOrderConfirmationData, recipientEmail: string, orderId?: number): Promise<boolean> {
+    try {
+      if (!SENDGRID_ENABLED) {
+        console.log('📧 Email service disabled - would send admin order confirmation to:', recipientEmail);
+        return false;
+      }
+
+      const template = generateAdminOrderConfirmationTemplate(data);
+      
+      const msg = {
+        to: recipientEmail,
+        from: {
+          email: this.fromEmail,
+          name: this.fromName
+        },
+        subject: template.subject,
+        text: template.text,
+        html: template.html,
+      };
+
+      console.log('📧 Sending admin order confirmation email to:', recipientEmail);
+      const response = await sgMail.send(msg);
+      
+      // Log success
+      await this.logEmail({
+        orderId,
+        emailType: 'admin_order_confirmation',
+        recipientEmail,
+        subject: template.subject,
+        status: 'sent',
+        sendgridMessageId: response[0].headers['x-message-id'] || undefined,
+      });
+
+      console.log('✅ Admin order confirmation email sent successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Error sending admin order confirmation email:', error);
+      
+      // Log failure
+      await this.logEmail({
+        orderId,
+        emailType: 'admin_order_confirmation',
+        recipientEmail,
+        subject: `Novo Pedido Confirmado - ${data.orderNumber}`,
+        status: 'failed',
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+
+      return false;
+    }
+  }
+
+  /**
+   * Send admin order confirmations to all admins with receiveOrderEmails = true
+   */
+  async sendAdminOrderConfirmations(data: AdminOrderConfirmationData, orderId?: number): Promise<boolean> {
+    try {
+      // Get all admins who want to receive order emails
+      const admins = await this.storage.getAdminUsersWithEmailNotifications();
+      
+      if (admins.length === 0) {
+        console.log('📧 No administrators configured to receive order emails');
+        return true;
+      }
+
+      console.log(`📧 Sending admin order confirmation to ${admins.length} administrator(s)`);
+      
+      // Send emails in parallel to all admin recipients
+      const emailPromises = admins.map(admin => 
+        this.sendAdminOrderConfirmation(data, admin.email, orderId)
+      );
+      
+      const results = await Promise.allSettled(emailPromises);
+      
+      // Count successful sends
+      const successful = results.filter(result => 
+        result.status === 'fulfilled' && result.value === true
+      ).length;
+      
+      const failed = results.length - successful;
+      
+      if (successful > 0) {
+        console.log(`✅ Admin order confirmation sent to ${successful} administrator(s)`);
+      }
+      
+      if (failed > 0) {
+        console.log(`❌ Failed to send admin order confirmation to ${failed} administrator(s)`);
+      }
+      
+      return successful > 0; // Return true if at least one email was sent successfully
+    } catch (error) {
+      console.error('❌ Error sending admin order confirmations:', error);
       return false;
     }
   }

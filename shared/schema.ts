@@ -128,6 +128,7 @@ export const adminUsers = pgTable("admin_users", {
   fullName: varchar("full_name", { length: 255 }).notNull(),
   role: varchar("role", { length: 20 }).notNull().default("admin"), // 'super_admin' | 'admin'
   isActive: boolean("is_active").notNull().default(true),
+  receiveOrderEmails: boolean("receive_order_emails").notNull().default(false), // Email notifications for new orders
   lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

@@ -4,6 +4,7 @@ import {
   DeliveryConfirmationData, 
   StatusUpdateData,
   PaymentPendingData,
+  AdminOrderConfirmationData,
   KitItem,
   DeliveryAddress,
   PricingInfo,
@@ -103,6 +104,7 @@ export class EmailDataMapper {
       customerEmail: order.customer.email,
       orderNumber: order.orderNumber,
       eventName: order.event.name,
+      eventDate: order.event.date,
       kits: this.mapKits(order.kits || []),
       address: this.mapAddress(order.address),
       estimatedDelivery: this.calculateEstimatedDelivery(order.event.date),
@@ -371,8 +373,6 @@ export class EmailDataMapper {
       customerEmail: '', // Will be set by caller
       orderNumber: data.orderNumber,
       eventName: data.eventName,
-      eventDate: data.eventDate,
-      eventLocation: data.eventLocation,
       kits: data.kits.map(kit => ({
         name: kit.name,
         cpf: kit.cpf,
@@ -386,6 +386,95 @@ export class EmailDataMapper {
       nextSteps: this.getNextSteps(data.newStatus),
       estimatedTime: this.getEstimatedTime(data.newStatus, data.eventDate),
       trackingCode: undefined // Not used for status updates
+    };
+  }
+
+  /**
+   * Map database order to AdminOrderConfirmationData
+   */
+  static mapToAdminOrderConfirmation(order: DatabaseOrder): AdminOrderConfirmationData {
+    return {
+      customerName: order.customer.name,
+      customerEmail: order.customer.email,
+      customerCPF: order.customer.cpf,
+      customerPhone: order.customer.phone,
+      orderNumber: order.orderNumber,
+      eventName: order.event.name,
+      eventDate: order.event.date,
+      eventLocation: order.event.location,
+      kits: this.mapKits(order.kits || []),
+      address: this.mapAddress(order.address),
+      pricing: this.mapPricing(order),
+      paymentMethod: this.mapPaymentMethod(order.paymentMethod),
+      status: this.mapOrderStatus(order.status),
+      adminPanelUrl: `${process.env.FRONTEND_URL || 'https://kitrunner.com.br'}/admin/orders/${order.id}`,
+      orderCreatedAt: order.createdAt
+    };
+  }
+
+  /**
+   * Map database order to admin order confirmation data
+   */
+  static mapToAdminOrderConfirmation(
+    order: DatabaseOrder,
+    adminPanelUrl: string = 'https://kitrunner.replit.app/admin'
+  ): AdminOrderConfirmationData {
+    const kits: KitItem[] = (order.kits || []).map(kit => ({
+      name: kit.name,
+      cpf: kit.cpf,
+      shirtSize: kit.shirtSize,
+      category: 'Participante' // Default category for admin notifications
+    }));
+
+    const address: DeliveryAddress = {
+      street: order.address.street,
+      number: order.address.number,
+      complement: order.address.complement || '',
+      neighborhood: order.address.neighborhood,
+      city: order.address.city,
+      state: order.address.state,
+      zipCode: order.address.zipCode,
+      reference: '' // Not available in current schema
+    };
+
+    const pricing: PricingInfo = {
+      deliveryCost: order.deliveryCost,
+      extraKitsCost: order.extraKitsCost,
+      donationCost: order.donationCost || '0',
+      totalCost: order.totalCost
+    };
+
+    return {
+      orderNumber: order.orderNumber,
+      customerName: order.customer.name,
+      customerEmail: order.customer.email,
+      customerCPF: order.customer.cpf,
+      customerPhone: order.customer.phone,
+      eventName: order.event.name,
+      eventDate: order.event.date,
+      eventLocation: order.event.location,
+      status: order.status as OrderStatus,
+      paymentMethod: order.paymentMethod as PaymentMethod,
+      orderCreatedAt: order.createdAt,
+      kits,
+      address,
+      pricing,
+      adminPanelUrl,
+      theme: {
+        // Use default theme for admin emails
+        companyName: 'KitRunner',
+        primaryColor: '#3B82F6',
+        secondaryColor: '#10B981',
+        backgroundColor: '#FFFFFF',
+        textColor: '#1F2937',
+        borderColor: '#E5E7EB',
+        fontFamily: 'Arial, sans-serif',
+        address: 'KitRunner - Sistema de Gestão de Kits',
+        supportEmail: 'contato@kitrunner.com.br',
+        supportPhone: '(11) 99999-9999',
+        website: 'https://kitrunner.replit.app',
+        accentColor: '#F59E0B'
+      }
     };
   }
 }

@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novo Pedido Confirmado - {{orderNumber}}</title>
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        body { 
+            font-family: {{fontFamily}};
+            line-height: 1.6;
+            background-color: {{backgroundColor}};
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, {{primaryColor}}, {{accentColor}});
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .content {
+            padding: 30px 20px;
+        }
+        
+        .order-info {
+            background: {{backgroundColor}};
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-left: 4px solid {{primaryColor}};
+        }
+        
+        .order-info h2 {
+            color: {{primaryColor}};
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 8px 15px;
+            margin-bottom: 15px;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: {{textColor}};
+        }
+        
+        .info-value {
+            color: #666;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section h3 {
+            color: {{primaryColor}};
+            margin-bottom: 12px;
+            font-size: 16px;
+            border-bottom: 2px solid {{borderColor}};
+            padding-bottom: 8px;
+        }
+        
+        .kit-item {
+            background: white;
+            border: 1px solid {{borderColor}};
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+        
+        .kit-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .kit-grid {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .kit-name {
+            font-weight: 600;
+            color: {{textColor}};
+        }
+        
+        .kit-cpf {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .kit-size {
+            background: {{primaryColor}};
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .address-box {
+            background: white;
+            border: 1px solid {{borderColor}};
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .pricing-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        .pricing-table th,
+        .pricing-table td {
+            padding: 8px 0;
+            text-align: left;
+            border-bottom: 1px solid {{borderColor}};
+        }
+        
+        .pricing-table th {
+            font-weight: 600;
+            color: {{textColor}};
+        }
+        
+        .pricing-table td {
+            color: #666;
+        }
+        
+        .pricing-table .total-row {
+            font-weight: 600;
+            color: {{primaryColor}};
+            font-size: 16px;
+            border-bottom: none;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            background: {{secondaryColor}};
+            color: white;
+        }
+        
+        .action-button {
+            display: inline-block;
+            background: {{primaryColor}};
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .footer {
+            background: {{backgroundColor}};
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid {{borderColor}};
+        }
+        
+        .footer p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .admin-alert {
+            background: #fef3c7;
+            border: 1px solid #fbbf24;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 20px;
+            color: #92400e;
+        }
+        
+        .admin-alert strong {
+            color: #78350f;
+        }
+        
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                border-radius: 8px;
+            }
+            
+            .header {
+                padding: 20px 15px;
+            }
+            
+            .content {
+                padding: 20px 15px;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 5px;
+            }
+            
+            .kit-grid {
+                grid-template-columns: 1fr;
+                gap: 5px;
+            }
+            
+            .kit-size {
+                align-self: start;
+                width: fit-content;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Novo Pedido Confirmado</h1>
+            <p>Notificação do Painel Administrativo</p>
+        </div>
+        
+        <div class="content">
+            <div class="admin-alert">
+                <strong>Para Administrador:</strong> Um novo pedido foi confirmado e pago no sistema KitRunner.
+            </div>
+            
+            <div class="order-info">
+                <h2>📋 Informações do Pedido</h2>
+                <div class="info-grid">
+                    <span class="info-label">Número:</span>
+                    <span class="info-value"><strong>{{orderNumber}}</strong></span>
+                    
+                    <span class="info-label">Status:</span>
+                    <span class="info-value"><span class="status-badge">{{status}}</span></span>
+                    
+                    <span class="info-label">Criado em:</span>
+                    <span class="info-value">{{orderCreatedAt}}</span>
+                    
+                    <span class="info-label">Pagamento:</span>
+                    <span class="info-value">{{paymentMethod}}</span>
+                    
+                    <span class="info-label">Valor Total:</span>
+                    <span class="info-value"><strong>{{totalCost}}</strong></span>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>👤 Cliente</h3>
+                <div class="info-grid">
+                    <span class="info-label">Nome:</span>
+                    <span class="info-value">{{customerName}}</span>
+                    
+                    <span class="info-label">CPF:</span>
+                    <span class="info-value">{{customerCPF}}</span>
+                    
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{customerEmail}}</span>
+                    
+                    <span class="info-label">Telefone:</span>
+                    <span class="info-value">{{customerPhone}}</span>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>🏃‍♂️ Evento</h3>
+                <div class="info-grid">
+                    <span class="info-label">Nome:</span>
+                    <span class="info-value">{{eventName}}</span>
+                    
+                    <span class="info-label">Data:</span>
+                    <span class="info-value">{{eventDate}}</span>
+                    
+                    <span class="info-label">Local:</span>
+                    <span class="info-value">{{eventLocation}}</span>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>👕 Kits Solicitados</h3>
+                {{#each kits}}
+                <div class="kit-item">
+                    <div class="kit-grid">
+                        <div>
+                            <div class="kit-name">{{this.name}}</div>
+                            <div class="kit-cpf">CPF: {{this.cpf}}</div>
+                        </div>
+                        <div class="kit-size">{{this.shirtSize}}</div>
+                    </div>
+                </div>
+                {{/each}}
+            </div>
+            
+            <div class="section">
+                <h3>📍 Endereço de Entrega</h3>
+                <div class="address-box">
+                    <p><strong>{{address.street}}, {{address.number}}</strong></p>
+                    {{#if address.complement}}
+                    <p>{{address.complement}}</p>
+                    {{/if}}
+                    <p>{{address.neighborhood}}</p>
+                    <p>{{address.city}}, {{address.state}} - {{address.zipCode}}</p>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>💰 Detalhes do Pagamento</h3>
+                <table class="pricing-table">
+                    <tr>
+                        <th>Custo de Entrega</th>
+                        <td>{{pricing.deliveryCost}}</td>
+                    </tr>
+                    {{#if pricing.extraKitsCost}}
+                    <tr>
+                        <th>Kits Extras</th>
+                        <td>{{pricing.extraKitsCost}}</td>
+                    </tr>
+                    {{/if}}
+                    {{#if pricing.donationCost}}
+                    <tr>
+                        <th>Doação</th>
+                        <td>{{pricing.donationCost}}</td>
+                    </tr>
+                    {{/if}}
+                    <tr class="total-row">
+                        <th>Total Pago</th>
+                        <td>{{pricing.totalCost}}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="{{adminPanelUrl}}" class="action-button">
+                    🔗 Ver Pedido no Painel Admin
+                </a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>{{companyName}}</strong></p>
+            <p>{{address}}</p>
+            <p>Este é um email automático do sistema administrativo</p>
+        </div>
+    </div>
+</body>
+</html>
