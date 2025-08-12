@@ -1993,25 +1993,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
             console.log(`✅ Order ${order.orderNumber} status updated to confirmado - payment approved`);
 
-            // Send service confirmation email when payment is confirmed
-            try {
-              const emailService = new EmailService(storage);
-              const fullOrder = await storage.getOrderByIdWithDetails(order.id);
-
-              if (fullOrder && fullOrder.customer?.email) {
-                const serviceConfirmationData = EmailDataMapper.mapToServiceConfirmation(fullOrder);
-
-                await emailService.sendServiceConfirmation(
-                  serviceConfirmationData,
-                  fullOrder.customer.email,
-                  fullOrder.id,
-                  fullOrder.customerId
-                );
-                console.log(`📧 Service confirmation email sent for order ${fullOrder.orderNumber}`);
-              }
-            } catch (emailError) {
-              console.error('Error sending service confirmation email:', emailError);
-            }
+            // Note: Email will be sent automatically by updateOrderStatus when status changes to 'confirmado'
+            console.log(`📧 Service confirmation email will be sent automatically by status update system for order ${order.orderNumber}`);
           }
 
           res.json({
@@ -2384,54 +2367,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 await storage.updateOrderStatus(order.id, 'confirmado', 'mercadopago', 'Mercado Pago', 'Pagamento aprovado via webhook');
                 console.log(`✅ Webhook: Order ${orderId} status successfully updated to confirmed`);
 
-                // Send payment confirmation email
-                try {
-                  const emailService = new EmailService(storage);
-                  const fullOrder = await storage.getOrderWithFullDetails(order.id);
-                  if (!fullOrder) throw new Error('Order not found');
-                  const event = await storage.getEvent(fullOrder.eventId);
-                  const address = await storage.getAddress(fullOrder.addressId);
-                  const kits = await storage.getKitsByOrderId(fullOrder.id);
-
-                  if (fullOrder.customer?.email) {
-                    const eventDate = fullOrder.event?.date ? new Date(fullOrder.event.date).toLocaleDateString('pt-BR') : 'A definir';
-
-                    const paymentConfirmationData = {
-                      orderNumber: fullOrder.orderNumber,
-                      customerName: fullOrder.customer.name,
-                      customerCPF: fullOrder.customer.cpf,
-                      eventName: fullOrder.event?.name || 'Evento não definido',
-                      eventDate: eventDate,
-                      eventLocation: fullOrder.event?.location || 'Local a definir',
-                      address: fullOrder.address ? {
-                        street: fullOrder.address.street,
-                        number: fullOrder.address.number,
-                        complement: fullOrder.address.complement || '',
-                        neighborhood: fullOrder.address.neighborhood,
-                        city: fullOrder.address.city,
-                        state: fullOrder.address.state,
-                        zipCode: fullOrder.address.zipCode
-                      } : {
-                        street: 'Endereço não definido',
-                        number: '', complement: '', neighborhood: '',
-                        city: '', state: '', zipCode: ''
-                      },
-                      kits: fullOrder.kits?.map((kit: any) => ({
-                        name: kit.name, cpf: kit.cpf, shirtSize: kit.shirtSize
-                      })) || []
-                    };
-
-                    await emailService.sendPaymentConfirmation(
-                      paymentConfirmationData,
-                      fullOrder.customer.email,
-                      fullOrder.id,
-                      fullOrder.customerId
-                    );
-                    console.log(`📧 Webhook: Payment confirmation email sent for order ${fullOrder.orderNumber}`);
-                  }
-                } catch (emailError) {
-                  console.error('Webhook: Error sending payment confirmation email:', emailError);
-                }
+                // Note: Email will be sent automatically by updateOrderStatus when status changes to 'confirmado'
+                console.log(`📧 Webhook: Service confirmation email will be sent automatically by status update system for order ${orderId}`);
               } else if (result.status === 'cancelled' || result.status === 'rejected') {
                 console.log(`❌ Webhook: Payment failed for order ${orderId} (ID: ${order.id}) - updating to canceled`);
                 await storage.updateOrderStatus(order.id, 'cancelado', 'mercadopago', 'Mercado Pago', 'Pagamento rejeitado via webhook');

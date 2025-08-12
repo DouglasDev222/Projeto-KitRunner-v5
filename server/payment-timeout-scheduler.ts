@@ -67,7 +67,10 @@ export class PaymentTimeoutScheduler {
           try {
             console.log(`⏰ Canceling expired order: ${order.orderNumber} (created ${order.paymentCreatedAt || order.createdAt})`);
             
-            // Update order status to cancelled
+            // Send timeout notification email first
+            await this.sendTimeoutNotificationEmail(order);
+
+            // Update order status to cancelled (without sending generic email since we already sent specific timeout email)
             await storage.updateOrderStatus(
               order.id, 
               "cancelado", 
@@ -75,11 +78,8 @@ export class PaymentTimeoutScheduler {
               "Sistema Automático",
               "Pagamento expirou após 24 horas",
               `timeout-batch-${new Date().getTime()}`,
-              false // Don't send email here, we'll send a custom one below
+              false // Don't send generic email - we already sent specific timeout email above
             );
-
-            // Send timeout notification email
-            await this.sendTimeoutNotificationEmail(order);
 
             expiredCount++;
           } catch (error) {
