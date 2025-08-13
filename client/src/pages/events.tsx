@@ -770,7 +770,7 @@ export default function Events() {
                           </Badge>
 
                           <div className="flex gap-2">
-                            {event.status === 'ativo' && !isPastEvent && (
+                            {event.status === 'ativo' && !isPastEvent ? (
                               <Button
                                 size="sm"
                                 onClick={() => handleEventClick(event.id)}
@@ -778,16 +778,17 @@ export default function Events() {
                               >
                                 Solicitar Retirada
                               </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEventClick(event.id)}
+                                className="text-gray-600 hover:text-purple-600 hover:bg-purple-50 text-xs px-3 py-2 rounded-md transition-colors"
+                              >
+                                Ver Detalhes
+                                <ChevronRight className="w-3 h-3 ml-1" />
+                              </Button>
                             )}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleEventClick(event.id)}
-                              className="text-gray-600 hover:text-purple-600 hover:bg-purple-50 text-xs px-3 py-2 rounded-md transition-colors"
-                            >
-                              Ver Detalhes
-                              <ChevronRight className="w-3 h-3 ml-1" />
-                            </Button>
                           </div>
                         </div>
                       </div>
