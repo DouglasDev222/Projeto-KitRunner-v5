@@ -49,23 +49,9 @@ export default function KitInformation() {
     enabled: !!id
   });
 
-  // Helper function com tratamento de erro
-  const safeGetSessionData = useCallback((key: string, fallback: any = null) => {
-    try {
-      if (typeof window === 'undefined' || !window.sessionStorage) return fallback;
-      const data = sessionStorage.getItem(key);
-      return data ? JSON.parse(data) : fallback;
-    } catch (error) {
-      console.warn(`Error parsing session data for ${key}:`, error);
-      return fallback;
-    }
-  }, []);
-
-  // Função para atualizar kits com tratamento de erro
+  // Função para atualizar kits
   const updateKitFields = useCallback((quantity: number) => {
     try {
-      if (!isInitialized) return;
-      
       const currentKits = form.getValues("kits") || [];
       const newKits = Array.from({ length: quantity }, (_, index) => {
         if (index < currentKits.length && currentKits[index]) {
@@ -79,52 +65,18 @@ export default function KitInformation() {
     } catch (error) {
       console.warn("Error updating kit fields:", error);
     }
-  }, [form, replace, isInitialized]);
+  }, [form, replace]);
 
-  // Inicialização com dados da sessão
+  // Inicialização sem persistência automática
   useEffect(() => {
-    try {
-      const savedKitData = safeGetSessionData("kitData", null);
-      
-      if (savedKitData && savedKitData.kits && Array.isArray(savedKitData.kits) && savedKitData.kits.length > 0) {
-        setSelectedQuantity(savedKitData.kitQuantity || 1);
-        
-        // Reset form de forma segura
-        setTimeout(() => {
-          try {
-            form.reset({
-              kitQuantity: savedKitData.kitQuantity || 1,
-              kits: savedKitData.kits
-            });
-            setIsInitialized(true);
-          } catch (resetError) {
-            console.warn("Error resetting form:", resetError);
-            // Fallback para estado inicial
-            form.reset({
-              kitQuantity: 1,
-              kits: [{ name: "", cpf: "", shirtSize: "" }]
-            });
-            setIsInitialized(true);
-          }
-        }, 10);
-      } else {
-        // Inicialização padrão
-        form.reset({
-          kitQuantity: 1,
-          kits: [{ name: "", cpf: "", shirtSize: "" }]
-        });
-        setIsInitialized(true);
-      }
-    } catch (error) {
-      console.warn("Error in initialization:", error);
-      // Estado de emergência
-      form.reset({
-        kitQuantity: 1,
-        kits: [{ name: "", cpf: "", shirtSize: "" }]
-      });
-      setIsInitialized(true);
-    }
-  }, [form, safeGetSessionData]);
+    // Sempre começar com formulário limpo
+    form.reset({
+      kitQuantity: 1,
+      kits: [{ name: "", cpf: "", shirtSize: "" }]
+    });
+    setSelectedQuantity(1);
+    setIsInitialized(true);
+  }, [id, form]); // Dependente do ID do evento para resetar quando mudar
 
   // Effect para atualizar kits quando a quantidade muda
   useEffect(() => {
@@ -133,10 +85,33 @@ export default function KitInformation() {
     }
   }, [selectedQuantity, isInitialized, updateKitFields]);
 
-  // Dados da sessão
-  const customer = safeGetSessionData("customerData", user || {});
-  const selectedAddress = safeGetSessionData("selectedAddress", {});
-  const calculatedCosts = safeGetSessionData("calculatedCosts", {});
+  // Dados da sessão (sem helper complexo)
+  const customer = (() => {
+    try {
+      const data = sessionStorage.getItem("customerData");
+      return data ? JSON.parse(data) : (user || {});
+    } catch {
+      return user || {};
+    }
+  })();
+  
+  const selectedAddress = (() => {
+    try {
+      const data = sessionStorage.getItem("selectedAddress");
+      return data ? JSON.parse(data) : {};
+    } catch {
+      return {};
+    }
+  })();
+  
+  const calculatedCosts = (() => {
+    try {
+      const data = sessionStorage.getItem("calculatedCosts");
+      return data ? JSON.parse(data) : {};
+    } catch {
+      return {};
+    }
+  })();
 
   // Authentication and data validation
   useEffect(() => {
@@ -173,14 +148,15 @@ export default function KitInformation() {
     cepZonePrice
   }) : null;
 
-  // Submit handler com tratamento de erro
+  // Submit handler - salva dados apenas quando enviar
   const onSubmit = useCallback((data: KitFormData) => {
     try {
+      // Limpar dados antigos antes de salvar novos
+      sessionStorage.removeItem("kitData");
       sessionStorage.setItem("kitData", JSON.stringify(data));
       setLocation(`/events/${id}/payment`);
     } catch (error) {
       console.warn("Error saving kit data:", error);
-      // Tentar prosseguir mesmo com erro de storage
       setLocation(`/events/${id}/payment`);
     }
   }, [id, setLocation]);
