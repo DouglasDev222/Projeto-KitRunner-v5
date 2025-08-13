@@ -306,23 +306,23 @@ export default function KitInformation() {
                 <CardContent className="p-4">
                   <h3 className="font-semibold text-lg text-neutral-800 mb-3">Resumo do Pedido</h3>
                   <div className="space-y-2">
-                    {pricing.fixedPrice ? (
+                    {event?.fixedPrice ? (
                       <div className="flex justify-between items-center mb-2">
                         <div className="flex items-center">
                           <Badge variant="secondary" className="mr-2 text-xs">Preço Fixo</Badge>
                           <span className="text-neutral-600">Inclui todos os serviços</span>
                         </div>
-                        <span className="font-semibold text-neutral-800">{formatCurrency(pricing.fixedPrice)}</span>
+                        <span className="font-semibold text-neutral-800">{formatCurrency(Number(event.fixedPrice))}</span>
                       </div>
                     ) : (
                       <div className="flex justify-between items-center">
                         <span className="text-neutral-600">
-                          {calculatedCosts?.pricingType === 'cep_zones'
-                            ? `Entrega (${calculatedCosts.cepZoneName || 'Zona CEP'})`
-                            : `Entrega (${distance.toFixed(1)} km)`
+                          {event?.pricingType === 'cep_zones'
+                            ? 'Entrega (Zona CEP)'
+                            : 'Entrega (estimativa)'
                           }
                         </span>
-                        <span className="font-semibold text-neutral-800">{formatCurrency(deliveryPrice)}</span>
+                        <span className="font-semibold text-neutral-800">R$ {(pricing.deliveryCost || 18.50).toFixed(2).replace('.', ',')}</span>
                       </div>
                     )}
 
