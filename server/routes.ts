@@ -2029,7 +2029,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Cancel any scheduled payment pending email since payment was approved
             PaymentReminderScheduler.cancelScheduledEmail(order.orderNumber);
 
-            // Update order status to confirmado and send emails
+            // Update order status to confirmado (automatically sends customer email)
             await storage.updateOrderStatus(
               order.id, 
               'confirmado', 
@@ -2243,42 +2243,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (order) {
               if (result.status === 'approved') {
                 console.log(`✅ Payment approved for order ${orderId} (ID: ${order.id}) - updating to confirmado`);
+                // Update status - this will automatically send customer email via sendStatusChangeEmail
                 await storage.updateOrderStatus(order.id, 'confirmado', 'mercadopago', 'Mercado Pago', 'Pagamento aprovado via verificação de status');
                 console.log(`✅ Order ${orderId} status successfully updated to confirmado`);
 
-                // Send payment confirmation email
+                // Send ONLY admin notifications (customer email sent automatically by updateOrderStatus)
                 try {
-                  const emailService = new EmailService(storage);
                   const fullOrder = await storage.getOrderWithFullDetails(order.id);
-                  if (!fullOrder) throw new Error('Order not found');
-                  const event = await storage.getEvent(fullOrder.eventId);
-                  const address = await storage.getAddress(fullOrder.addressId);
-                  const kits = await storage.getKitsByOrderId(fullOrder.id);
-
-                  if (fullOrder.customer?.email) {
+                  if (fullOrder) {
+                    const emailService = new EmailService(storage);
                     const { EmailDataMapper } = await import('./email/email-data-mapper');
-                    const paymentConfirmationData = EmailDataMapper.mapToServiceConfirmation(fullOrder);
-
-                    await emailService.sendPaymentConfirmation(
-                      paymentConfirmationData,
-                      fullOrder.customer.email,
-                      fullOrder.id,
-                      fullOrder.customerId
-                    );
-                    console.log(`📧 Payment confirmation email sent for order ${fullOrder.orderNumber}`);
-
-                    // Send admin order confirmation notifications
-                    try {
-                      const { EmailDataMapper } = await import('./email/email-data-mapper');
-                      const adminNotificationData = EmailDataMapper.mapToAdminOrderConfirmation(fullOrder);
-                      await emailService.sendAdminOrderConfirmations(adminNotificationData, fullOrder.id);
-                      console.log(`📧 Admin notification sent for order ${fullOrder.orderNumber}`);
-                    } catch (adminEmailError) {
-                      console.error('Error sending admin order confirmation:', adminEmailError);
-                    }
+                    const adminNotificationData = EmailDataMapper.mapToAdminOrderConfirmation(fullOrder);
+                    await emailService.sendAdminOrderConfirmations(adminNotificationData, fullOrder.id);
+                    console.log(`📧 Admin notification sent for order ${fullOrder.orderNumber}`);
                   }
-                } catch (emailError) {
-                  console.error('Error sending payment confirmation email:', emailError);
+                } catch (adminEmailError) {
+                  console.error('Error sending admin order confirmation:', adminEmailError);
                 }
               } else if (result.status === 'cancelled' || result.status === 'rejected') {
                 console.log(`❌ Payment failed for order ${orderId} (ID: ${order.id}) - updating to cancelado`);
@@ -2422,23 +2402,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 if (order.status === 'confirmado') {
                   console.log(`⚠️ Webhook: Order ${orderId} is already confirmed - ensuring email was sent`);
                   
-                  // Trigger email send since the direct payment API skipped it
-                  const fullOrder = await storage.getOrderByIdWithDetails(order.id);
-                  if (fullOrder && fullOrder.customer?.email) {
-                    try {
-                      const emailService = new EmailService(storage);
-                      const serviceConfirmationData = EmailDataMapper.mapToServiceConfirmation(fullOrder);
-                      await emailService.sendServiceConfirmation(
-                        serviceConfirmationData,
-                        fullOrder.customer.email,
-                        fullOrder.id,
-                        fullOrder.customerId
-                      );
-                      console.log(`📧 Webhook: Service confirmation email sent for order ${fullOrder.orderNumber}`);
-                    } catch (emailError) {
-                      console.error('Webhook: Error sending confirmation email:', emailError);
-                    }
-                  }
+                  // Do NOT send duplicate email - already sent when status was updated
+                  console.log(`⚠️ Webhook: Order ${order.orderNumber} already confirmed - skipping duplicate email`);
+                  // Note: Email already sent when status was first updated to 'confirmado'
                   return res.status(200).send('OK');
                 }
                 
