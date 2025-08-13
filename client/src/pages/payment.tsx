@@ -50,6 +50,7 @@ export default function Payment() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [policyAccepted, setPolicyAccepted] = useState(false);
+  const [pixData, setPixData] = useState<any>(null);
   
   // SECURITY FIX: State for server-calculated pricing
   const [securePricing, setSecurePricing] = useState<any>(null);
@@ -471,39 +472,41 @@ export default function Payment() {
           </CardContent>
         </Card>
         
-        {/* Payment Methods Selection */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <h3 className="font-semibold text-lg text-neutral-800 mb-4">Forma de Pagamento</h3>
-            
-            <div className="[&_[role=radio]]:h-4 [&_[role=radio]]:w-4 [&_[role=radio]]:min-h-[1rem] [&_[role=radio]]:min-w-[1rem] [&_[role=radio]]:max-h-[1rem] [&_[role=radio]]:max-w-[1rem] [&_[role=radio]]:flex-shrink-0 [&_[role=radio]]:rounded-sm">
-              <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "credit" | "pix")}>
-                <div className="space-y-3"></div>
-                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-neutral-50">
-                  <RadioGroupItem value="credit" id="credit" />
-                  <Label htmlFor="credit" className="flex items-center gap-3 cursor-pointer w-full">
-                    <CreditCard className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <div className="font-medium">Cartão de Crédito</div>
-                      <div className="text-sm text-neutral-600">Visa, Mastercard, Elo</div>
-                    </div>
-                  </Label>
-                </div>
-                
-                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-neutral-50">
-                  <RadioGroupItem value="pix" id="pix" />
-                  <Label htmlFor="pix" className="flex items-center gap-3 cursor-pointer w-full">
-                    <QrCode className="h-5 w-5 text-purple-600" />
-                    <div>
-                      <div className="font-medium">PIX</div>
-                      <div className="text-sm text-neutral-600">Pagamento instantâneo - Expira em 30 min</div>
-                    </div>
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Payment Methods Selection - Hidden when PIX code is generated */}
+        {(!paymentMethod || paymentMethod === 'credit' || (paymentMethod === 'pix' && !pixData)) && (
+          <Card className="mb-6">
+            <CardContent className="p-4">
+              <h3 className="font-semibold text-lg text-neutral-800 mb-4">Forma de Pagamento</h3>
+              
+              <div className="[&_[role=radio]]:h-4 [&_[role=radio]]:w-4 [&_[role=radio]]:min-h-[1rem] [&_[role=radio]]:min-w-[1rem] [&_[role=radio]]:max-h-[1rem] [&_[role=radio]]:max-w-[1rem] [&_[role=radio]]:flex-shrink-0 [&_[role=radio]]:rounded-sm">
+                <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "credit" | "pix")}>
+                  <div className="space-y-3"></div>
+                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-neutral-50">
+                    <RadioGroupItem value="credit" id="credit" />
+                    <Label htmlFor="credit" className="flex items-center gap-3 cursor-pointer w-full">
+                      <CreditCard className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <div className="font-medium">Cartão de Crédito</div>
+                        <div className="text-sm text-neutral-600">Visa, Mastercard, Elo</div>
+                      </div>
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-neutral-50">
+                    <RadioGroupItem value="pix" id="pix" />
+                    <Label htmlFor="pix" className="flex items-center gap-3 cursor-pointer w-full">
+                      <QrCode className="h-5 w-5 text-purple-600" />
+                      <div>
+                        <div className="font-medium">PIX</div>
+                        <div className="text-sm text-neutral-600">Pagamento instantâneo - Expira em 30 min</div>
+                      </div>
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Policy Acceptance */}
         <Card className="mb-6">
@@ -608,6 +611,7 @@ export default function Payment() {
                 isProcessing={isProcessing}
                 setIsProcessing={setIsProcessing}
                 policyAccepted={policyAccepted}
+                onPixDataGenerated={setPixData}
               />
             )}
           </CardContent>

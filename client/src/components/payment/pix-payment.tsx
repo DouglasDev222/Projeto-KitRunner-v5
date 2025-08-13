@@ -20,6 +20,7 @@ interface PIXPaymentProps {
   isProcessing: boolean;
   setIsProcessing: (processing: boolean) => void;
   policyAccepted?: boolean;
+  onPixDataGenerated?: (pixData: any) => void;
 }
 
 export function PIXPayment({ 
@@ -31,7 +32,8 @@ export function PIXPayment({
   onError, 
   isProcessing, 
   setIsProcessing,
-  policyAccepted = true
+  policyAccepted = true,
+  onPixDataGenerated
 }: PIXPaymentProps) {
   const [pixData, setPixData] = useState<any>(null);
   const [paymentId, setPaymentId] = useState<number | null>(null);
@@ -61,6 +63,8 @@ export function PIXPayment({
       if (data.success) {
         setPixData(data);
         setPaymentId(data.paymentId);
+        // Notify parent component that PIX data was generated
+        onPixDataGenerated?.(data);
         // Start checking payment status
         startStatusChecking(data.paymentId);
       } else {
