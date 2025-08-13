@@ -23,7 +23,7 @@ import {
 import { formatCPF, isValidCPF } from "@/lib/cpf-validator";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth-context";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Função para formatar data brasileira (DD/MM/AAAA)
 const formatBrazilianDate = (value: string): string => {
@@ -158,7 +158,7 @@ export default function Login() {
     setLocation("/register");
   };
 
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
 
   if (isMobile) {
     return (
