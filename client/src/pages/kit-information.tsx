@@ -104,14 +104,9 @@ export default function KitInformation() {
     }
   })();
   
-  const calculatedCosts = (() => {
-    try {
-      const data = sessionStorage.getItem("calculatedCosts");
-      return data ? JSON.parse(data) : {};
-    } catch {
-      return {};
-    }
-  })();
+  // SECURITY FIX: Removed calculatedCosts from sessionStorage (critical vulnerability)
+  // This fixes VULNERABILIDADE_SESSIONSTORAGE_PRICING.md
+  // Pricing will be securely calculated on payment page via server API
 
   // Authentication and data validation
   useEffect(() => {
@@ -136,17 +131,20 @@ export default function KitInformation() {
     }
   }, [isAuthenticated, user?.id, customer?.id, selectedAddress?.id, id, setLocation]);
 
-  // Calculate costs using unified pricing logic
-  const deliveryPrice = calculatedCosts.deliveryPrice || 18.50;
-  const distance = calculatedCosts.distance || 12.5;
-  const cepZonePrice = calculatedCosts.pricingType === 'cep_zones' ? calculatedCosts.deliveryPrice : undefined;
+  // SECURITY FIX: Basic pricing display only (not used for actual payment calculations)
+  // Real pricing will be calculated securely on server in payment page
+  const pricing = event ? {
+    baseCost: event.fixedPrice ? Number(event.fixedPrice) : 0,
+    deliveryCost: event.fixedPrice ? 0 : 18.50, // Display estimate only
+    extraKitsCost: selectedQuantity > 1 && event.extraKitPrice ? (selectedQuantity - 1) * Number(event.extraKitPrice) : 0,
+    donationAmount: event.donationRequired && event.donationAmount ? Number(event.donationAmount) * selectedQuantity : 0,
+    totalCost: 0 // Will be calculated properly on payment page
+  } : null;
 
-  const pricing = event ? calculatePricing({
-    event,
-    kitQuantity: selectedQuantity,
-    deliveryPrice,
-    cepZonePrice
-  }) : null;
+  // Update total cost for display
+  if (pricing) {
+    pricing.totalCost = pricing.baseCost + pricing.deliveryCost + pricing.extraKitsCost + pricing.donationAmount;
+  }
 
   // Submit handler - salva dados apenas quando enviar
   const onSubmit = useCallback((data: KitFormData) => {

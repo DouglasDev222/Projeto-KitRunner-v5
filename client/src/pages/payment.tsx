@@ -51,6 +51,11 @@ export default function Payment() {
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [policyAccepted, setPolicyAccepted] = useState(false);
   
+  // SECURITY FIX: State for server-calculated pricing
+  const [securePricing, setSecurePricing] = useState<any>(null);
+  const [pricingLoading, setPricingLoading] = useState(true);
+  const [pricingError, setPricingError] = useState<string | null>(null);
+  
   const acceptPolicyMutation = useAcceptPolicy();
 
   // Clear payment error when payment method changes
@@ -120,6 +125,46 @@ export default function Payment() {
     }
   }, [id, setLocation]);
 
+  // SECURITY FIX: Load secure pricing from server instead of sessionStorage
+  useEffect(() => {
+    const loadSecurePricing = async () => {
+      if (!selectedAddress || !event || !kitData) return;
+      
+      setPricingLoading(true);
+      setPricingError(null);
+      
+      try {
+        console.log('🔒 SECURITY FIX: Loading pricing from server instead of sessionStorage');
+        
+        const response = await apiRequest("POST", "/api/calculate-delivery-secure", {
+          eventId: parseInt(id!),
+          addressId: selectedAddress.id,
+          kitQuantity: kitData.kitQuantity
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Erro ao calcular preços');
+        }
+        
+        const pricingData = await response.json();
+        console.log('✅ SECURITY: Server-calculated pricing loaded:', pricingData);
+        
+        setSecurePricing(pricingData);
+        setPricingError(null);
+        
+      } catch (error: any) {
+        console.error('❌ SECURITY ERROR: Failed to load secure pricing:', error);
+        setPricingError(error.message || 'Erro ao carregar preços');
+        setSecurePricing(null);
+      } finally {
+        setPricingLoading(false);
+      }
+    };
+    
+    loadSecurePricing();
+  }, [selectedAddress, event, kitData, id]);
+
   const createOrderMutation = useMutation({
     mutationFn: async (orderData: OrderCreation) => {
       const response = await apiRequest("POST", "/api/orders", orderData);
@@ -188,6 +233,7 @@ export default function Payment() {
     setCouponDiscount(0);
   };
 
+  // SECURITY FIX: Show loading/error states for pricing
   if (!customer || !kitData || !event) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
@@ -199,19 +245,52 @@ export default function Payment() {
     );
   }
 
-  // Get calculated costs from session storage
-  const calculatedCosts = JSON.parse(sessionStorage.getItem('calculatedCosts') || '{}');
-  
-  // Calculate costs using unified pricing logic
-  const deliveryPrice = calculatedCosts.deliveryPrice || 18.50;
-  const cepZonePrice = calculatedCosts?.pricingType === 'cep_zones' ? calculatedCosts.deliveryPrice : undefined;
-  
-  const basePricing = calculatePricing({
-    event,
-    kitQuantity: kitData.kitQuantity,
-    deliveryPrice,
-    cepZonePrice
-  });
+  if (pricingLoading) {
+    return (
+      <div className="max-w-md mx-auto bg-white min-h-screen">
+        <Header showBackButton onBack={() => setLocation(`/events/${id}/address`)} />
+        <div className="p-4">
+          <p className="text-center text-neutral-600">🔒 Calculando preços seguros...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (pricingError || !securePricing) {
+    return (
+      <div className="max-w-md mx-auto bg-white min-h-screen">
+        <Header showBackButton onBack={() => setLocation(`/events/${id}/address`)} />
+        <div className="p-4">
+          <Alert className="mb-4">
+            <AlertDescription>
+              {pricingError || 'Erro ao calcular preços de entrega. Tente novamente.'}
+            </AlertDescription>
+          </Alert>
+          <Button onClick={() => window.location.reload()} className="w-full">
+            Tentar Novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // SECURITY FIX: Use server-calculated pricing instead of sessionStorage
+  // This fixes VULNERABILIDADE_SESSIONSTORAGE_PRICING.md critical security issue
+  const basePricing = securePricing?.pricing ? {
+    baseCost: securePricing.pricing.baseCost,
+    deliveryCost: securePricing.pricing.deliveryCost,
+    extraKitsCost: securePricing.pricing.extraKitsCost,
+    donationAmount: securePricing.pricing.donationAmount,
+    totalCost: securePricing.pricing.totalCost,
+    kitQuantity: securePricing.pricing.kitQuantity
+  } : {
+    baseCost: 0,
+    deliveryCost: 0,
+    extraKitsCost: 0,
+    donationAmount: 0,
+    totalCost: 0,
+    kitQuantity: kitData.kitQuantity || 1
+  };
   
   const pricingBreakdown = formatPricingBreakdown(basePricing, event, kitData.kitQuantity);
   

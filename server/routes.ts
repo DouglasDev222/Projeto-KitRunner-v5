@@ -20,6 +20,7 @@ import adminAuthRoutes from './routes/admin-auth';
 import cepZonesRoutes from './routes/cep-zones';
 import couponsRoutes from './routes/coupons';
 import policyRoutes from './routes/policies';
+import { registerPricingValidationRoutes } from './routes/pricing-validation';
 import { CouponService } from './coupon-service';
 import { PolicyService } from './policy-service';
 
@@ -136,6 +137,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Policy routes
   app.use('/api', policyRoutes);
+
+  // SECURITY FIX: Secure pricing validation routes
+  registerPricingValidationRoutes(app);
 
   // Serve test HTML files
   app.get("/test-rejected-payment.html", (req, res) => {
