@@ -27,7 +27,7 @@ type OrderCreation = {
   addressId: number;
   kitQuantity: number;
   kits: { name: string; cpf: string; shirtSize: string }[];
-  paymentMethod: "credit" | "debit" | "pix";
+  paymentMethod: "credit" | "pix";
   totalCost: number;
   deliveryCost: number;
   extraKitsCost: number;
@@ -41,7 +41,7 @@ type OrderCreation = {
 export default function Payment() {
   const [, setLocation] = useLocation();
   const { id } = useParams<{ id: string }>();
-  const [paymentMethod, setPaymentMethod] = useState<"credit" | "debit" | "pix">("credit");
+  const [paymentMethod, setPaymentMethod] = useState<"credit" | "pix">("credit");
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [kitData, setKitData] = useState<any>(null);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
@@ -477,7 +477,7 @@ export default function Payment() {
             <h3 className="font-semibold text-lg text-neutral-800 mb-4">Forma de Pagamento</h3>
             
             <div className="[&_[role=radio]]:h-4 [&_[role=radio]]:w-4 [&_[role=radio]]:min-h-[1rem] [&_[role=radio]]:min-w-[1rem] [&_[role=radio]]:max-h-[1rem] [&_[role=radio]]:max-w-[1rem] [&_[role=radio]]:flex-shrink-0 [&_[role=radio]]:rounded-sm">
-              <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "credit" | "debit" | "pix")}>
+              <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "credit" | "pix")}>
                 <div className="space-y-3"></div>
                 <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-neutral-50">
                   <RadioGroupItem value="credit" id="credit" />
@@ -486,17 +486,6 @@ export default function Payment() {
                     <div>
                       <div className="font-medium">Cartão de Crédito</div>
                       <div className="text-sm text-neutral-600">Visa, Mastercard, Elo</div>
-                    </div>
-                  </Label>
-                </div>
-                
-                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-neutral-50">
-                  <RadioGroupItem value="debit" id="debit" />
-                  <Label htmlFor="debit" className="flex items-center gap-3 cursor-pointer w-full">
-                    <Landmark className="h-5 w-5 text-green-600" />
-                    <div>
-                      <div className="font-medium">Cartão de Débito</div>
-                      <div className="text-sm text-neutral-600">Débito à vista</div>
                     </div>
                   </Label>
                 </div>
@@ -554,7 +543,7 @@ export default function Payment() {
               </Alert>
             )}
             
-            {(paymentMethod === 'credit' || paymentMethod === 'debit') && (
+            {paymentMethod === 'credit' && (
               <CardPayment
                 amount={pricing.totalCost}
                 orderData={() => createOrderData(`${Date.now()}-${Math.random()}`)}
