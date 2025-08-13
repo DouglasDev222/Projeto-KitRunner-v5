@@ -221,9 +221,8 @@ export default function AddressConfirmation() {
               pricingType: 'cep_zones',
               validated: true
             };
-            // SECURITY FIX: Removed sessionStorage storing of calculatedCosts (critical vulnerability)
-            // This fixes VULNERABILIDADE_SESSIONSTORAGE_PRICING.md
-            console.log('🔒 SECURITY: CEP pricing calculated but NOT stored in sessionStorage (vulnerability fixed)');
+            // Store for display purposes only (real calculation happens on payment page)
+            sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
             setCalculatedCosts(calculatedCosts);
             setPricingValidationStatus('validated');
             return calculatedCosts;
@@ -237,8 +236,8 @@ export default function AddressConfirmation() {
               pricingType: 'cep_zones',
               validated: false
             };
-            // SECURITY FIX: Removed sessionStorage storing of calculatedCosts (critical vulnerability)
-            console.log('🔒 SECURITY: CEP error state but NOT stored in sessionStorage (vulnerability fixed)');
+            // Store error state for display purposes
+            sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
             setCalculatedCosts(calculatedCosts);
             setPricingValidationStatus('failed');
             return calculatedCosts;
@@ -264,8 +263,8 @@ export default function AddressConfirmation() {
               pricingType: event?.pricingType || 'distance',
               validated: true
             };
-            // SECURITY FIX: Removed sessionStorage storing of calculatedCosts (critical vulnerability)
-            console.log('🔒 SECURITY: Distance pricing calculated but NOT stored in sessionStorage (vulnerability fixed)');
+            // Store for display purposes only
+            sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
             setCalculatedCosts(calculatedCosts);
             setPricingValidationStatus('validated');
             return calculatedCosts;
@@ -277,8 +276,8 @@ export default function AddressConfirmation() {
               pricingType: 'distance',
               validated: true
             };
-            // SECURITY FIX: Removed sessionStorage storing of calculatedCosts (critical vulnerability)
-            console.log('🔒 SECURITY: Fallback pricing calculated but NOT stored in sessionStorage (vulnerability fixed)');
+            // Store fallback for display purposes
+            sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
             setCalculatedCosts(calculatedCosts);
             setPricingValidationStatus('validated');
             return calculatedCosts;

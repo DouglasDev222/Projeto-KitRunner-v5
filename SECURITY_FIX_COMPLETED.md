@@ -16,24 +16,27 @@
 #### 2. Correção do Frontend
 - ✅ **payment.tsx**: Removido uso de sessionStorage para preços, implementada chamada segura ao servidor
 - ✅ **kit-information.tsx**: Mantido display de preços calculados mas sem dependência crítica
-- ✅ **address-confirmation.tsx**: Removido armazenamento de calculatedCosts no sessionStorage
+- ✅ **address-confirmation.tsx**: Armazenamento mantido APENAS para exibição visual (não usado em pagamentos)
 
 #### 3. Fluxo Preservado
 - ✅ Cliente escolhe endereço → vê preço da zona de CEP
 - ✅ Preço é mantido visualmente no fluxo de kits
 - ✅ Pagamento usa cálculo seguro do servidor (não sessionStorage)
 
-### Teste de Segurança
+### Estratégia de Segurança
 ```javascript
-// ANTES (VULNERÁVEL): 
-sessionStorage.setItem('calculatedCosts', JSON.stringify({deliveryPrice: 0.01}))
+// DISPLAY (Permitido para UX): 
+sessionStorage.setItem('calculatedCosts', JSON.stringify({
+  deliveryPrice: 1.00, 
+  cepZoneName: "Bayeux"
+})) // Apenas para mostrar na tela
 
-// DEPOIS (SEGURO):
+// PAGAMENTO (Seguro):
 const response = await apiRequest("POST", "/api/calculate-delivery-secure", {
   eventId: parseInt(id!),
   addressId: selectedAddress.id,
   kitQuantity: kitData.kitQuantity
-});
+}); // Recalcula no servidor independente do sessionStorage
 ```
 
 ### Status Final
