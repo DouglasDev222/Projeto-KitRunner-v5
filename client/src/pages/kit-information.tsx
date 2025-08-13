@@ -10,7 +10,7 @@ import { Heart } from "lucide-react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation, useParams } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { kitInformationSchema, kitSchema, type KitInformation } from "@shared/schema";
@@ -27,6 +27,7 @@ export default function KitInformation() {
   const { id } = useParams<{ id: string }>();
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const { isAuthenticated, user } = useAuth();
+  const hasRestoredData = useRef(false);
 
   const form = useForm<KitFormData>({
     resolver: zodResolver(kitInformationSchema),
@@ -42,35 +43,66 @@ export default function KitInformation() {
   });
 
   useEffect(() => {
-    const currentKits = form.getValues("kits") || [];
-    const newKits = Array.from({ length: selectedQuantity }, (_, index) => {
-      // Preserva os dados existentes se já houver dados no índice
-      if (index < currentKits.length && currentKits[index]) {
-        return currentKits[index];
-      }
-      // Cria novo kit vazio para novos slots
-      return {
-        name: "",
-        cpf: "",
-        shirtSize: "",
-      };
-    });
-    replace(newKits);
-    form.setValue("kitQuantity", selectedQuantity);
+    if (!hasRestoredData.current) return; // Don't update until data is restored
+    
+    try {
+      const currentKits = form.getValues("kits") || [];
+      const newKits = Array.from({ length: selectedQuantity }, (_, index) => {
+        // Preserva os dados existentes se já houver dados no índice
+        if (index < currentKits.length && currentKits[index]) {
+          return currentKits[index];
+        }
+        // Cria novo kit vazio para novos slots
+        return {
+          name: "",
+          cpf: "",
+          shirtSize: "",
+        };
+      });
+      replace(newKits);
+      form.setValue("kitQuantity", selectedQuantity);
+    } catch (error) {
+      console.warn("Error updating kit forms:", error);
+    }
   }, [selectedQuantity, replace, form]);
 
   const { data: event } = useQuery<any>({
     queryKey: ["/api/events", id],
   });
 
-  // Get session data
-  const customerData = sessionStorage.getItem("customerData");
-  const addressData = sessionStorage.getItem("selectedAddress");
-  const costsData = sessionStorage.getItem("calculatedCosts");
+  // Get session data with error handling
+  const getSessionData = (key: string, fallback: any = {}) => {
+    try {
+      const data = sessionStorage.getItem(key);
+      return data ? JSON.parse(data) : fallback;
+    } catch (error) {
+      console.warn(`Error parsing session data for ${key}:`, error);
+      return fallback;
+    }
+  };
 
-  const customer = customerData ? JSON.parse(customerData) : (user || {});
-  const selectedAddress = addressData ? JSON.parse(addressData) : {};
-  const calculatedCosts = costsData ? JSON.parse(costsData) : {};
+  const customer = getSessionData("customerData", user || {});
+  const selectedAddress = getSessionData("selectedAddress", {});
+  const calculatedCosts = getSessionData("calculatedCosts", {});
+
+  // Restore saved kit data when returning to page
+  useEffect(() => {
+    if (!hasRestoredData.current) {
+      const savedKitData = getSessionData("kitData", null);
+      if (savedKitData && savedKitData.kits) {
+        try {
+          setSelectedQuantity(savedKitData.kitQuantity || 1);
+          form.reset({
+            kitQuantity: savedKitData.kitQuantity || 1,
+            kits: savedKitData.kits
+          });
+          hasRestoredData.current = true;
+        } catch (error) {
+          console.warn("Error restoring kit data:", error);
+        }
+      }
+    }
+  }, [form]);
 
   // Authentication and data validation
   useEffect(() => {
@@ -88,10 +120,14 @@ export default function KitInformation() {
     }
 
     // Ensure customer data is in session for next steps
-    if (isAuthenticated && user && !customerData) {
-      sessionStorage.setItem("customerData", JSON.stringify(user));
+    if (isAuthenticated && user && !sessionStorage.getItem("customerData")) {
+      try {
+        sessionStorage.setItem("customerData", JSON.stringify(user));
+      } catch (error) {
+        console.warn("Error saving customer data to session:", error);
+      }
     }
-  }, [isAuthenticated, user, customer, selectedAddress, id, setLocation, customerData]);
+  }, [isAuthenticated, user?.id, customer?.id, selectedAddress?.id, id, setLocation]);
 
   // Calculate costs using unified pricing logic
   const deliveryPrice = calculatedCosts.deliveryPrice || 18.50;
@@ -105,20 +141,28 @@ export default function KitInformation() {
     cepZonePrice
   }) : null;
 
-  // Debug logging
-  console.log('Kit Information Debug:', {
-    event: event?.name,
-    fixedPrice: event?.fixedPrice,
-    calculatedCosts,
-    deliveryPrice,
-    distance,
-    pricing
-  });
+  // Debug logging with safe object access
+  useEffect(() => {
+    if (event) {
+      console.log('Kit Information Debug:', {
+        event: event?.name,
+        fixedPrice: event?.fixedPrice,
+        calculatedCosts,
+        deliveryPrice,
+        distance,
+        pricing
+      });
+    }
+  }, [event, calculatedCosts, deliveryPrice, distance, pricing]);
 
   const onSubmit = (data: KitFormData) => {
-    // Store kit data in sessionStorage for next steps
-    sessionStorage.setItem("kitData", JSON.stringify(data));
-    setLocation(`/events/${id}/payment`);
+    try {
+      // Store kit data in sessionStorage for next steps
+      sessionStorage.setItem("kitData", JSON.stringify(data));
+      setLocation(`/events/${id}/payment`);
+    } catch (error) {
+      console.warn("Error saving kit data:", error);
+    }
   };
 
   // Removed unused handleCPFChange function as logic is now inline
