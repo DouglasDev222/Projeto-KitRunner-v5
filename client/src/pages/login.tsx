@@ -10,7 +10,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LogIn, User } from "lucide-react";
+import { LogIn, User, Home, ShoppingBag, Calendar, UserIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
@@ -23,6 +23,7 @@ import {
 import { formatCPF, isValidCPF } from "@/lib/cpf-validator";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth-context";
+import { useMobile } from "@/hooks/use-mobile";
 
 // Função para formatar data brasileira (DD/MM/AAAA)
 const formatBrazilianDate = (value: string): string => {
@@ -157,36 +158,201 @@ export default function Login() {
     setLocation("/register");
   };
 
+  const isMobile = useMobile();
+
+  if (isMobile) {
+    return (
+      <div className="max-w-md mx-auto bg-white min-h-screen">
+        <Header showBackButton onBack={() => setLocation("/eventos")} />
+        <div className="p-4">
+          <Card>
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <LogIn className="w-12 h-12 text-primary" />
+              </div>
+              <CardTitle className="text-2xl">Fazer Login</CardTitle>
+              <p className="text-neutral-600">
+                Digite seu CPF e data de nascimento para acessar sua conta
+              </p>
+            </CardHeader>
+            <CardContent>
+            <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={form.control}
+                    name="cpf"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>CPF</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="000.000.000-00"
+                            value={formatCPF(field.value)}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, "");
+                              field.onChange(value);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="birthDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Data de Nascimento</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            placeholder="DD/MM/AAAA"
+                            value={formattedBirthDate}
+                            onChange={(e) => {
+                              const formatted = formatBrazilianDate(e.target.value);
+                              setFormattedBirthDate(formatted);
+                              // Atualizar o campo do formulário com a data ISO para validação
+                              const isoDate = brazilianToIsoDate(formatted);
+                              field.onChange(isoDate);
+                            }}
+                            maxLength={10}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {form.formState.errors.root && (
+                    <div className="text-red-500 text-sm text-center mb-4">
+                      {form.formState.errors.root.message}
+                      <div className="mt-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={handleCreateAccount}
+                        >
+                          <User className="w-4 h-4 mr-2" />
+                          Criar Conta com este CPF
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={loginMutation.isPending}
+                  >
+                    {loginMutation.isPending ? "Entrando..." : "Entrar"}
+                  </Button>
+                </form>
+              </Form>
+
+              <div className="mt-6 text-center">
+                <p className="text-sm text-neutral-600 mb-4">
+                  Ainda não tem uma conta?
+                </p>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleRegister}
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Fazer Primeiro Acesso
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop Layout
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen">
-      <Header showBackButton onBack={() => setLocation("/eventos")} />
-      <div className="p-4">
-        <Card>
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <LogIn className="w-12 h-12 text-primary" />
+    <div className="min-h-screen bg-gray-50">
+      {/* Desktop Navigation */}
+      <nav className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center">
+              <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
             </div>
-            <CardTitle className="text-2xl">Fazer Login</CardTitle>
-            <p className="text-neutral-600">
+
+            {/* Navigation Links */}
+            <div className="flex items-center space-x-8">
+              <button
+                onClick={() => setLocation("/")}
+                className="flex items-center space-x-2 text-gray-700 hover:text-purple-600 transition-colors"
+              >
+                <Home className="w-5 h-5" />
+                <span>Início</span>
+              </button>
+              <button
+                onClick={() => setLocation("/my-orders")}
+                className="flex items-center space-x-2 text-gray-700 hover:text-purple-600 transition-colors"
+              >
+                <ShoppingBag className="w-5 h-5" />
+                <span>Pedidos</span>
+              </button>
+              <button
+                onClick={() => setLocation("/eventos")}
+                className="flex items-center space-x-2 text-gray-700 hover:text-purple-600 transition-colors"
+              >
+                <Calendar className="w-5 h-5" />
+                <span>Eventos</span>
+              </button>
+              <button
+                onClick={() => setLocation("/profile")}
+                className="flex items-center space-x-2 text-purple-600 font-medium"
+              >
+                <UserIcon className="w-5 h-5" />
+                <span>Perfil</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div className="max-w-md mx-auto pt-16 pb-8 px-4">
+        <Card className="shadow-lg">
+          <CardHeader className="text-center pb-6">
+            <div className="flex justify-center mb-6">
+              <LogIn className="w-16 h-16 text-purple-600" />
+            </div>
+            <CardTitle className="text-3xl font-bold text-gray-900">Fazer Login</CardTitle>
+            <p className="text-gray-600 mt-2">
               Digite seu CPF e data de nascimento para acessar sua conta
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-8 pb-8">
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4"
+                className="space-y-6"
               >
                 <FormField
                   control={form.control}
                   name="cpf"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>CPF</FormLabel>
+                      <FormLabel className="text-gray-700 font-medium">CPF</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           placeholder="000.000.000-00"
+                          className="h-12 text-lg"
                           value={formatCPF(field.value)}
                           onChange={(e) => {
                             const value = e.target.value.replace(/\D/g, "");
@@ -204,11 +370,12 @@ export default function Login() {
                   name="birthDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Data de Nascimento</FormLabel>
+                      <FormLabel className="text-gray-700 font-medium">Data de Nascimento</FormLabel>
                       <FormControl>
                         <Input
                           type="text"
                           placeholder="DD/MM/AAAA"
+                          className="h-12 text-lg"
                           value={formattedBirthDate}
                           onChange={(e) => {
                             const formatted = formatBrazilianDate(e.target.value);
@@ -228,15 +395,15 @@ export default function Login() {
                 {form.formState.errors.root && (
                   <div className="text-red-500 text-sm text-center mb-4">
                     {form.formState.errors.root.message}
-                    <div className="mt-2">
+                    <div className="mt-3">
                       <Button
                         type="button"
                         variant="outline"
-                        size="sm"
-                        className="w-full"
+                        size="default"
+                        className="w-full h-12"
                         onClick={handleCreateAccount}
                       >
-                        <User className="w-4 h-4 mr-2" />
+                        <User className="w-5 h-5 mr-2" />
                         Criar Conta com este CPF
                       </Button>
                     </div>
@@ -245,7 +412,7 @@ export default function Login() {
 
                 <Button
                   type="submit"
-                  className="w-full"
+                  className="w-full h-12 text-lg bg-purple-600 hover:bg-purple-700"
                   disabled={loginMutation.isPending}
                 >
                   {loginMutation.isPending ? "Entrando..." : "Entrar"}
@@ -253,16 +420,16 @@ export default function Login() {
               </form>
             </Form>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-neutral-600 mb-4">
+            <div className="mt-8 text-center">
+              <p className="text-gray-600 mb-4">
                 Ainda não tem uma conta?
               </p>
               <Button
                 variant="outline"
-                className="w-full"
+                className="w-full h-12 text-lg"
                 onClick={handleRegister}
               >
-                <User className="w-4 h-4 mr-2" />
+                <User className="w-5 h-5 mr-2" />
                 Fazer Primeiro Acesso
               </Button>
             </div>
