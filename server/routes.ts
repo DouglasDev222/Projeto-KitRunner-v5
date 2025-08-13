@@ -1992,6 +1992,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           console.log(`✅ Order ${order.orderNumber} created successfully with status: ${order.status}`);
 
+          // Register policy acceptance for the order (card payment flow)
+          try {
+            console.log(`📋 Recording policy acceptance for card payment order ${order.id}, customer ${validatedOrderData.customerId}`);
+            const orderPolicy = await PolicyService.getActivePolicyByType('order');
+            if (orderPolicy) {
+              await PolicyService.createPolicyAcceptance({
+                userId: validatedOrderData.customerId,
+                policyId: orderPolicy.id,
+                context: 'order',
+                orderId: order.id
+              });
+              console.log(`✅ Policy acceptance recorded for card payment order ${order.id}`);
+            } else {
+              console.log(`⚠️ No active order policy found - skipping policy acceptance for card payment order ${order.id}`);
+            }
+          } catch (policyError) {
+            console.error(`❌ Error recording policy acceptance for card payment order ${order.id}:`, policyError);
+            // Don't fail the order creation if policy recording fails
+          }
+
           // After successful order creation, update stock and close event if needed
           await updateStockAndCloseEventIfNeeded(validatedOrderData.eventId);
 
