@@ -496,7 +496,7 @@ export default function Events() {
         </nav>
 
         {/* Desktop Header - Mais Expansivo */}
-        <div className="bg-gradient-to-br from-purple-600 to-purple-700 relative overflow-hidden"></div>
+        <div className="bg-gradient-to-br from-purple-600 to-purple-700 relative overflow-hidden">
           {/* Background decoration - mais elementos */}
           <div className="absolute inset-0 bg-black/5">
             <div className="absolute top-8 right-16 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
