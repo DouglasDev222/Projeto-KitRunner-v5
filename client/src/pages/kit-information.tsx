@@ -45,24 +45,31 @@ export default function KitInformation() {
 
   // Função para atualizar kits com segurança
   const updateKitFields = (quantity: number) => {
-    if (!isInitialized.current) return;
+    if (!isInitialized.current || !hasRestoredData.current) return;
     
     try {
-      const currentKits = form.getValues("kits") || [];
-      const newKits = Array.from({ length: quantity }, (_, index) => {
-        // Preserva os dados existentes se já houver dados no índice
-        if (index < currentKits.length && currentKits[index]) {
-          return currentKits[index];
+      // Aguarda um tick para garantir que o form está pronto
+      setTimeout(() => {
+        try {
+          const currentKits = form.getValues("kits") || [];
+          const newKits = Array.from({ length: quantity }, (_, index) => {
+            // Preserva os dados existentes se já houver dados no índice
+            if (index < currentKits.length && currentKits[index]) {
+              return currentKits[index];
+            }
+            // Cria novo kit vazio para novos slots
+            return {
+              name: "",
+              cpf: "",
+              shirtSize: "",
+            };
+          });
+          replace(newKits);
+          form.setValue("kitQuantity", quantity);
+        } catch (innerError) {
+          console.warn("Error in delayed kit update:", innerError);
         }
-        // Cria novo kit vazio para novos slots
-        return {
-          name: "",
-          cpf: "",
-          shirtSize: "",
-        };
-      });
-      replace(newKits);
-      form.setValue("kitQuantity", quantity);
+      }, 10);
     } catch (error) {
       console.warn("Error updating kit forms:", error);
     }
@@ -70,10 +77,10 @@ export default function KitInformation() {
 
   // Effect para atualizar kits quando a quantidade muda
   useEffect(() => {
-    if (hasRestoredData.current && isInitialized.current) {
+    if (hasRestoredData.current && isInitialized.current && fields.length > 0) {
       updateKitFields(selectedQuantity);
     }
-  }, [selectedQuantity]);
+  }, [selectedQuantity, fields.length]);
 
   const { data: event } = useQuery<any>({
     queryKey: ["/api/events", id],
@@ -98,44 +105,50 @@ export default function KitInformation() {
   useEffect(() => {
     if (!hasRestoredData.current) {
       const savedKitData = getSessionData("kitData", null);
-      if (savedKitData && savedKitData.kits && savedKitData.kits.length > 0) {
+      
+      // Aguarda um pequeno delay para garantir que o componente está montado
+      const timer = setTimeout(() => {
         try {
-          // Primeiro define a quantidade
-          setSelectedQuantity(savedKitData.kitQuantity || 1);
-          
-          // Depois reseta o form com os dados salvos
-          form.reset({
-            kitQuantity: savedKitData.kitQuantity || 1,
-            kits: savedKitData.kits
-          });
+          if (savedKitData && savedKitData.kits && savedKitData.kits.length > 0) {
+            // Primeiro define a quantidade
+            setSelectedQuantity(savedKitData.kitQuantity || 1);
+            
+            // Depois reseta o form com os dados salvos
+            form.reset({
+              kitQuantity: savedKitData.kitQuantity || 1,
+              kits: savedKitData.kits
+            });
+          } else {
+            // Inicializar com dados padrão
+            form.reset({
+              kitQuantity: 1,
+              kits: [{ name: "", cpf: "", shirtSize: "" }]
+            });
+          }
           
           hasRestoredData.current = true;
           isInitialized.current = true;
         } catch (error) {
-          console.warn("Error restoring kit data:", error);
-          // Fallback: inicializar com dados padrão
+          console.warn("Error in restoration process:", error);
+          // Fallback seguro
+          try {
+            form.reset({
+              kitQuantity: 1,
+              kits: [{ name: "", cpf: "", shirtSize: "" }]
+            });
+          } catch (fallbackError) {
+            console.warn("Fallback form reset failed:", fallbackError);
+          }
           hasRestoredData.current = true;
           isInitialized.current = true;
         }
-      } else {
-        // Sem dados salvos, inicializar normalmente
-        hasRestoredData.current = true;
-        isInitialized.current = true;
-      }
+      }, 50);
+      
+      return () => clearTimeout(timer);
     }
   }, [form]);
 
-  // Effect para garantir que a inicialização aconteça mesmo sem dados salvos
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!isInitialized.current) {
-        isInitialized.current = true;
-        hasRestoredData.current = true;
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, []);
+  
 
   // Authentication and data validation
   useEffect(() => {
@@ -236,7 +249,7 @@ export default function KitInformation() {
 
             {/* Kit Forms */}
             <div className="space-y-4">
-              {fields.map((field, index) => (
+              {fields && fields.length > 0 ? fields.map((field, index) => (
                 <Card key={field.id}>
                   <CardContent className="p-4">
                     <h3 className="font-semibold text-lg text-neutral-800 mb-3">Kit {index + 1}</h3>
@@ -317,7 +330,11 @@ export default function KitInformation() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              )) : (
+                <div className="text-center text-neutral-600 py-4">
+                  <p>Carregando formulários dos kits...</p>
+                </div>
+              )}
             </div>
 
             {/* Cost Summary */}
