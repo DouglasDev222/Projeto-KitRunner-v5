@@ -444,11 +444,8 @@ export default function Events() {
           <div className="max-w-7xl mx-auto px-8">
             <div className="flex items-center justify-between h-16">
               {/* Logo */}
-              <div className="flex items-center space-x-3">
-                <div className="bg-gradient-to-br from-purple-600 to-purple-700 p-2 rounded-lg">
-                  <Package className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-xl font-bold text-gray-900">KitRunner</span>
+              <div className="flex items-center">
+                <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
               </div>
 
               {/* Navigation Links */}
