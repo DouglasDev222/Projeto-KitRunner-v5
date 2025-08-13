@@ -21,6 +21,7 @@ import cepZonesRoutes from './routes/cep-zones';
 import couponsRoutes from './routes/coupons';
 import policyRoutes from './routes/policies';
 import { CouponService } from './coupon-service';
+import { PolicyService } from './policy-service';
 
 // Helper function to update stock and close event if needed after successful payment
 async function updateStockAndCloseEventIfNeeded(eventId: number) {
@@ -655,6 +656,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error(`❌ Error incrementing coupon usage for ${orderData.couponCode}:`, error);
           // Don't fail the order creation if coupon increment fails
         }
+      }
+
+      // Register policy acceptance for the order
+      try {
+        console.log(`📋 Recording policy acceptance for order ${order.id}, customer ${orderData.customerId}`);
+        const orderPolicy = await PolicyService.getActivePolicyByType('order');
+        if (orderPolicy) {
+          await PolicyService.createPolicyAcceptance({
+            userId: orderData.customerId,
+            policyId: orderPolicy.id,
+            context: 'order',
+            orderId: order.id
+          });
+          console.log(`✅ Policy acceptance recorded for order ${order.id}`);
+        } else {
+          console.log(`⚠️ No active order policy found - skipping policy acceptance for order ${order.id}`);
+        }
+      } catch (policyError) {
+        console.error(`❌ Error recording policy acceptance for order ${order.id}:`, policyError);
+        // Don't fail the order creation if policy recording fails
       }
 
       // Schedule payment pending email to be sent in 1 minute
