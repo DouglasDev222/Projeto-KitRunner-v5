@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, Landmark, QrCode, Shield, Lock, Heart, Package, CheckCircle } from "lucide-react";
 import { useLocation, useParams } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/brazilian-formatter";
@@ -52,6 +52,10 @@ export default function Payment() {
   const [policyAccepted, setPolicyAccepted] = useState(false);
   
   const acceptPolicyMutation = useAcceptPolicy();
+  
+  // Ref to track if component is mounted
+  const isMounted = useRef(true);
+  const timerId = useRef<NodeJS.Timeout | null>(null);
 
   // Clear payment error when payment method changes
   useEffect(() => {
@@ -59,6 +63,16 @@ export default function Payment() {
       setPaymentError(null);
     }
   }, [paymentMethod]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+      if (timerId.current) {
+        clearTimeout(timerId.current);
+      }
+    };
+  }, []);
 
   // Helper function to record policy acceptance
   const recordPolicyAcceptance = async (orderId: number) => {
@@ -136,19 +150,25 @@ export default function Payment() {
         // Store order confirmation data
         sessionStorage.setItem("orderConfirmation", JSON.stringify(data));
         // Redirect to confirmation page using order number after a short delay
-        setTimeout(() => {
-          setLocation(`/order/${data.order.orderNumber}/confirmation`);
+        timerId.current = setTimeout(() => {
+          if (isMounted.current) {
+            setLocation(`/order/${data.order.orderNumber}/confirmation`);
+          }
         }, 2000);
       }
     },
     onError: (error: any) => {
-      setPaymentError(error.message || "Erro ao criar pedido");
-      setIsProcessing(false);
+      if (isMounted.current) {
+        setPaymentError(error.message || "Erro ao criar pedido");
+        setIsProcessing(false);
+      }
     }
   });
 
   // Payment success handler
   const handlePaymentSuccess = (paymentResult: any) => {
+    if (!isMounted.current) return;
+    
     setPaymentCompleted(true);
     setPaymentError(null);
     setOrderNumber(paymentResult.orderNumber);
@@ -161,15 +181,19 @@ export default function Payment() {
     sessionStorage.setItem("orderConfirmation", JSON.stringify(confirmationData));
     
     // Redirect to confirmation page after payment success
-    setTimeout(() => {
-      setLocation(`/order/${paymentResult.orderNumber}/confirmation`);
+    timerId.current = setTimeout(() => {
+      if (isMounted.current) {
+        setLocation(`/order/${paymentResult.orderNumber}/confirmation`);
+      }
     }, 2000);
   };
 
   // Payment error handler
   const handlePaymentError = (error: string) => {
-    setPaymentError(error);
-    setIsProcessing(false);
+    if (isMounted.current) {
+      setPaymentError(error);
+      setIsProcessing(false);
+    }
   };
 
   // Coupon handlers

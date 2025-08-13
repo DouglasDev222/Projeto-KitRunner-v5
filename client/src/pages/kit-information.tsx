@@ -15,7 +15,8 @@ import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { kitInformationSchema, kitSchema, type KitInformation } from "@shared/schema";
 import { formatCPF, isValidCPF } from "@/lib/cpf-validator";
-import { formatCurrency, formatCEP } from "@/lib/brazilian-formatter";
+import { formatCurrency } from "@/lib/brazilian-formatter";
+import { formatCep } from "@/lib/cep-zones-client";
 import { calculatePricing, formatPricingBreakdown } from "@/lib/pricing-calculator";
 import { useAuth } from "@/lib/auth-context";
 
