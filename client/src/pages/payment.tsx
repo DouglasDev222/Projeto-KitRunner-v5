@@ -282,14 +282,18 @@ export default function Payment() {
     extraKitsCost: securePricing.pricing.extraKitsCost,
     donationAmount: securePricing.pricing.donationAmount,
     totalCost: securePricing.pricing.totalCost,
-    kitQuantity: securePricing.pricing.kitQuantity
+    kitQuantity: securePricing.pricing.kitQuantity,
+    discountAmount: 0,
+    fixedPrice: event?.fixedPrice ? Number(event.fixedPrice) : undefined
   } : {
     baseCost: 0,
     deliveryCost: 0,
     extraKitsCost: 0,
     donationAmount: 0,
     totalCost: 0,
-    kitQuantity: kitData.kitQuantity || 1
+    kitQuantity: kitData.kitQuantity || 1,
+    discountAmount: 0,
+    fixedPrice: event?.fixedPrice ? Number(event.fixedPrice) : undefined
   };
   
   const pricingBreakdown = formatPricingBreakdown(basePricing, event, kitData.kitQuantity);
@@ -377,20 +381,20 @@ export default function Payment() {
               <div className="border-t pt-3 mt-3">
                 <h4 className="font-medium text-neutral-800 mb-2">Detalhamento</h4>
                 
-                {pricing.fixedPrice ? (
+                {event?.fixedPrice ? (
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center">
                       <Badge variant="secondary" className="mr-2 text-xs">Preço Fixo</Badge>
                       <span className="text-neutral-600">Inclui todos os serviços</span>
                     </div>
-                    <span className="font-medium text-neutral-800">{formatCurrency(pricing.fixedPrice)}</span>
+                    <span className="font-medium text-neutral-800">{formatCurrency(Number(event.fixedPrice))}</span>
                   </div>
                 ) : (
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-neutral-600">
-                      {calculatedCosts?.pricingType === 'cep_zones' 
-                        ? `Entrega (${calculatedCosts.cepZoneName || 'Zona CEP'})`
-                        : `Entrega (${calculatedCosts.distance || 12.5} km)`
+                      {securePricing?.pricingType === 'cep_zones' 
+                        ? `Entrega (${securePricing.zoneName || 'Zona CEP'})`
+                        : `Entrega (estimativa)`
                       }
                     </span>
                     <span className="font-medium text-neutral-800">{formatCurrency(pricing.deliveryCost)}</span>

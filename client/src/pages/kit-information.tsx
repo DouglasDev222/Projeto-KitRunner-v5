@@ -131,17 +131,28 @@ export default function KitInformation() {
     }
   }, [isAuthenticated, user?.id, customer?.id, selectedAddress?.id, id, setLocation]);
 
-  // SECURITY FIX: Basic pricing display only (not used for actual payment calculations)
-  // Real pricing will be calculated securely on server in payment page
+  // Get calculated costs from session storage to preserve CEP zone pricing
+  const calculatedCosts = (() => {
+    try {
+      const data = sessionStorage.getItem("calculatedCosts");
+      return data ? JSON.parse(data) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  // SECURITY NOTE: Only using stored data for DISPLAY purposes
+  // Real pricing calculations happen securely on server in payment page
+  const deliveryPrice = calculatedCosts?.deliveryPrice || (event?.fixedPrice ? 0 : 18.50);
+  
   const pricing = event ? {
     baseCost: event.fixedPrice ? Number(event.fixedPrice) : 0,
-    deliveryCost: event.fixedPrice ? 0 : 18.50, // Display estimate only
+    deliveryCost: event.fixedPrice ? 0 : deliveryPrice,
     extraKitsCost: selectedQuantity > 1 && event.extraKitPrice ? (selectedQuantity - 1) * Number(event.extraKitPrice) : 0,
     donationAmount: event.donationRequired && event.donationAmount ? Number(event.donationAmount) * selectedQuantity : 0,
-    totalCost: 0 // Will be calculated properly on payment page
+    totalCost: 0
   } : null;
 
-  // Update total cost for display
   if (pricing) {
     pricing.totalCost = pricing.baseCost + pricing.deliveryCost + pricing.extraKitsCost + pricing.donationAmount;
   }
@@ -317,8 +328,8 @@ export default function KitInformation() {
                     ) : (
                       <div className="flex justify-between items-center">
                         <span className="text-neutral-600">
-                          {event?.pricingType === 'cep_zones'
-                            ? 'Entrega (Zona CEP)'
+                          {calculatedCosts?.pricingType === 'cep_zones'
+                            ? `Entrega (${calculatedCosts.cepZoneName || 'Zona CEP'})`
                             : 'Entrega (estimativa)'
                           }
                         </span>
