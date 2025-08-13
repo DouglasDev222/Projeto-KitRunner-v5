@@ -52,10 +52,6 @@ export default function Payment() {
   const [policyAccepted, setPolicyAccepted] = useState(false);
   
   const acceptPolicyMutation = useAcceptPolicy();
-  
-  // Ref to track if component is mounted
-  const isMounted = useRef(true);
-  const timerId = useRef<NodeJS.Timeout | null>(null);
 
   // Clear payment error when payment method changes
   useEffect(() => {
@@ -63,16 +59,6 @@ export default function Payment() {
       setPaymentError(null);
     }
   }, [paymentMethod]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      isMounted.current = false;
-      if (timerId.current) {
-        clearTimeout(timerId.current);
-      }
-    };
-  }, []);
 
   // Helper function to record policy acceptance
   const recordPolicyAcceptance = async (orderId: number) => {
@@ -102,30 +88,35 @@ export default function Payment() {
   });
 
   useEffect(() => {
-    const customerData = sessionStorage.getItem("customerData");
-    const kitInfo = sessionStorage.getItem("kitData");
-    const addressData = sessionStorage.getItem("selectedAddress");
-    
-    if (customerData) {
-      setCustomer(JSON.parse(customerData));
-    }
-    if (kitInfo) {
-      setKitData(JSON.parse(kitInfo));
-    }
-    if (addressData) {
-      setSelectedAddress(JSON.parse(addressData));
-    }
-    
-    if (!customerData || !kitInfo || !addressData) {
-      // Redirect to login if customer data is missing, or back to address if just missing kit/address data
-      if (!customerData) {
-        sessionStorage.setItem("loginReturnPath", `/events/${id}/address`);
-        setLocation("/login");
-      } else if (!kitInfo) {
-        setLocation(`/events/${id}/kits`);
-      } else {
-        setLocation(`/events/${id}/address`);
+    try {
+      const customerData = sessionStorage.getItem("customerData");
+      const kitInfo = sessionStorage.getItem("kitData");
+      const addressData = sessionStorage.getItem("selectedAddress");
+      
+      if (customerData) {
+        setCustomer(JSON.parse(customerData));
       }
+      if (kitInfo) {
+        setKitData(JSON.parse(kitInfo));
+      }
+      if (addressData) {
+        setSelectedAddress(JSON.parse(addressData));
+      }
+      
+      if (!customerData || !kitInfo || !addressData) {
+        // Redirect to login if customer data is missing, or back to address if just missing kit/address data
+        if (!customerData) {
+          sessionStorage.setItem("loginReturnPath", `/events/${id}/address`);
+          setLocation("/login");
+        } else if (!kitInfo) {
+          setLocation(`/events/${id}/kits`);
+        } else {
+          setLocation(`/events/${id}/address`);
+        }
+      }
+    } catch (error) {
+      console.warn("Error loading session data:", error);
+      setLocation(`/events/${id}/kits`);
     }
   }, [id, setLocation]);
 
@@ -150,25 +141,19 @@ export default function Payment() {
         // Store order confirmation data
         sessionStorage.setItem("orderConfirmation", JSON.stringify(data));
         // Redirect to confirmation page using order number after a short delay
-        timerId.current = setTimeout(() => {
-          if (isMounted.current) {
-            setLocation(`/order/${data.order.orderNumber}/confirmation`);
-          }
+        setTimeout(() => {
+          setLocation(`/order/${data.order.orderNumber}/confirmation`);
         }, 2000);
       }
     },
     onError: (error: any) => {
-      if (isMounted.current) {
-        setPaymentError(error.message || "Erro ao criar pedido");
-        setIsProcessing(false);
-      }
+      setPaymentError(error.message || "Erro ao criar pedido");
+      setIsProcessing(false);
     }
   });
 
   // Payment success handler
   const handlePaymentSuccess = (paymentResult: any) => {
-    if (!isMounted.current) return;
-    
     setPaymentCompleted(true);
     setPaymentError(null);
     setOrderNumber(paymentResult.orderNumber);
@@ -181,19 +166,15 @@ export default function Payment() {
     sessionStorage.setItem("orderConfirmation", JSON.stringify(confirmationData));
     
     // Redirect to confirmation page after payment success
-    timerId.current = setTimeout(() => {
-      if (isMounted.current) {
-        setLocation(`/order/${paymentResult.orderNumber}/confirmation`);
-      }
+    setTimeout(() => {
+      setLocation(`/order/${paymentResult.orderNumber}/confirmation`);
     }, 2000);
   };
 
   // Payment error handler
   const handlePaymentError = (error: string) => {
-    if (isMounted.current) {
-      setPaymentError(error);
-      setIsProcessing(false);
-    }
+    setPaymentError(error);
+    setIsProcessing(false);
   };
 
   // Coupon handlers
