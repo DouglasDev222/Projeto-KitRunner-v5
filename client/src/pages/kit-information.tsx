@@ -28,6 +28,7 @@ export default function KitInformation() {
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const { isAuthenticated, user } = useAuth();
   const hasRestoredData = useRef(false);
+  const isInitialized = useRef(false);
 
   const form = useForm<KitFormData>({
     resolver: zodResolver(kitInformationSchema),
@@ -42,12 +43,13 @@ export default function KitInformation() {
     name: "kits",
   });
 
-  useEffect(() => {
-    if (!hasRestoredData.current) return; // Don't update until data is restored
+  // Função para atualizar kits com segurança
+  const updateKitFields = (quantity: number) => {
+    if (!isInitialized.current) return;
     
     try {
       const currentKits = form.getValues("kits") || [];
-      const newKits = Array.from({ length: selectedQuantity }, (_, index) => {
+      const newKits = Array.from({ length: quantity }, (_, index) => {
         // Preserva os dados existentes se já houver dados no índice
         if (index < currentKits.length && currentKits[index]) {
           return currentKits[index];
@@ -60,11 +62,18 @@ export default function KitInformation() {
         };
       });
       replace(newKits);
-      form.setValue("kitQuantity", selectedQuantity);
+      form.setValue("kitQuantity", quantity);
     } catch (error) {
       console.warn("Error updating kit forms:", error);
     }
-  }, [selectedQuantity, replace, form]);
+  };
+
+  // Effect para atualizar kits quando a quantidade muda
+  useEffect(() => {
+    if (hasRestoredData.current && isInitialized.current) {
+      updateKitFields(selectedQuantity);
+    }
+  }, [selectedQuantity]);
 
   const { data: event } = useQuery<any>({
     queryKey: ["/api/events", id],
@@ -89,20 +98,44 @@ export default function KitInformation() {
   useEffect(() => {
     if (!hasRestoredData.current) {
       const savedKitData = getSessionData("kitData", null);
-      if (savedKitData && savedKitData.kits) {
+      if (savedKitData && savedKitData.kits && savedKitData.kits.length > 0) {
         try {
+          // Primeiro define a quantidade
           setSelectedQuantity(savedKitData.kitQuantity || 1);
+          
+          // Depois reseta o form com os dados salvos
           form.reset({
             kitQuantity: savedKitData.kitQuantity || 1,
             kits: savedKitData.kits
           });
+          
           hasRestoredData.current = true;
+          isInitialized.current = true;
         } catch (error) {
           console.warn("Error restoring kit data:", error);
+          // Fallback: inicializar com dados padrão
+          hasRestoredData.current = true;
+          isInitialized.current = true;
         }
+      } else {
+        // Sem dados salvos, inicializar normalmente
+        hasRestoredData.current = true;
+        isInitialized.current = true;
       }
     }
   }, [form]);
+
+  // Effect para garantir que a inicialização aconteça mesmo sem dados salvos
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!isInitialized.current) {
+        isInitialized.current = true;
+        hasRestoredData.current = true;
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Authentication and data validation
   useEffect(() => {
@@ -183,7 +216,10 @@ export default function KitInformation() {
               </Label>
               <Select
                 value={selectedQuantity.toString()}
-                onValueChange={(value) => setSelectedQuantity(parseInt(value))}
+                onValueChange={(value) => {
+                  const newQuantity = parseInt(value);
+                  setSelectedQuantity(newQuantity);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a quantidade" />
