@@ -505,63 +505,52 @@ export default function Events() {
             <div className="absolute bottom-1/4 right-1/3 w-8 h-8 bg-white/5 rounded-full blur-md"></div>
           </div>
 
-          <div className="relative max-w-7xl mx-auto px-8 pt-12 pb-16">
-            {/* Brand Desktop */}
-            <div className="text-center mb-12">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-2xl mb-6">
-                <Package className="w-10 h-10 text-white" />
-              </div>
-              <h1 className="text-5xl font-bold text-white mb-3">KitRunner</h1>
-              <p className="text-purple-100 text-xl max-w-2xl mx-auto leading-relaxed">
-                Retirada e Entrega de Kits de Corrida - Sua conveniência é nossa prioridade
-              </p>
-            </div>
-
-            {/* Search Bar Desktop - Mais Proeminente */}
-            <div className="max-w-2xl mx-auto relative">
-              <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 h-6 w-6 text-gray-400 z-10" />
+          <div className="relative max-w-7xl mx-auto px-8 pt-8 pb-12">
+            {/* Search Bar Desktop - Simplificada */}
+            <div className="max-w-xl mx-auto relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
               <Input
-                placeholder="Buscar eventos por nome, cidade ou local..."
+                placeholder="Buscar eventos..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-16 pr-8 py-6 w-full bg-white/95 text-gray-900 border-0 rounded-2xl shadow-lg text-lg focus:ring-4 focus:ring-white/30 placeholder:text-gray-500 transition-all duration-300"
+                className="pl-12 pr-6 py-3 w-full bg-white/95 text-gray-900 border-0 rounded-xl shadow-md text-base focus:ring-2 focus:ring-white/30 placeholder:text-gray-500 transition-all duration-200"
               />
             </div>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-8 -mt-8 relative z-10">
-          {/* Quick Stats Desktop - Layout em Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
-            <Card className="bg-white border-0 shadow-xl rounded-2xl overflow-hidden">
-              <CardContent className="p-8">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-4 rounded-2xl">
-                    <Zap className="h-8 w-8 text-white" />
+        <div className="max-w-7xl mx-auto px-8 -mt-6 relative z-10">
+          {/* Quick Stats Desktop - Layout Harmonioso */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+            <Card className="bg-white border border-gray-100 shadow-sm rounded-lg hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-purple-100 p-2 rounded-lg">
+                    <Zap className="h-5 w-5 text-purple-600" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900">
-                      Receba seu kit em casa
+                    <h3 className="text-sm font-medium text-gray-900">
+                      Entrega em Casa
                     </h3>
-                    <p className="text-gray-600">
-                      Entrega rápida e segura
+                    <p className="text-xs text-gray-500">
+                      Rápida e segura
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-white border-0 shadow-xl rounded-2xl overflow-hidden">
-              <CardContent className="p-8">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 rounded-2xl">
-                    <Users className="h-8 w-8 text-white" />
+            <Card className="bg-white border border-gray-100 shadow-sm rounded-lg hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-green-100 p-2 rounded-lg">
+                    <Calendar className="h-5 w-5 text-green-600" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900">
+                    <h3 className="text-sm font-medium text-gray-900">
                       Eventos Disponíveis
                     </h3>
-                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 px-4 py-2 rounded-full text-lg">
+                    <Badge className="bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-md text-xs">
                       {availableEventsCount} eventos
                     </Badge>
                   </div>
@@ -569,18 +558,18 @@ export default function Events() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white border-0 shadow-xl rounded-2xl overflow-hidden">
-              <CardContent className="p-8">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-gradient-to-br from-orange-500 to-red-600 p-4 rounded-2xl">
-                    <Clock className="h-8 w-8 text-white" />
+            <Card className="bg-white border border-gray-100 shadow-sm rounded-lg hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-blue-100 p-2 rounded-lg">
+                    <Clock className="h-5 w-5 text-blue-600" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900">
-                      Atendimento Rápido
+                    <h3 className="text-sm font-medium text-gray-900">
+                      Processamento
                     </h3>
-                    <p className="text-gray-600">
-                      Processamento em até 24h
+                    <p className="text-xs text-gray-500">
+                      Até 24 horas
                     </p>
                   </div>
                 </div>
