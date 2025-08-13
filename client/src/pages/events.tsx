@@ -439,8 +439,64 @@ export default function Events() {
 
       {/* Desktop Layout (novo layout expandido) */}
       <div className="hidden md:block min-h-screen">
+        {/* Desktop Navigation Menu */}
+        <nav className="bg-white border-b border-gray-200 shadow-sm">
+          <div className="max-w-7xl mx-auto px-8">
+            <div className="flex items-center justify-between h-16">
+              {/* Logo */}
+              <div className="flex items-center space-x-3">
+                <div className="bg-gradient-to-br from-purple-600 to-purple-700 p-2 rounded-lg">
+                  <Package className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-xl font-bold text-gray-900">KitRunner</span>
+              </div>
+
+              {/* Navigation Links */}
+              <div className="flex items-center space-x-8">
+                <Button
+                  variant="ghost"
+                  onClick={() => setLocation("/")}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>Início</span>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    sessionStorage.setItem("loginReturnPath", "/my-orders");
+                    setLocation("/my-orders");
+                  }}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
+                >
+                  <Package className="w-4 h-4" />
+                  <span>Pedidos</span>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="flex items-center space-x-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-lg font-medium"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>Eventos</span>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  onClick={() => setLocation("/profile")}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
+                >
+                  <Users className="w-4 h-4" />
+                  <span>Perfil</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </nav>
+
         {/* Desktop Header - Mais Expansivo */}
-        <div className="bg-gradient-to-br from-purple-600 to-purple-700 relative overflow-hidden">
+        <div className="bg-gradient-to-br from-purple-600 to-purple-700 relative overflow-hidden"></div>
           {/* Background decoration - mais elementos */}
           <div className="absolute inset-0 bg-black/5">
             <div className="absolute top-8 right-16 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
