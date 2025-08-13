@@ -578,51 +578,51 @@ export default function Events() {
           </div>
 
           {/* Desktop Filter Bar */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+          <div className="bg-white border border-gray-100 rounded-lg shadow-sm p-6 mb-8">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Eventos Disponíveis</h2>
-                <p className="text-gray-600">Selecione um evento para fazer seu pedido</p>
+                <h2 className="text-xl font-semibold text-gray-900 mb-1">Eventos Disponíveis</h2>
+                <p className="text-sm text-gray-600">Selecione um evento para fazer seu pedido</p>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <Button
                   variant={filterType === "all" ? "default" : "outline"}
-                  size="lg"
+                  size="sm"
                   onClick={() => setFilterType("all")}
-                  className={`rounded-full px-8 py-3 text-base font-medium transition-all ${
+                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
                     filterType === "all"
-                      ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg"
-                      : "border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50"
+                      ? "bg-purple-600 text-white shadow-sm hover:bg-purple-700"
+                      : "border border-gray-200 hover:border-purple-300 hover:bg-purple-50"
                   }`}
                 >
-                  Todos os Eventos
+                  Todos
                 </Button>
                 <Button
                   variant={filterType === "week" ? "default" : "outline"}
-                  size="lg"
+                  size="sm"
                   onClick={() => setFilterType("week")}
-                  className={`rounded-full px-8 py-3 text-base font-medium transition-all ${
+                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
                     filterType === "week"
-                      ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg"
-                      : "border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50"
+                      ? "bg-purple-600 text-white shadow-sm hover:bg-purple-700"
+                      : "border border-gray-200 hover:border-purple-300 hover:bg-purple-50"
                   }`}
                 >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Esta Semana
+                  <Clock className="h-3 w-3 mr-1" />
+                  Semana
                 </Button>
                 <Button
                   variant={filterType === "month" ? "default" : "outline"}
-                  size="lg"
+                  size="sm"
                   onClick={() => setFilterType("month")}
-                  className={`rounded-full px-8 py-3 text-base font-medium transition-all ${
+                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
                     filterType === "month"
-                      ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg"
-                      : "border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50"
+                      ? "bg-purple-600 text-white shadow-sm hover:bg-purple-700"
+                      : "border border-gray-200 hover:border-purple-300 hover:bg-purple-50"
                   }`}
                 >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Este Mês
+                  <Calendar className="h-3 w-3 mr-1" />
+                  Mês
                 </Button>
               </div>
             </div>
@@ -720,47 +720,43 @@ export default function Events() {
                 return (
                   <Card
                     key={event.id}
-                    className={`cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 border-0 shadow-lg rounded-2xl overflow-hidden group ${
+                    className={`transition-all duration-200 border border-gray-100 shadow-sm hover:shadow-md rounded-lg overflow-hidden group ${
                       isPastEvent ? "opacity-70" : ""
-                    } ${event.available ? "bg-white" : "bg-gray-50"}`}
-                    onClick={() => handleEventClick(event.id)}
+                    } ${event.available ? "bg-white hover:border-purple-200" : "bg-gray-50"}`}
                   >
-                    <CardContent className="p-8 relative">
-                      {/* Status indicator - mais proeminente */}
+                    <CardContent className="p-6 relative">
+                      {/* Status indicator */}
                       <div
-                        className={`absolute top-0 left-0 w-2 h-full ${
+                        className={`absolute top-0 left-0 w-1 h-full ${
                           isPastEvent
-                            ? "bg-gradient-to-b from-gray-400 to-gray-500"
+                            ? "bg-gray-400"
                             : event.status === 'ativo'
-                            ? "bg-gradient-to-b from-green-400 to-green-500"
+                            ? "bg-green-500"
                             : event.status === 'inativo'
-                            ? "bg-gradient-to-b from-yellow-400 to-yellow-500"
+                            ? "bg-yellow-500"
                             : event.status === 'fechado_pedidos'
-                            ? "bg-gradient-to-b from-orange-400 to-orange-500"
-                            : "bg-gradient-to-b from-gray-400 to-gray-500"
+                            ? "bg-orange-500"
+                            : "bg-gray-400"
                         }`}
                       />
 
-                      <div className="pl-4">
-                        <div className="flex items-start justify-between mb-6">
-                          <div className="flex-1 min-w-0 pr-4">
-                            <h3 className="text-xl font-bold text-gray-900 mb-2 leading-tight group-hover:text-purple-600 transition-colors">
-                              {event.name}
-                            </h3>
-                          </div>
-                          <ChevronRight className="w-6 h-6 text-gray-400 flex-shrink-0 group-hover:text-purple-500 transition-colors" />
+                      <div className="pl-3">
+                        <div className="mb-4">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2 leading-tight group-hover:text-purple-700 transition-colors cursor-pointer" onClick={() => handleEventClick(event.id)}>
+                            {event.name}
+                          </h3>
                         </div>
 
-                        <div className="space-y-4 mb-6">
+                        <div className="space-y-3 mb-4">
                           <div className="flex items-center text-gray-600">
-                            <Calendar className="w-5 h-5 mr-3 text-purple-500" />
-                            <span className="text-base font-medium">{formatDate(event.date)}</span>
+                            <Calendar className="w-4 h-4 mr-2 text-purple-500" />
+                            <span className="text-sm">{formatDate(event.date)}</span>
                           </div>
                           <div className="flex items-start text-gray-600">
-                            <MapPin className="w-5 h-5 mr-3 text-purple-500 mt-0.5 flex-shrink-0" />
-                            <span className="text-base">
+                            <MapPin className="w-4 h-4 mr-2 text-purple-500 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm">
                               {event.location}<br />
-                              <span className="text-sm text-gray-500">{event.city} - {event.state}</span>
+                              <span className="text-xs text-gray-500">{event.city} - {event.state}</span>
                             </span>
                           </div>
                         </div>
@@ -768,18 +764,31 @@ export default function Events() {
                         <div className="flex justify-between items-center">
                           <Badge
                             variant={getEventStatusVariant(event, isPastEvent)}
-                            className={`text-sm rounded-full px-4 py-2 font-medium ${getEventStatusColor(event, isPastEvent)}`}
+                            className={`text-xs rounded-md px-3 py-1 font-medium ${getEventStatusColor(event, isPastEvent)}`}
                           >
                             {getEventStatusLabel(event, isPastEvent)}
                           </Badge>
 
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-full px-4"
-                          >
-                            Ver Detalhes
-                          </Button>
+                          <div className="flex gap-2">
+                            {event.status === 'ativo' && !isPastEvent && (
+                              <Button
+                                size="sm"
+                                onClick={() => handleEventClick(event.id)}
+                                className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-4 py-2 rounded-md transition-colors"
+                              >
+                                Solicitar Retirada
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEventClick(event.id)}
+                              className="text-gray-600 hover:text-purple-600 hover:bg-purple-50 text-xs px-3 py-2 rounded-md transition-colors"
+                            >
+                              Ver Detalhes
+                              <ChevronRight className="w-3 h-3 ml-1" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
