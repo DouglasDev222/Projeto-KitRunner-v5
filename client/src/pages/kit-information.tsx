@@ -27,8 +27,6 @@ export default function KitInformation() {
   const { id } = useParams<{ id: string }>();
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const { isAuthenticated, user } = useAuth();
-  const hasRestoredData = useRef(false);
-  const isInitialized = useRef(false);
 
   const form = useForm<KitFormData>({
     resolver: zodResolver(kitInformationSchema),
@@ -43,44 +41,23 @@ export default function KitInformation() {
     name: "kits",
   });
 
-  // Função para atualizar kits com segurança
+  // Função para atualizar kits de forma simples
   const updateKitFields = (quantity: number) => {
-    if (!isInitialized.current || !hasRestoredData.current) return;
-    
-    try {
-      // Aguarda um tick para garantir que o form está pronto
-      setTimeout(() => {
-        try {
-          const currentKits = form.getValues("kits") || [];
-          const newKits = Array.from({ length: quantity }, (_, index) => {
-            // Preserva os dados existentes se já houver dados no índice
-            if (index < currentKits.length && currentKits[index]) {
-              return currentKits[index];
-            }
-            // Cria novo kit vazio para novos slots
-            return {
-              name: "",
-              cpf: "",
-              shirtSize: "",
-            };
-          });
-          replace(newKits);
-          form.setValue("kitQuantity", quantity);
-        } catch (innerError) {
-          console.warn("Error in delayed kit update:", innerError);
-        }
-      }, 10);
-    } catch (error) {
-      console.warn("Error updating kit forms:", error);
-    }
+    const currentKits = form.getValues("kits") || [];
+    const newKits = Array.from({ length: quantity }, (_, index) => {
+      if (index < currentKits.length && currentKits[index]) {
+        return currentKits[index];
+      }
+      return { name: "", cpf: "", shirtSize: "" };
+    });
+    replace(newKits);
+    form.setValue("kitQuantity", quantity);
   };
 
   // Effect para atualizar kits quando a quantidade muda
   useEffect(() => {
-    if (hasRestoredData.current && isInitialized.current && fields.length > 0) {
-      updateKitFields(selectedQuantity);
-    }
-  }, [selectedQuantity, fields.length]);
+    updateKitFields(selectedQuantity);
+  }, [selectedQuantity]);
 
   const { data: event } = useQuery<any>({
     queryKey: ["/api/events", id],
@@ -103,50 +80,29 @@ export default function KitInformation() {
 
   // Restore saved kit data when returning to page
   useEffect(() => {
-    if (!hasRestoredData.current) {
+    try {
       const savedKitData = getSessionData("kitData", null);
       
-      // Aguarda um pequeno delay para garantir que o componente está montado
-      const timer = setTimeout(() => {
-        try {
-          if (savedKitData && savedKitData.kits && savedKitData.kits.length > 0) {
-            // Primeiro define a quantidade
-            setSelectedQuantity(savedKitData.kitQuantity || 1);
-            
-            // Depois reseta o form com os dados salvos
-            form.reset({
-              kitQuantity: savedKitData.kitQuantity || 1,
-              kits: savedKitData.kits
-            });
-          } else {
-            // Inicializar com dados padrão
-            form.reset({
-              kitQuantity: 1,
-              kits: [{ name: "", cpf: "", shirtSize: "" }]
-            });
-          }
-          
-          hasRestoredData.current = true;
-          isInitialized.current = true;
-        } catch (error) {
-          console.warn("Error in restoration process:", error);
-          // Fallback seguro
-          try {
-            form.reset({
-              kitQuantity: 1,
-              kits: [{ name: "", cpf: "", shirtSize: "" }]
-            });
-          } catch (fallbackError) {
-            console.warn("Fallback form reset failed:", fallbackError);
-          }
-          hasRestoredData.current = true;
-          isInitialized.current = true;
-        }
-      }, 50);
-      
-      return () => clearTimeout(timer);
+      if (savedKitData && savedKitData.kits && savedKitData.kits.length > 0) {
+        setSelectedQuantity(savedKitData.kitQuantity || 1);
+        form.reset({
+          kitQuantity: savedKitData.kitQuantity || 1,
+          kits: savedKitData.kits
+        });
+      } else {
+        form.reset({
+          kitQuantity: 1,
+          kits: [{ name: "", cpf: "", shirtSize: "" }]
+        });
+      }
+    } catch (error) {
+      console.warn("Error restoring kit data:", error);
+      form.reset({
+        kitQuantity: 1,
+        kits: [{ name: "", cpf: "", shirtSize: "" }]
+      });
     }
-  }, [form]);
+  }, []);
 
   
 
