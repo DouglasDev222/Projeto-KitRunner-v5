@@ -10,7 +10,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LogIn, User, Home, ShoppingBag, Calendar, UserIcon } from "lucide-react";
+import { LogIn, User, Home, ShoppingBag, Calendar, UserIcon, Package, Users } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
@@ -281,7 +281,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Desktop Navigation */}
-      <nav className="bg-white border-b">
+      <nav className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -291,34 +291,43 @@ export default function Login() {
 
             {/* Navigation Links */}
             <div className="flex items-center space-x-8">
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setLocation("/")}
-                className="flex items-center space-x-2 text-gray-700 hover:text-purple-600 transition-colors"
+                className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
               >
-                <Home className="w-5 h-5" />
+                <Calendar className="w-4 h-4" />
                 <span>Início</span>
-              </button>
-              <button
-                onClick={() => setLocation("/my-orders")}
-                className="flex items-center space-x-2 text-gray-700 hover:text-purple-600 transition-colors"
+              </Button>
+
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  sessionStorage.setItem("loginReturnPath", "/my-orders");
+                  setLocation("/my-orders");
+                }}
+                className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
               >
-                <ShoppingBag className="w-5 h-5" />
+                <Package className="w-4 h-4" />
                 <span>Pedidos</span>
-              </button>
-              <button
+              </Button>
+
+              <Button
+                variant="ghost"
                 onClick={() => setLocation("/eventos")}
-                className="flex items-center space-x-2 text-gray-700 hover:text-purple-600 transition-colors"
+                className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
               >
-                <Calendar className="w-5 h-5" />
+                <Calendar className="w-4 h-4" />
                 <span>Eventos</span>
-              </button>
-              <button
-                onClick={() => setLocation("/profile")}
-                className="flex items-center space-x-2 text-purple-600 font-medium"
+              </Button>
+
+              <Button
+                variant="ghost"
+                className="flex items-center space-x-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-lg font-medium"
               >
-                <UserIcon className="w-5 h-5" />
+                <Users className="w-4 h-4" />
                 <span>Perfil</span>
-              </button>
+              </Button>
             </div>
           </div>
         </div>
