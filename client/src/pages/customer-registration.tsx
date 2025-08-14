@@ -505,10 +505,10 @@ export default function CustomerRegistration() {
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto pt-16 pb-8 px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="max-w-6xl mx-auto pt-16 pb-8 px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Left Column - Header */}
-          <div className="lg:pr-8">
+          <div className="lg:col-span-2 lg:pr-8">
             <div className="flex items-center mb-6">
               <UserPlus className="w-8 h-8 text-purple-600 mr-3" />
               <div>
@@ -540,15 +540,15 @@ export default function CustomerRegistration() {
           </div>
 
           {/* Right Column - Form */}
-          <div>
+          <div className="lg:col-span-3">
             <Card className="shadow-lg">
-              <CardContent className="p-8">
+              <CardContent className="p-10">
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                     
                     {/* Personal Information */}
-                    <div className="space-y-4">
-                      <h3 className="font-semibold text-lg text-gray-900 mb-4">Dados Pessoais</h3>
+                    <div className="space-y-6">
+                      <h3 className="font-semibold text-xl text-gray-900 mb-6">Dados Pessoais</h3>
                       
                       <FormField
                         control={form.control}
@@ -564,7 +564,7 @@ export default function CustomerRegistration() {
                         )}
                       />
                       
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-6">
                         <FormField
                           control={form.control}
                           name="cpf"
@@ -618,7 +618,7 @@ export default function CustomerRegistration() {
                         />
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-6">
                         <FormField
                           control={form.control}
                           name="email"
@@ -655,9 +655,9 @@ export default function CustomerRegistration() {
                     </div>
 
                     {/* Address Information - Simplified for desktop */}
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-lg text-gray-900">Endereços</h3>
+                        <h3 className="font-semibold text-xl text-gray-900">Endereços</h3>
                         {fields.length < 2 && (
                           <Button
                             type="button"
@@ -674,7 +674,7 @@ export default function CustomerRegistration() {
                       
                       {fields.map((field, index) => (
                         <Card key={field.id} className="border border-gray-200">
-                          <CardContent className="p-4">
+                          <CardContent className="p-6">
                             <div className="flex items-center justify-between mb-4">
                               <FormField
                                 control={form.control}
@@ -712,7 +712,7 @@ export default function CustomerRegistration() {
                               )}
                             </div>
                             
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-3 gap-6">
                               <FormField
                                 control={form.control}
                                 name={`addresses.${index}.street`}
@@ -784,7 +784,7 @@ export default function CustomerRegistration() {
                               />
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-4 mt-4">
+                            <div className="grid grid-cols-2 gap-6 mt-6">
                               <FormField
                                 control={form.control}
                                 name={`addresses.${index}.zipCode`}
@@ -837,7 +837,7 @@ export default function CustomerRegistration() {
                     </div>
 
                     {/* Policy Acceptance */}
-                    <div className="border border-gray-200 rounded-lg p-4">
+                    <div className="border border-gray-200 rounded-lg p-6">
                       <PolicyAcceptance
                         type="register"
                         checked={policyAccepted}
@@ -854,7 +854,7 @@ export default function CustomerRegistration() {
                     
                     <Button 
                       type="submit" 
-                      className="w-full h-12 text-lg bg-purple-600 hover:bg-purple-700"
+                      className="w-full h-14 text-lg bg-purple-600 hover:bg-purple-700 font-semibold"
                       disabled={registerMutation.isPending || !policyAccepted}
                     >
                       {registerMutation.isPending ? "Cadastrando..." : "Finalizar Cadastro"}
