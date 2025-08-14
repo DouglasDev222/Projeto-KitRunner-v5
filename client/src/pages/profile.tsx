@@ -286,42 +286,52 @@ export default function Profile() {
       {/* Desktop Version */}
       <div className="hidden lg:block min-h-screen bg-gray-50">
         {/* Desktop Header */}
-        <nav className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-6xl mx-auto px-8">
+        <nav className="bg-white border-b border-gray-200 shadow-sm">
+          <div className="max-w-7xl mx-auto px-8">
             <div className="flex items-center justify-between h-16">
-              <div className="flex items-center space-x-8">
-                <div 
-                  className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => setLocation("/eventos")}
-                >
-                  <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-                    <Package className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-xl font-bold text-gray-900">KitRunner</span>
-                </div>
+              {/* Logo */}
+              <div className="flex items-center">
+                <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
               </div>
-              
-              <div className="flex items-center space-x-6">
+
+              {/* Navigation Links */}
+              <div className="flex items-center space-x-8">
+                <Button
+                  variant="ghost"
+                  onClick={() => setLocation("/")}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
+                >
+                  <Home className="w-4 h-4" />
+                  <span>Início</span>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    sessionStorage.setItem("loginReturnPath", "/my-orders");
+                    setLocation("/my-orders");
+                  }}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
+                >
+                  <Package className="w-4 h-4" />
+                  <span>Pedidos</span>
+                </Button>
+
                 <Button
                   variant="ghost"
                   onClick={() => setLocation("/eventos")}
-                  className="text-gray-700 hover:text-purple-600"
+                  className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
                 >
-                  Eventos
+                  <Package className="w-4 h-4" />
+                  <span>Eventos</span>
                 </Button>
+
                 <Button
                   variant="ghost"
-                  onClick={() => setLocation("/my-orders")}
-                  className="text-gray-700 hover:text-purple-600"
+                  className="flex items-center space-x-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-lg font-medium"
                 >
-                  Meus Pedidos
-                </Button>
-                <Button
-                  variant="outline"
-                  className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700"
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  Meu Perfil
+                  <User className="w-4 h-4" />
+                  <span>Perfil</span>
                 </Button>
               </div>
             </div>
