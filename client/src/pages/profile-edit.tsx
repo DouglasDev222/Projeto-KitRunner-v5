@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Save, AlertTriangle } from "lucide-react";
+import { User, Save, AlertTriangle, Package, Home, LogOut } from "lucide-react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
@@ -15,6 +15,7 @@ import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
 import { apiRequest } from "@/lib/queryClient";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type ProfileEditFormData = z.infer<typeof customerProfileEditSchema>;
 
@@ -24,6 +25,7 @@ export default function ProfileEdit() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isMobile = useIsMobile();
 
   const {
     register,
@@ -152,138 +154,373 @@ export default function ProfileEdit() {
     );
   }
 
+  if (isMobile) {
+    return (
+      <div className="max-w-md mx-auto bg-white min-h-screen pb-20">
+        <Header showBackButton onBack={() => setLocation("/profile")} />
+        <div className="p-4">
+          <div className="flex items-center mb-6">
+            <User className="w-8 h-8 text-primary mr-3" />
+            <div>
+              <h2 className="text-2xl font-bold text-neutral-800">Editar Perfil</h2>
+              <p className="text-sm text-neutral-600">Altere suas informações pessoais</p>
+            </div>
+          </div>
+
+          {/* Security Notice */}
+          <Card className="mb-6 border-amber-200 bg-amber-50">
+            <CardContent className="pt-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                <div className="text-sm text-amber-800">
+                  <p className="font-medium mb-1">Informações de Segurança</p>
+                  <p>O CPF não pode ser alterado por motivos de segurança. Entre em contato com o suporte se precisar alterar esta informação.</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Edit Form */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center">
+                <User className="w-5 h-5 mr-2" />
+                Informações Pessoais
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                {/* Name Field */}
+                <div>
+                  <Label htmlFor="name">Nome Completo</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    {...register("name")}
+                    className={errors.name ? "border-red-500" : ""}
+                    placeholder="Seu nome completo"
+                  />
+                  {errors.name && (
+                    <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
+                  )}
+                </div>
+
+                {/* Email Field */}
+                <div>
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    {...register("email")}
+                    className={errors.email ? "border-red-500" : ""}
+                    placeholder="seu@email.com"
+                  />
+                  {errors.email && (
+                    <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+                  )}
+                </div>
+
+                {/* Phone Field */}
+                <div>
+                  <Label htmlFor="phone">Telefone</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    {...register("phone")}
+                    className={errors.phone ? "border-red-500" : ""}
+                    placeholder="(83) 99999-9999"
+                  />
+                  {errors.phone && (
+                    <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>
+                  )}
+                </div>
+
+                {/* Birth Date Field */}
+                <div>
+                  <Label htmlFor="birthDate">Data de Nascimento</Label>
+                  <Input
+                    id="birthDate"
+                    type="date"
+                    {...register("birthDate")}
+                    className={errors.birthDate ? "border-red-500" : ""}
+                  />
+                  {errors.birthDate && (
+                    <p className="text-red-500 text-sm mt-1">{errors.birthDate.message}</p>
+                  )}
+                </div>
+
+                {/* CPF Field (Read-only) */}
+                <div>
+                  <Label htmlFor="cpf">CPF (não editável)</Label>
+                  <Input
+                    id="cpf"
+                    type="text"
+                    value={user?.cpf ? `${user.cpf.slice(0, 3)}.${user.cpf.slice(3, 6)}.${user.cpf.slice(6, 9)}-${user.cpf.slice(9)}` : ''}
+                    disabled
+                    className="bg-neutral-100 text-neutral-600"
+                  />
+                  <p className="text-xs text-neutral-500 mt-1">
+                    Por motivos de segurança, o CPF não pode ser alterado
+                  </p>
+                </div>
+
+                {/* Submit Button */}
+                <div className="pt-4">
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isSubmitting || updateProfileMutation.isPending}
+                  >
+                    {isSubmitting || updateProfileMutation.isPending ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Salvar Alterações
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop Version
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen pb-20">
-      <Header showBackButton onBack={() => setLocation("/profile")} />
-      <div className="p-4">
-        <div className="flex items-center mb-6">
-          <User className="w-8 h-8 text-primary mr-3" />
-          <div>
-            <h2 className="text-2xl font-bold text-neutral-800">Editar Perfil</h2>
-            <p className="text-sm text-neutral-600">Altere suas informações pessoais</p>
+    <div className="hidden lg:block min-h-screen bg-gray-50">
+      {/* Desktop Header */}
+      <nav className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center">
+              <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
+            </div>
+
+            {/* Navigation Links */}
+            <div className="flex items-center space-x-8">
+              <Button
+                variant="ghost"
+                onClick={() => setLocation("/")}
+                className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
+              >
+                <Home className="w-4 h-4" />
+                <span>Início</span>
+              </Button>
+
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  sessionStorage.setItem("loginReturnPath", "/my-orders");
+                  setLocation("/my-orders");
+                }}
+                className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
+              >
+                <Package className="w-4 h-4" />
+                <span>Pedidos</span>
+              </Button>
+
+              <Button
+                variant="ghost"
+                onClick={() => setLocation("/eventos")}
+                className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
+              >
+                <Package className="w-4 h-4" />
+                <span>Eventos</span>
+              </Button>
+
+              <Button
+                variant="ghost"
+                onClick={() => setLocation("/profile")}
+                className="flex items-center space-x-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-lg font-medium"
+              >
+                <User className="w-4 h-4" />
+                <span>Perfil</span>
+              </Button>
+            </div>
           </div>
         </div>
+      </nav>
 
-        {/* Security Notice */}
-        <Card className="mb-6 border-amber-200 bg-amber-50">
-          <CardContent className="pt-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
-              <div className="text-sm text-amber-800">
-                <p className="font-medium mb-1">Informações de Segurança</p>
-                <p>O CPF não pode ser alterado por motivos de segurança. Entre em contato com o suporte se precisar alterar esta informação.</p>
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto pt-16 pb-8 px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          {/* Left Column - Information (2/5) */}
+          <div className="lg:col-span-2 lg:pr-8">
+            <div className="sticky top-24">
+              <div className="flex items-center mb-8">
+                <User className="w-12 h-12 text-purple-600 mr-4" />
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">Editar Perfil</h1>
+                  <p className="text-gray-600 mt-2">Atualize suas informações pessoais de forma segura</p>
+                </div>
               </div>
+
+              {/* Security Info Card */}
+              <Card className="border-amber-200 bg-amber-50 shadow-lg">
+                <CardContent className="p-8">
+                  <div className="flex items-start gap-4">
+                    <AlertTriangle className="w-6 h-6 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-amber-800 text-lg mb-3">Informações de Segurança</h3>
+                      <div className="text-amber-700 space-y-2">
+                        <p>• O CPF não pode ser alterado por motivos de segurança</p>
+                        <p>• Suas informações são protegidas e criptografadas</p>
+                        <p>• Entre em contato com o suporte para alterações especiais</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions */}
+              <Card className="mt-6 shadow-lg">
+                <CardContent className="p-8">
+                  <h3 className="font-semibold text-gray-900 text-lg mb-4">Ações Rápidas</h3>
+                  <div className="space-y-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => setLocation("/profile")}
+                      className="w-full justify-start text-left"
+                    >
+                      <User className="w-4 h-4 mr-3" />
+                      Voltar ao Perfil
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setLocation("/profile/addresses")}
+                      className="w-full justify-start text-left"
+                    >
+                      <Home className="w-4 h-4 mr-3" />
+                      Gerenciar Endereços
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Edit Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center">
-              <User className="w-5 h-5 mr-2" />
-              Informações Pessoais
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {/* Name Field */}
-              <div>
-                <Label htmlFor="name">Nome Completo</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  {...register("name")}
-                  className={errors.name ? "border-red-500" : ""}
-                  placeholder="Seu nome completo"
-                />
-                {errors.name && (
-                  <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
-                )}
-              </div>
+          {/* Right Column - Form (3/5) */}
+          <div className="lg:col-span-3">
+            <Card className="shadow-lg">
+              <CardHeader className="p-10 pb-6">
+                <CardTitle className="text-2xl flex items-center">
+                  <User className="w-6 h-6 mr-3" />
+                  Informações Pessoais
+                </CardTitle>
+                <p className="text-gray-600 mt-2">Atualize seus dados pessoais abaixo</p>
+              </CardHeader>
+              <CardContent className="p-10 pt-0">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+                  {/* Form Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Name Field */}
+                    <div className="md:col-span-2">
+                      <Label htmlFor="name" className="text-base font-medium">Nome Completo</Label>
+                      <Input
+                        id="name"
+                        type="text"
+                        {...register("name")}
+                        className={`h-12 text-base mt-2 ${errors.name ? "border-red-500" : ""}`}
+                        placeholder="Seu nome completo"
+                      />
+                      {errors.name && (
+                        <p className="text-red-500 text-sm mt-2">{errors.name.message}</p>
+                      )}
+                    </div>
 
-              {/* Email Field */}
-              <div>
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  {...register("email")}
-                  className={errors.email ? "border-red-500" : ""}
-                  placeholder="seu@email.com"
-                />
-                {errors.email && (
-                  <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
-                )}
-              </div>
+                    {/* Email Field */}
+                    <div>
+                      <Label htmlFor="email" className="text-base font-medium">E-mail</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        {...register("email")}
+                        className={`h-12 text-base mt-2 ${errors.email ? "border-red-500" : ""}`}
+                        placeholder="seu@email.com"
+                      />
+                      {errors.email && (
+                        <p className="text-red-500 text-sm mt-2">{errors.email.message}</p>
+                      )}
+                    </div>
 
-              {/* Phone Field */}
-              <div>
-                <Label htmlFor="phone">Telefone</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  {...register("phone")}
-                  className={errors.phone ? "border-red-500" : ""}
-                  placeholder="(83) 99999-9999"
-                />
-                {errors.phone && (
-                  <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>
-                )}
-              </div>
+                    {/* Phone Field */}
+                    <div>
+                      <Label htmlFor="phone" className="text-base font-medium">Telefone</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        {...register("phone")}
+                        className={`h-12 text-base mt-2 ${errors.phone ? "border-red-500" : ""}`}
+                        placeholder="(83) 99999-9999"
+                      />
+                      {errors.phone && (
+                        <p className="text-red-500 text-sm mt-2">{errors.phone.message}</p>
+                      )}
+                    </div>
 
-              {/* Birth Date Field */}
-              <div>
-                <Label htmlFor="birthDate">Data de Nascimento</Label>
-                <Input
-                  id="birthDate"
-                  type="date"
-                  {...register("birthDate")}
-                  className={errors.birthDate ? "border-red-500" : ""}
-                />
-                {errors.birthDate && (
-                  <p className="text-red-500 text-sm mt-1">{errors.birthDate.message}</p>
-                )}
-              </div>
+                    {/* Birth Date Field */}
+                    <div>
+                      <Label htmlFor="birthDate" className="text-base font-medium">Data de Nascimento</Label>
+                      <Input
+                        id="birthDate"
+                        type="date"
+                        {...register("birthDate")}
+                        className={`h-12 text-base mt-2 ${errors.birthDate ? "border-red-500" : ""}`}
+                      />
+                      {errors.birthDate && (
+                        <p className="text-red-500 text-sm mt-2">{errors.birthDate.message}</p>
+                      )}
+                    </div>
 
-              {/* CPF Field (Read-only) */}
-              <div>
-                <Label htmlFor="cpf">CPF (não editável)</Label>
-                <Input
-                  id="cpf"
-                  type="text"
-                  value={user?.cpf ? `${user.cpf.slice(0, 3)}.${user.cpf.slice(3, 6)}.${user.cpf.slice(6, 9)}-${user.cpf.slice(9)}` : ''}
-                  disabled
-                  className="bg-neutral-100 text-neutral-600"
-                />
-                <p className="text-xs text-neutral-500 mt-1">
-                  Por motivos de segurança, o CPF não pode ser alterado
-                </p>
-              </div>
+                    {/* CPF Field (Read-only) */}
+                    <div>
+                      <Label htmlFor="cpf" className="text-base font-medium">CPF (não editável)</Label>
+                      <Input
+                        id="cpf"
+                        type="text"
+                        value={user?.cpf ? `${user.cpf.slice(0, 3)}.${user.cpf.slice(3, 6)}.${user.cpf.slice(6, 9)}-${user.cpf.slice(9)}` : ''}
+                        disabled
+                        className="bg-gray-100 text-gray-600 h-12 text-base mt-2"
+                      />
+                      <p className="text-sm text-gray-500 mt-2">
+                        Por motivos de segurança, o CPF não pode ser alterado
+                      </p>
+                    </div>
+                  </div>
 
-              {/* Submit Button */}
-              <div className="pt-4">
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isSubmitting || updateProfileMutation.isPending}
-                >
-                  {isSubmitting || updateProfileMutation.isPending ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                      Salvando...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" />
-                      Salvar Alterações
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+                  {/* Submit Button */}
+                  <div className="pt-6">
+                    <Button
+                      type="submit"
+                      className="w-full h-14 text-base font-medium"
+                      disabled={isSubmitting || updateProfileMutation.isPending}
+                    >
+                      {isSubmitting || updateProfileMutation.isPending ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3" />
+                          Salvando Alterações...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-5 h-5 mr-3" />
+                          Salvar Alterações
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
