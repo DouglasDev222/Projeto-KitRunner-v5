@@ -40,6 +40,28 @@ Este documento registra as adaptações realizadas para criar versões desktop d
   - Grid de 2 colunas para dados pessoais
   - Endereços em cards individuais com hover effects
 
+#### 4. Tela de Edição de Perfil (`/profile/edit`)
+- **Status**: ✅ Concluída
+- **Implementação**: Layout em duas colunas otimizado
+- **Características**:
+  - Header desktop padronizado
+  - Coluna esquerda: Informações de segurança e ações rápidas (2/5)
+  - Coluna direita: Formulário expandido (3/5)
+  - Grid de 2 colunas para campos do formulário
+  - Cards informativos com alertas de segurança
+  - Inputs com altura aumentada (h-12)
+
+#### 5. Tela de Endereços (`/profile/address/new`, `/profile/address/:id/edit`)
+- **Status**: ✅ Concluída
+- **Implementação**: Layout em duas colunas com formulário expandido
+- **Características**:
+  - Header desktop padronizado
+  - Coluna esquerda: Dicas e ações rápidas (2/5)
+  - Coluna direita: Formulário de endereço em grid de 3 colunas (3/5)
+  - Cards informativos com dicas para preenchimento
+  - Formulário responsivo com campos organizados logicamente
+  - Validação visual aprimorada
+
 ## Padrão de Design Estabelecido
 
 ### Header Desktop Padrão
@@ -145,20 +167,6 @@ Este documento registra as adaptações realizadas para criar versões desktop d
   - Cards de pedidos em grid de 2-3 colunas
   - Filtros e busca na lateral
 
-#### 2. Tela de Edição de Perfil (`/profile/edit`)
-- **Prioridade**: Alta
-- **Implementação sugerida**:
-  - Seguir padrão da tela de cadastro
-  - Formulário expandido em 3 colunas
-  - Preview das alterações na coluna esquerda
-
-#### 3. Tela de Endereços (`/profile/address/new`, `/profile/address/:id/edit`)
-- **Prioridade**: Média
-- **Implementação sugerida**:
-  - Modal ou página completa
-  - Formulário de endereço expandido
-  - Validação de CEP integrada
-
 #### 4. Tela de Detalhes do Evento (`/eventos/:id`)
 - **Prioridade**: Alta
 - **Implementação sugerida**:
@@ -259,5 +267,5 @@ Este documento registra as adaptações realizadas para criar versões desktop d
 ---
 
 **Última atualização**: 14 de agosto de 2025
-**Status do projeto**: Migração para Replit concluída, 3 telas desktop implementadas
+**Status do projeto**: Migração para Replit concluída, 5 telas desktop implementadas
 **Próximo milestone**: Implementar tela de pedidos desktop
