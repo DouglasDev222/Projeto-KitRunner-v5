@@ -36,6 +36,7 @@ import { AdminEmailTest } from "@/pages/admin-email-test";
 import AdminCepZones from "@/pages/admin-cep-zones";
 import AdminCoupons from "@/pages/admin/coupons";
 import AdminPolicies from "@/pages/admin/policies";
+import AdminWhatsApp from "@/pages/admin-whatsapp";
 import Landing from "@/pages/landing";
 
 function Router() {
@@ -152,6 +153,13 @@ function Router() {
         {() => (
           <AdminRouteGuard>
             <AdminPolicies />
+          </AdminRouteGuard>
+        )}
+      </Route>
+      <Route path="/admin/whatsapp" >
+        {() => (
+          <AdminRouteGuard>
+            <AdminWhatsApp />
           </AdminRouteGuard>
         )}
       </Route>

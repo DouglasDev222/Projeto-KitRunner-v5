@@ -20,6 +20,7 @@ import adminAuthRoutes from './routes/admin-auth';
 import cepZonesRoutes from './routes/cep-zones';
 import couponsRoutes from './routes/coupons';
 import policyRoutes from './routes/policies';
+import whatsappRoutes from './routes/whatsapp';
 import { registerPricingValidationRoutes } from './routes/pricing-validation';
 import { CouponService } from './coupon-service';
 import { PolicyService } from './policy-service';
@@ -137,6 +138,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Policy routes
   app.use('/api', policyRoutes);
+
+  // WhatsApp routes
+  app.use('/api/admin/whatsapp', whatsappRoutes);
 
   // SECURITY FIX: Secure pricing validation routes
   registerPricingValidationRoutes(app);
@@ -2424,6 +2428,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }
                 } catch (adminEmailError) {
                   console.error('Webhook: Error sending admin order confirmation:', adminEmailError);
+                }
+
+                // Send WhatsApp confirmation notification
+                try {
+                  const fullOrder = await storage.getOrderWithFullDetails(order.id);
+                  if (fullOrder && fullOrder.customer && fullOrder.customer.phoneNumber) {
+                    const WhatsAppService = (await import('./whatsapp-service')).default;
+                    const whatsAppService = new WhatsAppService(storage);
+                    
+                    console.log(`📱 Webhook: Sending WhatsApp confirmation for order ${fullOrder.orderNumber}`);
+                    await whatsAppService.sendOrderConfirmation(fullOrder);
+                    console.log(`📱 Webhook: WhatsApp notification sent for order ${fullOrder.orderNumber}`);
+                  } else {
+                    console.log(`📱 Webhook: No phone number found for order ${order.orderNumber}, skipping WhatsApp`);
+                  }
+                } catch (whatsappError) {
+                  console.error('Webhook: Error sending WhatsApp notification:', whatsappError);
                 }
               } else if (result.status === 'cancelled' || result.status === 'rejected') {
                 console.log(`❌ Webhook: Payment failed for order ${orderId} (ID: ${order.id}) - updating to canceled`);

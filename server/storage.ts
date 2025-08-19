@@ -16,6 +16,10 @@ import {
   CustomerIdentification,
   CepZone,
   InsertCepZone,
+  WhatsappMessage,
+  InsertWhatsappMessage,
+  WhatsappSettings,
+  InsertWhatsappSettings,
   events,
   customers,
   addresses,
@@ -26,6 +30,8 @@ import {
   emailLogs,
   cepZones,
   adminUsers,
+  whatsappMessages,
+  whatsappSettings,
   insertEmailLogSchema
 } from "@shared/schema";
 import { db } from "./db";
@@ -146,6 +152,15 @@ export interface IStorage {
   
   // Admin user email notifications
   getAdminUsersWithEmailNotifications(): Promise<{ id: number; email: string; fullName: string }[]>;
+
+  // WhatsApp methods
+  createWhatsappMessage(message: InsertWhatsappMessage): Promise<WhatsappMessage>;
+  updateWhatsappMessage(id: number, updates: Partial<{ status: string; jobId?: string; errorMessage?: string; sentAt?: Date }>): Promise<void>;
+  getWhatsappMessages(limit: number, offset: number): Promise<{ messages: WhatsappMessage[]; total: number }>;
+  getLastWhatsappMessageId(): Promise<number>;
+  getActiveWhatsappTemplate(): Promise<WhatsappSettings | null>;
+  createWhatsappTemplate(template: InsertWhatsappSettings): Promise<WhatsappSettings>;
+  updateWhatsappTemplate(id: number, template: Partial<InsertWhatsappSettings>): Promise<WhatsappSettings | undefined>;
 
 }
 
@@ -1707,6 +1722,85 @@ class MockStorage implements IStorage {
       .where(eq(adminUsers.receiveOrderEmails, true));
     
     return result;
+  }
+
+  // WhatsApp methods implementation
+  async createWhatsappMessage(message: InsertWhatsappMessage): Promise<WhatsappMessage> {
+    const [result] = await db
+      .insert(whatsappMessages)
+      .values(message)
+      .returning();
+    return result;
+  }
+
+  async updateWhatsappMessage(id: number, updates: Partial<{ status: string; jobId?: string; errorMessage?: string; sentAt?: Date }>): Promise<void> {
+    await db
+      .update(whatsappMessages)
+      .set(updates)
+      .where(eq(whatsappMessages.id, id));
+  }
+
+  async getWhatsappMessages(limit: number, offset: number): Promise<{ messages: WhatsappMessage[]; total: number }> {
+    const messages = await db
+      .select()
+      .from(whatsappMessages)
+      .orderBy(desc(whatsappMessages.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(whatsappMessages);
+
+    return {
+      messages,
+      total: totalResult.count
+    };
+  }
+
+  async getLastWhatsappMessageId(): Promise<number> {
+    const [result] = await db
+      .select({ id: whatsappMessages.id })
+      .from(whatsappMessages)
+      .orderBy(desc(whatsappMessages.id))
+      .limit(1);
+    
+    return result?.id || 0;
+  }
+
+  async getActiveWhatsappTemplate(): Promise<WhatsappSettings | null> {
+    const [result] = await db
+      .select()
+      .from(whatsappSettings)
+      .where(eq(whatsappSettings.isActive, true))
+      .orderBy(desc(whatsappSettings.createdAt))
+      .limit(1);
+    
+    return result || null;
+  }
+
+  async createWhatsappTemplate(template: InsertWhatsappSettings): Promise<WhatsappSettings> {
+    // Deactivate existing templates
+    await db
+      .update(whatsappSettings)
+      .set({ isActive: false });
+
+    const [result] = await db
+      .insert(whatsappSettings)
+      .values(template)
+      .returning();
+    
+    return result;
+  }
+
+  async updateWhatsappTemplate(id: number, template: Partial<InsertWhatsappSettings>): Promise<WhatsappSettings | undefined> {
+    const [result] = await db
+      .update(whatsappSettings)
+      .set({ ...template, updatedAt: new Date() })
+      .where(eq(whatsappSettings.id, id))
+      .returning();
+    
+    return result || undefined;
   }
 }
 

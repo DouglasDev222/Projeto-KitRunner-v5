@@ -227,6 +227,28 @@ export const eventCepZonePrices = pgTable("event_cep_zone_prices", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// WhatsApp integration tables
+export const whatsappMessages = pgTable("whatsapp_messages", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  customerName: varchar("customer_name", { length: 255 }).notNull(),
+  phoneNumber: varchar("phone_number", { length: 20 }).notNull(),
+  messageContent: text("message_content").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // 'pending', 'sent', 'error'
+  jobId: varchar("job_id", { length: 100 }), // ID retornado pela API do WhatsApp
+  errorMessage: text("error_message"), // Mensagem de erro se houver
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  sentAt: timestamp("sent_at"), // Quando foi enviado com sucesso
+});
+
+export const whatsappSettings = pgTable("whatsapp_settings", {
+  id: serial("id").primaryKey(),
+  templateContent: text("template_content").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Event status enum and types
 export const eventStatusEnum = z.enum(['ativo', 'inativo', 'fechado_pedidos']);
 export type EventStatus = z.infer<typeof eventStatusEnum>;
@@ -269,6 +291,24 @@ export const insertPolicyAcceptanceSchema = createInsertSchema(policyAcceptances
   id: true, 
   acceptedAt: true 
 });
+
+// WhatsApp schemas
+export const insertWhatsappMessageSchema = createInsertSchema(whatsappMessages).omit({ 
+  id: true, 
+  createdAt: true, 
+  sentAt: true 
+});
+export const insertWhatsappSettingsSchema = createInsertSchema(whatsappSettings).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
+
+// Types
+export type WhatsappMessage = typeof whatsappMessages.$inferSelect;
+export type WhatsappSettings = typeof whatsappSettings.$inferSelect;
+export type InsertWhatsappMessage = z.infer<typeof insertWhatsappMessageSchema>;
+export type InsertWhatsappSettings = z.infer<typeof insertWhatsappSettingsSchema>;
 
 // Customer identification validation
 export const customerIdentificationSchema = z.object({
@@ -477,8 +517,6 @@ export interface UpdateAdminUser {
   role?: string;
   isActive?: boolean;
   receiveOrderEmails?: boolean;
-  role?: string;
-  isActive?: boolean;
 }
 
 export interface AuditLogFilters {

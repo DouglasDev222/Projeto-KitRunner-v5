@@ -1,0 +1,130 @@
+Prompt Estruturado
+
+Quero que você adicione uma nova funcionalidade de integração com WhatsApp ao meu sistema de gerenciamento de pedidos.
+Minha aplicação já possui fluxo de pedidos, status, envio de e-mails automáticos e webhook de pagamento.
+
+Objetivo
+
+Adicionar envio automático de mensagem de confirmação de pedido via WhatsApp após o webhook de pagamento aprovado.
+
+API Externa de WhatsApp (já pronta)
+
+Enviar mensagem
+
+POST http://91.108.126.63:5000/send-message
+
+Headers:
+
+Authorization: Bearer 12345678
+
+Content-Type: application/json
+
+Body:
+
+{
+  "number": "558387606350",
+  "message": "Mensagem formatada com *negrito* e emojis 😊🚀"
+}
+
+
+Response:
+
+{
+  "status": "success",
+  "jobId": "2",
+  "description": "Mensagem adicionada à fila para envio."
+}
+
+
+Obter QR Code de conexão
+
+GET http://91.108.126.63:5000/qrcode
+
+Se conectado:
+
+{
+  "status": "error",
+  "description": "Já conectado ao WhatsApp ou QR Code não necessário no momento."
+}
+
+
+Se não conectado: retorna um Base64 PNG com QR Code.
+
+Requisitos da Nova Funcionalidade
+
+Admin – Aba WhatsApp
+
+Submenu no painel do admin chamado "WhatsApp".
+
+Telas:
+
+Conexão: Exibir QR Code ou status "Já conectado".
+
+Template da mensagem: Editor de texto (suportar placeholders como {{cliente}}, {{evento}}, {{kits}}, {{data_entrega}}).
+
+Histórico: Listagem de mensagens enviadas (pedido, cliente, número, status, jobId, data/hora).
+
+Banco de Dados
+Criar tabela whatsapp_messages com os campos:
+
+id (pk)
+
+pedido_id (fk)
+
+cliente_nome
+
+numero
+
+mensagem
+
+status (success/error)
+
+jobId (string da API)
+
+criado_em (timestamp)
+
+Webhook de Pagamento
+
+Ao receber confirmação de pagamento aprovado:
+
+Buscar pedido, cliente, evento, kits e data prevista de entrega.
+
+Montar mensagem baseada no template configurado no admin.
+
+Substituir placeholders ({{cliente}}, {{evento}}, {{kits}}, {{data_entrega}}).
+
+Enviar POST para API /send-message.
+
+Registrar no banco em whatsapp_messages.
+
+Template de Mensagem (exemplo inicial)
+
+Olá, *{{cliente}}*!  
+Confirmamos sua solicitação de *[Retirada do Kit] {{evento}}*.
+
+Você solicitou a retirada de *{{qtd_kits}}* kits para os seguintes atletas:
+
+{{lista_kits}}
+
+Vamos retirar seu kit, previsão de entrega é para amanhã dia {{data_entrega}}.  
+Logo mais entraremos em contato e faremos a entrega no endereço informado no pedido.  
+
+Qualquer dúvida, estamos à disposição.  
+
+O que eu quero que você faça
+
+Criar as rotas e controladores para integração WhatsApp.
+
+Criar a tabela whatsapp_messages e lógica de gravação.
+
+Adicionar o submenu no painel admin com:
+
+Conexão (QR Code)
+
+Editor de template
+
+Histórico de mensagens enviadas
+
+Modificar o fluxo do webhook de pagamento para disparar a mensagem automaticamente.
+
+Garantir que a mensagem seja montada a partir do template editável e enviada com placeholders substituídos.

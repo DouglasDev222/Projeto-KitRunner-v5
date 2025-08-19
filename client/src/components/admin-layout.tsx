@@ -16,7 +16,8 @@ import {
   Shield,
   MapPin,
   Gift,
-  FileText
+  FileText,
+  MessageCircle
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -36,6 +37,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { icon: MapPin, label: "Zonas CEP", href: "/admin/cep-zones" },
     { icon: Gift, label: "Cupons", href: "/admin/coupons" },
     { icon: FileText, label: "Políticas", href: "/admin/policies" },
+    { icon: MessageCircle, label: "WhatsApp", href: "/admin/whatsapp" },
     { icon: BarChart3, label: "Logs de Email", href: "/admin/email-logs" },
     { icon: Shield, label: "Teste Email", href: "/admin/email-test" },
     { icon: BarChart3, label: "Relatórios", href: "/admin/reports" },
