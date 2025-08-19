@@ -77,12 +77,14 @@ export class WhatsAppService {
   /**
    * Get WhatsApp QR Code for connection
    */
-  async getQRCode(): Promise<WhatsAppQRResponse> {
+  /**
+   * Check WhatsApp connection status
+   */
+  async getConnectionStatus(): Promise<any> {
     try {
-      console.log('📱 Getting WhatsApp QR Code...');
+      console.log('📱 Checking WhatsApp connection status...');
       
-      // First, check connection status
-      const statusResponse = await axios.get(
+      const response = await axios.get(
         `${this.apiUrl}/status`,
         {
           headers: {
@@ -92,16 +94,22 @@ export class WhatsAppService {
         }
       );
 
-      console.log('📱 Status Response:', statusResponse.data);
+      console.log('📱 Status Response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ WhatsApp status error:', error.message);
+      return {
+        status: 'error',
+        connectionStatus: 'disconnected',
+        description: error.message || 'Erro ao verificar status'
+      };
+    }
+  }
+
+  async getQRCode(): Promise<WhatsAppQRResponse> {
+    try {
+      console.log('📱 Getting WhatsApp QR Code...');
       
-      if (statusResponse.data.status === 'success' && statusResponse.data.connectionStatus === 'connected') {
-        return {
-          status: 'error',
-          description: 'Já conectado ao WhatsApp ou QR Code não necessário no momento.'
-        };
-      }
-      
-      // If not connected, try to get QR code
       const response: AxiosResponse<WhatsAppQRResponse> = await axios.get(
         `${this.apiUrl}/qrcode`,
         {
