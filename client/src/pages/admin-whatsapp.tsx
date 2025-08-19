@@ -62,7 +62,7 @@ export default function AdminWhatsApp() {
   // Fetch connection status
   const { data: connection, isLoading: connectionLoading, refetch: refetchConnection } = useQuery<WhatsAppConnection>({
     queryKey: ["/api/admin/whatsapp/connection"],
-    refetchInterval: connection?.connected ? false : 10000, // Poll every 10s if not connected
+    refetchInterval: (data) => data?.connected ? false : 10000, // Poll every 10s if not connected
   });
 
   // Fetch template
