@@ -7,14 +7,11 @@ import { z } from 'zod';
 const router = Router();
 const whatsAppService = new WhatsAppService(storage);
 
-// Middleware para autenticação admin em todas as rotas
-router.use(requireAdminAuth);
-
 /**
  * GET /api/admin/whatsapp/connection
  * Get WhatsApp connection status and QR code if needed
  */
-router.get('/connection', async (req: Request, res: Response) => {
+router.get('/connection', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     console.log('📱 Getting WhatsApp connection status...');
     
@@ -103,7 +100,7 @@ router.post('/test', async (req: Request, res: Response) => {
  * GET /api/admin/whatsapp/template
  * Get active WhatsApp template
  */
-router.get('/template', async (req: Request, res: Response) => {
+router.get('/template', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     console.log('📱 Getting active WhatsApp template...');
     
@@ -146,7 +143,7 @@ const templateSchema = z.object({
   content: z.string().min(1, 'Conteúdo do template é obrigatório')
 });
 
-router.post('/template', async (req: Request, res: Response) => {
+router.post('/template', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     console.log('📱 Updating WhatsApp template...');
     
@@ -202,7 +199,7 @@ router.post('/template', async (req: Request, res: Response) => {
  * PUT /api/admin/whatsapp/template/:id
  * Update specific WhatsApp template
  */
-router.put('/template/:id', async (req: Request, res: Response) => {
+router.put('/template/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     console.log('📱 Updating specific WhatsApp template...');
     
@@ -261,7 +258,7 @@ router.put('/template/:id', async (req: Request, res: Response) => {
  * GET /api/admin/whatsapp/messages
  * Get WhatsApp message history with pagination
  */
-router.get('/messages', async (req: Request, res: Response) => {
+router.get('/messages', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     console.log('📱 Getting WhatsApp message history...');
     
@@ -355,7 +352,7 @@ router.post('/send-test', async (req: Request, res: Response) => {
  * GET /api/admin/whatsapp/placeholders
  * Get available template placeholders
  */
-router.get('/placeholders', async (req: Request, res: Response) => {
+router.get('/placeholders', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const placeholders = [
       {
