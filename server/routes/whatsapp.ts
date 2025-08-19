@@ -27,7 +27,7 @@ router.get('/connection', async (req: Request, res: Response) => {
         connected: true,
         message: 'WhatsApp conectado com sucesso'
       });
-    } else if (qrResponse.status === 'success' || qrResponse.qrCode) {
+    } else if (qrResponse.status === 'success' && qrResponse.qrCode) {
       // Need to connect - return QR code
       return res.json({
         success: true,
@@ -36,7 +36,30 @@ router.get('/connection', async (req: Request, res: Response) => {
         message: 'Escaneie o QR Code para conectar'
       });
     } else {
-      // Error
+      // Check status endpoint to verify connection
+      try {
+        const statusResponse = await fetch(`${process.env.WHATSAPP_API_URL}/status`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${process.env.WHATSAPP_API_TOKEN}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const statusData = await statusResponse.json();
+        
+        if (statusData.status === 'success' && statusData.connectionStatus === 'connected') {
+          return res.json({
+            success: true,
+            connected: true,
+            message: 'WhatsApp conectado com sucesso'
+          });
+        }
+      } catch (statusError) {
+        console.error('❌ Error checking WhatsApp status:', statusError);
+      }
+      
+      // Not connected and no QR code available
       return res.json({
         success: false,
         connected: false,
