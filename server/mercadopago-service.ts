@@ -249,11 +249,11 @@ export class MercadoPagoService {
         errorTitle = 'Erro Interno do Gateway';
         errorCode = 'GATEWAY_INTERNAL_ERROR';
       } else if (error.cause?.length > 0) {
-        const errorCode = error.cause[0].code;
+        const causeErrorCode = error.cause[0].code;
         const errorDesc = error.cause[0].description;
         
         // Handle specific error codes
-        if (errorCode === 10103) {
+        if (causeErrorCode === 10103) {
           errorMessage = 'Parâmetros conflitantes do cartão (código 10103). Verifique se:' +
             '\n• O nome no cartão está exatamente como no cartão físico' +
             '\n• O CPF está correto e pertence ao portador do cartão' +
