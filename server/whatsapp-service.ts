@@ -248,33 +248,46 @@ Qualquer dúvida, estamos à disposição.`;
   }
 
   /**
-   * Format phone number for WhatsApp API
+   * Format phone number for WhatsApp API - Brazilian format
+   * Removes parentheses, adds country code 55, removes the 9 after area code for mobile numbers
+   * Example: (83) 98760-6350 -> 83987606350 -> 5583987606350 -> 558387606350
    */
   formatPhoneNumber(phone: string): string {
-    // Remove all non-numeric characters
-    const cleaned = phone.replace(/\D/g, '');
+    // Remove all non-numeric characters (parentheses, spaces, dashes)
+    let cleaned = phone.replace(/\D/g, '');
+    
+    console.log(`📱 WhatsApp: Original phone: ${phone}, Cleaned: ${cleaned}`);
     
     // If it doesn't start with 55 (Brazil country code), add it
     if (!cleaned.startsWith('55')) {
-      return '55' + cleaned;
+      cleaned = '55' + cleaned;
     }
     
+    console.log(`📱 WhatsApp: After country code: ${cleaned}`);
+    
+    // Brazilian phone number format: 55 + area code (2 digits) + number
+    // For mobile numbers with 9-digit local part, remove the first 9 after area code
+    // Example: 5583987606350 -> 558387606350
+    if (cleaned.length === 13 && cleaned.startsWith('55')) {
+      const areaCode = cleaned.substring(2, 4);
+      const localNumber = cleaned.substring(4);
+      
+      // Check if it's a mobile number (starts with 9 and has 9 digits)
+      if (localNumber.length === 9 && localNumber.startsWith('9')) {
+        const withoutNine = localNumber.substring(1); // Remove the 9
+        cleaned = '55' + areaCode + withoutNine;
+        console.log(`📱 WhatsApp: Removed leading 9 from mobile number: ${cleaned}`);
+      }
+    }
+    
+    console.log(`📱 WhatsApp: Final formatted phone: ${cleaned}`);
     return cleaned;
   }
 
   /**
-   * Send order confirmation message
+   * Send order confirmation message - accepts order with full details from database
    */
-  async sendOrderConfirmation(orderData: {
-    orderId: number;
-    customerName: string;
-    customerPhone: string;
-    eventName: string;
-    kitQuantity: number;
-    kits: Array<{ name: string; cpf: string; shirtSize: string }>;
-    deliveryDate: string;
-    orderNumber: string;
-  }): Promise<{ success: boolean; messageId?: number; error?: string }> {
+  async sendOrderConfirmation(fullOrder: any): Promise<{ success: boolean; messageId?: number; error?: string }> {
     try {
       // Get active template
       const template = await this.getActiveTemplate();
@@ -282,31 +295,48 @@ Qualquer dúvida, estamos à disposição.`;
         throw new Error('Nenhum template ativo encontrado');
       }
 
-      // Format kits list
-      const kitsList = orderData.kits.map((kit, index) => 
+      // Extract data from fullOrder object
+      const customerPhone = fullOrder.customer.phone;
+      const customerName = fullOrder.customer.name;
+      const eventName = fullOrder.event.name;
+      const kitQuantity = fullOrder.kitQuantity;
+      const orderNumber = fullOrder.orderNumber;
+      const orderId = fullOrder.id;
+      
+      if (!customerPhone) {
+        throw new Error('Número de telefone do cliente não encontrado');
+      }
+
+      // Format kits list from order kits
+      const kitsList = fullOrder.kits ? fullOrder.kits.map((kit: any, index: number) => 
         `${index + 1}. ${kit.name} - Tamanho: ${kit.shirtSize}`
-      ).join('\n');
+      ).join('\n') : `${kitQuantity} kit(s) para o evento`;
+
+      // Format delivery date
+      const deliveryDate = fullOrder.event.date ? 
+        new Date(fullOrder.event.date).toLocaleDateString('pt-BR') : 
+        'Data a definir';
 
       // Prepare placeholders
       const placeholders: TemplatePlaceholders = {
-        cliente: orderData.customerName,
-        evento: orderData.eventName,
-        qtd_kits: orderData.kitQuantity.toString(),
+        cliente: customerName,
+        evento: eventName,
+        qtd_kits: kitQuantity.toString(),
         lista_kits: kitsList,
-        data_entrega: orderData.deliveryDate,
-        numero_pedido: orderData.orderNumber
+        data_entrega: deliveryDate,
+        numero_pedido: orderNumber
       };
 
       // Replace placeholders in template
       const finalMessage = this.replacePlaceholders(template.templateContent, placeholders);
 
-      // Format phone number
-      const formattedPhone = this.formatPhoneNumber(orderData.customerPhone);
+      // Format phone number with Brazilian formatting
+      const formattedPhone = this.formatPhoneNumber(customerPhone);
 
       // Save message to database first
       const messageData: InsertWhatsappMessage = {
-        orderId: orderData.orderId,
-        customerName: orderData.customerName,
+        orderId: orderId,
+        customerName: customerName,
         phoneNumber: formattedPhone,
         messageContent: finalMessage,
         status: 'pending'
@@ -334,7 +364,7 @@ Qualquer dúvida, estamos à disposição.`;
         // Update status to sent
         await this.updateMessageStatus(messageId, 'sent', apiResponse.jobId);
         
-        console.log('✅ WhatsApp message sent successfully:', orderData.orderNumber);
+        console.log('✅ WhatsApp message sent successfully:', orderNumber);
         return { success: true, messageId };
       } else {
         // Update status to error

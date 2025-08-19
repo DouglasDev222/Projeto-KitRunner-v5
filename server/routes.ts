@@ -2433,11 +2433,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Send WhatsApp confirmation notification
                 try {
                   const fullOrder = await storage.getOrderWithFullDetails(order.id);
-                  if (fullOrder && fullOrder.customer && fullOrder.customer.phoneNumber) {
+                  if (fullOrder && fullOrder.customer && fullOrder.customer.phone) {
                     const WhatsAppService = (await import('./whatsapp-service')).default;
                     const whatsAppService = new WhatsAppService(storage);
                     
-                    console.log(`📱 Webhook: Sending WhatsApp confirmation for order ${fullOrder.orderNumber}`);
+                    console.log(`📱 Webhook: Sending WhatsApp confirmation for order ${fullOrder.orderNumber} to phone: ${fullOrder.customer.phone}`);
                     await whatsAppService.sendOrderConfirmation(fullOrder);
                     console.log(`📱 Webhook: WhatsApp notification sent for order ${fullOrder.orderNumber}`);
                   } else {
