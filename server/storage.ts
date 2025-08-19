@@ -150,9 +150,9 @@ export interface IStorage {
   createEmailLog(emailData: any): Promise<any>;
   getEmailLogs(filters?: any): Promise<any[]>;
   
-  // Admin user email notifications
+  // Admin users email notifications
   getAdminUsersWithEmailNotifications(): Promise<{ id: number; email: string; fullName: string }[]>;
-
+  
   // WhatsApp methods
   createWhatsappMessage(message: InsertWhatsappMessage): Promise<WhatsappMessage>;
   updateWhatsappMessage(id: number, updates: Partial<{ status: string; jobId?: string; errorMessage?: string; sentAt?: Date }>): Promise<void>;
@@ -1332,6 +1332,10 @@ class MockStorage implements IStorage {
       donationRequired: false,
       donationDescription: null,
       donationAmount: null,
+      status: "ativo",
+      stockEnabled: false,
+      maxOrders: null,
+      currentOrders: 0,
       available: true,
       createdAt: new Date("2024-01-15T10:00:00Z")
     }

@@ -108,7 +108,14 @@ export class WhatsAppService {
    */
   async saveMessage(messageData: InsertWhatsappMessage): Promise<void> {
     try {
-      await this.storage.createWhatsappMessage(messageData);
+      // Direct database access
+      const { db } = await import('./db');
+      const { whatsappMessages } = await import('@shared/schema');
+      
+      await db
+        .insert(whatsappMessages)
+        .values(messageData);
+      
       console.log('💾 WhatsApp message saved to database:', messageData.orderId);
     } catch (error: any) {
       console.error('❌ Error saving WhatsApp message:', error.message);
@@ -121,12 +128,21 @@ export class WhatsAppService {
    */
   async updateMessageStatus(messageId: number, status: 'sent' | 'error', jobId?: string, errorMessage?: string): Promise<void> {
     try {
-      await this.storage.updateWhatsappMessage(messageId, {
-        status,
-        jobId,
-        errorMessage,
-        sentAt: status === 'sent' ? new Date() : undefined
-      });
+      // Direct database access
+      const { db } = await import('./db');
+      const { whatsappMessages } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
+      
+      await db
+        .update(whatsappMessages)
+        .set({
+          status,
+          jobId,
+          errorMessage,
+          sentAt: status === 'sent' ? new Date() : undefined
+        })
+        .where(eq(whatsappMessages.id, messageId));
+      
       console.log('📱 WhatsApp message status updated:', messageId, status);
     } catch (error: any) {
       console.error('❌ Error updating WhatsApp message status:', error.message);
@@ -139,7 +155,17 @@ export class WhatsAppService {
    */
   async getActiveTemplate(): Promise<WhatsappSettings | null> {
     try {
-      const template = await this.storage.getActiveWhatsappTemplate();
+      // Direct database access since storage methods are not working
+      const { db } = await import('./db');
+      const { whatsappSettings } = await import('@shared/schema');
+      const { eq, desc } = await import('drizzle-orm');
+      
+      const [template] = await db
+        .select()
+        .from(whatsappSettings)
+        .where(eq(whatsappSettings.isActive, true))
+        .orderBy(desc(whatsappSettings.createdAt))
+        .limit(1);
       
       if (!template) {
         // Create default template
@@ -155,10 +181,18 @@ Logo mais entraremos em contato e faremos a entrega no endereço informado no pe
 
 Qualquer dúvida, estamos à disposição.`;
 
-        const newTemplate = await this.storage.createWhatsappTemplate({
-          templateContent: defaultTemplate,
-          isActive: true
-        });
+        // Deactivate existing templates
+        await db
+          .update(whatsappSettings)
+          .set({ isActive: false });
+
+        const [newTemplate] = await db
+          .insert(whatsappSettings)
+          .values({
+            templateContent: defaultTemplate,
+            isActive: true
+          })
+          .returning();
 
         return newTemplate;
       }
@@ -250,7 +284,19 @@ Qualquer dúvida, estamos à disposição.`;
       };
 
       await this.saveMessage(messageData);
-      const messageId = await this.storage.getLastWhatsappMessageId();
+      
+      // Get last message ID directly from database
+      const { db } = await import('./db');
+      const { whatsappMessages } = await import('@shared/schema');
+      const { desc } = await import('drizzle-orm');
+      
+      const [lastMessage] = await db
+        .select({ id: whatsappMessages.id })
+        .from(whatsappMessages)
+        .orderBy(desc(whatsappMessages.id))
+        .limit(1);
+      
+      const messageId = lastMessage?.id || 0;
 
       // Send message via API
       const apiResponse = await this.sendMessage(formattedPhone, finalMessage);
@@ -274,74 +320,7 @@ Qualquer dúvida, estamos à disposição.`;
     }
   }
 
-  /**
-   * Send order confirmation message automatically
-   */
-  async sendOrderConfirmation(order: any): Promise<{ success: boolean; message: string; jobId?: string }> {
-    try {
-      console.log(`📱 Preparing WhatsApp order confirmation for order ${order.orderNumber}`);
-      
-      // Get active template
-      const template = await this.getActiveTemplate();
-      if (!template) {
-        console.warn('📱 No active WhatsApp template found, skipping message');
-        return { success: false, message: 'Nenhum template ativo configurado' };
-      }
 
-      // Format phone number
-      const phoneNumber = this.formatPhoneNumber(order.customer.phoneNumber);
-      
-      // Build kit list
-      const kitList = order.orderKits?.map((kit: any) => kit.athleteName).join(', ') || '';
-      
-      // Calculate delivery date (7 days from order date)
-      const deliveryDate = new Date(order.createdAt);
-      deliveryDate.setDate(deliveryDate.getDate() + 7);
-      const formattedDeliveryDate = deliveryDate.toLocaleDateString('pt-BR');
-      
-      // Replace placeholders in template
-      let message = template.templateContent;
-      const placeholders = {
-        '{{cliente}}': order.customer.name || '',
-        '{{evento}}': order.event?.name || '',
-        '{{qtd_kits}}': order.orderKits?.length?.toString() || '0',
-        '{{lista_kits}}': kitList,
-        '{{data_entrega}}': formattedDeliveryDate,
-        '{{numero_pedido}}': order.orderNumber || ''
-      };
-
-      // Replace all placeholders
-      for (const [placeholder, value] of Object.entries(placeholders)) {
-        message = message.replace(new RegExp(placeholder, 'g'), value);
-      }
-
-      console.log(`📱 Sending WhatsApp message to ${phoneNumber}:`, message.substring(0, 100) + '...');
-      
-      // Send message
-      const result = await this.sendMessage(phoneNumber, message);
-      
-      if (result.status === 'success') {
-        console.log(`📱 WhatsApp confirmation sent successfully for order ${order.orderNumber}`);
-        return { 
-          success: true, 
-          message: 'Confirmação WhatsApp enviada com sucesso',
-          jobId: result.jobId 
-        };
-      } else {
-        console.error(`📱 Failed to send WhatsApp confirmation for order ${order.orderNumber}:`, result.description);
-        return { 
-          success: false, 
-          message: result.description || 'Erro ao enviar mensagem' 
-        };
-      }
-    } catch (error: any) {
-      console.error('📱 Error in sendOrderConfirmation:', error.message);
-      return { 
-        success: false, 
-        message: 'Erro interno ao enviar confirmação WhatsApp' 
-      };
-    }
-  }
 
   /**
    * Get message history with pagination

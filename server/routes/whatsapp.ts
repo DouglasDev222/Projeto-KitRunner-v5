@@ -83,7 +83,17 @@ router.get('/template', async (req: Request, res: Response) => {
   try {
     console.log('📱 Getting active WhatsApp template...');
     
-    const template = await whatsAppService.getActiveTemplate();
+    // Direct database access
+    const { db } = await import('../db');
+    const { whatsappSettings } = await import('@shared/schema');
+    const { eq, desc } = await import('drizzle-orm');
+    
+    const [template] = await db
+      .select()
+      .from(whatsappSettings)
+      .where(eq(whatsappSettings.isActive, true))
+      .orderBy(desc(whatsappSettings.createdAt))
+      .limit(1);
     
     res.json({
       success: true,
@@ -127,10 +137,22 @@ router.post('/template', async (req: Request, res: Response) => {
 
     const { content } = validation.data;
     
-    const template = await storage.createWhatsappTemplate({
-      templateContent: content,
-      isActive: true
-    });
+    // Direct database access
+    const { db } = await import('../db');
+    const { whatsappSettings } = await import('@shared/schema');
+    
+    // Deactivate existing templates
+    await db
+      .update(whatsappSettings)
+      .set({ isActive: false });
+
+    const [template] = await db
+      .insert(whatsappSettings)
+      .values({
+        templateContent: content,
+        isActive: true
+      })
+      .returning();
     
     res.json({
       success: true,
@@ -221,12 +243,32 @@ router.get('/messages', async (req: Request, res: Response) => {
     
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
+    const offset = (page - 1) * limit;
     
-    const history = await whatsAppService.getMessageHistory(page, limit);
+    // Direct database access
+    const { db } = await import('../db');
+    const { whatsappMessages } = await import('@shared/schema');
+    const { desc, count } = await import('drizzle-orm');
+    
+    const messages = await db
+      .select()
+      .from(whatsappMessages)
+      .orderBy(desc(whatsappMessages.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(whatsappMessages);
+
+    const total = totalResult.count;
+    const pages = Math.ceil(total / limit);
     
     res.json({
       success: true,
-      ...history
+      messages,
+      total,
+      pages
     });
   } catch (error: any) {
     console.error('❌ Error getting WhatsApp message history:', error.message);
