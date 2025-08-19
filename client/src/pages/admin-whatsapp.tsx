@@ -83,8 +83,12 @@ export default function AdminWhatsApp() {
   // Test connection mutation
   const testConnectionMutation = useMutation({
     mutationFn: async () => {
+      const token = localStorage.getItem('adminToken');
       const response = await fetch('/api/admin/whatsapp/test', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
         credentials: 'include'
       });
       return response.json();
@@ -115,9 +119,13 @@ export default function AdminWhatsApp() {
   // Update template mutation
   const updateTemplateMutation = useMutation({
     mutationFn: async (content: string) => {
+      const token = localStorage.getItem('adminToken');
       const response = await fetch('/api/admin/whatsapp/template', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         credentials: 'include',
         body: JSON.stringify({ content })
       });
@@ -150,9 +158,13 @@ export default function AdminWhatsApp() {
   // Send test message mutation
   const sendTestMutation = useMutation({
     mutationFn: async ({ phoneNumber, message }: { phoneNumber: string; message: string }) => {
+      const token = localStorage.getItem('adminToken');
       const response = await fetch('/api/admin/whatsapp/send-test', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         credentials: 'include',
         body: JSON.stringify({ phoneNumber, message })
       });
