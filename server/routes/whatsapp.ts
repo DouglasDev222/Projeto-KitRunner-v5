@@ -370,9 +370,14 @@ router.post('/send-test', async (req: Request, res: Response) => {
 
     const { phoneNumber, message } = validation.data;
     
-    // Para mensagens de teste, enviar número sem formatação se desejado
-    console.log(`📱 Sending test message to raw number: ${phoneNumber}`);
-    const result = await whatsAppService.sendMessage(phoneNumber, message);
+    // Adicionar +55 se não tiver código de país
+    let formattedPhone = phoneNumber;
+    if (!formattedPhone.startsWith('+')) {
+      formattedPhone = '+55' + formattedPhone;
+    }
+    console.log(`📱 Test message - Original: ${phoneNumber} → Formatted: ${formattedPhone}`);
+    
+    const result = await whatsAppService.sendMessage(formattedPhone, message);
     
     if (result.success) {
       res.json({
@@ -925,6 +930,13 @@ router.post('/templates/:id/test', async (req: Request, res: Response) => {
 
     const { phoneNumber, testData } = validation.data;
     
+    // Adicionar +55 se não tiver código de país
+    let formattedPhone = phoneNumber;
+    if (!formattedPhone.startsWith('+')) {
+      formattedPhone = '+55' + formattedPhone;
+    }
+    console.log(`📱 Original: ${phoneNumber} → Formatted: ${formattedPhone}`);
+    
     const { db } = await import('../db');
     const { whatsappTemplates } = await import('@shared/schema');
     
@@ -949,9 +961,8 @@ router.post('/templates/:id/test', async (req: Request, res: Response) => {
       message = message.replace(placeholder, value);
     });
     
-    // Enviar mensagem usando o serviço WhatsApp (número sem formatação para teste)
-    console.log(`📱 Sending to raw number: ${phoneNumber}`);
-    const result = await whatsAppService.sendMessage(phoneNumber, message);
+    // Enviar mensagem usando o serviço WhatsApp
+    const result = await whatsAppService.sendMessage(formattedPhone, message);
     
     if (result.success) {
       res.json({
