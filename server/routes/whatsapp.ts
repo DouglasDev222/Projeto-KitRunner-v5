@@ -41,6 +41,7 @@ router.get('/connection', async (req: Request, res: Response) => {
             connected: false,
             connectionStatus: 'connecting',
             qrCode: qrResult.data.qrcode,
+            qrCodeType: 'png',
             message: 'Escaneie o QR Code para conectar o WhatsApp'
           });
         } else {
@@ -65,6 +66,7 @@ router.get('/connection', async (req: Request, res: Response) => {
               connected: false,
               connectionStatus: 'connecting',
               qrCode: qrResult.data.qrcode,
+              qrCodeType: 'png',
               message: 'Escaneie o QR Code para conectar o WhatsApp'
             });
           }
