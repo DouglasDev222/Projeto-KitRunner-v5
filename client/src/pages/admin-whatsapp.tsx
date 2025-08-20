@@ -25,8 +25,12 @@ import { formatDate } from "@/lib/brazilian-formatter";
 
 interface WhatsAppConnection {
   connected: boolean;
+  connectionStatus?: string;
   qrCode?: string;
+  qrCodeType?: string;
   message?: string;
+  description?: string;
+  error?: string;
 }
 
 interface WhatsAppTemplate {
@@ -273,40 +277,87 @@ export default function AdminWhatsApp() {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {/* Connection Status */}
                   <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${connection?.connected ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <div className={`w-3 h-3 rounded-full ${
+                      connection?.connected ? 'bg-green-500' : 
+                      connection?.connectionStatus === 'qr_code_needed' ? 'bg-yellow-500' : 'bg-red-500'
+                    }`} />
                     <span className="font-medium">
-                      Status: {connection?.connected ? 'Conectado' : 'Desconectado'}
+                      Status: {
+                        connection?.connected ? 'Conectado' : 
+                        connection?.connectionStatus === 'qr_code_needed' ? 'QR Code Necessário' :
+                        connection?.connectionStatus === 'disconnected' ? 'Desconectado' :
+                        'Desconhecido'
+                      }
                     </span>
                   </div>
 
-                  {connection?.message && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-blue-800">{connection.message}</p>
-                    </div>
-                  )}
-
-                  {connection?.qrCode && !connection.connected && (
-                    <div className="space-y-3">
-                      <h3 className="font-medium">Escaneie o QR Code para conectar:</h3>
-                      <div className="bg-white p-4 border rounded-lg text-center">
-                        <img 
-                          src={`data:image/png;base64,${connection.qrCode}`} 
-                          alt="QR Code WhatsApp" 
-                          className="mx-auto max-w-xs"
-                        />
-                      </div>
-                      <p className="text-sm text-neutral-600">
-                        Abra o WhatsApp no seu celular e escaneie este código
+                  {/* Description/Message */}
+                  {(connection?.description || connection?.message) && (
+                    <div className={`p-3 border rounded-lg ${
+                      connection?.connected ? 'bg-green-50 border-green-200' :
+                      connection?.connectionStatus === 'qr_code_needed' ? 'bg-yellow-50 border-yellow-200' :
+                      'bg-blue-50 border-blue-200'
+                    }`}>
+                      <p className={`${
+                        connection?.connected ? 'text-green-800' :
+                        connection?.connectionStatus === 'qr_code_needed' ? 'text-yellow-800' :
+                        'text-blue-800'
+                      }`}>
+                        {connection?.description || connection?.message}
                       </p>
                     </div>
                   )}
 
+                  {/* Error Message */}
+                  {connection?.error && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-red-600" />
+                        <p className="text-red-800">{connection.error}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* QR Code Display */}
+                  {connection?.qrCode && (!connection.connected || connection?.connectionStatus === 'qr_code_needed') && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <QrCode className="w-5 h-5 text-blue-600" />
+                        <h3 className="font-medium text-blue-800">Escaneie o QR Code para conectar:</h3>
+                      </div>
+                      <div className="bg-white p-6 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                        <img 
+                          src={`data:image/${connection.qrCodeType || 'png'};base64,${connection.qrCode}`} 
+                          alt="QR Code WhatsApp" 
+                          className="mx-auto max-w-xs rounded-lg shadow-sm"
+                        />
+                      </div>
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <div className="flex items-start gap-3">
+                          <MessageCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                          <div className="text-sm text-blue-800">
+                            <p className="font-medium mb-1">Como conectar:</p>
+                            <ol className="list-decimal list-inside space-y-1">
+                              <li>Abra o WhatsApp no seu celular</li>
+                              <li>Toque nos três pontos ⋮ &gt; Aparelhos conectados</li>
+                              <li>Toque em "Conectar um aparelho"</li>
+                              <li>Escaneie este QR code com a câmera do celular</li>
+                            </ol>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
                   <div className="flex gap-3">
                     <Button 
                       onClick={() => refetchConnection()}
                       disabled={connectionLoading}
                       variant="outline"
+                      data-testid="button-refresh-connection"
                     >
                       {connectionLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                       Atualizar Status
@@ -314,6 +365,7 @@ export default function AdminWhatsApp() {
                     <Button 
                       onClick={() => testConnectionMutation.mutate()}
                       disabled={testConnectionMutation.isPending || !connection?.connected}
+                      data-testid="button-test-connection"
                     >
                       {testConnectionMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                       Testar Conexão

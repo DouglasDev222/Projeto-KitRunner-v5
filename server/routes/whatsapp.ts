@@ -18,7 +18,7 @@ router.get('/connection', async (req: Request, res: Response) => {
   try {
     console.log('📱 Getting WhatsApp connection status...');
     
-    // First, check connection status directly
+    // Check connection status using the new API format
     const statusResponse = await fetch(`${process.env.WHATSAPP_API_URL}/status`, {
       method: 'GET',
       headers: {
@@ -27,51 +27,88 @@ router.get('/connection', async (req: Request, res: Response) => {
       }
     });
     
-    const statusData = await statusResponse.json();
+    if (!statusResponse.ok) {
+      throw new Error(`Status API returned ${statusResponse.status}`);
+    }
     
-    if (statusData.status === 'success' && statusData.connectionStatus === 'connected') {
-      // Connected
-      return res.json({
-        success: true,
-        connected: true,
-        message: 'WhatsApp conectado com sucesso',
-        description: statusData.description
-      });
-    } else {
-      // Not connected, try to get QR code
-      const qrResponse = await whatsAppService.getQRCode();
-      
-      if (qrResponse.status === 'success' && qrResponse.qrCode) {
-        // QR code available
+    const statusData = await statusResponse.json();
+    console.log('📱 Status response:', statusData);
+    
+    if (statusData.status === 'success') {
+      if (statusData.connectionStatus === 'connected') {
+        // Connected successfully
+        return res.json({
+          success: true,
+          connected: true,
+          connectionStatus: 'connected',
+          message: 'WhatsApp conectado com sucesso',
+          description: statusData.description
+        });
+      } else if (statusData.connectionStatus === 'qr_code_needed') {
+        // Need QR code - get it from qrcode endpoint
+        try {
+          const qrResponse = await fetch(`${process.env.WHATSAPP_API_URL}/qrcode`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${process.env.WHATSAPP_API_TOKEN}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (qrResponse.ok) {
+            const qrData = await qrResponse.json();
+            console.log('📱 QR response:', { status: qrData.status, hasQrCode: !!qrData.qrCode });
+            
+            if (qrData.status === 'success' && qrData.qrCode) {
+              return res.json({
+                success: true,
+                connected: false,
+                connectionStatus: 'qr_code_needed',
+                qrCode: qrData.qrCode,
+                qrCodeType: qrData.qrCodeType || 'base64',
+                message: 'Escaneie o QR Code para conectar o WhatsApp',
+                description: qrData.description
+              });
+            }
+          }
+        } catch (qrError) {
+          console.error('❌ Error getting QR code:', qrError);
+        }
+        
+        // Fallback if QR code request failed
         return res.json({
           success: true,
           connected: false,
-          qrCode: qrResponse.qrCode,
-          message: 'Escaneie o QR Code para conectar'
+          connectionStatus: 'qr_code_needed',
+          message: 'QR Code necessário para conectar',
+          description: statusData.description
         });
       } else {
-        // No QR code available - check if it's because already connected
-        if (qrResponse.description && qrResponse.description.includes('conectado')) {
-          return res.json({
-            success: true,
-            connected: true,
-            message: 'WhatsApp conectado com sucesso'
-          });
-        }
-        
+        // Other connection status (disconnected, etc.)
         return res.json({
-          success: false,
+          success: true,
           connected: false,
-          error: qrResponse.description || 'Não foi possível obter QR Code',
-          message: 'WhatsApp não conectado'
+          connectionStatus: statusData.connectionStatus || 'disconnected',
+          message: 'WhatsApp não conectado',
+          description: statusData.description
         });
       }
+    } else {
+      // API returned error status
+      return res.json({
+        success: false,
+        connected: false,
+        error: statusData.description || 'Erro na API do WhatsApp',
+        message: 'Erro ao verificar status do WhatsApp'
+      });
     }
   } catch (error: any) {
     console.error('❌ Error getting WhatsApp connection:', error.message);
     res.status(500).json({
       success: false,
-      error: 'Erro interno do servidor'
+      connected: false,
+      error: 'Erro interno do servidor',
+      message: 'Não foi possível conectar com a API do WhatsApp'
     });
   }
 });
