@@ -1060,4 +1060,176 @@ router.post('/templates/:id/test', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/admin/whatsapp/send-message
+ * Send WhatsApp message to customer from order
+ */
+const sendMessageSchema = z.object({
+  orderId: z.number(),
+  templateId: z.number().optional(),
+  customMessage: z.string().optional()
+}).refine(data => data.templateId || data.customMessage, {
+  message: "Deve fornecer templateId ou customMessage"
+});
+
+router.post('/send-message', async (req: Request, res: Response) => {
+  try {
+    console.log('📱 Sending WhatsApp message from admin...');
+    
+    const validation = sendMessageSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        error: 'Dados inválidos',
+        details: validation.error.errors
+      });
+    }
+
+    const { orderId, templateId, customMessage } = validation.data;
+    
+    const { db } = await import('../db');
+    const { orders, customers, events, addresses, whatsappTemplates, whatsappMessages } = await import('@shared/schema');
+    
+    // Buscar dados do pedido
+    const [order] = await db
+      .select({
+        order: orders,
+        customer: customers,
+        event: events,
+        address: addresses
+      })
+      .from(orders)
+      .innerJoin(customers, eq(orders.customerId, customers.id))
+      .innerJoin(events, eq(orders.eventId, events.id))
+      .innerJoin(addresses, eq(orders.addressId, addresses.id))
+      .where(eq(orders.id, orderId))
+      .limit(1);
+    
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: 'Pedido não encontrado'
+      });
+    }
+
+    let messageContent = '';
+
+    if (templateId) {
+      // Usar template
+      const [template] = await db
+        .select()
+        .from(whatsappTemplates)
+        .where(eq(whatsappTemplates.id, templateId))
+        .limit(1);
+      
+      if (!template) {
+        return res.status(404).json({
+          success: false,
+          error: 'Template não encontrado'
+        });
+      }
+
+      // Substituir placeholders
+      messageContent = template.content;
+      messageContent = messageContent.replace(/\{customerName\}/g, order.customer.name);
+      messageContent = messageContent.replace(/\{orderNumber\}/g, order.order.orderNumber);
+      messageContent = messageContent.replace(/\{eventName\}/g, order.event.name);
+      messageContent = messageContent.replace(/\{eventDate\}/g, order.event.date);
+      messageContent = messageContent.replace(/\{eventLocation\}/g, order.event.location);
+      messageContent = messageContent.replace(/\{kitQuantity\}/g, order.order.kitQuantity.toString());
+      messageContent = messageContent.replace(/\{totalCost\}/g, `R$ ${Number(order.order.totalCost).toFixed(2).replace('.', ',')}`);
+      messageContent = messageContent.replace(/\{deliveryAddress\}/g, 
+        `${order.address.street}, ${order.address.number} - ${order.address.neighborhood}, ${order.address.city}/${order.address.state}`
+      );
+      
+      // Placeholders do sistema antigo
+      messageContent = messageContent.replace(/\{\{cliente\}\}/g, order.customer.name);
+      messageContent = messageContent.replace(/\{\{evento\}\}/g, order.event.name);
+      messageContent = messageContent.replace(/\{\{qtd_kits\}\}/g, order.order.kitQuantity.toString());
+      messageContent = messageContent.replace(/\{\{numero_pedido\}\}/g, order.order.orderNumber);
+      messageContent = messageContent.replace(/\{\{data_entrega\}\}/g, 'em breve');
+      messageContent = messageContent.replace(/\{\{lista_kits\}\}/g, `${order.order.kitQuantity} kit(s) solicitado(s)`);
+    } else if (customMessage) {
+      messageContent = customMessage;
+    }
+
+    // Formatar telefone
+    let phoneNumber = order.customer.phone;
+    if (!phoneNumber.startsWith('+')) {
+      phoneNumber = '+55' + phoneNumber;
+    }
+
+    // Enviar mensagem via WhatsApp Service
+    const result = await whatsAppService.sendMessage(phoneNumber, messageContent);
+    
+    // Salvar no histórico
+    await db.insert(whatsappMessages).values({
+      orderId: order.order.id,
+      customerName: order.customer.name,
+      phoneNumber: phoneNumber,
+      messageContent: messageContent,
+      status: result.success ? 'sent' : 'error',
+      jobId: null,
+      errorMessage: result.success ? null : (result.error || 'Erro desconhecido'),
+      sentAt: result.success ? new Date() : null
+    });
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Mensagem enviada com sucesso!'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error || 'Erro ao enviar mensagem'
+      });
+    }
+  } catch (error: any) {
+    console.error('❌ Error sending WhatsApp message:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
+/**
+ * GET /api/admin/whatsapp/messages/:orderId
+ * Get WhatsApp message history for specific order
+ */
+router.get('/messages/:orderId', async (req: Request, res: Response) => {
+  try {
+    console.log('📱 Getting WhatsApp message history for order...');
+    
+    const orderId = parseInt(req.params.orderId);
+    if (isNaN(orderId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'ID do pedido inválido'
+      });
+    }
+    
+    const { db } = await import('../db');
+    const { whatsappMessages } = await import('@shared/schema');
+    
+    const messages = await db
+      .select()
+      .from(whatsappMessages)
+      .where(eq(whatsappMessages.orderId, orderId))
+      .orderBy(desc(whatsappMessages.createdAt));
+    
+    res.json({
+      success: true,
+      messages
+    });
+  } catch (error: any) {
+    console.error('❌ Error getting WhatsApp message history for order:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
 export default router;

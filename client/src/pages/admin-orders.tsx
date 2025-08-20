@@ -21,7 +21,8 @@ import {
   ExternalLink,
   FileText,
   Download,
-  FileSpreadsheet
+  FileSpreadsheet,
+  MessageCircle
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -30,6 +31,7 @@ import { formatCPF } from "@/lib/cpf-validator";
 import { useToast } from "@/hooks/use-toast";
 import { statusOptions, getStatusBadge } from "@/lib/status-utils";
 import { EmailConfirmationModal } from "@/components/admin/EmailConfirmationModal";
+import { WhatsAppModal } from "@/components/admin/WhatsAppModal";
 import {
   Dialog,
   DialogContent,
@@ -89,6 +91,8 @@ export default function AdminOrders() {
   // Sistema novo: AdminRouteGuard já protege
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [whatsAppOrder, setWhatsAppOrder] = useState<any>(null);
   const [showOrderDialog, setShowOrderDialog] = useState(false);
   const [filters, setFilters] = useState<OrderFilters>({
     status: 'all'
@@ -437,6 +441,17 @@ export default function AdminOrders() {
       newStatus: bulkNewStatus,
       sendEmails: sendBulkEmails,
     });
+  };
+
+  // WhatsApp modal functions
+  const handleOpenWhatsApp = (order: any) => {
+    setWhatsAppOrder(order);
+    setShowWhatsAppModal(true);
+  };
+
+  const handleCloseWhatsApp = () => {
+    setShowWhatsAppModal(false);
+    setWhatsAppOrder(null);
   };
 
   // Label generation functions
@@ -885,6 +900,16 @@ export default function AdminOrders() {
                             >
                               <FileText className="h-4 w-4" />
                             </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenWhatsApp(order)}
+                              title="Enviar mensagem WhatsApp"
+                              data-testid={`button-whatsapp-${order.id}`}
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                            </Button>
                             
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -1218,6 +1243,13 @@ export default function AdminOrders() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* WhatsApp Modal */}
+      <WhatsAppModal
+        isOpen={showWhatsAppModal}
+        onClose={handleCloseWhatsApp}
+        order={whatsAppOrder}
+      />
     </AdminLayout>
   );
 }
