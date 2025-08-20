@@ -18,88 +18,70 @@ router.get('/connection', async (req: Request, res: Response) => {
   try {
     console.log('📱 Getting WhatsApp connection status...');
     
-    // Check connection status using the new API format
-    const apiUrl = process.env.WHATSAPP_API_URL?.replace(/\/$/, ''); // Remove trailing slash
-    const statusResponse = await fetch(`${apiUrl}/status`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${process.env.WHATSAPP_API_TOKEN}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    // Check connection status using WhatsApp service
+    const statusResult = await whatsAppService.getConnectionStatus();
     
-    if (!statusResponse.ok) {
-      throw new Error(`Status API returned ${statusResponse.status}`);
-    }
-    
-    const statusData = await statusResponse.json();
-    console.log('📱 Status response:', statusData);
-    
-    if (statusData.status === 'success') {
-      if (statusData.connectionStatus === 'connected') {
-        // Connected successfully
+    if (statusResult.success && statusResult.data) {
+      const { status, connected } = statusResult.data;
+      
+      if (status === 'connected') {
         return res.json({
           success: true,
           connected: true,
           connectionStatus: 'connected',
-          message: 'WhatsApp conectado com sucesso',
-          description: statusData.description
+          message: 'WhatsApp conectado com sucesso'
         });
-      } else if (statusData.connectionStatus === 'qr_code_needed') {
-        // Need QR code - get it from qrcode endpoint
-        try {
-          const qrResponse = await fetch(`${apiUrl}/qrcode`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${process.env.WHATSAPP_API_TOKEN}`,
-              'Content-Type': 'application/json'
-            }
+      } else if (status === 'connecting') {
+        // Try to get QR code
+        const qrResult = await whatsAppService.getQRCode();
+        
+        if (qrResult.success && qrResult.data?.qrcode) {
+          return res.json({
+            success: true,
+            connected: false,
+            connectionStatus: 'connecting',
+            qrCode: qrResult.data.qrcode,
+            message: 'Escaneie o QR Code para conectar o WhatsApp'
           });
+        } else {
+          return res.json({
+            success: true,
+            connected: false,
+            connectionStatus: 'connecting',
+            message: qrResult.message || 'Conectando ao WhatsApp...'
+          });
+        }
+      } else {
+        // Disconnected - try to initiate connection
+        const connectResult = await whatsAppService.connect();
+        
+        if (connectResult.success) {
+          // After connecting, try to get QR code
+          const qrResult = await whatsAppService.getQRCode();
           
-          if (qrResponse.ok) {
-            const qrData = await qrResponse.json();
-            console.log('📱 QR response:', { status: qrData.status, hasQrCode: !!qrData.qrCode });
-            
-            if (qrData.status === 'success' && qrData.qrCode) {
-              return res.json({
-                success: true,
-                connected: false,
-                connectionStatus: 'qr_code_needed',
-                qrCode: qrData.qrCode,
-                qrCodeType: qrData.qrCodeType || 'base64',
-                message: 'Escaneie o QR Code para conectar o WhatsApp',
-                description: qrData.description
-              });
-            }
+          if (qrResult.success && qrResult.data?.qrcode) {
+            return res.json({
+              success: true,
+              connected: false,
+              connectionStatus: 'connecting',
+              qrCode: qrResult.data.qrcode,
+              message: 'Escaneie o QR Code para conectar o WhatsApp'
+            });
           }
-        } catch (qrError) {
-          console.error('❌ Error getting QR code:', qrError);
         }
         
-        // Fallback if QR code request failed
         return res.json({
           success: true,
           connected: false,
-          connectionStatus: 'qr_code_needed',
-          message: 'QR Code necessário para conectar',
-          description: statusData.description
-        });
-      } else {
-        // Other connection status (disconnected, etc.)
-        return res.json({
-          success: true,
-          connected: false,
-          connectionStatus: statusData.connectionStatus || 'disconnected',
-          message: 'WhatsApp não conectado',
-          description: statusData.description
+          connectionStatus: 'disconnected',
+          message: 'WhatsApp desconectado'
         });
       }
     } else {
-      // API returned error status
       return res.json({
         success: false,
         connected: false,
-        error: statusData.description || 'Erro na API do WhatsApp',
+        error: statusResult.error || 'Erro na API do WhatsApp',
         message: 'Erro ao verificar status do WhatsApp'
       });
     }
@@ -263,10 +245,20 @@ router.put('/template/:id', async (req: Request, res: Response) => {
 
     const { content } = validation.data;
     
-    const template = await storage.updateWhatsappTemplate(templateId, {
-      templateContent: content,
-      isActive: true
-    });
+    // Direct database access
+    const { db } = await import('../db');
+    const { whatsappSettings } = await import('@shared/schema');
+    const { eq } = await import('drizzle-orm');
+    
+    const [template] = await db
+      .update(whatsappSettings)
+      .set({
+        templateContent: content,
+        isActive: true,
+        updatedAt: new Date()
+      })
+      .where(eq(whatsappSettings.id, templateId))
+      .returning();
     
     if (!template) {
       return res.status(404).json({
@@ -368,16 +360,15 @@ router.post('/send-test', async (req: Request, res: Response) => {
     const formattedPhone = whatsAppService.formatPhoneNumber(phoneNumber);
     const result = await whatsAppService.sendMessage(formattedPhone, message);
     
-    if (result.status === 'success') {
+    if (result.success) {
       res.json({
         success: true,
-        jobId: result.jobId,
-        message: 'Mensagem de teste enviada com sucesso'
+        message: result.message || 'Mensagem de teste enviada com sucesso'
       });
     } else {
       res.json({
         success: false,
-        error: result.description
+        error: result.error || 'Erro ao enviar mensagem'
       });
     }
   } catch (error: any) {

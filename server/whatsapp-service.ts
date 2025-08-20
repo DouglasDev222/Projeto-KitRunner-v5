@@ -6,17 +6,45 @@ import { InsertWhatsappMessage, WhatsappSettings } from '@shared/schema';
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || 'http://91.108.126.63:5000';
 const WHATSAPP_API_TOKEN = process.env.WHATSAPP_API_TOKEN || '12345678';
 
-// WhatsApp API Response Types
+// WhatsApp API Response Types - Updated for new API format
 export interface WhatsAppMessageResponse {
-  status: 'success' | 'error';
-  jobId?: string;
-  description: string;
+  success: boolean;
+  message?: string;
+  data?: {
+    number: string;
+    message: string;
+  };
+  error?: string;
 }
 
 export interface WhatsAppQRResponse {
-  status: 'success' | 'error';
-  description: string;
-  qrCode?: string; // Base64 encoded PNG
+  success: boolean;
+  data?: {
+    qrcode: string | null; // Base64 encoded PNG
+    qrcode_text: string | null;
+    status: 'disconnected' | 'connecting' | 'connected';
+  };
+  message?: string;
+  error?: string;
+}
+
+export interface WhatsAppStatusResponse {
+  success: boolean;
+  data?: {
+    status: 'disconnected' | 'connecting' | 'connected';
+    connected: boolean;
+    timestamp: string;
+  };
+  error?: string;
+}
+
+export interface WhatsAppConnectResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    status: string;
+  };
+  error?: string;
 }
 
 // Template placeholder interface
@@ -41,14 +69,14 @@ export class WhatsAppService {
   }
 
   /**
-   * Send WhatsApp message
+   * Send WhatsApp message - Updated for new API format
    */
   async sendMessage(phoneNumber: string, message: string): Promise<WhatsAppMessageResponse> {
     try {
       console.log('📱 Sending WhatsApp message to:', phoneNumber);
       
       const response: AxiosResponse<WhatsAppMessageResponse> = await axios.post(
-        `${this.apiUrl}/send-message`,
+        `${this.apiUrl}/api/send-message`,
         {
           number: phoneNumber,
           message: message
@@ -68,24 +96,51 @@ export class WhatsAppService {
       console.error('❌ WhatsApp send message error:', error.message);
       
       return {
-        status: 'error',
-        description: error.response?.data?.description || error.message || 'Erro ao enviar mensagem'
+        success: false,
+        error: error.response?.data?.error || error.message || 'Erro ao enviar mensagem'
       };
     }
   }
 
   /**
-   * Get WhatsApp QR Code for connection
+   * Connect to WhatsApp - Updated for new API format
    */
+  async connect(): Promise<WhatsAppConnectResponse> {
+    try {
+      console.log('📱 Initiating WhatsApp connection...');
+      
+      const response: AxiosResponse<WhatsAppConnectResponse> = await axios.post(
+        `${this.apiUrl}/api/connect`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${this.apiToken}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 30000
+        }
+      );
+
+      console.log('📱 Connect Response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ WhatsApp connect error:', error.message);
+      
+      return {
+        success: false,
+        error: error.response?.data?.error || error.message || 'Erro ao iniciar conexão'
+      };
+    }
+  }
   /**
-   * Check WhatsApp connection status
+   * Check WhatsApp connection status - Updated for new API format
    */
-  async getConnectionStatus(): Promise<any> {
+  async getConnectionStatus(): Promise<WhatsAppStatusResponse> {
     try {
       console.log('📱 Checking WhatsApp connection status...');
       
-      const response = await axios.get(
-        `${this.apiUrl}/status`,
+      const response: AxiosResponse<WhatsAppStatusResponse> = await axios.get(
+        `${this.apiUrl}/api/status`,
         {
           headers: {
             'Authorization': `Bearer ${this.apiToken}`
@@ -99,19 +154,21 @@ export class WhatsAppService {
     } catch (error: any) {
       console.error('❌ WhatsApp status error:', error.message);
       return {
-        status: 'error',
-        connectionStatus: 'disconnected',
-        description: error.message || 'Erro ao verificar status'
+        success: false,
+        error: error.response?.data?.error || error.message || 'Erro ao verificar status'
       };
     }
   }
 
+  /**
+   * Get WhatsApp QR Code - Updated for new API format
+   */
   async getQRCode(): Promise<WhatsAppQRResponse> {
     try {
       console.log('📱 Getting WhatsApp QR Code...');
       
       const response: AxiosResponse<WhatsAppQRResponse> = await axios.get(
-        `${this.apiUrl}/qrcode`,
+        `${this.apiUrl}/api/qrcode`,
         {
           headers: {
             'Authorization': `Bearer ${this.apiToken}`
@@ -120,14 +177,14 @@ export class WhatsAppService {
         }
       );
 
-      console.log('📱 QR Code Response:', response.data.status);
+      console.log('📱 QR Code Response:', response.data);
       return response.data;
     } catch (error: any) {
       console.error('❌ WhatsApp QR Code error:', error.message);
       
       return {
-        status: 'error',
-        description: error.response?.data?.description || error.message || 'Erro ao obter QR Code'
+        success: false,
+        error: error.response?.data?.error || error.message || 'Erro ao obter QR Code'
       };
     }
   }
@@ -360,18 +417,18 @@ Qualquer dúvida, estamos à disposição.`;
       // Send message via API
       const apiResponse = await this.sendMessage(formattedPhone, finalMessage);
 
-      if (apiResponse.status === 'success') {
+      if (apiResponse.success) {
         // Update status to sent
-        await this.updateMessageStatus(messageId, 'sent', apiResponse.jobId);
+        await this.updateMessageStatus(messageId, 'sent');
         
         console.log('✅ WhatsApp message sent successfully:', orderNumber);
         return { success: true, messageId };
       } else {
         // Update status to error
-        await this.updateMessageStatus(messageId, 'error', undefined, apiResponse.description);
+        await this.updateMessageStatus(messageId, 'error', undefined, apiResponse.error);
         
-        console.error('❌ WhatsApp API error:', apiResponse.description);
-        return { success: false, error: apiResponse.description };
+        console.error('❌ WhatsApp API error:', apiResponse.error);
+        return { success: false, error: apiResponse.error };
       }
     } catch (error: any) {
       console.error('❌ Error sending WhatsApp order confirmation:', error.message);
@@ -391,7 +448,23 @@ Qualquer dúvida, estamos à disposição.`;
   }> {
     try {
       const offset = (page - 1) * limit;
-      const { messages, total } = await this.storage.getWhatsappMessages(limit, offset);
+      // Direct database access for message history
+      const { db } = await import('./db');
+      const { whatsappMessages } = await import('@shared/schema');
+      const { desc, count } = await import('drizzle-orm');
+      
+      const messages = await db
+        .select()
+        .from(whatsappMessages)
+        .orderBy(desc(whatsappMessages.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      const [totalResult] = await db
+        .select({ count: count() })
+        .from(whatsappMessages);
+
+      const total = totalResult.count;
       const pages = Math.ceil(total / limit);
 
       return { messages, total, pages };
@@ -406,14 +479,18 @@ Qualquer dúvida, estamos à disposição.`;
    */
   async testConnection(): Promise<{ success: boolean; message: string }> {
     try {
-      const qrResponse = await this.getQRCode();
+      const statusResponse = await this.getConnectionStatus();
       
-      if (qrResponse.status === 'error' && qrResponse.description.includes('conectado')) {
+      if (statusResponse.success && statusResponse.data?.status === 'connected') {
         return { success: true, message: 'WhatsApp conectado com sucesso' };
-      } else if (qrResponse.status === 'success' || qrResponse.qrCode) {
-        return { success: true, message: 'API WhatsApp funcionando - aguardando conexão' };
       } else {
-        return { success: false, message: qrResponse.description };
+        const qrResponse = await this.getQRCode();
+        
+        if (qrResponse.success) {
+          return { success: true, message: 'API WhatsApp funcionando - aguardando conexão' };
+        } else {
+          return { success: false, message: qrResponse.error || 'Erro na API do WhatsApp' };
+        }
       }
     } catch (error: any) {
       return { success: false, message: error.message };

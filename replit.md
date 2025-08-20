@@ -5,6 +5,7 @@ KitRunner is a responsive web application designed for managing event kit pickup
 
 ## Recent Major Updates (August 2025)
 - **Replit Migration Complete**: Successfully migrated from Replit Agent to standard Replit environment ✅
+- **WhatsApp API Migration**: Updated to new organized API with `/api/` prefixed routes ✅
 - **WhatsApp Integration**: Fully implemented WhatsApp notification system for automatic customer messages ✅
 - **Database Integration**: All systems operational with Supabase PostgreSQL backend ✅
 - **Complete Testing**: All endpoints functional, templates working, message history accessible ✅
@@ -61,4 +62,4 @@ Preferred communication style: Simple, everyday language.
 - **Session Management**: Connect-pg-simple.
 - **Payment Gateway**: Mercado Pago SDK (mercadopago package).
 - **Email Service**: SendGrid.
-- **WhatsApp Integration**: Fully integrated messaging system with template management, message history, and automatic notifications after payment confirmation.
+- **WhatsApp Integration**: Fully integrated messaging system with template management, message history, and automatic notifications after payment confirmation. Updated to new API format with organized `/api/` routes for connect, status, qrcode, and send-message endpoints.
