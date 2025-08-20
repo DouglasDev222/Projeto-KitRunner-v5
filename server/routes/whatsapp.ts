@@ -36,11 +36,16 @@ router.get('/connection', async (req: Request, res: Response) => {
         const qrResult = await whatsAppService.getQRCode();
         
         if (qrResult.success && qrResult.data?.qrcode) {
+          // Ensure the qrcode includes the data URI prefix if it doesn't already have it
+          const qrCodeData = qrResult.data.qrcode.startsWith('data:') 
+            ? qrResult.data.qrcode 
+            : `data:image/png;base64,${qrResult.data.qrcode}`;
+            
           return res.json({
             success: true,
             connected: false,
             connectionStatus: 'connecting',
-            qrCode: qrResult.data.qrcode,
+            qrCode: qrCodeData,
             qrCodeType: 'png',
             message: 'Escaneie o QR Code para conectar o WhatsApp'
           });
@@ -61,11 +66,16 @@ router.get('/connection', async (req: Request, res: Response) => {
           const qrResult = await whatsAppService.getQRCode();
           
           if (qrResult.success && qrResult.data?.qrcode) {
+            // Ensure the qrcode includes the data URI prefix if it doesn't already have it
+            const qrCodeData = qrResult.data.qrcode.startsWith('data:') 
+              ? qrResult.data.qrcode 
+              : `data:image/png;base64,${qrResult.data.qrcode}`;
+              
             return res.json({
               success: true,
               connected: false,
               connectionStatus: 'connecting',
-              qrCode: qrResult.data.qrcode,
+              qrCode: qrCodeData,
               qrCodeType: 'png',
               message: 'Escaneie o QR Code para conectar o WhatsApp'
             });

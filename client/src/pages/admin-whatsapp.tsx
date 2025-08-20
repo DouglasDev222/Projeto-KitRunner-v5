@@ -55,6 +55,18 @@ interface WhatsAppPlaceholder {
   description: string;
 }
 
+interface TemplateResponse {
+  success: boolean;
+  template?: WhatsAppTemplate;
+  error?: string;
+}
+
+interface MessagesResponse {
+  success: boolean;
+  messages?: WhatsAppMessage[];
+  error?: string;
+}
+
 export default function AdminWhatsApp() {
   const [activeTab, setActiveTab] = useState("connection");
   const [templateContent, setTemplateContent] = useState("");
@@ -66,16 +78,19 @@ export default function AdminWhatsApp() {
   // Fetch connection status
   const { data: connection, isLoading: connectionLoading, refetch: refetchConnection } = useQuery<WhatsAppConnection>({
     queryKey: ["/api/admin/whatsapp/connection"],
-    refetchInterval: (data) => data?.connected ? false : 10000, // Poll every 10s if not connected
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      return data?.connected ? false : 10000; // Poll every 10s if not connected
+    }
   });
 
   // Fetch template
-  const { data: templateResponse, isLoading: templateLoading } = useQuery({
+  const { data: templateResponse, isLoading: templateLoading } = useQuery<TemplateResponse>({
     queryKey: ["/api/admin/whatsapp/template"],
   });
 
   // Fetch message history
-  const { data: messagesResponse, isLoading: messagesLoading } = useQuery({
+  const { data: messagesResponse, isLoading: messagesLoading } = useQuery<MessagesResponse>({
     queryKey: ["/api/admin/whatsapp/messages"],
   });
 
@@ -329,7 +344,7 @@ export default function AdminWhatsApp() {
                       </div>
                       <div className="bg-white p-6 border-2 border-dashed border-gray-300 rounded-lg text-center">
                         <img 
-                          src={`data:image/${connection.qrCodeType || 'png'};base64,${connection.qrCode}`} 
+                          src={connection.qrCode.startsWith('data:') ? connection.qrCode : `data:image/${connection.qrCodeType || 'png'};base64,${connection.qrCode}`} 
                           alt="QR Code WhatsApp" 
                           className="mx-auto max-w-xs rounded-lg shadow-sm"
                         />
@@ -515,7 +530,7 @@ export default function AdminWhatsApp() {
                   <Loader2 className="w-6 h-6 animate-spin" />
                   <span className="ml-2">Carregando histórico...</span>
                 </div>
-              ) : messagesResponse?.messages?.length > 0 ? (
+              ) : messagesResponse?.messages && messagesResponse.messages.length > 0 ? (
                 <div className="space-y-3">
                   {messagesResponse.messages.map((message: WhatsAppMessage) => (
                     <div key={message.id} className="border rounded-lg p-4">
