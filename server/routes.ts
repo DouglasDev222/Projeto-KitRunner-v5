@@ -2066,6 +2066,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
             console.log(`✅ Order ${order.orderNumber} status updated to confirmado - payment approved via card`);
+
+            // Send WhatsApp confirmation notification for card payment
+            try {
+              const fullOrder = await storage.getOrderWithFullDetails(order.id);
+              if (fullOrder && fullOrder.customer && fullOrder.customer.phone) {
+                const WhatsAppService = (await import('./whatsapp-service')).default;
+                const whatsAppService = new WhatsAppService(storage);
+                
+                console.log(`📱 Card Payment: Sending WhatsApp confirmation for order ${fullOrder.orderNumber} to phone: ${fullOrder.customer.phone}`);
+                await whatsAppService.sendOrderConfirmation(fullOrder);
+                console.log(`📱 Card Payment: WhatsApp notification sent for order ${fullOrder.orderNumber}`);
+              } else {
+                console.log(`📱 Card Payment: No phone number found for order ${order.orderNumber}, skipping WhatsApp`);
+              }
+            } catch (whatsappError) {
+              console.error('Card Payment: Error sending WhatsApp notification:', whatsappError);
+            }
           }
 
           res.json({
