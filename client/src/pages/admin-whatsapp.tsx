@@ -564,7 +564,7 @@ export default function AdminWhatsApp() {
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
-                ) : templatesResponse?.templates && templatesResponse.templates.length > 0 ? (
+                ) : templatesResponse?.templates && Array.isArray(templatesResponse.templates) && templatesResponse.templates.length > 0 ? (
                   <div className="space-y-4">
                     {templatesResponse.templates.map((template) => (
                       <Card key={template.id} className="relative">
@@ -712,7 +712,7 @@ export default function AdminWhatsApp() {
             </Card>
 
             {/* Placeholders Card */}
-            {placeholders && (
+            {placeholders && Array.isArray(placeholders) && placeholders.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -760,7 +760,7 @@ export default function AdminWhatsApp() {
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
-                ) : messagesResponse?.messages && messagesResponse.messages.length > 0 ? (
+                ) : messagesResponse?.messages && Array.isArray(messagesResponse.messages) && messagesResponse.messages.length > 0 ? (
                   <div className="space-y-4">
                     {messagesResponse.messages.map((message) => (
                       <div key={message.id} className="flex items-start gap-3 p-4 border rounded-lg">
