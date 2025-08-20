@@ -19,6 +19,7 @@ import {
   Edit,
   Trash,
   Star,
+  StarOff,
   Settings,
   MessageSquare,
   History,
@@ -363,6 +364,31 @@ export default function AdminWhatsApp() {
     onSuccess: (data) => {
       toast({
         title: data.success ? "Templates Criados" : "Erro",
+        description: data.message || data.error,
+        variant: data.success ? "default" : "destructive"
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/whatsapp/templates"] });
+    }
+  });
+
+  const deactivateTemplateMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        throw new Error('Token de administrador não encontrado');
+      }
+      
+      const response = await fetch(`/api/admin/whatsapp/templates/${id}/deactivate`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${adminToken}`
+        }
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.success ? "Template Desativado" : "Erro",
         description: data.message || data.error,
         variant: data.success ? "default" : "destructive"
       });
@@ -718,15 +744,31 @@ export default function AdminWhatsApp() {
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              {!template.isDefault && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => activateTemplateMutation.mutate(template.id)}
-                                  disabled={activateTemplateMutation.isPending}
-                                >
-                                  <Star className="h-4 w-4" />
-                                </Button>
+                              {/* Botões de Padrão - apenas para order_status */}
+                              {template.type === 'order_status' && (
+                                <>
+                                  {template.isDefault ? (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => deactivateTemplateMutation.mutate(template.id)}
+                                      disabled={deactivateTemplateMutation.isPending}
+                                      title="Remover como Padrão"
+                                    >
+                                      <StarOff className="h-4 w-4" />
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => activateTemplateMutation.mutate(template.id)}
+                                      disabled={activateTemplateMutation.isPending || !template.status}
+                                      title={!template.status ? "Template precisa ter um status para ser padrão" : "Marcar como Padrão"}
+                                    >
+                                      <Star className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </>
                               )}
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>

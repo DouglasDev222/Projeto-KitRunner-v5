@@ -669,18 +669,27 @@ router.post('/templates/:id/activate', async (req: Request, res: Response) => {
       });
     }
     
-    // Desativa outros templates do mesmo tipo/status
+    // Validar se o tipo pode ser padrão
+    if (currentTemplate.type !== 'order_status') {
+      return res.status(400).json({
+        success: false,
+        error: 'Apenas templates de status de pedido podem ser marcados como padrão'
+      });
+    }
+    
+    // Validar se tem status definido
+    if (!currentTemplate.status) {
+      return res.status(400).json({
+        success: false,
+        error: 'Template deve ter um status definido para ser marcado como padrão'
+      });
+    }
+    
+    // Desativa outros templates do mesmo status (garantir apenas um padrão por status)
     await db
       .update(whatsappTemplates)
       .set({ isDefault: false })
-      .where(eq(whatsappTemplates.type, currentTemplate.type));
-    
-    if (currentTemplate.status) {
-      await db
-        .update(whatsappTemplates)
-        .set({ isDefault: false })
-        .where(eq(whatsappTemplates.status, currentTemplate.status));
-    }
+      .where(eq(whatsappTemplates.status, currentTemplate.status));
     
     // Ativa o template atual
     const [template] = await db
@@ -712,6 +721,68 @@ router.post('/templates/:id/activate', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('❌ Error activating WhatsApp template:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/whatsapp/templates/:id/deactivate
+ * Desativar template como padrão
+ */
+router.post('/templates/:id/deactivate', async (req: Request, res: Response) => {
+  try {
+    console.log('📱 Deactivating WhatsApp template...');
+    
+    const templateId = parseInt(req.params.id);
+    if (isNaN(templateId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'ID do template inválido'
+      });
+    }
+    
+    const { db } = await import('../db');
+    const { whatsappTemplates } = await import('@shared/schema');
+    
+    // Desativa o template
+    const [template] = await db
+      .update(whatsappTemplates)
+      .set({ 
+        isDefault: false,
+        updatedAt: new Date()
+      })
+      .where(eq(whatsappTemplates.id, templateId))
+      .returning();
+    
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        error: 'Template não encontrado'
+      });
+    }
+    
+    res.json({
+      success: true,
+      template: {
+        id: template.id,
+        name: template.name,
+        type: template.type,
+        status: template.status,
+        content: template.content,
+        description: template.description,
+        isActive: template.isActive,
+        isDefault: template.isDefault,
+        placeholders: template.placeholders ? JSON.parse(template.placeholders) : null,
+        createdAt: template.createdAt,
+        updatedAt: template.updatedAt
+      },
+      message: 'Template desativado como padrão com sucesso'
+    });
+  } catch (error: any) {
+    console.error('❌ Error deactivating WhatsApp template:', error.message);
     res.status(500).json({
       success: false,
       error: 'Erro interno do servidor'
