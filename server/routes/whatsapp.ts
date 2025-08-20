@@ -885,4 +885,92 @@ router.post('/templates/seed', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/admin/whatsapp/templates/:id/test
+ * Testar um template específico enviando para um número
+ */
+const testTemplateSchema = z.object({
+  phoneNumber: z.string().min(10, 'Número de telefone é obrigatório'),
+  testData: z.object({
+    cliente: z.string().optional().default('João Silva'),
+    evento: z.string().optional().default('Maratona de João Pessoa'),
+    qtd_kits: z.string().optional().default('2'),
+    lista_kits: z.string().optional().default('1. João Silva - Tamanho: M\n2. Maria Silva - Tamanho: P'),
+    data_entrega: z.string().optional().default('15/12/2024'),
+    numero_pedido: z.string().optional().default('KR2024123456')
+  }).optional().default({})
+});
+
+router.post('/templates/:id/test', async (req: Request, res: Response) => {
+  try {
+    console.log('📱 Testing WhatsApp template...');
+    
+    const templateId = parseInt(req.params.id);
+    if (isNaN(templateId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'ID do template inválido'
+      });
+    }
+    
+    const validation = testTemplateSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        error: 'Dados inválidos',
+        details: validation.error.errors
+      });
+    }
+
+    const { phoneNumber, testData } = validation.data;
+    
+    const { db } = await import('../db');
+    const { whatsappTemplates } = await import('@shared/schema');
+    
+    // Buscar o template
+    const [template] = await db
+      .select()
+      .from(whatsappTemplates)
+      .where(eq(whatsappTemplates.id, templateId))
+      .limit(1);
+    
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        error: 'Template não encontrado'
+      });
+    }
+    
+    // Substituir placeholders no conteúdo
+    let message = template.content;
+    Object.entries(testData).forEach(([key, value]) => {
+      const placeholder = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+      message = message.replace(placeholder, value);
+    });
+    
+    // Enviar mensagem usando o serviço WhatsApp
+    const result = await whatsAppService.sendMessage(phoneNumber, message);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Template testado com sucesso!',
+        templateName: template.name,
+        sentMessage: message
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error || 'Erro ao enviar mensagem de teste'
+      });
+    }
+  } catch (error: any) {
+    console.error('❌ Error testing WhatsApp template:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
 export default router;

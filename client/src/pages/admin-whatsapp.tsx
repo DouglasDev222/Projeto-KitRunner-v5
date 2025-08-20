@@ -105,6 +105,17 @@ export default function AdminWhatsApp() {
   });
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<WhatsAppTemplate | null>(null);
+  const [testingTemplate, setTestingTemplate] = useState<WhatsAppTemplate | null>(null);
+  const [testTemplateData, setTestTemplateData] = useState({
+    phoneNumber: "",
+    cliente: "João Silva",
+    evento: "Maratona de João Pessoa",
+    qtd_kits: "2",
+    lista_kits: "1. João Silva - Tamanho: M\n2. Maria Silva - Tamanho: P",
+    data_entrega: "15/12/2024",
+    numero_pedido: "KR2024123456"
+  });
+  const [selectedTemplateForTest, setSelectedTemplateForTest] = useState<WhatsAppTemplate | null>(null);
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -253,6 +264,28 @@ export default function AdminWhatsApp() {
         variant: data.success ? "default" : "destructive"
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/whatsapp/templates"] });
+    }
+  });
+
+  const testTemplateMutation = useMutation({
+    mutationFn: async ({ templateId, phoneNumber, testData }: { templateId: number; phoneNumber: string; testData: any }) => {
+      const response = await fetch(`/api/admin/whatsapp/templates/${templateId}/test`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumber, testData })
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.success ? "Template Testado" : "Erro",
+        description: data.message || data.error,
+        variant: data.success ? "default" : "destructive"
+      });
+      if (data.success) {
+        setTestingTemplate(null);
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/whatsapp/messages"] });
+      }
     }
   });
 
@@ -599,8 +632,20 @@ export default function AdminWhatsApp() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setPreviewTemplate(template)}
+                                title="Visualizar"
                               >
                                 <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setTestingTemplate(template);
+                                  setTestTemplateData(prev => ({ ...prev, phoneNumber: "" }));
+                                }}
+                                title="Testar Template"
+                              >
+                                <Send className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
@@ -672,11 +717,79 @@ export default function AdminWhatsApp() {
 
           {/* Testes Tab */}
           <TabsContent value="testing" className="space-y-6">
+            {/* Testar Template Específico */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  Testar Template
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="templateSelect">Selecionar Template</Label>
+                  <Select 
+                    value={selectedTemplateForTest?.id.toString() || ""} 
+                    onValueChange={(value) => {
+                      const template = templatesResponse?.templates?.find(t => t.id.toString() === value);
+                      setSelectedTemplateForTest(template || null);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Escolha um template para testar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templatesResponse?.templates?.map((template) => (
+                        <SelectItem key={template.id} value={template.id.toString()}>
+                          {template.name} ({getTypeLabel(template.type)})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {selectedTemplateForTest && (
+                  <div className="space-y-4 p-4 bg-muted rounded-lg">
+                    <h4 className="font-medium">Preview do Template:</h4>
+                    <p className="text-sm font-mono whitespace-pre-wrap bg-background p-3 rounded border">
+                      {selectedTemplateForTest.content}
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Número do WhatsApp"
+                        value={testTemplateData.phoneNumber}
+                        onChange={(e) => setTestTemplateData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={() => {
+                          if (selectedTemplateForTest && testTemplateData.phoneNumber) {
+                            setTestingTemplate(selectedTemplateForTest);
+                          } else {
+                            toast({
+                              title: "Erro",
+                              description: "Selecione um template e insira o número",
+                              variant: "destructive"
+                            });
+                          }
+                        }}
+                        disabled={!selectedTemplateForTest || !testTemplateData.phoneNumber}
+                      >
+                        <Send className="h-4 w-4 mr-2" />
+                        Testar
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Mensagem Personalizada */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Send className="h-5 w-5" />
-                  Enviar Mensagem de Teste
+                  Enviar Mensagem Personalizada
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -853,6 +966,130 @@ export default function AdminWhatsApp() {
             <DialogFooter>
               <Button variant="outline" onClick={() => setPreviewTemplate(null)}>
                 Fechar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Template Test Modal */}
+        <Dialog open={!!testingTemplate} onOpenChange={() => setTestingTemplate(null)}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Testar Template: {testingTemplate?.name}</DialogTitle>
+              <DialogDescription>
+                Preencha os dados de teste para enviar o template
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="testPhone">Número do WhatsApp</Label>
+                <Input
+                  id="testPhone"
+                  placeholder="(83) 98765-4321"
+                  value={testTemplateData.phoneNumber}
+                  onChange={(e) => setTestTemplateData({...testTemplateData, phoneNumber: e.target.value})}
+                />
+              </div>
+              
+              <div className="bg-muted p-4 rounded-lg space-y-3">
+                <h4 className="font-medium">Dados de Teste (Placeholders):</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="cliente">Cliente</Label>
+                    <Input
+                      id="cliente"
+                      value={testTemplateData.cliente}
+                      onChange={(e) => setTestTemplateData({...testTemplateData, cliente: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="evento">Evento</Label>
+                    <Input
+                      id="evento"
+                      value={testTemplateData.evento}
+                      onChange={(e) => setTestTemplateData({...testTemplateData, evento: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="qtd_kits">Quantidade de Kits</Label>
+                    <Input
+                      id="qtd_kits"
+                      value={testTemplateData.qtd_kits}
+                      onChange={(e) => setTestTemplateData({...testTemplateData, qtd_kits: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="numero_pedido">Número do Pedido</Label>
+                    <Input
+                      id="numero_pedido"
+                      value={testTemplateData.numero_pedido}
+                      onChange={(e) => setTestTemplateData({...testTemplateData, numero_pedido: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="data_entrega">Data de Entrega</Label>
+                    <Input
+                      id="data_entrega"
+                      value={testTemplateData.data_entrega}
+                      onChange={(e) => setTestTemplateData({...testTemplateData, data_entrega: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lista_kits">Lista de Kits</Label>
+                  <Textarea
+                    id="lista_kits"
+                    value={testTemplateData.lista_kits}
+                    onChange={(e) => setTestTemplateData({...testTemplateData, lista_kits: e.target.value})}
+                    className="min-h-[80px]"
+                  />
+                </div>
+              </div>
+              
+              {testingTemplate && (
+                <div className="bg-background border rounded-lg p-4">
+                  <h4 className="font-medium mb-2">Preview da Mensagem:</h4>
+                  <p className="whitespace-pre-wrap text-sm font-mono bg-muted p-3 rounded">
+                    {testingTemplate.content
+                      .replace(/\{\{cliente\}\}/g, testTemplateData.cliente)
+                      .replace(/\{\{evento\}\}/g, testTemplateData.evento)
+                      .replace(/\{\{qtd_kits\}\}/g, testTemplateData.qtd_kits)
+                      .replace(/\{\{lista_kits\}\}/g, testTemplateData.lista_kits)
+                      .replace(/\{\{data_entrega\}\}/g, testTemplateData.data_entrega)
+                      .replace(/\{\{numero_pedido\}\}/g, testTemplateData.numero_pedido)
+                    }
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setTestingTemplate(null)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (testingTemplate) {
+                    testTemplateMutation.mutate({
+                      templateId: testingTemplate.id,
+                      phoneNumber: testTemplateData.phoneNumber,
+                      testData: {
+                        cliente: testTemplateData.cliente,
+                        evento: testTemplateData.evento,
+                        qtd_kits: testTemplateData.qtd_kits,
+                        lista_kits: testTemplateData.lista_kits,
+                        data_entrega: testTemplateData.data_entrega,
+                        numero_pedido: testTemplateData.numero_pedido
+                      }
+                    });
+                  }
+                }}
+                disabled={!testTemplateData.phoneNumber || testTemplateMutation.isPending}
+              >
+                {testTemplateMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                <Send className="h-4 w-4 mr-2" />
+                Enviar Teste
               </Button>
             </DialogFooter>
           </DialogContent>
