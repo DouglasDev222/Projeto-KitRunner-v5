@@ -931,11 +931,14 @@ router.post('/templates/:id/test', async (req: Request, res: Response) => {
     const { phoneNumber, testData } = validation.data;
     
     // Adicionar +55 se não tiver código de país
+    console.log(`🔥 DEBUG: Received phone number: "${phoneNumber}"`);
     let formattedPhone = phoneNumber;
     if (!formattedPhone.startsWith('+')) {
       formattedPhone = '+55' + formattedPhone;
+      console.log(`🔥 DEBUG: Added +55 prefix: "${formattedPhone}"`);
+    } else {
+      console.log(`🔥 DEBUG: Phone already has prefix: "${formattedPhone}"`);
     }
-    console.log(`📱 Original: ${phoneNumber} → Formatted: ${formattedPhone}`);
     
     const { db } = await import('../db');
     const { whatsappTemplates } = await import('@shared/schema');
