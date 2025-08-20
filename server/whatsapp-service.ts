@@ -237,24 +237,33 @@ export class WhatsAppService {
   }
 
   /**
-   * Get or create default template
+   * Get template for order confirmation (status = 'confirmado')
    */
-  async getActiveTemplate(): Promise<WhatsappSettings | null> {
+  async getActiveTemplate(): Promise<{ templateContent: string } | null> {
     try {
-      // Direct database access since storage methods are not working
+      // Use the new whatsappTemplates table to get template for 'confirmado' status
       const { db } = await import('./db');
-      const { whatsappSettings } = await import('@shared/schema');
-      const { eq, desc } = await import('drizzle-orm');
+      const { whatsappTemplates } = await import('@shared/schema');
+      const { eq, and, desc } = await import('drizzle-orm');
+      
+      console.log('📱 WhatsApp: Searching for template with status "confirmado"');
       
       const [template] = await db
         .select()
-        .from(whatsappSettings)
-        .where(eq(whatsappSettings.isActive, true))
-        .orderBy(desc(whatsappSettings.createdAt))
+        .from(whatsappTemplates)
+        .where(
+          and(
+            eq(whatsappTemplates.status, 'confirmado'),
+            eq(whatsappTemplates.isActive, true)
+          )
+        )
+        .orderBy(desc(whatsappTemplates.createdAt))
         .limit(1);
       
       if (!template) {
-        // Create default template
+        console.log('❌ WhatsApp: No template found for status "confirmado"');
+        
+        // Create default template for 'confirmado' status
         const defaultTemplate = `Olá, *{{cliente}}*! 
 Confirmamos sua solicitação de *[Retirada do Kit] {{evento}}*.
 
@@ -267,25 +276,27 @@ Logo mais entraremos em contato e faremos a entrega no endereço informado no pe
 
 Qualquer dúvida, estamos à disposição.`;
 
-        // Deactivate existing templates
-        await db
-          .update(whatsappSettings)
-          .set({ isActive: false });
-
         const [newTemplate] = await db
-          .insert(whatsappSettings)
+          .insert(whatsappTemplates)
           .values({
-            templateContent: defaultTemplate,
-            isActive: true
+            name: 'Confirmação de Pedido',
+            type: 'order_status',
+            status: 'confirmado',
+            content: defaultTemplate,
+            description: 'Template padrão para confirmação de pedido após pagamento aprovado',
+            isActive: true,
+            isDefault: true
           })
           .returning();
 
-        return newTemplate;
+        console.log('✅ WhatsApp: Created default template for status "confirmado"');
+        return { templateContent: newTemplate.content };
       }
 
-      return template;
+      console.log('✅ WhatsApp: Found template for status "confirmado"');
+      return { templateContent: template.content };
     } catch (error: any) {
-      console.error('❌ Error getting WhatsApp template:', error.message);
+      console.error('❌ Error getting WhatsApp template for status "confirmado":', error.message);
       throw error;
     }
   }
