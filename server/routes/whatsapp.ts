@@ -19,7 +19,8 @@ router.get('/connection', async (req: Request, res: Response) => {
     console.log('📱 Getting WhatsApp connection status...');
     
     // Check connection status using the new API format
-    const statusResponse = await fetch(`${process.env.WHATSAPP_API_URL}/status`, {
+    const apiUrl = process.env.WHATSAPP_API_URL?.replace(/\/$/, ''); // Remove trailing slash
+    const statusResponse = await fetch(`${apiUrl}/status`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${process.env.WHATSAPP_API_TOKEN}`,
@@ -47,7 +48,7 @@ router.get('/connection', async (req: Request, res: Response) => {
       } else if (statusData.connectionStatus === 'qr_code_needed') {
         // Need QR code - get it from qrcode endpoint
         try {
-          const qrResponse = await fetch(`${process.env.WHATSAPP_API_URL}/qrcode`, {
+          const qrResponse = await fetch(`${apiUrl}/qrcode`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${process.env.WHATSAPP_API_TOKEN}`,
