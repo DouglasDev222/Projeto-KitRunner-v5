@@ -249,6 +249,21 @@ export const whatsappSettings = pgTable("whatsapp_settings", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Nova tabela para templates de WhatsApp com mais funcionalidades
+export const whatsappTemplates = pgTable("whatsapp_templates", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(), // Nome do template ex: "Confirmação de Pedido"
+  type: varchar("type", { length: 50 }).notNull(), // Tipo: 'order_status', 'custom', 'notification'
+  status: varchar("status", { length: 30 }), // Status do pedido relacionado: 'confirmado', 'em_transito', etc.
+  content: text("content").notNull(), // Conteúdo do template
+  description: text("description"), // Descrição do template
+  isActive: boolean("is_active").notNull().default(true),
+  isDefault: boolean("is_default").notNull().default(false), // Se é o template padrão para aquele status
+  placeholders: text("placeholders"), // JSON com placeholders disponíveis
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Event status enum and types
 export const eventStatusEnum = z.enum(['ativo', 'inativo', 'fechado_pedidos']);
 export type EventStatus = z.infer<typeof eventStatusEnum>;
@@ -303,12 +318,19 @@ export const insertWhatsappSettingsSchema = createInsertSchema(whatsappSettings)
   createdAt: true, 
   updatedAt: true 
 });
+export const insertWhatsappTemplateSchema = createInsertSchema(whatsappTemplates).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
 
 // Types
 export type WhatsappMessage = typeof whatsappMessages.$inferSelect;
 export type WhatsappSettings = typeof whatsappSettings.$inferSelect;
+export type WhatsappTemplate = typeof whatsappTemplates.$inferSelect;
 export type InsertWhatsappMessage = z.infer<typeof insertWhatsappMessageSchema>;
 export type InsertWhatsappSettings = z.infer<typeof insertWhatsappSettingsSchema>;
+export type InsertWhatsappTemplate = z.infer<typeof insertWhatsappTemplateSchema>;
 
 // Customer identification validation
 export const customerIdentificationSchema = z.object({

@@ -3,6 +3,7 @@ import WhatsAppService from '../whatsapp-service';
 import { storage } from '../storage';
 import { requireAdminAuth } from '../middleware/auth';
 import { z } from 'zod';
+import { eq, desc } from 'drizzle-orm';
 
 const router = Router();
 const whatsAppService = new WhatsAppService(storage);
@@ -431,6 +432,452 @@ router.get('/placeholders', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('❌ Error getting placeholders:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
+// NOVO SISTEMA DE TEMPLATES AVANÇADO
+
+/**
+ * GET /api/admin/whatsapp/templates
+ * Listar todos os templates de WhatsApp
+ */
+router.get('/templates', async (req: Request, res: Response) => {
+  try {
+    console.log('📱 Getting all WhatsApp templates...');
+    
+    const { db } = await import('../db');
+    const { whatsappTemplates } = await import('@shared/schema');
+    
+    const templates = await db
+      .select()
+      .from(whatsappTemplates)
+      .orderBy(desc(whatsappTemplates.createdAt));
+    
+    res.json({
+      success: true,
+      templates: templates.map(template => ({
+        id: template.id,
+        name: template.name,
+        type: template.type,
+        status: template.status,
+        content: template.content,
+        description: template.description,
+        isActive: template.isActive,
+        isDefault: template.isDefault,
+        placeholders: template.placeholders ? JSON.parse(template.placeholders) : null,
+        createdAt: template.createdAt,
+        updatedAt: template.updatedAt
+      }))
+    });
+  } catch (error: any) {
+    console.error('❌ Error getting WhatsApp templates:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/whatsapp/templates
+ * Criar novo template
+ */
+const newTemplateSchema = z.object({
+  name: z.string().min(1, 'Nome é obrigatório'),
+  type: z.enum(['order_status', 'custom', 'notification']),
+  status: z.string().optional(),
+  content: z.string().min(1, 'Conteúdo é obrigatório'),
+  description: z.string().optional(),
+  placeholders: z.array(z.string()).optional()
+});
+
+router.post('/templates', async (req: Request, res: Response) => {
+  try {
+    console.log('📱 Creating new WhatsApp template...');
+    
+    const validation = newTemplateSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        error: 'Dados inválidos',
+        details: validation.error.errors
+      });
+    }
+
+    const { name, type, status, content, description, placeholders } = validation.data;
+    
+    const { db } = await import('../db');
+    const { whatsappTemplates } = await import('@shared/schema');
+    
+    const [template] = await db
+      .insert(whatsappTemplates)
+      .values({
+        name,
+        type,
+        status: status || null,
+        content,
+        description: description || null,
+        placeholders: placeholders ? JSON.stringify(placeholders) : null,
+        isActive: true,
+        isDefault: false
+      })
+      .returning();
+    
+    res.json({
+      success: true,
+      template: {
+        id: template.id,
+        name: template.name,
+        type: template.type,
+        status: template.status,
+        content: template.content,
+        description: template.description,
+        isActive: template.isActive,
+        isDefault: template.isDefault,
+        placeholders: template.placeholders ? JSON.parse(template.placeholders) : null,
+        createdAt: template.createdAt,
+        updatedAt: template.updatedAt
+      },
+      message: 'Template criado com sucesso'
+    });
+  } catch (error: any) {
+    console.error('❌ Error creating WhatsApp template:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
+/**
+ * PUT /api/admin/whatsapp/templates/:id
+ * Editar template existente
+ */
+router.put('/templates/:id', async (req: Request, res: Response) => {
+  try {
+    console.log('📱 Updating WhatsApp template...');
+    
+    const templateId = parseInt(req.params.id);
+    if (isNaN(templateId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'ID do template inválido'
+      });
+    }
+    
+    const validation = newTemplateSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        error: 'Dados inválidos',
+        details: validation.error.errors
+      });
+    }
+
+    const { name, type, status, content, description, placeholders } = validation.data;
+    
+    const { db } = await import('../db');
+    const { whatsappTemplates } = await import('@shared/schema');
+    
+    const [template] = await db
+      .update(whatsappTemplates)
+      .set({
+        name,
+        type,
+        status: status || null,
+        content,
+        description: description || null,
+        placeholders: placeholders ? JSON.stringify(placeholders) : null,
+        updatedAt: new Date()
+      })
+      .where(eq(whatsappTemplates.id, templateId))
+      .returning();
+    
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        error: 'Template não encontrado'
+      });
+    }
+    
+    res.json({
+      success: true,
+      template: {
+        id: template.id,
+        name: template.name,
+        type: template.type,
+        status: template.status,
+        content: template.content,
+        description: template.description,
+        isActive: template.isActive,
+        isDefault: template.isDefault,
+        placeholders: template.placeholders ? JSON.parse(template.placeholders) : null,
+        createdAt: template.createdAt,
+        updatedAt: template.updatedAt
+      },
+      message: 'Template atualizado com sucesso'
+    });
+  } catch (error: any) {
+    console.error('❌ Error updating WhatsApp template:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/whatsapp/templates/:id/activate
+ * Ativar template como padrão para um status
+ */
+router.post('/templates/:id/activate', async (req: Request, res: Response) => {
+  try {
+    console.log('📱 Activating WhatsApp template as default...');
+    
+    const templateId = parseInt(req.params.id);
+    if (isNaN(templateId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'ID do template inválido'
+      });
+    }
+    
+    const { db } = await import('../db');
+    const { whatsappTemplates } = await import('@shared/schema');
+    
+    // Primeiro busca o template para obter o status/tipo
+    const [currentTemplate] = await db
+      .select()
+      .from(whatsappTemplates)
+      .where(eq(whatsappTemplates.id, templateId))
+      .limit(1);
+    
+    if (!currentTemplate) {
+      return res.status(404).json({
+        success: false,
+        error: 'Template não encontrado'
+      });
+    }
+    
+    // Desativa outros templates do mesmo tipo/status
+    await db
+      .update(whatsappTemplates)
+      .set({ isDefault: false })
+      .where(eq(whatsappTemplates.type, currentTemplate.type));
+    
+    if (currentTemplate.status) {
+      await db
+        .update(whatsappTemplates)
+        .set({ isDefault: false })
+        .where(eq(whatsappTemplates.status, currentTemplate.status));
+    }
+    
+    // Ativa o template atual
+    const [template] = await db
+      .update(whatsappTemplates)
+      .set({ 
+        isDefault: true,
+        isActive: true,
+        updatedAt: new Date()
+      })
+      .where(eq(whatsappTemplates.id, templateId))
+      .returning();
+    
+    res.json({
+      success: true,
+      template: {
+        id: template.id,
+        name: template.name,
+        type: template.type,
+        status: template.status,
+        content: template.content,
+        description: template.description,
+        isActive: template.isActive,
+        isDefault: template.isDefault,
+        placeholders: template.placeholders ? JSON.parse(template.placeholders) : null,
+        createdAt: template.createdAt,
+        updatedAt: template.updatedAt
+      },
+      message: 'Template ativado como padrão'
+    });
+  } catch (error: any) {
+    console.error('❌ Error activating WhatsApp template:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
+/**
+ * DELETE /api/admin/whatsapp/templates/:id
+ * Deletar template
+ */
+router.delete('/templates/:id', async (req: Request, res: Response) => {
+  try {
+    console.log('📱 Deleting WhatsApp template...');
+    
+    const templateId = parseInt(req.params.id);
+    if (isNaN(templateId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'ID do template inválido'
+      });
+    }
+    
+    const { db } = await import('../db');
+    const { whatsappTemplates } = await import('@shared/schema');
+    
+    // Verifica se o template existe antes de deletar
+    const [existingTemplate] = await db
+      .select()
+      .from(whatsappTemplates)
+      .where(eq(whatsappTemplates.id, templateId))
+      .limit(1);
+    
+    if (!existingTemplate) {
+      return res.status(404).json({
+        success: false,
+        error: 'Template não encontrado'
+      });
+    }
+    
+    // Não permite deletar templates padrão
+    if (existingTemplate.isDefault) {
+      return res.status(400).json({
+        success: false,
+        error: 'Não é possível deletar template padrão. Defina outro template como padrão primeiro.'
+      });
+    }
+    
+    await db
+      .delete(whatsappTemplates)
+      .where(eq(whatsappTemplates.id, templateId));
+    
+    res.json({
+      success: true,
+      message: 'Template deletado com sucesso'
+    });
+  } catch (error: any) {
+    console.error('❌ Error deleting WhatsApp template:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/whatsapp/templates/seed
+ * Criar templates padrões para status de pedidos
+ */
+router.post('/templates/seed', async (req: Request, res: Response) => {
+  try {
+    console.log('📱 Creating default WhatsApp templates...');
+    
+    const { db } = await import('../db');
+    const { whatsappTemplates } = await import('@shared/schema');
+    
+    // Definir templates padrão para cada status
+    const defaultTemplates = [
+      {
+        name: 'Confirmação de Pedido',
+        type: 'order_status',
+        status: 'confirmado',
+        content: `Olá, *{{cliente}}*! 🎽\n\nConfirmamos sua solicitação de *[Retirada do Kit] {{evento}}*.\n\nVocê solicitou a retirada de *{{qtd_kits}}* kits para os seguintes atletas:\n\n{{lista_kits}}\n\nVamos retirar seu kit, previsão de entrega é para amanhã dia {{data_entrega}}.\nLogo mais entraremos em contato e faremos a entrega no endereço informado no pedido.\n\nPedido: #{{numero_pedido}}\n\nQualquer dúvida, estamos à disposição.`,
+        description: 'Template padrão para confirmação de pedidos',
+        placeholders: ['cliente', 'evento', 'qtd_kits', 'lista_kits', 'data_entrega', 'numero_pedido'],
+        isDefault: true
+      },
+      {
+        name: 'Kits Sendo Retirados',
+        type: 'order_status',
+        status: 'kits_sendo_retirados',
+        content: `Oi {{cliente}}! 🚗\n\nSeus kits do evento *{{evento}}* estão sendo retirados agora!\n\nPedido: #{{numero_pedido}}\nQuantidade: {{qtd_kits}} kits\n\nEm breve estaremos a caminho do seu endereço para entrega.\n\nObrigado pela preferência! 🏃‍♂️`,
+        description: 'Template para quando os kits estão sendo retirados',
+        placeholders: ['cliente', 'evento', 'qtd_kits', 'numero_pedido'],
+        isDefault: true
+      },
+      {
+        name: 'Em Trânsito',
+        type: 'order_status',
+        status: 'em_transito',
+        content: `{{cliente}}, seus kits estão a caminho! 🚗💨\n\nEvento: *{{evento}}*\nPedido: #{{numero_pedido}}\nKits: {{qtd_kits}}\n\nEstamos nos dirigindo ao seu endereço. Em breve chegamos!\n\nAcompanhe a entrega e se prepare para receber seus kits! 📦✨`,
+        description: 'Template para pedidos em trânsito',
+        placeholders: ['cliente', 'evento', 'qtd_kits', 'numero_pedido'],
+        isDefault: true
+      },
+      {
+        name: 'Entregue',
+        type: 'order_status',
+        status: 'entregue',
+        content: `Perfeito, {{cliente}}! ✅\n\nSeus kits do *{{evento}}* foram entregues com sucesso!\n\nPedido: #{{numero_pedido}}\nKits entregues: {{qtd_kits}}\n\nDesejamos uma excelente corrida! 🏃‍♂️🏃‍♀️\n\nObrigado por escolher nossos serviços! 🙏`,
+        description: 'Template para pedidos entregues',
+        placeholders: ['cliente', 'evento', 'qtd_kits', 'numero_pedido'],
+        isDefault: true
+      },
+      {
+        name: 'Pedido Cancelado',
+        type: 'order_status',
+        status: 'cancelado',
+        content: `{{cliente}}, informamos que seu pedido foi cancelado. ❌\n\nEvento: *{{evento}}*\nPedido: #{{numero_pedido}}\n\nSe você cancelou, tudo certo! Se não foi você que cancelou, entre em contato conosco imediatamente.\n\nQualquer dúvida, estamos à disposição.`,
+        description: 'Template para pedidos cancelados',
+        placeholders: ['cliente', 'evento', 'numero_pedido'],
+        isDefault: true
+      },
+      {
+        name: 'Aguardando Pagamento',
+        type: 'order_status',
+        status: 'aguardando_pagamento',
+        content: `{{cliente}}, seu pedido está aguardando pagamento! ⏳\n\nEvento: *{{evento}}*\nPedido: #{{numero_pedido}}\nKits: {{qtd_kits}}\n\nPor favor, realize o pagamento para confirmarmos sua entrega.\n\nCaso já tenha pago, aguarde alguns minutos para a confirmação automática.`,
+        description: 'Template para pedidos aguardando pagamento',
+        placeholders: ['cliente', 'evento', 'qtd_kits', 'numero_pedido'],
+        isDefault: true
+      }
+    ];
+    
+    // Limpa templates existentes do sistema (apenas os de order_status)
+    await db
+      .delete(whatsappTemplates)
+      .where(eq(whatsappTemplates.type, 'order_status'));
+    
+    // Insere novos templates
+    const createdTemplates = [];
+    for (const templateData of defaultTemplates) {
+      const [template] = await db
+        .insert(whatsappTemplates)
+        .values({
+          name: templateData.name,
+          type: templateData.type as 'order_status' | 'custom' | 'notification',
+          status: templateData.status,
+          content: templateData.content,
+          description: templateData.description,
+          placeholders: JSON.stringify(templateData.placeholders),
+          isActive: true,
+          isDefault: templateData.isDefault
+        })
+        .returning();
+      
+      createdTemplates.push(template);
+    }
+    
+    res.json({
+      success: true,
+      message: `${createdTemplates.length} templates padrões criados com sucesso`,
+      templates: createdTemplates.map(template => ({
+        id: template.id,
+        name: template.name,
+        type: template.type,
+        status: template.status,
+        isDefault: template.isDefault
+      }))
+    });
+  } catch (error: any) {
+    console.error('❌ Error creating default WhatsApp templates:', error.message);
     res.status(500).json({
       success: false,
       error: 'Erro interno do servidor'
