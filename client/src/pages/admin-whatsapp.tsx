@@ -269,9 +269,17 @@ export default function AdminWhatsApp() {
 
   const testTemplateMutation = useMutation({
     mutationFn: async ({ templateId, phoneNumber, testData }: { templateId: number; phoneNumber: string; testData: any }) => {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        throw new Error('Token de administrador não encontrado');
+      }
+      
       const response = await fetch(`/api/admin/whatsapp/templates/${templateId}/test`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${adminToken}`
+        },
         body: JSON.stringify({ phoneNumber, testData })
       });
       return response.json();
