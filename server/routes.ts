@@ -1862,6 +1862,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // 🚨 CRITICAL SECURITY FIX: VALIDATE PRICE BEFORE PAYMENT
+      console.log('🔒 SECURITY: Validating pricing before payment processing');
+      
+      // Get customer address for pricing calculation
+      const customerAddress = await storage.getAddress(orderData.addressId);
+      if (!customerAddress) {
+        return res.status(400).json({
+          success: false,
+          message: "Endereço de entrega não encontrado"
+        });
+      }
+
+      // Calculate the REAL price on server-side
+      let serverCalculatedTotal = 0;
+      let baseCost = 0;
+      let deliveryCost = 0;
+      let additionalCost = 0;
+      let donationAmount = 0;
+
+      if (eventForPayment.fixedPrice) {
+        baseCost = Number(eventForPayment.fixedPrice);
+        deliveryCost = 0;
+      } else if (eventForPayment.pricingType === 'cep_zones') {
+        // Calculate CEP zones pricing
+        const { calculateCepZonePrice } = await import('./cep-zones-calculator');
+        const calculatedPrice = await calculateCepZonePrice(customerAddress.zipCode, eventForPayment.id);
+        
+        if (calculatedPrice === null) {
+          console.error(`🚨 SECURITY: CEP ${customerAddress.zipCode} not found in zones for event ${eventForPayment.id}`);
+          return res.status(400).json({ 
+            success: false,
+            message: "CEP não atendido nas zonas de entrega disponíveis para este evento",
+            code: "CEP_ZONE_NOT_FOUND"
+          });
+        }
+        
+        deliveryCost = calculatedPrice;
+        baseCost = 0;
+        console.log(`🔒 SECURITY: CEP zone pricing calculated: R$ ${calculatedPrice} for CEP ${customerAddress.zipCode}`);
+      } else {
+        // Distance-based pricing
+        const deliveryCalculation = calculateDeliveryCost(
+          eventForPayment.pickupZipCode || '58000000',
+          customerAddress.zipCode
+        );
+        deliveryCost = deliveryCalculation.deliveryCost;
+        baseCost = 0;
+      }
+
+      // Calculate additional costs
+      if (orderData.kitQuantity > 1 && eventForPayment.extraKitPrice) {
+        additionalCost = (orderData.kitQuantity - 1) * Number(eventForPayment.extraKitPrice);
+      }
+
+      if (eventForPayment.donationRequired && eventForPayment.donationAmount) {
+        donationAmount = Number(eventForPayment.donationAmount) * orderData.kitQuantity;
+      }
+
+      serverCalculatedTotal = baseCost + deliveryCost + additionalCost + donationAmount - Number(orderData.discountAmount || 0);
+      
+      // Ensure minimum payment of R$ 0.01
+      serverCalculatedTotal = Math.max(0.01, serverCalculatedTotal);
+
+      // 🛡️ SECURITY CHECK: Compare client amount with server calculation
+      const clientAmount = parseFloat(amount);
+      const priceDifference = Math.abs(clientAmount - serverCalculatedTotal);
+      
+      console.log(`🔒 SECURITY CHECK: Client amount: R$ ${clientAmount.toFixed(2)}, Server calculated: R$ ${serverCalculatedTotal.toFixed(2)}, Difference: R$ ${priceDifference.toFixed(2)}`);
+      
+      // Allow small floating point differences (1 cent)
+      if (priceDifference > 0.01) {
+        console.error(`🚨 SECURITY VIOLATION: Price manipulation detected! Client: R$ ${clientAmount.toFixed(2)}, Server: R$ ${serverCalculatedTotal.toFixed(2)}`);
+        return res.status(400).json({
+          success: false,
+          message: "Erro na validação do preço. Por favor, atualize a página e tente novamente.",
+          title: "Erro de Validação",
+          code: "PRICE_VALIDATION_FAILED",
+          clientAmount: clientAmount.toFixed(2),
+          serverAmount: serverCalculatedTotal.toFixed(2)
+        });
+      }
+      
+      console.log('✅ SECURITY: Price validation passed - proceeding with payment');
+
       const [firstName, ...lastNameParts] = customerName.split(' ');
       const lastName = lastNameParts.join(' ') || '';
 
@@ -1872,7 +1956,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         token,
         paymentMethodId,
         email,
-        amount: parseFloat(amount),
+        amount: serverCalculatedTotal,  // 🔒 SECURITY: Use server-calculated amount only
         description: `Pedido KitRunner - Processamento`,
         orderId: tempOrderReference,
         payer: {
@@ -1913,64 +1997,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Create the order now that payment is confirmed
           const orderNumber = `KR${new Date().getFullYear()}${String(Date.now() + Math.random() * 1000).slice(-6)}`;
 
-          const selectedEvent = await storage.getEvent(validatedOrderData.eventId);
-          if (!selectedEvent) {
-            return res.status(404).json({ 
-              success: false,
-              message: "Evento não encontrado" 
-            });
-          }
-
-
-
-          let totalCost = 0;
-          let baseCost = 0;
-          let deliveryCost = 0;
-          let additionalCost = 0;
-          let donationAmount = 0;
-
-          // Get customer address for delivery calculation
-          const customerAddress = await storage.getAddress(validatedOrderData.addressId);
-
-          if (selectedEvent.fixedPrice) {
-            baseCost = Number(selectedEvent.fixedPrice);
-            deliveryCost = 0;
-          } else if (selectedEvent.pricingType === 'cep_zones') {
-            // Use CEP zones pricing for card payments (same as order creation logic)
-            const { calculateCepZonePrice } = await import('./cep-zones-calculator');
-            const calculatedPrice = await calculateCepZonePrice(customerAddress?.zipCode || '', selectedEvent.id);
-            
-            if (calculatedPrice === null) {
-              console.error(`🚨 CEP ${customerAddress?.zipCode} not found in zones for event ${selectedEvent.id}`);
-              return res.status(400).json({ 
-                success: false,
-                message: "CEP não atendido nas zonas de entrega disponíveis para este evento",
-                code: "CEP_ZONE_NOT_FOUND"
-              });
-            }
-            
-            deliveryCost = calculatedPrice;
-            baseCost = 0;
-            console.log(`✅ Card payment using CEP zone pricing: R$ ${calculatedPrice} for CEP ${customerAddress?.zipCode}`);
-          } else {
-            // Distance-based pricing
-            const deliveryCalculation = calculateDeliveryCost(
-              selectedEvent.pickupZipCode || '58000000',
-              customerAddress?.zipCode || '58030000'
-            );
-            deliveryCost = deliveryCalculation.deliveryCost;
-            baseCost = 0;
-          }
-
-          if (validatedOrderData.kitQuantity > 1 && selectedEvent.extraKitPrice) {
-            additionalCost = (validatedOrderData.kitQuantity - 1) * Number(selectedEvent.extraKitPrice);
-          }
-
-          if (selectedEvent.donationRequired && selectedEvent.donationAmount) {
-            donationAmount = Number(selectedEvent.donationAmount) * validatedOrderData.kitQuantity;
-          }
-
-          totalCost = baseCost + deliveryCost + additionalCost + donationAmount - Number(validatedOrderData.discountAmount || 0);
+          // 🔒 SECURITY: Use previously calculated values from server validation
+          console.log('✅ SECURITY: Using server-validated pricing for order creation');
 
           // Create the order with status "aguardando_pagamento" first
           const order = await storage.createOrder({
@@ -1981,7 +2009,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             deliveryCost: deliveryCost.toString(),
             extraKitsCost: additionalCost.toString(),
             donationCost: donationAmount.toString(),
-            totalCost: totalCost.toString(),
+            totalCost: serverCalculatedTotal.toString(),  // 🔒 SECURITY: Use server-calculated total
             status: 'aguardando_pagamento', // Always start with awaiting payment
             paymentMethod: paymentMethodId === 'master' ? 'credit' : paymentMethodId,
             // paymentProcessorOrderId: result.id?.toString() || null, // Field not in schema
