@@ -566,20 +566,21 @@ export default function AdminOrders() {
 
   return (
     <AdminLayout>
-      <div className="space-y-4 lg:space-y-6 w-full max-w-full overflow-hidden">
+      <div className="space-y-4 lg:space-y-6 w-full max-w-full overflow-hidden px-1 sm:px-0">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-neutral-800">Gerenciamento de Pedidos</h1>
-            <p className="text-neutral-600">Visualize, gerencie e acompanhe todos os pedidos</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-neutral-800 truncate">Gerenciamento de Pedidos</h1>
+            <p className="text-sm sm:text-base text-neutral-600">Visualize, gerencie e acompanhe todos os pedidos</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 justify-end flex-shrink-0">
             {(events as any) && Array.isArray((events as any)) && (events as any).length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2 px-3">
+                  <Button variant="outline" className="gap-1 sm:gap-2 px-2 sm:px-3 flex-shrink-0">
                     <Download className="h-4 w-4" />
                     <span className="hidden sm:inline">Etiquetas por Evento</span>
+                    <span className="sm:hidden text-xs">Etiquetas</span>
                     <ChevronDown className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -598,9 +599,10 @@ export default function AdminOrders() {
             {(eventsForReports as any) && Array.isArray((eventsForReports as any)) && (eventsForReports as any).length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2 px-3">
+                  <Button variant="outline" className="gap-1 sm:gap-2 px-2 sm:px-3 flex-shrink-0">
                     <FileSpreadsheet className="h-4 w-4" />
                     <span className="hidden sm:inline">Relatório de Kits</span>
+                    <span className="sm:hidden text-xs">Relatório</span>
                     <ChevronDown className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -739,22 +741,22 @@ export default function AdminOrders() {
         )}
 
         {/* Filters - Mobile Optimized */}
-        <Card>
+        <Card className="w-full max-w-full">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Filter className="h-5 w-5" />
               Filtros
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              <div className="space-y-2">
+          <CardContent className="space-y-4 overflow-hidden">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
+              <div className="space-y-2 min-w-0">
                 <label className="text-sm font-medium">Status</label>
                 <Select
                   value={filters.status}
                   onValueChange={(value) => setFilters({ ...filters, status: value })}
                 >
-                  <SelectTrigger className="h-10">
+                  <SelectTrigger className="h-10 w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -767,7 +769,7 @@ export default function AdminOrders() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0">
                 <label className="text-sm font-medium">Evento</label>
                 <Select
                   value={filters.eventId?.toString() || 'all'}
@@ -776,7 +778,7 @@ export default function AdminOrders() {
                     eventId: value === 'all' ? undefined : parseInt(value) 
                   })}
                 >
-                  <SelectTrigger className="h-10">
+                  <SelectTrigger className="h-10 w-full">
                     <SelectValue placeholder="Todos os eventos" />
                   </SelectTrigger>
                   <SelectContent>
@@ -790,17 +792,17 @@ export default function AdminOrders() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0">
                 <label className="text-sm font-medium">Número do Pedido</label>
                 <Input
                   placeholder="Ex: KR202400123"
                   value={filters.orderNumber || ''}
                   onChange={(e) => setFilters({ ...filters, orderNumber: e.target.value })}
-                  className="h-10"
+                  className="h-10 w-full"
                 />
               </div>
 
-              <div className="flex items-end">
+              <div className="flex items-end min-w-0">
                 <Button 
                   variant="outline" 
                   onClick={resetFilters}
@@ -815,11 +817,11 @@ export default function AdminOrders() {
         </Card>
 
         {/* Orders Table */}
-        <Card>
+        <Card className="w-full max-w-full">
           <CardHeader>
             <CardTitle>Pedidos ({orders?.length || 0})</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 overflow-hidden">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -830,7 +832,7 @@ export default function AdminOrders() {
                 <p>Nenhum pedido encontrado com os filtros aplicados.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="w-full max-w-full overflow-hidden">
                 {/* Bulk Actions Bar - Mobile Optimized */}
                 {selectedOrders.length > 0 && (
                   <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -885,44 +887,45 @@ export default function AdminOrders() {
                 )}
 
                 {/* Mobile Cards View */}
-                <div className="block lg:hidden space-y-4">
+                <div className="block lg:hidden space-y-4 w-full max-w-full">
                   {Array.isArray(orders) && orders.map((order: any) => (
-                    <Card key={order.id} className="relative">
-                      <CardContent className="p-0">
+                    <Card key={order.id} className="relative w-full max-w-full overflow-hidden">
+                      <CardContent className="p-0 overflow-hidden">
                         {/* Card Header - Always Visible */}
                         <div 
-                          className="p-4 cursor-pointer select-none"
+                          className="p-3 sm:p-4 cursor-pointer select-none w-full max-w-full"
                           onClick={() => toggleCardExpansion(order.id)}
                         >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-start justify-between w-full max-w-full">
+                            <div className="flex-1 min-w-0 max-w-full overflow-hidden">
+                              <div className="flex items-center gap-2 mb-2 w-full max-w-full overflow-hidden">
                                 <Checkbox
                                   checked={selectedOrders.includes(order.id)}
                                   onCheckedChange={(checked) => handleSelectOrder(order.id, checked as boolean)}
                                   aria-label={`Selecionar pedido ${order.orderNumber}`}
                                   onClick={(e) => e.stopPropagation()}
+                                  className="flex-shrink-0"
                                 />
-                                <span className="font-mono text-sm font-medium">{order.orderNumber}</span>
-                                {getStatusBadge(order.status)}
+                                <span className="font-mono text-sm font-medium flex-shrink-0">{order.orderNumber}</span>
+                                <div className="flex-shrink-0">{getStatusBadge(order.status)}</div>
                               </div>
-                              <div className="space-y-1">
+                              <div className="space-y-1 w-full max-w-full overflow-hidden">
                                 <p className="font-medium text-gray-900 truncate">{order.customer.name}</p>
                                 <p className="text-sm text-gray-600 truncate">{order.event.name}</p>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-lg font-bold text-green-600">
+                                <div className="flex items-center justify-between w-full max-w-full overflow-hidden">
+                                  <span className="text-lg font-bold text-green-600 flex-shrink-0">
                                     {formatCurrency(Number(order.totalCost))}
                                   </span>
-                                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                                  <div className="flex items-center gap-1 text-xs text-gray-500 flex-shrink-0 min-w-0">
                                     <Package className="h-3 w-3" />
-                                    {order.kitQuantity} kits
-                                    <Clock className="h-3 w-3 ml-2" />
-                                    {formatDate(order.createdAt)}
+                                    <span className="whitespace-nowrap">{order.kitQuantity} kits</span>
+                                    <Clock className="h-3 w-3 ml-1" />
+                                    <span className="whitespace-nowrap">{formatDate(order.createdAt)}</span>
                                   </div>
                                 </div>
                               </div>
                             </div>
-                            <div className="ml-4 flex items-center">
+                            <div className="ml-2 sm:ml-4 flex items-center flex-shrink-0">
                               {expandedCards.has(order.id) ? (
                                 <ChevronUp className="h-5 w-5 text-gray-400" />
                               ) : (
@@ -961,50 +964,54 @@ export default function AdminOrders() {
                               </div>
 
                               {/* Action Buttons - Mobile Optimized */}
-                              <div className="grid grid-cols-2 gap-2 pt-3 border-t">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleViewOrder(order.id)}
-                                  className="justify-start"
-                                >
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  Ver Detalhes
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleGenerateLabel(order.id, order.orderNumber)}
-                                  className="justify-start"
-                                >
-                                  <FileText className="h-4 w-4 mr-2" />
-                                  Etiqueta
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleOpenWhatsApp(order)}
-                                  className="justify-start"
-                                  data-testid={`button-whatsapp-${order.id}`}
-                                >
-                                  <MessageCircle className="h-4 w-4 mr-2" />
-                                  WhatsApp
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    const phone = order.customer?.phone?.replace(/\D/g, '');
-                                    if (phone) {
-                                      window.open(`https://api.whatsapp.com/send?phone=55${phone}`, '_blank');
-                                    }
-                                  }}
-                                  className="justify-start"
-                                  data-testid={`button-whatsapp-direct-${order.id}`}
-                                >
-                                  <ExternalLink className="h-4 w-4 mr-2" />
-                                  Abrir Zap
-                                </Button>
+                              <div className="pt-3 border-t w-full max-w-full overflow-hidden">
+                                <div className="grid grid-cols-2 gap-2 w-full">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleViewOrder(order.id)}
+                                    className="justify-start w-full"
+                                  >
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    <span className="truncate">Ver Detalhes</span>
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleGenerateLabel(order.id, order.orderNumber)}
+                                    className="justify-start w-full"
+                                  >
+                                    <FileText className="h-4 w-4 mr-1" />
+                                    <span className="truncate">Etiqueta</span>
+                                  </Button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mt-2 w-full">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleOpenWhatsApp(order)}
+                                    className="justify-start w-full"
+                                    data-testid={`button-whatsapp-${order.id}`}
+                                  >
+                                    <MessageCircle className="h-4 w-4 mr-1" />
+                                    <span className="truncate">WhatsApp</span>
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const phone = order.customer?.phone?.replace(/\D/g, '');
+                                      if (phone) {
+                                        window.open(`https://api.whatsapp.com/send?phone=55${phone}`, '_blank');
+                                      }
+                                    }}
+                                    className="justify-start w-full"
+                                    data-testid={`button-whatsapp-direct-${order.id}`}
+                                  >
+                                    <ExternalLink className="h-4 w-4 mr-1" />
+                                    <span className="truncate">Abrir Zap</span>
+                                  </Button>
+                                </div>
                               </div>
 
                               {/* Status Change - Mobile Optimized */}
