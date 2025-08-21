@@ -74,6 +74,7 @@ import {
   PaginationPrevious,
   PaginationEllipsis
 } from "@/components/ui/pagination";
+import { cn } from "@/lib/utils";
 
 interface OrderFilters {
   status: string;
@@ -123,13 +124,22 @@ export default function AdminOrders() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Aggressive body style cleanup to prevent modal blocking
+  // Enhanced body style cleanup to prevent modal overlay blocking
   useEffect(() => {
     const forceBodyCleanup = () => {
       document.body.style.removeProperty('pointer-events');
       document.body.style.removeProperty('overflow');
       document.body.style.removeProperty('padding-right');
       document.body.classList.remove('pointer-events-none');
+      
+      // Also clean up any potential overlay issues from React portals
+      const dialogs = document.querySelectorAll('[role="dialog"]');
+      dialogs.forEach(dialog => {
+        const backdrop = dialog.parentElement;
+        if (backdrop && backdrop.style.pointerEvents === 'none') {
+          backdrop.style.removeProperty('pointer-events');
+        }
+      });
     };
 
     // Create a mutation observer to watch for unwanted body styles
@@ -139,9 +149,9 @@ export default function AdminOrders() {
           const body = mutation.target as HTMLElement;
           
           // If pointer-events: none is detected and no modals are open, remove it
-          if (!emailConfirmationModal.isOpen && !showOrderDialog) {
+          if (!emailConfirmationModal.isOpen && !showOrderDialog && !bulkStatusModalOpen && !showWhatsAppModal) {
             if (body.style.pointerEvents === 'none') {
-              forceBodyCleanup();
+              setTimeout(forceBodyCleanup, 100); // Delay to prevent interference
             }
           }
         }
@@ -162,7 +172,7 @@ export default function AdminOrders() {
       observer.disconnect();
       forceBodyCleanup();
     };
-  }, []);
+  }, [emailConfirmationModal.isOpen, showOrderDialog, bulkStatusModalOpen, showWhatsAppModal]);
 
   // Monitor modal states and cleanup if needed
   useEffect(() => {
@@ -783,7 +793,7 @@ export default function AdminOrders() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos os eventos</SelectItem>
-                    {events?.map((event: any) => (
+                    {Array.isArray(events) && events.map((event: any) => (
                       <SelectItem key={event.id} value={event.id.toString()}>
                         {event.name}
                       </SelectItem>
@@ -1037,7 +1047,7 @@ export default function AdminOrders() {
                 </div>
 
                 {/* Desktop Table View */}
-                <div className="hidden lg:block desktop-table-container">
+                <div className="hidden lg:block desktop-table-container relative overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -1149,52 +1159,144 @@ export default function AdminOrders() {
                   </Table>
                 </div>
                 
-                {/* Pagination */}
+                {/* Pagination - Mobile Optimized */}
                 {totalPages > 1 && (
-                  <div className="mt-6 flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
-                      Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, totalOrders)} de {totalOrders} pedidos
+                  <div className="mt-6 space-y-4">
+                    {/* Status Text - Hidden on Mobile if too long */}
+                    <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
+                      <span className="hidden sm:inline">
+                        Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, totalOrders)} de {totalOrders} pedidos
+                      </span>
+                      <span className="sm:hidden">
+                        Página {currentPage} de {totalPages}
+                      </span>
                     </div>
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious 
-                            href="#" 
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (currentPage > 1) handlePageChange(currentPage - 1);
-                            }}
-                            className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-                          />
-                        </PaginationItem>
-                        
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                          <PaginationItem key={page}>
-                            <PaginationLink
-                              href="#"
+                    
+                    {/* Smart Pagination for Mobile */}
+                    <div className="flex justify-center">
+                      <Pagination>
+                        <PaginationContent className="flex-wrap gap-1">
+                          <PaginationItem>
+                            <PaginationPrevious 
+                              href="#" 
                               onClick={(e) => {
                                 e.preventDefault();
-                                handlePageChange(page);
+                                if (currentPage > 1) handlePageChange(currentPage - 1);
                               }}
-                              isActive={currentPage === page}
-                            >
-                              {page}
-                            </PaginationLink>
+                              className={cn(
+                                currentPage === 1 ? "pointer-events-none opacity-50" : "",
+                                "text-xs sm:text-sm px-2 sm:px-4"
+                              )}
+                            />
                           </PaginationItem>
-                        ))}
-                        
-                        <PaginationItem>
-                          <PaginationNext 
-                            href="#" 
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (currentPage < totalPages) handlePageChange(currentPage + 1);
-                            }}
-                            className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
+                          
+                          {/* Smart page display - show fewer on mobile */}
+                          {(() => {
+                            const maxPagesShown = 5; // Limit for mobile
+                            const maxPagesShownMobile = 3;
+                            const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 640;
+                            const currentMaxPages = isSmallScreen ? maxPagesShownMobile : maxPagesShown;
+                            
+                            let startPage = Math.max(1, currentPage - Math.floor(currentMaxPages / 2));
+                            let endPage = Math.min(totalPages, startPage + currentMaxPages - 1);
+                            
+                            // Adjust start page if we're near the end
+                            if (endPage - startPage + 1 < currentMaxPages) {
+                              startPage = Math.max(1, endPage - currentMaxPages + 1);
+                            }
+                            
+                            const pages = [];
+                            
+                            // Add first page and ellipsis if needed
+                            if (startPage > 1) {
+                              pages.push(
+                                <PaginationItem key={1}>
+                                  <PaginationLink
+                                    href="#"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      handlePageChange(1);
+                                    }}
+                                    className="w-8 h-8 sm:w-9 sm:h-9 text-xs sm:text-sm"
+                                  >
+                                    1
+                                  </PaginationLink>
+                                </PaginationItem>
+                              );
+                              
+                              if (startPage > 2) {
+                                pages.push(
+                                  <PaginationItem key="ellipsis-start">
+                                    <PaginationEllipsis className="w-8 h-8 sm:w-9 sm:h-9" />
+                                  </PaginationItem>
+                                );
+                              }
+                            }
+                            
+                            // Add visible page numbers
+                            for (let i = startPage; i <= endPage; i++) {
+                              pages.push(
+                                <PaginationItem key={i}>
+                                  <PaginationLink
+                                    href="#"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      handlePageChange(i);
+                                    }}
+                                    isActive={currentPage === i}
+                                    className="w-8 h-8 sm:w-9 sm:h-9 text-xs sm:text-sm"
+                                  >
+                                    {i}
+                                  </PaginationLink>
+                                </PaginationItem>
+                              );
+                            }
+                            
+                            // Add ellipsis and last page if needed
+                            if (endPage < totalPages) {
+                              if (endPage < totalPages - 1) {
+                                pages.push(
+                                  <PaginationItem key="ellipsis-end">
+                                    <PaginationEllipsis className="w-8 h-8 sm:w-9 sm:h-9" />
+                                  </PaginationItem>
+                                );
+                              }
+                              
+                              pages.push(
+                                <PaginationItem key={totalPages}>
+                                  <PaginationLink
+                                    href="#"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      handlePageChange(totalPages);
+                                    }}
+                                    className="w-8 h-8 sm:w-9 sm:h-9 text-xs sm:text-sm"
+                                  >
+                                    {totalPages}
+                                  </PaginationLink>
+                                </PaginationItem>
+                              );
+                            }
+                            
+                            return pages;
+                          })()}
+                          
+                          <PaginationItem>
+                            <PaginationNext 
+                              href="#" 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                              }}
+                              className={cn(
+                                currentPage === totalPages ? "pointer-events-none opacity-50" : "",
+                                "text-xs sm:text-sm px-2 sm:px-4"
+                              )}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1212,7 +1314,7 @@ export default function AdminOrders() {
           setSelectedOrderId(null);
         }
       }}>
-        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto z-[90] w-full">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-[100] w-[95vw] sm:w-full mx-auto">
           <DialogHeader className="pb-4">
             <DialogTitle className="text-lg">Detalhes do Pedido</DialogTitle>
             <DialogDescription className="text-sm">
