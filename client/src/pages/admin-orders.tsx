@@ -566,7 +566,7 @@ export default function AdminOrders() {
 
   return (
     <AdminLayout>
-      <div className="space-y-4 lg:space-y-6 w-full max-w-full overflow-hidden px-1 sm:px-0">
+      <div className="admin-container space-y-4 lg:space-y-6 px-1 sm:px-0">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="min-w-0 flex-1">
@@ -887,10 +887,10 @@ export default function AdminOrders() {
                 )}
 
                 {/* Mobile Cards View */}
-                <div className="block lg:hidden space-y-4 w-full max-w-full">
+                <div className="block lg:hidden space-y-4 mobile-card-container">
                   {Array.isArray(orders) && orders.map((order: any) => (
-                    <Card key={order.id} className="relative w-full max-w-full overflow-hidden">
-                      <CardContent className="p-0 overflow-hidden">
+                    <Card key={order.id} className="relative mobile-card-content">
+                      <CardContent className="p-0 mobile-card-content">
                         {/* Card Header - Always Visible */}
                         <div 
                           className="p-3 sm:p-4 cursor-pointer select-none w-full max-w-full"
@@ -898,7 +898,7 @@ export default function AdminOrders() {
                         >
                           <div className="flex items-start justify-between w-full max-w-full">
                             <div className="flex-1 min-w-0 max-w-full overflow-hidden">
-                              <div className="flex items-center gap-2 mb-2 w-full max-w-full overflow-hidden">
+                              <div className="flex items-center gap-2 mb-2 w-full overflow-hidden">
                                 <Checkbox
                                   checked={selectedOrders.includes(order.id)}
                                   onCheckedChange={(checked) => handleSelectOrder(order.id, checked as boolean)}
@@ -906,21 +906,22 @@ export default function AdminOrders() {
                                   onClick={(e) => e.stopPropagation()}
                                   className="flex-shrink-0"
                                 />
-                                <span className="font-mono text-sm font-medium flex-shrink-0">{order.orderNumber}</span>
-                                <div className="flex-shrink-0">{getStatusBadge(order.status)}</div>
+                                <span className="font-mono text-xs sm:text-sm font-medium flex-shrink-0 min-w-0 truncate">{order.orderNumber}</span>
+                                <div className="flex-shrink-0 ml-auto">{getStatusBadge(order.status)}</div>
                               </div>
                               <div className="space-y-1 w-full max-w-full overflow-hidden">
                                 <p className="font-medium text-gray-900 truncate">{order.customer.name}</p>
                                 <p className="text-sm text-gray-600 truncate">{order.event.name}</p>
-                                <div className="flex items-center justify-between w-full max-w-full overflow-hidden">
-                                  <span className="text-lg font-bold text-green-600 flex-shrink-0">
+                                <div className="flex items-center justify-between w-full overflow-hidden">
+                                  <span className="text-base sm:text-lg font-bold text-green-600 flex-shrink-0">
                                     {formatCurrency(Number(order.totalCost))}
                                   </span>
-                                  <div className="flex items-center gap-1 text-xs text-gray-500 flex-shrink-0 min-w-0">
+                                  <div className="flex items-center gap-1 text-xs text-gray-500 flex-shrink-0">
                                     <Package className="h-3 w-3" />
-                                    <span className="whitespace-nowrap">{order.kitQuantity} kits</span>
+                                    <span>{order.kitQuantity}</span>
                                     <Clock className="h-3 w-3 ml-1" />
-                                    <span className="whitespace-nowrap">{formatDate(order.createdAt)}</span>
+                                    <span className="hidden sm:inline">{formatDate(order.createdAt)}</span>
+                                    <span className="sm:hidden">{formatDate(order.createdAt).split(' ')[0]}</span>
                                   </div>
                                 </div>
                               </div>
@@ -937,29 +938,27 @@ export default function AdminOrders() {
 
                         {/* Expanded Actions - Mobile */}
                         {expandedCards.has(order.id) && (
-                          <div className="border-t px-4 pb-4">
-                            <div className="mt-4 space-y-3">
+                          <div className="border-t px-3 sm:px-4 pb-4 w-full max-w-full overflow-hidden">
+                            <div className="mt-4 space-y-3 w-full overflow-hidden">
                               {/* Customer & Event Details */}
-                              <div className="grid grid-cols-1 gap-3 text-sm">
-                                <div className="flex items-center gap-2">
-                                  <User className="h-4 w-4 text-gray-500" />
-                                  <span className="font-medium">{order.customer.name}</span>
-                                  <span className="text-gray-500">·</span>
-                                  <span className="text-gray-600">{formatCPF(order.customer.cpf)}</span>
+                              <div className="grid grid-cols-1 gap-3 text-sm w-full overflow-hidden">
+                                <div className="flex items-center gap-2 w-full overflow-hidden">
+                                  <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                                  <span className="font-medium truncate flex-1">{order.customer.name}</span>
+                                  <span className="text-gray-600 flex-shrink-0 text-xs">{formatCPF(order.customer.cpf)}</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <Phone className="h-4 w-4 text-gray-500" />
-                                  <span className="text-gray-600">{order.customer.phone}</span>
+                                <div className="flex items-center gap-2 w-full overflow-hidden">
+                                  <Phone className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                                  <span className="text-gray-600 truncate">{order.customer.phone}</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="h-4 w-4 text-gray-500" />
-                                  <span className="text-gray-600">{order.event.name}</span>
-                                  <span className="text-gray-500">·</span>
-                                  <span className="text-gray-600">{order.event.city}, {order.event.state}</span>
+                                <div className="flex items-center gap-2 w-full overflow-hidden">
+                                  <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                                  <span className="text-gray-600 truncate flex-1">{order.event.name}</span>
+                                  <span className="text-gray-600 text-xs flex-shrink-0">{order.event.city}</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <DollarSign className="h-4 w-4 text-gray-500" />
-                                  <span className="text-gray-600">{paymentMethodLabels[order.paymentMethod] || order.paymentMethod}</span>
+                                <div className="flex items-center gap-2 w-full overflow-hidden">
+                                  <DollarSign className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                                  <span className="text-gray-600 truncate">{paymentMethodLabels[order.paymentMethod] || order.paymentMethod}</span>
                                 </div>
                               </div>
 
