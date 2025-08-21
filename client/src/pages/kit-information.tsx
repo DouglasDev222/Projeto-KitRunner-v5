@@ -160,6 +160,28 @@ export default function KitInformation() {
   // Submit handler - salva dados apenas quando enviar
   const onSubmit = useCallback((data: KitFormData) => {
     try {
+      // Validar todos os CPFs antes de avançar
+      const hasInvalidCpf = data.kits.some(kit => {
+        if (!kit.cpf || kit.cpf.length !== 11) {
+          return true;
+        }
+        return !isValidCPF(kit.cpf);
+      });
+
+      if (hasInvalidCpf) {
+        console.warn("Cannot proceed: Invalid CPF found");
+        // Força revalidação do formulário para mostrar erros
+        data.kits.forEach((kit, index) => {
+          if (!kit.cpf || kit.cpf.length !== 11 || !isValidCPF(kit.cpf)) {
+            form.setError(`kits.${index}.cpf`, {
+              type: "manual",
+              message: kit.cpf ? "CPF inválido" : "CPF é obrigatório"
+            });
+          }
+        });
+        return; // Não prosseguir se há CPF inválido
+      }
+
       // Limpar dados antigos antes de salvar novos
       sessionStorage.removeItem("kitData");
       sessionStorage.setItem("kitData", JSON.stringify(data));
@@ -168,7 +190,7 @@ export default function KitInformation() {
       console.warn("Error saving kit data:", error);
       setLocation(`/events/${id}/payment`);
     }
-  }, [id, setLocation]);
+  }, [id, setLocation, form]);
 
   // Loading state
   if (!isInitialized || !event) {
@@ -369,7 +391,12 @@ export default function KitInformation() {
               type="submit"
               className="w-full bg-primary text-white hover:bg-primary/90 mt-6"
               size="lg"
-              disabled={!isInitialized || fields.length === 0}
+              disabled={
+                !isInitialized || 
+                fields.length === 0 || 
+                !form.formState.isValid ||
+                Object.keys(form.formState.errors).length > 0
+              }
             >
               Continuar para Pagamento
             </Button>

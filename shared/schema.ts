@@ -342,7 +342,36 @@ export const customerIdentificationSchema = z.object({
 // Individual kit validation
 export const kitSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
-  cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(11, "CPF deve ter 11 dígitos"),
+  cpf: z.string()
+    .min(11, "CPF deve ter 11 dígitos")
+    .max(11, "CPF deve ter 11 dígitos")
+    .regex(/^\d{11}$/, "CPF deve conter apenas números")
+    .refine((cpf) => {
+      // CPF validation algorithm
+      if (cpf.length !== 11) return false;
+      
+      // Check for known invalid patterns
+      if (/^(\d)\1{10}$/.test(cpf)) return false;
+      
+      // Validate check digits
+      let sum = 0;
+      for (let i = 0; i < 9; i++) {
+        sum += parseInt(cpf[i]) * (10 - i);
+      }
+      let digit1 = (sum * 10) % 11;
+      if (digit1 === 10) digit1 = 0;
+      
+      if (parseInt(cpf[9]) !== digit1) return false;
+      
+      sum = 0;
+      for (let i = 0; i < 10; i++) {
+        sum += parseInt(cpf[i]) * (11 - i);
+      }
+      let digit2 = (sum * 10) % 11;
+      if (digit2 === 10) digit2 = 0;
+      
+      return parseInt(cpf[10]) === digit2;
+    }, "CPF inválido"),
   shirtSize: z.string().min(1, "Tamanho da camisa é obrigatório"),
 });
 
