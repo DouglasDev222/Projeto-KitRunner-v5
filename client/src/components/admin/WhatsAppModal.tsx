@@ -23,7 +23,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/brazilian-formatter";
-import { MessageCircle, Send, Clock, CheckCircle, XCircle, User, Phone, Calendar } from "lucide-react";
+import { MessageCircle, Send, Clock, CheckCircle, XCircle, User, Phone, Calendar, ExternalLink } from "lucide-react";
 import type { WhatsappTemplate, WhatsappMessage } from "@shared/schema";
 
 interface WhatsAppModalProps {
@@ -178,9 +178,26 @@ export function WhatsAppModal({ isOpen, onClose, order }: WhatsAppModalProps) {
               <CardContent className="space-y-4">
                 {/* Customer Info */}
                 <div className="bg-gray-50 p-3 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <User className="h-4 w-4 text-gray-600" />
-                    <span className="font-medium">{order?.customer?.name}</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-gray-600" />
+                      <span className="font-medium">{order?.customer?.name}</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={() => {
+                        const phone = order?.customer?.phone?.replace(/\D/g, '');
+                        if (phone) {
+                          window.open(`https://api.whatsapp.com/send?phone=55${phone}`, '_blank');
+                        }
+                      }}
+                      data-testid="button-open-whatsapp-direct"
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      Abrir WhatsApp
+                    </Button>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Phone className="h-3 w-3" />

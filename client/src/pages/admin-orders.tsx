@@ -910,6 +910,21 @@ export default function AdminOrders() {
                             >
                               <MessageCircle className="h-4 w-4" />
                             </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const phone = order.customer?.phone?.replace(/\D/g, '');
+                                if (phone) {
+                                  window.open(`https://api.whatsapp.com/send?phone=55${phone}`, '_blank');
+                                }
+                              }}
+                              title="Abrir WhatsApp direto"
+                              data-testid={`button-whatsapp-direct-${order.id}`}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
                             
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
