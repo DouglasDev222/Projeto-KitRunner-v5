@@ -1506,8 +1506,8 @@ export default function AdminOrders() {
                       <tbody>
                         {selectedOrder.kits.map((kit: any, index: number) => (
                           <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td className="border border-gray-200 px-4 py-2">{kit.participantName}</td>
-                            <td className="border border-gray-200 px-4 py-2">{kit.participantCpf ? formatCPF(kit.participantCpf) : 'N/A'}</td>
+                            <td className="border border-gray-200 px-4 py-2">{kit.name || 'N/A'}</td>
+                            <td className="border border-gray-200 px-4 py-2">{kit.cpf ? formatCPF(kit.cpf) : 'N/A'}</td>
                             <td className="border border-gray-200 px-4 py-2">{kit.shirtSize || 'N/A'}</td>
                           </tr>
                         ))}
@@ -1760,8 +1760,8 @@ export default function AdminOrders() {
                         <tbody>
                           {selectedOrder.kits.map((kit: any, index: number) => (
                             <tr key={index} className="border-b">
-                              <td className="py-2">{kit.participantName}</td>
-                              <td className="py-2">{kit.participantCpf ? formatCPF(kit.participantCpf) : 'N/A'}</td>
+                              <td className="py-2">{kit.name || 'N/A'}</td>
+                              <td className="py-2">{kit.cpf ? formatCPF(kit.cpf) : 'N/A'}</td>
                               <td className="py-2">{kit.shirtSize || 'N/A'}</td>
                             </tr>
                           ))}
