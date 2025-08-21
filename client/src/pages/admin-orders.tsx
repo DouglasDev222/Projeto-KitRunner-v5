@@ -109,6 +109,7 @@ export default function AdminOrders() {
   const [bulkNewStatus, setBulkNewStatus] = useState("");
   const [sendBulkEmails, setSendBulkEmails] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+  const [singleExpandedCard, setSingleExpandedCard] = useState<number | null>(null);
   const [emailConfirmationModal, setEmailConfirmationModal] = useState<{
     isOpen: boolean;
     orderId: number;
@@ -480,16 +481,26 @@ export default function AdminOrders() {
   };
 
   // Card expansion functions for mobile
+  const isCardExpanded = (orderId: number) => {
+    return isMobile ? singleExpandedCard === orderId : expandedCards.has(orderId);
+  };
+
   const toggleCardExpansion = (orderId: number) => {
-    setExpandedCards(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(orderId)) {
-        newSet.delete(orderId);
-      } else {
-        newSet.add(orderId);
-      }
-      return newSet;
-    });
+    // Use single card expansion for mobile - close others when opening a new one
+    if (isMobile) {
+      setSingleExpandedCard(prev => prev === orderId ? null : orderId);
+    } else {
+      // Keep the original logic for desktop (multiple cards can be open)
+      setExpandedCards(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(orderId)) {
+          newSet.delete(orderId);
+        } else {
+          newSet.add(orderId);
+        }
+        return newSet;
+      });
+    }
   };
 
   // WhatsApp modal functions
@@ -964,7 +975,7 @@ export default function AdminOrders() {
                               </div>
                             </div>
                             <div className="ml-2 sm:ml-4 flex items-center flex-shrink-0">
-                              {expandedCards.has(order.id) ? (
+                              {isCardExpanded(order.id) ? (
                                 <ChevronUp className="h-5 w-5 text-gray-400" />
                               ) : (
                                 <ChevronDown className="h-5 w-5 text-gray-400" />
@@ -974,7 +985,7 @@ export default function AdminOrders() {
                         </div>
 
                         {/* Expanded Actions - Mobile */}
-                        {expandedCards.has(order.id) && (
+                        {isCardExpanded(order.id) && (
                           <div className="border-t px-3 sm:px-4 pb-4 w-full max-w-full overflow-hidden">
                             <div className="mt-4 space-y-3 w-full overflow-hidden">
                               {/* Customer & Event Details */}
