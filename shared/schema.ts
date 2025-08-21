@@ -259,6 +259,7 @@ export const whatsappTemplates = pgTable("whatsapp_templates", {
   description: text("description"), // Descrição do template
   isActive: boolean("is_active").notNull().default(true),
   isDefault: boolean("is_default").notNull().default(false), // Se é o template padrão para aquele status
+  quickSend: boolean("quick_send").notNull().default(false), // Se aparece como botão de envio rápido
   placeholders: text("placeholders"), // JSON com placeholders disponíveis
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

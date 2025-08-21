@@ -188,6 +188,40 @@ export function WhatsAppModal({ isOpen, onClose, order }: WhatsAppModalProps) {
                   </div>
                 </div>
 
+                {/* Quick Send Buttons */}
+                {!templatesLoading && (templates as any)?.templates?.filter((t: WhatsappTemplate) => t.quickSend).length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Envio Rápido</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {(templates as any).templates
+                        .filter((template: WhatsappTemplate) => template.quickSend)
+                        .map((template: WhatsappTemplate) => (
+                          <Button
+                            key={template.id}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => {
+                              const data = {
+                                orderId: order.id,
+                                templateId: template.id
+                              };
+                              sendMessageMutation.mutate(data);
+                            }}
+                            disabled={sendMessageMutation.isPending}
+                            data-testid={`button-quick-send-${template.id}`}
+                          >
+                            {sendMessageMutation.isPending ? "..." : template.name}
+                          </Button>
+                        ))
+                      }
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Clique para enviar rapidamente usando um template pré-definido
+                    </div>
+                  </div>
+                )}
+
                 {/* Template Selection */}
                 <div className="space-y-2">
                   <Label htmlFor="template-select">Selecionar Template</Label>

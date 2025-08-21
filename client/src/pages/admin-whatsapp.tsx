@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -102,7 +103,8 @@ export default function AdminWhatsApp() {
     type: "custom" as "order_status" | "custom" | "notification",
     status: "",
     content: "",
-    description: ""
+    description: "",
+    quickSend: false
   });
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<WhatsAppTemplate | null>(null);
@@ -229,7 +231,7 @@ export default function AdminWhatsApp() {
       });
       if (data.success) {
         setIsTemplateModalOpen(false);
-        setNewTemplate({ name: "", type: "custom", status: "", content: "", description: "" });
+        setNewTemplate({ name: "", type: "custom", status: "", content: "", description: "", quickSend: false });
         queryClient.invalidateQueries({ queryKey: ["/api/admin/whatsapp/templates"] });
       }
     }
@@ -403,7 +405,8 @@ export default function AdminWhatsApp() {
       type: template.type,
       status: template.status || "",
       content: template.content,
-      description: template.description || ""
+      description: template.description || "",
+      quickSend: template.quickSend || false
     });
     setIsTemplateModalOpen(true);
   };
@@ -572,7 +575,7 @@ export default function AdminWhatsApp() {
                       <DialogTrigger asChild>
                         <Button onClick={() => {
                           setEditingTemplate(null);
-                          setNewTemplate({ name: "", type: "custom", status: "", content: "", description: "" });
+                          setNewTemplate({ name: "", type: "custom", status: "", content: "", description: "", quickSend: false });
                         }}>
                           <Plus className="h-4 w-4 mr-2" />
                           Novo Template
@@ -650,6 +653,20 @@ export default function AdminWhatsApp() {
                             />
                           </div>
                           
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="quickSend"
+                              checked={newTemplate.quickSend}
+                              onCheckedChange={(checked) => setNewTemplate({...newTemplate, quickSend: !!checked})}
+                            />
+                            <Label htmlFor="quickSend" className="text-sm">
+                              Envio Rápido
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              (Aparece como botão de envio rápido no modal WhatsApp)
+                            </p>
+                          </div>
+                          
                           <div className="space-y-2">
                             <Label htmlFor="content">Conteúdo do Template</Label>
                             <Textarea
@@ -708,6 +725,11 @@ export default function AdminWhatsApp() {
                                 {template.status && (
                                   <Badge variant="outline">
                                     {getStatusLabel(template.status)}
+                                  </Badge>
+                                )}
+                                {template.quickSend && (
+                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                    ⚡ Envio Rápido
                                   </Badge>
                                 )}
                               </div>
