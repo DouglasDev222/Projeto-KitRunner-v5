@@ -110,6 +110,7 @@ export default function AdminOrders() {
   const [sendBulkEmails, setSendBulkEmails] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const [singleExpandedCard, setSingleExpandedCard] = useState<number | null>(null);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [emailConfirmationModal, setEmailConfirmationModal] = useState<{
     isOpen: boolean;
     orderId: number;
@@ -790,13 +791,28 @@ export default function AdminOrders() {
 
         {/* Filters - Mobile Optimized */}
         <Card className="w-full max-w-full">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Filter className="h-5 w-5" />
-              Filtros
+          <CardHeader 
+            className={cn("pb-3", isMobile && "cursor-pointer")} 
+            onClick={() => isMobile && setFiltersExpanded(!filtersExpanded)}
+          >
+            <CardTitle className="flex items-center justify-between text-lg">
+              <div className="flex items-center gap-2">
+                <Filter className="h-5 w-5" />
+                Filtros
+              </div>
+              {isMobile && (
+                <div className="ml-2">
+                  {filtersExpanded ? (
+                    <ChevronUp className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-gray-400" />
+                  )}
+                </div>
+              )}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 overflow-hidden">
+          {(!isMobile || filtersExpanded) && (
+            <CardContent className="space-y-4 overflow-hidden">
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
               <div className="space-y-2 min-w-0">
                 <label className="text-sm font-medium">Status</label>
@@ -861,7 +877,8 @@ export default function AdminOrders() {
                 </Button>
               </div>
             </div>
-          </CardContent>
+            </CardContent>
+          )}
         </Card>
 
         {/* Orders Table */}
