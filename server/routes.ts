@@ -2192,13 +2192,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // 🚨 CRITICAL SECURITY FIX: VALIDATE PIX PRICE BEFORE PAYMENT
+      console.log('🔒 SECURITY: Validating PIX pricing before payment processing');
+      
+      // Get customer address for pricing calculation
+      const customerAddress = await storage.getAddress(order.addressId);
+      if (!customerAddress) {
+        return res.status(400).json({
+          success: false,
+          message: "Endereço de entrega não encontrado"
+        });
+      }
+
+      // Calculate the REAL price on server-side
+      let serverCalculatedTotal = 0;
+      let baseCost = 0;
+      let deliveryCost = 0;
+      let additionalCost = 0;
+      let donationAmount = 0;
+
+      if (event.fixedPrice) {
+        baseCost = Number(event.fixedPrice);
+        deliveryCost = 0;
+      } else if (event.pricingType === 'cep_zones') {
+        // Calculate CEP zones pricing
+        const { calculateCepZonePrice } = await import('./cep-zones-calculator');
+        const calculatedPrice = await calculateCepZonePrice(customerAddress.zipCode, event.id);
+        
+        if (calculatedPrice === null) {
+          console.error(`🚨 SECURITY: CEP ${customerAddress.zipCode} not found in zones for event ${event.id}`);
+          return res.status(400).json({ 
+            success: false,
+            message: "CEP não atendido nas zonas de entrega disponíveis para este evento",
+            code: "CEP_ZONE_NOT_FOUND"
+          });
+        }
+        
+        deliveryCost = calculatedPrice;
+        baseCost = 0;
+        console.log(`🔒 SECURITY: PIX CEP zone pricing calculated: R$ ${calculatedPrice} for CEP ${customerAddress.zipCode}`);
+      } else {
+        // Distance-based pricing
+        const deliveryCalculation = calculateDeliveryCost(
+          event.pickupZipCode || '58000000',
+          customerAddress.zipCode
+        );
+        deliveryCost = deliveryCalculation.deliveryCost;
+        baseCost = 0;
+      }
+
+      // Calculate additional costs
+      if (order.kitQuantity > 1 && event.extraKitPrice) {
+        additionalCost = (order.kitQuantity - 1) * Number(event.extraKitPrice);
+      }
+
+      if (event.donationRequired && event.donationAmount) {
+        donationAmount = Number(event.donationAmount) * order.kitQuantity;
+      }
+
+      serverCalculatedTotal = baseCost + deliveryCost + additionalCost + donationAmount - Number(order.discountAmount || 0);
+      
+      // Ensure minimum payment of R$ 0.01
+      serverCalculatedTotal = Math.max(0.01, serverCalculatedTotal);
+
+      // 🛡️ SECURITY CHECK: Compare client amount with server calculation
+      const clientAmount = parseFloat(amount);
+      const priceDifference = Math.abs(clientAmount - serverCalculatedTotal);
+      
+      console.log(`🔒 SECURITY CHECK PIX: Client amount: R$ ${clientAmount.toFixed(2)}, Server calculated: R$ ${serverCalculatedTotal.toFixed(2)}, Difference: R$ ${priceDifference.toFixed(2)}`);
+      
+      // Allow small floating point differences (1 cent)
+      if (priceDifference > 0.01) {
+        console.error(`🚨 SECURITY VIOLATION PIX: Price manipulation detected! Client: R$ ${clientAmount.toFixed(2)}, Server: R$ ${serverCalculatedTotal.toFixed(2)}`);
+        return res.status(400).json({
+          success: false,
+          message: "Erro na validação do preço. Por favor, atualize a página e tente novamente.",
+          title: "Erro de Validação",
+          code: "PRICE_VALIDATION_FAILED",
+          clientAmount: clientAmount.toFixed(2),
+          serverAmount: serverCalculatedTotal.toFixed(2)
+        });
+      }
+      
+      console.log('✅ SECURITY: PIX price validation passed - proceeding with payment');
+
       const [firstName, ...lastNameParts] = customerName.split(' ');
       const lastName = lastNameParts.join(' ') || '';
 
       const paymentData = {
         paymentMethodId: 'pix',
         email,
-        amount: parseFloat(amount),
+        amount: serverCalculatedTotal,  // 🔒 SECURITY: Use server-calculated amount only
         description: `Pedido KitRunner #${order.orderNumber}`,
         orderId: order.orderNumber, // Use orderNumber instead of numeric ID
         payer: {

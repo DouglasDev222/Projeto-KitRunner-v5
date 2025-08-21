@@ -149,7 +149,7 @@ export default function Payment() {
         }
         
         const pricingData = await response.json();
-        console.log('✅ SECURITY: Server-calculated pricing loaded:', pricingData);
+        // ✅ SECURITY: Server-calculated pricing loaded successfully
         
         setSecurePricing(pricingData);
         setPricingError(null);
@@ -307,6 +307,7 @@ export default function Payment() {
   };
 
   // Create order data function to be used by payment components
+  // 🔒 SECURITY: Remove pricing values from frontend - server will calculate all prices
   const createOrderData = (idempotencyKey: string): OrderCreation => {
     if (!selectedAddress) {
       throw new Error("Endereço não selecionado");
@@ -319,12 +320,13 @@ export default function Payment() {
       kitQuantity: kitData.kitQuantity,
       kits: kitData.kits,
       paymentMethod,
-      totalCost: pricing.totalCost,
-      deliveryCost: pricing.deliveryCost,
-      extraKitsCost: pricing.extraKitsCost,
-      donationCost: pricing.donationAmount,
-      discountAmount: couponDiscount,
-      donationAmount: pricing.donationAmount,
+      // 🔒 SECURITY: Server will calculate all these values - frontend cannot manipulate
+      totalCost: 0,  // Server will recalculate
+      deliveryCost: 0,  // Server will recalculate
+      extraKitsCost: 0,  // Server will recalculate
+      donationCost: 0,  // Server will recalculate
+      discountAmount: couponDiscount,  // Only discount is sent from frontend
+      donationAmount: 0,  // Server will recalculate
       idempotencyKey,
       couponCode: appliedCoupon?.code,
     };
