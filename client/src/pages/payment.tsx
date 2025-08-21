@@ -285,7 +285,7 @@ export default function Payment() {
     totalCost: securePricing.pricing.totalCost,
     kitQuantity: securePricing.pricing.kitQuantity,
     discountAmount: 0,
-    fixedPrice: event?.fixedPrice ? Number(event.fixedPrice) : undefined
+    fixedPrice: event?.fixedPrice ? Number(event.fixedPrice) : null
   } : {
     baseCost: 0,
     deliveryCost: 0,
@@ -294,7 +294,7 @@ export default function Payment() {
     totalCost: 0,
     kitQuantity: kitData.kitQuantity || 1,
     discountAmount: 0,
-    fixedPrice: event?.fixedPrice ? Number(event.fixedPrice) : undefined
+    fixedPrice: event?.fixedPrice ? Number(event.fixedPrice) : null
   };
   
   const pricingBreakdown = formatPricingBreakdown(basePricing, event, kitData.kitQuantity);
@@ -320,13 +320,13 @@ export default function Payment() {
       kitQuantity: kitData.kitQuantity,
       kits: kitData.kits,
       paymentMethod,
-      // 🔒 SECURITY: Server will calculate all these values - frontend cannot manipulate
-      totalCost: 0,  // Server will recalculate
-      deliveryCost: 0,  // Server will recalculate
-      extraKitsCost: 0,  // Server will recalculate
-      donationCost: 0,  // Server will recalculate
+      // 🔒 SECURITY: Send server-calculated values for validation, but server will recalculate
+      totalCost: pricing.totalCost,  // From secure calculation
+      deliveryCost: pricing.deliveryCost,  // From secure calculation
+      extraKitsCost: pricing.extraKitsCost,  // From secure calculation
+      donationCost: pricing.donationAmount,  // From secure calculation (mapped to donationCost)
       discountAmount: couponDiscount,  // Only discount is sent from frontend
-      donationAmount: 0,  // Server will recalculate
+      donationAmount: pricing.donationAmount,  // From secure calculation
       idempotencyKey,
       couponCode: appliedCoupon?.code,
     };

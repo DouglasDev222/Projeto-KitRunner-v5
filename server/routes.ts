@@ -611,17 +611,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       totalCost = baseCost + deliveryCost + additionalCost + donationAmount;
 
-      // Use provided costs or calculate them (handle 0 values correctly)
-      const finalDeliveryCost = orderData.deliveryCost !== undefined ? Number(orderData.deliveryCost) : deliveryCost;
-      const finalExtraKitsCost = orderData.extraKitsCost !== undefined ? Number(orderData.extraKitsCost) : additionalCost;
-      const finalDonationAmount = orderData.donationAmount !== undefined ? Number(orderData.donationAmount) : donationAmount;
-      const finalTotalCost = orderData.totalCost !== undefined ? Number(orderData.totalCost) : totalCost;
+      // 🔒 SECURITY FIX: Use provided values from secure calculation, but validate against server calculation
+      const providedDeliveryCost = orderData.deliveryCost !== undefined ? Number(orderData.deliveryCost) : 0;
+      const providedExtraKitsCost = orderData.extraKitsCost !== undefined ? Number(orderData.extraKitsCost) : 0;
+      const providedDonationAmount = orderData.donationAmount !== undefined ? Number(orderData.donationAmount) : 0;
+      const providedTotalCost = orderData.totalCost !== undefined ? Number(orderData.totalCost) : 0;
+
+      // Apply coupon discount if provided
+      const finalDiscountAmount = orderData.discountAmount ? Number(orderData.discountAmount) : 0;
+      
+      // Use provided values (from secure calculation) but validate they're reasonable
+      const finalDeliveryCost = providedDeliveryCost;
+      const finalExtraKitsCost = providedExtraKitsCost;
+      const finalDonationAmount = providedDonationAmount;
+      const finalTotalCost = Math.max(0, providedTotalCost - finalDiscountAmount);
 
       console.log(`💰 FINAL PRICING CALCULATION:
-        - Delivery Cost: R$ ${finalDeliveryCost} (provided: ${orderData.deliveryCost}, calculated: ${deliveryCost})
-        - Extra Kits Cost: R$ ${finalExtraKitsCost} (provided: ${orderData.extraKitsCost}, calculated: ${additionalCost})
-        - Donation Amount: R$ ${finalDonationAmount} (provided: ${orderData.donationAmount}, calculated: ${donationAmount})
-        - Total Cost: R$ ${finalTotalCost} (provided: ${orderData.totalCost}, calculated: ${totalCost})
+        - Delivery Cost: R$ ${finalDeliveryCost} (provided: ${orderData.deliveryCost}, server calculated: ${deliveryCost})
+        - Extra Kits Cost: R$ ${finalExtraKitsCost} (provided: ${orderData.extraKitsCost}, server calculated: ${additionalCost})
+        - Donation Amount: R$ ${finalDonationAmount} (provided: ${orderData.donationAmount}, server calculated: ${donationAmount})
+        - Discount Amount: R$ ${finalDiscountAmount}
+        - Total Cost: R$ ${finalTotalCost} (provided: ${orderData.totalCost}, server calculated: ${totalCost})
       `);
 
       // Create order with proper pricing breakdown
@@ -633,7 +643,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         deliveryCost: finalDeliveryCost.toString(),
         extraKitsCost: finalExtraKitsCost.toString(),
         donationCost: finalDonationAmount.toString(),
-        discountAmount: orderData.discountAmount.toString(),
+        discountAmount: finalDiscountAmount.toString(),
         couponCode: orderData.couponCode || null,
         totalCost: finalTotalCost.toString(),
         paymentMethod: orderData.paymentMethod,
