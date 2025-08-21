@@ -192,9 +192,9 @@ export default function AdminOrders() {
     }],
   });
 
-  const orders = ordersData?.orders || [];
-  const totalPages = ordersData?.totalPages || 1;
-  const totalOrders = ordersData?.total || 0;
+  const orders = (ordersData as any)?.orders || [];
+  const totalPages = (ordersData as any)?.totalPages || 1;
+  const totalOrders = (ordersData as any)?.total || 0;
 
   const { data: events } = useQuery({
     queryKey: ["/api/admin/events"],
@@ -566,7 +566,7 @@ export default function AdminOrders() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 lg:space-y-6 w-full max-w-full overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -574,17 +574,17 @@ export default function AdminOrders() {
             <p className="text-neutral-600">Visualize, gerencie e acompanhe todos os pedidos</p>
           </div>
           <div className="flex gap-2">
-            {events && events.length > 0 && (
+            {(events as any) && Array.isArray((events as any)) && (events as any).length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2">
+                  <Button variant="outline" className="gap-2 px-3">
                     <Download className="h-4 w-4" />
-                    Etiquetas por Evento
+                    <span className="hidden sm:inline">Etiquetas por Evento</span>
                     <ChevronDown className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  {events.map((event: any) => (
+                  {(events as any).map((event: any) => (
                     <DropdownMenuItem
                       key={event.id}
                       onClick={() => handleGenerateEventLabels(event.id, event.name)}
@@ -595,17 +595,17 @@ export default function AdminOrders() {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-            {eventsForReports && eventsForReports.length > 0 && (
+            {(eventsForReports as any) && Array.isArray((eventsForReports as any)) && (eventsForReports as any).length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2">
+                  <Button variant="outline" className="gap-2 px-3">
                     <FileSpreadsheet className="h-4 w-4" />
-                    Relatório de Kits
+                    <span className="hidden sm:inline">Relatório de Kits</span>
                     <ChevronDown className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  {eventsForReports.map((event: any) => (
+                  {(eventsForReports as any).map((event: any) => (
                     <DropdownMenuItem
                       key={event.id}
                       onClick={() => handleGenerateKitsReport(event.id, event.name)}
@@ -619,93 +619,123 @@ export default function AdminOrders() {
           </div>
         </div>
 
-        {/* Statistics Cards */}
-        {orderStats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-2">
-                  <Package className="h-4 w-4 text-blue-500" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total</p>
-                    <p className="text-2xl font-bold">{orderStats.totalOrders}</p>
+        {/* Statistics Cards - Mobile shows only 2 essential */}
+        {(orderStats as any) && (
+          <>
+            {/* Mobile: Only Total and Confirmed */}
+            <div className="grid grid-cols-2 gap-3 sm:hidden">
+              <Card>
+                <CardContent className="p-3">
+                  <div className="flex items-center space-x-2">
+                    <Package className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-gray-600">Total</p>
+                      <p className="text-xl font-bold">{(orderStats as any).totalOrders}</p>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Confirmados</p>
-                    <p className="text-2xl font-bold">{orderStats.confirmedOrders}</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-gray-600">Confirmados</p>
+                      <p className="text-xl font-bold">{(orderStats as any).confirmedOrders}</p>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
 
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Aguardando</p>
-                    <p className="text-2xl font-bold">{orderStats.awaitingPayment}</p>
+            {/* Desktop: All statistics */}
+            <div className="hidden sm:grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-2">
+                    <Package className="h-4 w-4 text-blue-500" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Total</p>
+                      <p className="text-2xl font-bold">{(orderStats as any).totalOrders}</p>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Confirmados</p>
+                      <p className="text-2xl font-bold">{(orderStats as any).confirmedOrders}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Cancelados</p>
-                    <p className="text-2xl font-bold">{orderStats.cancelledOrders}</p>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Aguardando</p>
+                      <p className="text-2xl font-bold">{(orderStats as any).awaitingPayment}</p>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Em Trânsito</p>
-                    <p className="text-2xl font-bold">{orderStats.inTransitOrders}</p>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Cancelados</p>
+                      <p className="text-2xl font-bold">{(orderStats as any).cancelledOrders}</p>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Entregues</p>
-                    <p className="text-2xl font-bold">{orderStats.deliveredOrders}</p>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Em Trânsito</p>
+                      <p className="text-2xl font-bold">{(orderStats as any).inTransitOrders}</p>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-2">
-                  <DollarSign className="h-4 w-4 text-green-500" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Receita</p>
-                    <p className="text-2xl font-bold">{formatCurrency(orderStats.totalRevenue)}</p>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Entregues</p>
+                      <p className="text-2xl font-bold">{(orderStats as any).deliveredOrders}</p>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-2">
+                    <DollarSign className="h-4 w-4 text-green-500" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Receita</p>
+                      <p className="text-2xl font-bold">{formatCurrency((orderStats as any).totalRevenue)}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </>
         )}
 
         {/* Filters - Mobile Optimized */}
@@ -856,7 +886,7 @@ export default function AdminOrders() {
 
                 {/* Mobile Cards View */}
                 <div className="block lg:hidden space-y-4">
-                  {orders?.map((order: any) => (
+                  {Array.isArray(orders) && orders.map((order: any) => (
                     <Card key={order.id} className="relative">
                       <CardContent className="p-0">
                         {/* Card Header - Always Visible */}
@@ -1023,7 +1053,7 @@ export default function AdminOrders() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {orders?.map((order: any) => (
+                      {Array.isArray(orders) && orders.map((order: any) => (
                         <TableRow key={order.id}>
                           <TableCell>
                             <Checkbox
@@ -1084,20 +1114,7 @@ export default function AdminOrders() {
                                 <MessageCircle className="h-4 w-4" />
                               </Button>
 
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  const phone = order.customer?.phone?.replace(/\D/g, '');
-                                  if (phone) {
-                                    window.open(`https://api.whatsapp.com/send?phone=55${phone}`, '_blank');
-                                  }
-                                }}
-                                title="Abrir WhatsApp direto"
-                                data-testid={`button-whatsapp-direct-${order.id}`}
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                              </Button>
+
                               
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -1189,18 +1206,18 @@ export default function AdminOrders() {
           setSelectedOrderId(null);
         }
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-[90]">
-          <DialogHeader>
-            <DialogTitle>Detalhes do Pedido</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto mx-4 sm:mx-6 z-[90]">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-lg">Detalhes do Pedido</DialogTitle>
+            <DialogDescription className="text-sm">
               Informações completas do pedido {selectedOrder?.orderNumber}
             </DialogDescription>
           </DialogHeader>
           
           {selectedOrder && (
-            <div className="space-y-6">
+            <div className="space-y-4 lg:space-y-6">
               {/* Order Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <Card>
                   <CardContent className="p-4">
                     <h3 className="font-semibold mb-2 flex items-center gap-2">
@@ -1257,7 +1274,7 @@ export default function AdminOrders() {
               </div>
 
               {/* Event and Address */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <Card>
                   <CardContent className="p-4">
                     <h3 className="font-semibold mb-2 flex items-center gap-2">
@@ -1299,7 +1316,23 @@ export default function AdminOrders() {
                     <Package className="h-4 w-4" />
                     Detalhes dos Kits ({selectedOrder.kits?.length || 0})
                   </h3>
-                  <div className="overflow-x-auto">
+                  {/* Mobile: Cards, Desktop: Table */}
+                  <div className="block lg:hidden space-y-3">
+                    {selectedOrder.kits?.map((kit: any, index: number) => (
+                      <Card key={index} className="p-3">
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="font-medium">Kit #{index + 1}</span>
+                            <Badge variant="secondary">{kit.shirtSize}</Badge>
+                          </div>
+                          <p><span className="font-medium">Nome:</span> {kit.participantName}</p>
+                          <p><span className="font-medium">CPF:</span> {formatCPF(kit.participantCpf)}</p>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                  
+                  <div className="hidden lg:block overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
