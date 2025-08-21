@@ -84,6 +84,7 @@ interface OrderFilters {
   customerName?: string;
   startDate?: string;
   endDate?: string;
+  dateFilter?: 'today' | 'week' | 'month' | 'all';
 }
 
 const paymentMethodLabels: { [key: string]: string } = {
@@ -99,8 +100,15 @@ export default function AdminOrders() {
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [whatsAppOrder, setWhatsAppOrder] = useState<any>(null);
   const [showOrderDialog, setShowOrderDialog] = useState(false);
-  const [filters, setFilters] = useState<OrderFilters>({
-    status: 'all'
+  const [filters, setFilters] = useState<OrderFilters>(() => {
+    const now = new Date();
+    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return {
+      status: 'all',
+      dateFilter: 'month',
+      startDate: monthAgo.toISOString().split('T')[0],
+      endDate: now.toISOString().split('T')[0]
+    };
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
@@ -418,7 +426,50 @@ export default function AdminOrders() {
   };
 
   const resetFilters = () => {
-    setFilters({ status: 'all' });
+    setFilters({ 
+      status: 'all', 
+      dateFilter: 'month'
+    });
+    setCurrentPage(1);
+  };
+
+  // Date filter functions
+  const getDateFilterDates = (filter: 'today' | 'week' | 'month' | 'all') => {
+    const now = new Date();
+    
+    switch (filter) {
+      case 'today':
+        const today = now.toISOString().split('T')[0];
+        return { startDate: today, endDate: today };
+        
+      case 'week':
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        return { 
+          startDate: weekAgo.toISOString().split('T')[0], 
+          endDate: now.toISOString().split('T')[0] 
+        };
+        
+      case 'month':
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        return { 
+          startDate: monthAgo.toISOString().split('T')[0], 
+          endDate: now.toISOString().split('T')[0] 
+        };
+        
+      case 'all':
+      default:
+        return { startDate: undefined, endDate: undefined };
+    }
+  };
+
+  const setDateFilter = (dateFilter: 'today' | 'week' | 'month' | 'all') => {
+    const dates = getDateFilterDates(dateFilter);
+    setFilters({ 
+      ...filters, 
+      dateFilter,
+      startDate: dates.startDate,
+      endDate: dates.endDate
+    });
     setCurrentPage(1);
   };
 
@@ -788,6 +839,49 @@ export default function AdminOrders() {
             </div>
           </>
         )}
+
+        {/* Date Filter Buttons - Mobile Optimized */}
+        <Card className="w-full max-w-full">
+          <CardContent className="p-4">
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-gray-700">Período</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <Button
+                  variant={filters.dateFilter === 'today' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDateFilter('today')}
+                  className="text-xs font-medium"
+                >
+                  Hoje
+                </Button>
+                <Button
+                  variant={filters.dateFilter === 'week' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDateFilter('week')}
+                  className="text-xs font-medium"
+                >
+                  7 Dias
+                </Button>
+                <Button
+                  variant={filters.dateFilter === 'month' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDateFilter('month')}
+                  className="text-xs font-medium"
+                >
+                  30 Dias
+                </Button>
+                <Button
+                  variant={filters.dateFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDateFilter('all')}
+                  className="text-xs font-medium"
+                >
+                  Todos
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Filters - Mobile Optimized */}
         <Card className="w-full max-w-full">

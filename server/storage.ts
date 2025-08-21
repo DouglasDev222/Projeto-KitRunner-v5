@@ -940,6 +940,15 @@ export class DatabaseStorage implements IStorage {
       whereConditions.push(sql`${orders.orderNumber} ILIKE ${`%${filters.orderNumber}%`}`);
     }
 
+    // Add date filters
+    if (filters?.startDate) {
+      whereConditions.push(sql`DATE(${orders.createdAt}) >= ${filters.startDate}`);
+    }
+    
+    if (filters?.endDate) {
+      whereConditions.push(sql`DATE(${orders.createdAt}) <= ${filters.endDate}`);
+    }
+
     // If we have a specific status filter that's not 'all', return stats only for that status
     if (filters?.status && filters.status !== 'all') {
       const mainWhere = whereConditions.length > 1 ? and(...whereConditions) : whereConditions[0];
@@ -1739,6 +1748,19 @@ class MockStorage implements IStorage {
       deliveredOrders: this.orders.filter(o => o.status === "entregue").length,
       totalRevenue
     };
+  }
+
+  async getFilteredOrderStats(filters?: any): Promise<{
+    totalOrders: number;
+    confirmedOrders: number;
+    awaitingPayment: number;
+    cancelledOrders: number;
+    inTransitOrders: number;
+    deliveredOrders: number;
+    totalRevenue: number;
+  }> {
+    // For MockStorage, return same as getOrderStats
+    return this.getOrderStats();
   }
 
   async createCustomerWithAddresses(customerData: any): Promise<{ customer: Customer; addresses: Address[] }> {
