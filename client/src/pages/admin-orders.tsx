@@ -1037,7 +1037,7 @@ export default function AdminOrders() {
                 </div>
 
                 {/* Desktop Table View */}
-                <div className="hidden lg:block">
+                <div className="hidden lg:block desktop-table-container">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -1332,7 +1332,7 @@ export default function AdminOrders() {
                             <Badge variant="secondary">{kit.shirtSize}</Badge>
                           </div>
                           <p><span className="font-medium">Nome:</span> {kit.participantName}</p>
-                          <p><span className="font-medium">CPF:</span> {formatCPF(kit.participantCpf)}</p>
+                          <p><span className="font-medium">CPF:</span> {kit.participantCpf ? formatCPF(kit.participantCpf) : 'N/A'}</p>
                         </div>
                       </Card>
                     ))}
@@ -1351,7 +1351,7 @@ export default function AdminOrders() {
                         {selectedOrder.kits?.map((kit: any, index: number) => (
                           <TableRow key={kit.id || index}>
                             <TableCell className="font-medium">{kit.name}</TableCell>
-                            <TableCell>{formatCPF(kit.cpf)}</TableCell>
+                            <TableCell>{kit.cpf ? formatCPF(kit.cpf) : 'N/A'}</TableCell>
                             <TableCell>{kit.shirtSize}</TableCell>
                           </TableRow>
                         ))}

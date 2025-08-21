@@ -44,20 +44,18 @@ button, a, input, select, textarea {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Prevent horizontal overflow on mobile */
-html, body {
-  overflow-x: hidden !important;
-  max-width: 100vw !important;
-}
-
-/* Admin pages specific overflow prevention */
-.admin-container {
-  max-width: 100vw !important;
-  overflow-x: hidden !important;
-}
-
-/* Mobile card container overflow prevention */
+/* Mobile-specific overflow prevention */
 @media (max-width: 1024px) {
+  html, body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+  }
+
+  .admin-container {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
   .mobile-card-container {
     max-width: calc(100vw - 2rem) !important;
     overflow-x: hidden !important;
@@ -69,10 +67,17 @@ html, body {
     word-wrap: break-word !important;
   }
   
-  /* Force all elements to respect container width */
-  * {
+  /* Force all elements to respect container width on mobile */
+  .admin-container * {
     max-width: 100% !important;
     box-sizing: border-box !important;
+  }
+}
+
+/* Desktop: Allow horizontal scroll when needed */
+@media (min-width: 1025px) {
+  .desktop-table-container {
+    overflow-x: auto;
   }
 }
 

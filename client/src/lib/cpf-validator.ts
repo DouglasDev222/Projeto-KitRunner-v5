@@ -28,7 +28,8 @@ export function isValidCPF(cpf: string): boolean {
   return true;
 }
 
-export function formatCPF(cpf: string): string {
+export function formatCPF(cpf: string | null | undefined): string {
+  if (!cpf) return '';
   const cleanCPF = cpf.replace(/\D/g, "");
   
   if (cleanCPF.length <= 3) {
