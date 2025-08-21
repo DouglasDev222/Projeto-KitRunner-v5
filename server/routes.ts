@@ -1490,15 +1490,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stats endpoint with detailed status breakdowns
   app.get("/api/admin/stats", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
+      const filters = req.query;
+      console.log('Stats request with filters:', filters);
+
+      // Get filtered stats if filters are provided
       const stats = await storage.getAdminStats();
-      const orderStats = await storage.getOrderStats();
+      const orderStats = await storage.getFilteredOrderStats(filters);
 
       // Return comprehensive stats with real data from database
       const response = {
         totalCustomers: stats.totalCustomers,
-        totalOrders: stats.totalOrders,
+        totalOrders: orderStats.totalOrders,
         activeEvents: stats.activeEvents,
-        totalRevenue: stats.totalRevenue,
+        totalRevenue: orderStats.totalRevenue,
         confirmedOrders: orderStats.confirmedOrders,
         awaitingPayment: orderStats.awaitingPayment,
         cancelledOrders: orderStats.cancelledOrders,
@@ -1506,7 +1510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         deliveredOrders: orderStats.deliveredOrders,
       };
 
-      console.log('Sending admin stats response:', response);
+      console.log('Sending filtered admin stats response:', response);
       res.json(response);
     } catch (error: any) {
       console.error('Error getting admin stats:', error);

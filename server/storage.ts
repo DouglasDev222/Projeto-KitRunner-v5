@@ -119,6 +119,17 @@ export interface IStorage {
     totalRevenue: number;
   }>;
 
+  // Filtered order statistics
+  getFilteredOrderStats(filters?: any): Promise<{
+    totalOrders: number;
+    confirmedOrders: number;
+    awaitingPayment: number;
+    cancelledOrders: number;
+    inTransitOrders: number;
+    deliveredOrders: number;
+    totalRevenue: number;
+  }>;
+
   // Admin customer management methods
   getAllCustomersWithAddresses(): Promise<(Customer & { addresses: Address[]; orderCount: number })[]>;
   getAllCustomersWithAddressesPaginated(page: number, limit: number, search?: string): Promise<{
@@ -893,6 +904,93 @@ export class DatabaseStorage implements IStorage {
     const [revenueResult] = await db.select({ 
       total: sum(orders.totalCost) 
     }).from(orders).where(ne(orders.status, 'cancelado'));
+
+    return {
+      totalOrders: totalOrdersResult.count,
+      confirmedOrders: confirmedResult.count,
+      awaitingPayment: awaitingResult.count,
+      cancelledOrders: cancelledResult.count,
+      inTransitOrders: inTransitResult.count,
+      deliveredOrders: deliveredResult.count,
+      totalRevenue: Number(revenueResult.total) || 0,
+    };
+  }
+
+  async getFilteredOrderStats(filters?: any): Promise<{
+    totalOrders: number;
+    confirmedOrders: number;
+    awaitingPayment: number;
+    cancelledOrders: number;
+    inTransitOrders: number;
+    deliveredOrders: number;
+    totalRevenue: number;
+  }> {
+    // Build where conditions based on filters
+    const whereConditions = [];
+    
+    if (filters?.status && filters.status !== 'all') {
+      whereConditions.push(eq(orders.status, filters.status));
+    }
+    
+    if (filters?.eventId) {
+      whereConditions.push(eq(orders.eventId, parseInt(filters.eventId)));
+    }
+    
+    if (filters?.orderNumber) {
+      whereConditions.push(sql`${orders.orderNumber} ILIKE ${`%${filters.orderNumber}%`}`);
+    }
+
+    // If we have a specific status filter that's not 'all', return stats only for that status
+    if (filters?.status && filters.status !== 'all') {
+      const mainWhere = whereConditions.length > 1 ? and(...whereConditions) : whereConditions[0];
+      
+      const [filteredResult] = await db.select({ count: count(), total: sum(orders.totalCost) })
+        .from(orders)
+        .where(mainWhere);
+
+      return {
+        totalOrders: filteredResult.count,
+        confirmedOrders: filters.status === 'confirmado' ? filteredResult.count : 0,
+        awaitingPayment: filters.status === 'aguardando_pagamento' ? filteredResult.count : 0,
+        cancelledOrders: filters.status === 'cancelado' ? filteredResult.count : 0,
+        inTransitOrders: ['em_transito', 'kits_sendo_retirados'].includes(filters.status) ? filteredResult.count : 0,
+        deliveredOrders: filters.status === 'entregue' ? filteredResult.count : 0,
+        totalRevenue: filters.status === 'cancelado' ? 0 : Number(filteredResult.total) || 0,
+      };
+    }
+
+    // For filters without specific status or with status 'all', calculate all statuses with filters
+    const mainWhere = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+    
+    // Get total orders count with filters
+    const [totalOrdersResult] = await db.select({ count: count() }).from(orders).where(mainWhere);
+    
+    // Get order counts by status with filters
+    const confirmedWhere = mainWhere ? and(mainWhere, eq(orders.status, 'confirmado')) : eq(orders.status, 'confirmado');
+    const [confirmedResult] = await db.select({ count: count() }).from(orders).where(confirmedWhere);
+    
+    const awaitingWhere = mainWhere ? and(mainWhere, eq(orders.status, 'aguardando_pagamento')) : eq(orders.status, 'aguardando_pagamento');
+    const [awaitingResult] = await db.select({ count: count() }).from(orders).where(awaitingWhere);
+    
+    const cancelledWhere = mainWhere ? and(mainWhere, eq(orders.status, 'cancelado')) : eq(orders.status, 'cancelado');
+    const [cancelledResult] = await db.select({ count: count() }).from(orders).where(cancelledWhere);
+    
+    const deliveredWhere = mainWhere ? and(mainWhere, eq(orders.status, 'entregue')) : eq(orders.status, 'entregue');
+    const [deliveredResult] = await db.select({ count: count() }).from(orders).where(deliveredWhere);
+    
+    // In transit includes both "em_transito" and "kits_sendo_retirados"
+    const inTransitWhere = mainWhere ? 
+      and(mainWhere, sql`${orders.status} IN ('em_transito', 'kits_sendo_retirados')`) :
+      sql`${orders.status} IN ('em_transito', 'kits_sendo_retirados')`;
+    const [inTransitResult] = await db.select({ count: count() }).from(orders).where(inTransitWhere);
+    
+    // Get total revenue (excluding cancelled orders) with filters
+    const revenueWhere = mainWhere ? 
+      and(mainWhere, ne(orders.status, 'cancelado')) : 
+      ne(orders.status, 'cancelado');
+    const [revenueResult] = await db.select({ 
+      total: sum(orders.totalCost) 
+    }).from(orders).where(revenueWhere);
 
     return {
       totalOrders: totalOrdersResult.count,

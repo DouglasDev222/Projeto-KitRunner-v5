@@ -234,7 +234,7 @@ export default function AdminOrders() {
   });
 
   const { data: orderStats } = useQuery({
-    queryKey: ["/api/admin/stats"],
+    queryKey: ["/api/admin/stats", filters],
   });
 
   const updateStatusMutation = useMutation({
