@@ -154,18 +154,18 @@ export function WhatsAppModal({ isOpen, onClose, order }: WhatsAppModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto mx-4 sm:mx-6">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="flex items-center gap-2 text-lg">
             <MessageCircle className="h-5 w-5 text-green-600" />
-            Enviar WhatsApp - Pedido {order?.orderNumber}
+            <span className="truncate">Enviar WhatsApp - {order?.orderNumber}</span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             Envie uma mensagem WhatsApp para o cliente usando templates ou mensagem personalizada
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
           {/* Left Column - Send Message */}
           <div className="space-y-4">
             <Card>
@@ -176,17 +176,17 @@ export function WhatsAppModal({ isOpen, onClose, order }: WhatsAppModalProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Customer Info */}
+                {/* Customer Info - Mobile Optimized */}
                 <div className="bg-gray-50 p-3 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-gray-600" />
-                      <span className="font-medium">{order?.customer?.name}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <User className="h-4 w-4 text-gray-600 flex-shrink-0" />
+                      <span className="font-medium truncate">{order?.customer?.name}</span>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-8 px-2"
+                      className="h-8 px-3 text-xs flex-shrink-0"
                       onClick={() => {
                         const phone = order?.customer?.phone?.replace(/\D/g, '');
                         if (phone) {
@@ -200,16 +200,16 @@ export function WhatsAppModal({ isOpen, onClose, order }: WhatsAppModalProps) {
                     </Button>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone className="h-3 w-3" />
-                    <span>{order?.customer?.phone}</span>
+                    <Phone className="h-3 w-3 flex-shrink-0" />
+                    <span className="truncate">{order?.customer?.phone}</span>
                   </div>
                 </div>
 
-                {/* Quick Send Buttons */}
+                {/* Quick Send Buttons - Mobile Optimized */}
                 {!templatesLoading && (templates as any)?.templates?.filter((t: WhatsappTemplate) => t.quickSend).length > 0 && (
-                  <div className="space-y-2">
-                    <Label>Envio Rápido</Label>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Envio Rápido</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {(templates as any).templates
                         .filter((template: WhatsappTemplate) => template.quickSend)
                         .map((template: WhatsappTemplate) => (
@@ -217,7 +217,7 @@ export function WhatsAppModal({ isOpen, onClose, order }: WhatsAppModalProps) {
                             key={template.id}
                             variant="outline"
                             size="sm"
-                            className="text-xs"
+                            className="text-xs justify-start h-10 px-3"
                             onClick={() => {
                               const data = {
                                 orderId: order.id,
@@ -228,13 +228,16 @@ export function WhatsAppModal({ isOpen, onClose, order }: WhatsAppModalProps) {
                             disabled={sendMessageMutation.isPending}
                             data-testid={`button-quick-send-${template.id}`}
                           >
-                            {sendMessageMutation.isPending ? "..." : template.name}
+                            <MessageCircle className="h-3 w-3 mr-2 flex-shrink-0" />
+                            <span className="truncate">
+                              {sendMessageMutation.isPending ? "Enviando..." : template.name}
+                            </span>
                           </Button>
                         ))
                       }
                     </div>
-                    <div className="text-xs text-gray-500">
-                      Clique para enviar rapidamente usando um template pré-definido
+                    <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
+                      💡 Clique para enviar rapidamente usando um template pré-definido
                     </div>
                   </div>
                 )}
@@ -291,14 +294,24 @@ export function WhatsAppModal({ isOpen, onClose, order }: WhatsAppModalProps) {
                   </div>
                 )}
 
-                {/* Send Button */}
+                {/* Send Button - Mobile Optimized */}
                 <Button
                   onClick={handleSendMessage}
                   disabled={sendMessageMutation.isPending || (!selectedTemplateId && !customMessage.trim())}
-                  className="w-full"
+                  className="w-full h-11 text-base font-medium"
                   data-testid="button-send-whatsapp"
                 >
-                  {sendMessageMutation.isPending ? "Enviando..." : "Enviar Mensagem"}
+                  {sendMessageMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                      Enviando...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Send className="h-4 w-4" />
+                      Enviar Mensagem
+                    </div>
+                  )}
                 </Button>
               </CardContent>
             </Card>
@@ -313,8 +326,8 @@ export function WhatsAppModal({ isOpen, onClose, order }: WhatsAppModalProps) {
                   Histórico de Mensagens
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[400px] pr-4">
+              <CardContent className="p-4">
+                <ScrollArea className="h-[300px] lg:h-[400px] pr-2 lg:pr-4">
                   {historyLoading ? (
                     <div className="text-center py-4">Carregando histórico...</div>
                   ) : (messageHistory as any)?.messages?.length > 0 ? (

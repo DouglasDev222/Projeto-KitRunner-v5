@@ -22,7 +22,10 @@ import {
   FileText,
   Download,
   FileSpreadsheet,
-  MessageCircle
+  MessageCircle,
+  ChevronUp,
+  Phone,
+  Clock
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -103,6 +106,7 @@ export default function AdminOrders() {
   const [bulkStatusModalOpen, setBulkStatusModalOpen] = useState(false);
   const [bulkNewStatus, setBulkNewStatus] = useState("");
   const [sendBulkEmails, setSendBulkEmails] = useState(false);
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const [emailConfirmationModal, setEmailConfirmationModal] = useState<{
     isOpen: boolean;
     orderId: number;
@@ -443,6 +447,19 @@ export default function AdminOrders() {
     });
   };
 
+  // Card expansion functions for mobile
+  const toggleCardExpansion = (orderId: number) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
+
   // WhatsApp modal functions
   const handleOpenWhatsApp = (order: any) => {
     setWhatsAppOrder(order);
@@ -691,23 +708,23 @@ export default function AdminOrders() {
           </div>
         )}
 
-        {/* Filters */}
+        {/* Filters - Mobile Optimized */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
               <Filter className="h-5 w-5" />
               Filtros
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Status</label>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Status</label>
                 <Select
                   value={filters.status}
                   onValueChange={(value) => setFilters({ ...filters, status: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -720,8 +737,8 @@ export default function AdminOrders() {
                 </Select>
               </div>
 
-              <div>
-                <label className="text-sm font-medium mb-2 block">Evento</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Evento</label>
                 <Select
                   value={filters.eventId?.toString() || 'all'}
                   onValueChange={(value) => setFilters({ 
@@ -729,7 +746,7 @@ export default function AdminOrders() {
                     eventId: value === 'all' ? undefined : parseInt(value) 
                   })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10">
                     <SelectValue placeholder="Todos os eventos" />
                   </SelectTrigger>
                   <SelectContent>
@@ -743,12 +760,13 @@ export default function AdminOrders() {
                 </Select>
               </div>
 
-              <div>
-                <label className="text-sm font-medium mb-2 block">Número do Pedido</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Número do Pedido</label>
                 <Input
                   placeholder="Ex: KR202400123"
                   value={filters.orderNumber || ''}
                   onChange={(e) => setFilters({ ...filters, orderNumber: e.target.value })}
+                  className="h-10"
                 />
               </div>
 
@@ -756,8 +774,9 @@ export default function AdminOrders() {
                 <Button 
                   variant="outline" 
                   onClick={resetFilters}
-                  className="w-full"
+                  className="w-full h-10"
                 >
+                  <Search className="h-4 w-4 mr-2" />
                   Limpar Filtros
                 </Button>
               </div>
@@ -782,162 +801,330 @@ export default function AdminOrders() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                {/* Bulk Actions Bar */}
+                {/* Bulk Actions Bar - Mobile Optimized */}
                 {selectedOrders.length > 0 && (
-                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm font-medium text-blue-700">
-                        {selectedOrders.length} pedido{selectedOrders.length > 1 ? 's' : ''} selecionado{selectedOrders.length > 1 ? 's' : ''}
-                      </span>
-                      {getSelectedOrdersEvent() && (
-                        <span className="text-sm text-blue-600">
-                          Evento: {getSelectedOrdersEvent().name}
+                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                      <div className="space-y-1">
+                        <span className="text-sm font-medium text-blue-700">
+                          {selectedOrders.length} pedido{selectedOrders.length > 1 ? 's' : ''} selecionado{selectedOrders.length > 1 ? 's' : ''}
                         </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Select value={bulkNewStatus} onValueChange={setBulkNewStatus}>
-                        <SelectTrigger className="w-48">
-                          <SelectValue placeholder="Novo status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {statusOptions.filter(status => status.value !== 'all').map((status) => (
-                            <SelectItem key={status.value} value={status.value}>
-                              {status.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button 
-                        onClick={handleBulkStatusChange}
-                        disabled={!bulkNewStatus || !canPerformBulkOperation()}
-                        size="sm"
-                      >
-                        Aplicar Alterações
-                      </Button>
-                      <Button 
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedOrders([]);
-                          setBulkNewStatus("");
-                        }}
-                        size="sm"
-                      >
-                        Cancelar
-                      </Button>
+                        {getSelectedOrdersEvent() && (
+                          <div className="text-sm text-blue-600 truncate">
+                            Evento: {getSelectedOrdersEvent().name}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Select value={bulkNewStatus} onValueChange={setBulkNewStatus}>
+                          <SelectTrigger className="w-full sm:w-48 h-10">
+                            <SelectValue placeholder="Novo status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {statusOptions.filter(status => status.value !== 'all').map((status) => (
+                              <SelectItem key={status.value} value={status.value}>
+                                {status.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={handleBulkStatusChange}
+                            disabled={!bulkNewStatus || !canPerformBulkOperation()}
+                            size="sm"
+                            className="flex-1 sm:flex-none"
+                          >
+                            Aplicar
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedOrders([]);
+                              setBulkNewStatus("");
+                            }}
+                            size="sm"
+                            className="flex-1 sm:flex-none"
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
 
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">
-                        <Checkbox
-                          checked={selectedOrders.length === orders.length && orders.length > 0}
-                          onCheckedChange={handleSelectAll}
-                          aria-label="Selecionar todos"
-                        />
-                      </TableHead>
-                      <TableHead>Pedido</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Evento</TableHead>
-                      <TableHead>Kits</TableHead>
-                      <TableHead>Total</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {orders?.map((order: any) => (
-                      <TableRow key={order.id}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedOrders.includes(order.id)}
-                            onCheckedChange={(checked) => handleSelectOrder(order.id, checked as boolean)}
-                            aria-label={`Selecionar pedido ${order.orderNumber}`}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          <div>
-                            <p className="font-mono text-sm">{order.orderNumber}</p>
-                            <p className="text-xs text-gray-500">{paymentMethodLabels[order.paymentMethod] || order.paymentMethod}</p>
+                {/* Mobile Cards View */}
+                <div className="block lg:hidden space-y-4">
+                  {orders?.map((order: any) => (
+                    <Card key={order.id} className="relative">
+                      <CardContent className="p-0">
+                        {/* Card Header - Always Visible */}
+                        <div 
+                          className="p-4 cursor-pointer select-none"
+                          onClick={() => toggleCardExpansion(order.id)}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Checkbox
+                                  checked={selectedOrders.includes(order.id)}
+                                  onCheckedChange={(checked) => handleSelectOrder(order.id, checked as boolean)}
+                                  aria-label={`Selecionar pedido ${order.orderNumber}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                                <span className="font-mono text-sm font-medium">{order.orderNumber}</span>
+                                {getStatusBadge(order.status)}
+                              </div>
+                              <div className="space-y-1">
+                                <p className="font-medium text-gray-900 truncate">{order.customer.name}</p>
+                                <p className="text-sm text-gray-600 truncate">{order.event.name}</p>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-lg font-bold text-green-600">
+                                    {formatCurrency(Number(order.totalCost))}
+                                  </span>
+                                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                                    <Package className="h-3 w-3" />
+                                    {order.kitQuantity} kits
+                                    <Clock className="h-3 w-3 ml-2" />
+                                    {formatDate(order.createdAt)}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="ml-4 flex items-center">
+                              {expandedCards.has(order.id) ? (
+                                <ChevronUp className="h-5 w-5 text-gray-400" />
+                              ) : (
+                                <ChevronDown className="h-5 w-5 text-gray-400" />
+                              )}
+                            </div>
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{order.customer.name}</p>
-                            <p className="text-sm text-gray-500">{formatCPF(order.customer.cpf)}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{order.event.name}</p>
-                            <p className="text-sm text-gray-500">{order.event.city}, {order.event.state}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{order.kitQuantity}</TableCell>
-                        <TableCell className="font-medium">{formatCurrency(Number(order.totalCost))}</TableCell>
-                        <TableCell>{getStatusBadge(order.status)}</TableCell>
-                        <TableCell className="text-sm">{formatDate(order.createdAt)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewOrder(order.id)}
-                              title="Ver detalhes do pedido"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                        </div>
 
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleGenerateLabel(order.id, order.orderNumber)}
-                              title="Gerar etiqueta de entrega"
-                            >
-                              <FileText className="h-4 w-4" />
-                            </Button>
+                        {/* Expanded Actions - Mobile */}
+                        {expandedCards.has(order.id) && (
+                          <div className="border-t px-4 pb-4">
+                            <div className="mt-4 space-y-3">
+                              {/* Customer & Event Details */}
+                              <div className="grid grid-cols-1 gap-3 text-sm">
+                                <div className="flex items-center gap-2">
+                                  <User className="h-4 w-4 text-gray-500" />
+                                  <span className="font-medium">{order.customer.name}</span>
+                                  <span className="text-gray-500">·</span>
+                                  <span className="text-gray-600">{formatCPF(order.customer.cpf)}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Phone className="h-4 w-4 text-gray-500" />
+                                  <span className="text-gray-600">{order.customer.phone}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="h-4 w-4 text-gray-500" />
+                                  <span className="text-gray-600">{order.event.name}</span>
+                                  <span className="text-gray-500">·</span>
+                                  <span className="text-gray-600">{order.event.city}, {order.event.state}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <DollarSign className="h-4 w-4 text-gray-500" />
+                                  <span className="text-gray-600">{paymentMethodLabels[order.paymentMethod] || order.paymentMethod}</span>
+                                </div>
+                              </div>
 
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleOpenWhatsApp(order)}
-                              title="Enviar mensagem WhatsApp"
-                              data-testid={`button-whatsapp-${order.id}`}
-                            >
-                              <MessageCircle className="h-4 w-4" />
-                            </Button>
-
-                            
-                            
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" title="Alterar status do pedido">
-                                  <Edit className="h-4 w-4" />
-                                  <ChevronDown className="h-3 w-3 ml-1" />
+                              {/* Action Buttons - Mobile Optimized */}
+                              <div className="grid grid-cols-2 gap-2 pt-3 border-t">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleViewOrder(order.id)}
+                                  className="justify-start"
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Ver Detalhes
                                 </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent>
-                                {statusOptions.slice(1).map((status) => (
-                                  <DropdownMenuItem
-                                    key={status.value}
-                                    onClick={() => handleStatusChange(order.id, status.value)}
-                                    disabled={updateStatusMutation.isPending}
-                                  >
-                                    {status.label}
-                                  </DropdownMenuItem>
-                                ))}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleGenerateLabel(order.id, order.orderNumber)}
+                                  className="justify-start"
+                                >
+                                  <FileText className="h-4 w-4 mr-2" />
+                                  Etiqueta
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleOpenWhatsApp(order)}
+                                  className="justify-start"
+                                  data-testid={`button-whatsapp-${order.id}`}
+                                >
+                                  <MessageCircle className="h-4 w-4 mr-2" />
+                                  WhatsApp
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const phone = order.customer?.phone?.replace(/\D/g, '');
+                                    if (phone) {
+                                      window.open(`https://api.whatsapp.com/send?phone=55${phone}`, '_blank');
+                                    }
+                                  }}
+                                  className="justify-start"
+                                  data-testid={`button-whatsapp-direct-${order.id}`}
+                                >
+                                  <ExternalLink className="h-4 w-4 mr-2" />
+                                  Abrir Zap
+                                </Button>
+                              </div>
+
+                              {/* Status Change - Mobile Optimized */}
+                              <div className="pt-2 border-t">
+                                <Select onValueChange={(value) => handleStatusChange(order.id, value)}>
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Alterar status..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {statusOptions.slice(1).map((status) => (
+                                      <SelectItem key={status.value} value={status.value}>
+                                        {status.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
                           </div>
-                        </TableCell>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden lg:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={selectedOrders.length === orders.length && orders.length > 0}
+                            onCheckedChange={handleSelectAll}
+                            aria-label="Selecionar todos"
+                          />
+                        </TableHead>
+                        <TableHead>Pedido</TableHead>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Evento</TableHead>
+                        <TableHead>Kits</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Ações</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {orders?.map((order: any) => (
+                        <TableRow key={order.id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedOrders.includes(order.id)}
+                              onCheckedChange={(checked) => handleSelectOrder(order.id, checked as boolean)}
+                              aria-label={`Selecionar pedido ${order.orderNumber}`}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            <div>
+                              <p className="font-mono text-sm">{order.orderNumber}</p>
+                              <p className="text-xs text-gray-500">{paymentMethodLabels[order.paymentMethod] || order.paymentMethod}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{order.customer.name}</p>
+                              <p className="text-sm text-gray-500">{formatCPF(order.customer.cpf)}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{order.event.name}</p>
+                              <p className="text-sm text-gray-500">{order.event.city}, {order.event.state}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>{order.kitQuantity}</TableCell>
+                          <TableCell className="font-medium">{formatCurrency(Number(order.totalCost))}</TableCell>
+                          <TableCell>{getStatusBadge(order.status)}</TableCell>
+                          <TableCell className="text-sm">{formatDate(order.createdAt)}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewOrder(order.id)}
+                                title="Ver detalhes do pedido"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleGenerateLabel(order.id, order.orderNumber)}
+                                title="Gerar etiqueta de entrega"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenWhatsApp(order)}
+                                title="Enviar mensagem WhatsApp"
+                                data-testid={`button-whatsapp-${order.id}`}
+                              >
+                                <MessageCircle className="h-4 w-4" />
+                              </Button>
+
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const phone = order.customer?.phone?.replace(/\D/g, '');
+                                  if (phone) {
+                                    window.open(`https://api.whatsapp.com/send?phone=55${phone}`, '_blank');
+                                  }
+                                }}
+                                title="Abrir WhatsApp direto"
+                                data-testid={`button-whatsapp-direct-${order.id}`}
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
+                              
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="outline" size="sm" title="Alterar status do pedido">
+                                    <Edit className="h-4 w-4" />
+                                    <ChevronDown className="h-3 w-3 ml-1" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                  {statusOptions.slice(1).map((status) => (
+                                    <DropdownMenuItem
+                                      key={status.value}
+                                      onClick={() => handleStatusChange(order.id, status.value)}
+                                      disabled={updateStatusMutation.isPending}
+                                    >
+                                      {status.label}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
                 
                 {/* Pagination */}
                 {totalPages > 1 && (
