@@ -673,7 +673,7 @@ export default function AdminOrders() {
             <h1 className="text-2xl sm:text-3xl font-bold text-neutral-800 truncate">Gerenciamento de Pedidos</h1>
             <p className="text-sm sm:text-base text-neutral-600">Visualize, gerencie e acompanhe todos os pedidos</p>
           </div>
-          <div className="flex flex-wrap gap-2 justify-end flex-shrink-0">
+          <div className="hidden sm:flex flex-wrap gap-2 justify-end flex-shrink-0">
             {(events as any) && Array.isArray((events as any)) && (events as any).length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
