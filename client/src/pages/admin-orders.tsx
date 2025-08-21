@@ -25,7 +25,8 @@ import {
   MessageCircle,
   ChevronUp,
   Phone,
-  Clock
+  Clock,
+  X
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -121,6 +122,22 @@ export default function AdminOrders() {
     customerName: "",
     newStatus: "",
   });
+  
+  // Mobile full-screen states
+  const [mobileOrderDetailsOpen, setMobileOrderDetailsOpen] = useState(false);
+  const [mobileWhatsAppOpen, setMobileWhatsAppOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -330,7 +347,12 @@ export default function AdminOrders() {
         queryKey: [`/api/admin/orders/${orderId}`],
       });
       setSelectedOrder(result);
-      setShowOrderDialog(true);
+      
+      if (isMobile) {
+        setMobileOrderDetailsOpen(true);
+      } else {
+        setShowOrderDialog(true);
+      }
     } catch (error) {
       toast({
         title: "Erro ao carregar pedido",
@@ -473,7 +495,12 @@ export default function AdminOrders() {
   // WhatsApp modal functions
   const handleOpenWhatsApp = (order: any) => {
     setWhatsAppOrder(order);
-    setShowWhatsAppModal(true);
+    
+    if (isMobile) {
+      setMobileWhatsAppOpen(true);
+    } else {
+      setShowWhatsAppModal(true);
+    }
   };
 
   const handleCloseWhatsApp = () => {
@@ -1314,7 +1341,7 @@ export default function AdminOrders() {
           setSelectedOrderId(null);
         }
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-[100] w-[95vw] sm:w-full mx-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-[100] w-[95vw] sm:w-full mx-auto bg-white">
           <DialogHeader className="pb-4">
             <DialogTitle className="text-lg">Detalhes do Pedido</DialogTitle>
             <DialogDescription className="text-sm">
@@ -1574,12 +1601,209 @@ export default function AdminOrders() {
         </DialogContent>
       </Dialog>
 
-      {/* WhatsApp Modal */}
-      <WhatsAppModal
-        isOpen={showWhatsAppModal}
-        onClose={handleCloseWhatsApp}
-        order={whatsAppOrder}
-      />
+      {/* WhatsApp Modal - Desktop only */}
+      {!isMobile && (
+        <WhatsAppModal
+          isOpen={showWhatsAppModal}
+          onClose={handleCloseWhatsApp}
+          order={whatsAppOrder}
+        />
+      )}
+
+      {/* Mobile Full-Screen Order Details */}
+      {mobileOrderDetailsOpen && (
+        <div className="fixed inset-0 bg-white z-[200] overflow-y-auto">
+          <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Detalhes do Pedido</h2>
+              <p className="text-sm text-muted-foreground">
+                {selectedOrder?.orderNumber}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setMobileOrderDetailsOpen(false);
+                setSelectedOrder(null);
+                setSelectedOrderId(null);
+              }}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          
+          {selectedOrder && (
+            <div className="p-4 space-y-6">
+              {/* Order Summary Cards */}
+              <div className="space-y-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Informações do Pedido
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <p><span className="font-medium">Número:</span> {selectedOrder.orderNumber}</p>
+                      <div><span className="font-medium">Status:</span> {getStatusBadge(selectedOrder.status)}</div>
+                      <p><span className="font-medium">Data:</span> {formatDate(selectedOrder.createdAt)}</p>
+                      <p><span className="font-medium">Kits:</span> {selectedOrder.kitQuantity}</p>
+                      <p><span className="font-medium">Pagamento:</span> {paymentMethodLabels[selectedOrder.paymentMethod]}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Cliente
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <p><span className="font-medium">Nome:</span> {selectedOrder.customer?.name || 'N/A'}</p>
+                      <p><span className="font-medium">CPF:</span> {selectedOrder.customer?.cpf ? formatCPF(selectedOrder.customer.cpf) : 'N/A'}</p>
+                      <p><span className="font-medium">Email:</span> {selectedOrder.customer?.email || 'N/A'}</p>
+                      <p><span className="font-medium">Telefone:</span> {selectedOrder.customer?.phone || 'N/A'}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      Valores
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <p><span className="font-medium">Entrega:</span> {formatCurrency(Number(selectedOrder.deliveryCost))}</p>
+                      <p><span className="font-medium">Kits Extras:</span> {formatCurrency(Number(selectedOrder.extraKitsCost))}</p>
+                      <p><span className="font-medium">Doação:</span> {formatCurrency(Number(selectedOrder.donationCost))}</p>
+                      {Number(selectedOrder.discountAmount) > 0 && (
+                        <>
+                          <p><span className="font-medium">Desconto:</span> <span className="text-green-600">-{formatCurrency(Number(selectedOrder.discountAmount))}</span></p>
+                          {selectedOrder.couponCode && (
+                            <p><span className="font-medium">Cupom:</span> <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{selectedOrder.couponCode}</span></p>
+                          )}
+                        </>
+                      )}
+                      <div className="pt-2 border-t">
+                        <p className="font-semibold text-lg"><span className="font-medium">Total:</span> {formatCurrency(Number(selectedOrder.totalCost))}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Delivery Address */}
+              {selectedOrder.address && (
+                <Card>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Endereço de Entrega
+                    </h3>
+                    <div className="text-sm space-y-1">
+                      <p>{selectedOrder.address.street}, {selectedOrder.address.number}</p>
+                      {selectedOrder.address.complement && <p>Complemento: {selectedOrder.address.complement}</p>}
+                      <p>{selectedOrder.address.neighborhood}</p>
+                      <p>{selectedOrder.address.city} - {selectedOrder.address.state}</p>
+                      <p>CEP: {selectedOrder.address.zipCode}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Order Status History */}
+              <OrderStatusHistory orderId={selectedOrder.id} showTitle={true} isAdminContext={true} />
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-3 pt-4 border-t">
+                <Button variant="outline" className="w-full">
+                  <Mail className="h-4 w-4 mr-2" />
+                  Enviar Email
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => {
+                    setMobileOrderDetailsOpen(false);
+                    handleOpenWhatsApp(selectedOrder);
+                  }}
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  WhatsApp
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Mobile Full-Screen WhatsApp */}
+      {mobileWhatsAppOpen && (
+        <div className="fixed inset-0 bg-white z-[200] overflow-y-auto">
+          <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">WhatsApp</h2>
+              <p className="text-sm text-muted-foreground">
+                {whatsAppOrder?.customer?.name}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobileWhatsAppOpen(false)}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          
+          <div className="p-4">
+            <div className="space-y-6">
+              {/* Customer Info Card */}
+              <Card>
+                <CardContent className="p-4">
+                  <h3 className="font-semibold mb-2 flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Informações do Cliente
+                  </h3>
+                  <div className="space-y-1 text-sm">
+                    <p><span className="font-medium">Nome:</span> {whatsAppOrder?.customer?.name}</p>
+                    <p><span className="font-medium">Telefone:</span> {whatsAppOrder?.customer?.phone}</p>
+                    <p><span className="font-medium">Pedido:</span> {whatsAppOrder?.orderNumber}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* WhatsApp Integration - Simplified mobile version */}
+              <Card>
+                <CardContent className="p-4">
+                  <h3 className="font-semibold mb-3">Enviar Mensagem</h3>
+                  <div className="space-y-4">
+                    <Button 
+                      className="w-full"
+                      onClick={() => {
+                        if (whatsAppOrder?.customer?.phone) {
+                          const phone = whatsAppOrder.customer.phone.replace(/\D/g, '');
+                          const message = `Olá ${whatsAppOrder.customer.name}, tudo bem? Sobre seu pedido ${whatsAppOrder.orderNumber}...`;
+                          window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(message)}`, '_blank');
+                        }
+                      }}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Abrir WhatsApp
+                    </Button>
+                    
+                    <div className="text-xs text-muted-foreground text-center">
+                      Isso abrirá o WhatsApp Web ou aplicativo com uma mensagem pré-definida
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
