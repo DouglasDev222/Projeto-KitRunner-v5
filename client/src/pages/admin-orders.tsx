@@ -724,6 +724,44 @@ export default function AdminOrders() {
         {/* Statistics Cards - Mobile shows only 2 essential */}
         {(orderStats as any) && (
           <>
+            {/* Date Filter Buttons - Mobile Version (only on mobile) */}
+            <div className="mb-4 sm:hidden">
+              <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-lg w-fit mx-auto">
+                <Button
+                  variant={filters.dateFilter === 'today' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setDateFilter('today')}
+                  className="h-6 px-2 text-xs font-medium"
+                >
+                  Hoje
+                </Button>
+                <Button
+                  variant={filters.dateFilter === 'week' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setDateFilter('week')}
+                  className="h-6 px-2 text-xs font-medium"
+                >
+                  7D
+                </Button>
+                <Button
+                  variant={filters.dateFilter === 'month' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setDateFilter('month')}
+                  className="h-6 px-2 text-xs font-medium"
+                >
+                  30D
+                </Button>
+                <Button
+                  variant={filters.dateFilter === 'all' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setDateFilter('all')}
+                  className="h-6 px-2 text-xs font-medium"
+                >
+                  Todos
+                </Button>
+              </div>
+            </div>
+
             {/* Mobile: Only Total and Confirmed */}
             <div className="grid grid-cols-2 gap-3 sm:hidden">
               <Card>
@@ -840,48 +878,43 @@ export default function AdminOrders() {
           </>
         )}
 
-        {/* Date Filter Buttons - Mobile Optimized */}
-        <Card className="w-full max-w-full">
-          <CardContent className="p-4">
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium text-gray-700">Período</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <Button
-                  variant={filters.dateFilter === 'today' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setDateFilter('today')}
-                  className="text-xs font-medium"
-                >
-                  Hoje
-                </Button>
-                <Button
-                  variant={filters.dateFilter === 'week' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setDateFilter('week')}
-                  className="text-xs font-medium"
-                >
-                  7 Dias
-                </Button>
-                <Button
-                  variant={filters.dateFilter === 'month' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setDateFilter('month')}
-                  className="text-xs font-medium"
-                >
-                  30 Dias
-                </Button>
-                <Button
-                  variant={filters.dateFilter === 'all' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setDateFilter('all')}
-                  className="text-xs font-medium"
-                >
-                  Todos
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Date Filter Buttons - Desktop Version (only on desktop) */}
+        <div className="mb-4 hidden sm:block">
+          <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-lg w-fit">
+            <Button
+              variant={filters.dateFilter === 'today' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setDateFilter('today')}
+              className="h-7 px-3 text-xs font-medium"
+            >
+              Hoje
+            </Button>
+            <Button
+              variant={filters.dateFilter === 'week' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setDateFilter('week')}
+              className="h-7 px-3 text-xs font-medium"
+            >
+              7 Dias
+            </Button>
+            <Button
+              variant={filters.dateFilter === 'month' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setDateFilter('month')}
+              className="h-7 px-3 text-xs font-medium"
+            >
+              30 Dias
+            </Button>
+            <Button
+              variant={filters.dateFilter === 'all' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setDateFilter('all')}
+              className="h-7 px-3 text-xs font-medium"
+            >
+              Todos
+            </Button>
+          </div>
+        </div>
 
         {/* Filters - Mobile Optimized */}
         <Card className="w-full max-w-full">
