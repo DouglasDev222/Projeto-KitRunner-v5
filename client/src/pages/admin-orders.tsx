@@ -566,7 +566,7 @@ export default function AdminOrders() {
 
   return (
     <AdminLayout>
-      <div className="admin-container space-y-4 lg:space-y-6 px-1 sm:px-0">
+      <div className="admin-container space-y-4 lg:space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="min-w-0 flex-1">
@@ -1212,7 +1212,7 @@ export default function AdminOrders() {
           setSelectedOrderId(null);
         }
       }}>
-        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto mx-4 sm:mx-6 z-[90]">
+        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto z-[90] w-full">
           <DialogHeader className="pb-4">
             <DialogTitle className="text-lg">Detalhes do Pedido</DialogTitle>
             <DialogDescription className="text-sm">
