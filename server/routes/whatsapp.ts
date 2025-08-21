@@ -470,6 +470,7 @@ router.get('/templates', async (req: Request, res: Response) => {
         description: template.description,
         isActive: template.isActive,
         isDefault: template.isDefault,
+        quickSend: template.quickSend,
         placeholders: template.placeholders ? JSON.parse(template.placeholders) : null,
         createdAt: template.createdAt,
         updatedAt: template.updatedAt
