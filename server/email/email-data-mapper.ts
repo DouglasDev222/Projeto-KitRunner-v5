@@ -416,7 +416,7 @@ export class EmailDataMapper {
     const pricing: PricingInfo = {
       deliveryCost: order.deliveryCost,
       extraKitsCost: order.extraKitsCost,
-      donationCost: order.donationCost || '0',
+      donationCost: order.donationCost !== null && order.donationCost !== undefined ? order.donationCost : '0',
       totalCost: order.totalCost
     };
 

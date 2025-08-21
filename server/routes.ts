@@ -611,11 +611,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       totalCost = baseCost + deliveryCost + additionalCost + donationAmount;
 
-      // Use provided costs or calculate them
-      const finalDeliveryCost = orderData.deliveryCost || deliveryCost;
-      const finalExtraKitsCost = orderData.extraKitsCost || additionalCost;
-      const finalDonationAmount = orderData.donationAmount || donationAmount;
-      const finalTotalCost = orderData.totalCost || totalCost;
+      // Use provided costs or calculate them (handle 0 values correctly)
+      const finalDeliveryCost = orderData.deliveryCost !== undefined ? Number(orderData.deliveryCost) : deliveryCost;
+      const finalExtraKitsCost = orderData.extraKitsCost !== undefined ? Number(orderData.extraKitsCost) : additionalCost;
+      const finalDonationAmount = orderData.donationAmount !== undefined ? Number(orderData.donationAmount) : donationAmount;
+      const finalTotalCost = orderData.totalCost !== undefined ? Number(orderData.totalCost) : totalCost;
+
+      console.log(`💰 FINAL PRICING CALCULATION:
+        - Delivery Cost: R$ ${finalDeliveryCost} (provided: ${orderData.deliveryCost}, calculated: ${deliveryCost})
+        - Extra Kits Cost: R$ ${finalExtraKitsCost} (provided: ${orderData.extraKitsCost}, calculated: ${additionalCost})
+        - Donation Amount: R$ ${finalDonationAmount} (provided: ${orderData.donationAmount}, calculated: ${donationAmount})
+        - Total Cost: R$ ${finalTotalCost} (provided: ${orderData.totalCost}, calculated: ${totalCost})
+      `);
 
       // Create order with proper pricing breakdown
       const order = await storage.createOrder({
