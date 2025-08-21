@@ -370,14 +370,10 @@ router.post('/send-test', async (req: Request, res: Response) => {
 
     const { phoneNumber, message } = validation.data;
     
-    // Adicionar +55 se não tiver código de país
-    let formattedPhone = phoneNumber;
-    if (!formattedPhone.startsWith('+')) {
-      formattedPhone = '+55' + formattedPhone;
-    }
-    console.log(`📱 Test message - Original: ${phoneNumber} → Formatted: ${formattedPhone}`);
+    // A normalização será feita pelo WhatsApp Service
+    console.log(`📱 Test message - Phone: ${phoneNumber}`);
     
-    const result = await whatsAppService.sendMessage(formattedPhone, message);
+    const result = await whatsAppService.sendMessage(phoneNumber, message);
     
     if (result.success) {
       res.json({
@@ -1001,15 +997,8 @@ router.post('/templates/:id/test', async (req: Request, res: Response) => {
 
     const { phoneNumber, testData } = validation.data;
     
-    // Adicionar +55 se não tiver código de país
-    console.log(`🔥 DEBUG: Received phone number: "${phoneNumber}"`);
-    let formattedPhone = phoneNumber;
-    if (!formattedPhone.startsWith('+')) {
-      formattedPhone = '+55' + formattedPhone;
-      console.log(`🔥 DEBUG: Added +55 prefix: "${formattedPhone}"`);
-    } else {
-      console.log(`🔥 DEBUG: Phone already has prefix: "${formattedPhone}"`);
-    }
+    // A normalização será feita pelo WhatsApp Service
+    console.log(`📱 Template test - Phone: ${phoneNumber}`);
     
     const { db } = await import('../db');
     const { whatsappTemplates } = await import('@shared/schema');
@@ -1036,7 +1025,7 @@ router.post('/templates/:id/test', async (req: Request, res: Response) => {
     });
     
     // Enviar mensagem usando o serviço WhatsApp
-    const result = await whatsAppService.sendMessage(formattedPhone, message);
+    const result = await whatsAppService.sendMessage(phoneNumber, message);
     
     if (result.success) {
       res.json({
@@ -1153,11 +1142,8 @@ router.post('/send-message', async (req: Request, res: Response) => {
       messageContent = customMessage;
     }
 
-    // Formatar telefone
-    let phoneNumber = order.customer.phone;
-    if (!phoneNumber.startsWith('+')) {
-      phoneNumber = '+55' + phoneNumber;
-    }
+    // Usar telefone do cliente (normalização será feita pelo WhatsApp Service)
+    const phoneNumber = order.customer.phone;
 
     // Enviar mensagem via WhatsApp Service
     const result = await whatsAppService.sendMessage(phoneNumber, messageContent);

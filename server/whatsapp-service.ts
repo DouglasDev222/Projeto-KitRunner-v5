@@ -69,16 +69,52 @@ export class WhatsAppService {
   }
 
   /**
+   * Normalize phone number according to Brazilian format
+   * Rules: +55 (country) + 83 (state) + 8 digits (remove 9 if present before 8 digits)
+   */
+  private normalizePhoneNumber(phoneNumber: string): string {
+    // Remove all non-numeric characters
+    const numbersOnly = phoneNumber.replace(/\D/g, '');
+    
+    // Get the last 8 digits
+    const last8Digits = numbersOnly.slice(-8);
+    
+    // If we have exactly 8 digits, format as +55 83 XXXXXXXX
+    if (last8Digits.length === 8) {
+      return `+5583${last8Digits}`;
+    }
+    
+    // If we have 9 digits, check if the 9th digit (from right) is 9
+    if (numbersOnly.length >= 9) {
+      const last9Digits = numbersOnly.slice(-9);
+      if (last9Digits.charAt(0) === '9') {
+        // Remove the 9 and take the next 8 digits
+        const corrected8Digits = last9Digits.slice(1);
+        return `+5583${corrected8Digits}`;
+      } else {
+        // Take the last 8 digits
+        return `+5583${last8Digits}`;
+      }
+    }
+    
+    // If we have less than 8 digits, pad with zeros (fallback)
+    const paddedDigits = last8Digits.padStart(8, '0');
+    return `+5583${paddedDigits}`;
+  }
+
+  /**
    * Send WhatsApp message - Updated for new API format
    */
   async sendMessage(phoneNumber: string, message: string): Promise<WhatsAppMessageResponse> {
     try {
-      console.log('📱 Sending WhatsApp message to:', phoneNumber);
+      // Normalize the phone number first
+      const normalizedPhoneNumber = this.normalizePhoneNumber(phoneNumber);
+      console.log(`📱 Sending WhatsApp message - Original: ${phoneNumber} → Normalized: ${normalizedPhoneNumber}`);
       
       const response: AxiosResponse<WhatsAppMessageResponse> = await axios.post(
         `${this.apiUrl}/api/send-message`,
         {
-          number: phoneNumber,
+          number: normalizedPhoneNumber,
           message: message
         },
         {
@@ -316,40 +352,11 @@ Qualquer dúvida, estamos à disposição.`;
   }
 
   /**
-   * Format phone number for WhatsApp API - Brazilian format
-   * Removes parentheses, adds country code 55, removes the 9 after area code for mobile numbers
-   * Example: (83) 98760-6350 -> 83987606350 -> 5583987606350 -> 558387606350
+   * Format phone number for WhatsApp API - Brazilian format (DEPRECATED)
+   * Use normalizePhoneNumber instead
    */
   formatPhoneNumber(phone: string): string {
-    // Remove all non-numeric characters (parentheses, spaces, dashes)
-    let cleaned = phone.replace(/\D/g, '');
-    
-    console.log(`📱 WhatsApp: Original phone: ${phone}, Cleaned: ${cleaned}`);
-    
-    // If it doesn't start with 55 (Brazil country code), add it
-    if (!cleaned.startsWith('55')) {
-      cleaned = '55' + cleaned;
-    }
-    
-    console.log(`📱 WhatsApp: After country code: ${cleaned}`);
-    
-    // Brazilian phone number format: 55 + area code (2 digits) + number
-    // For mobile numbers with 9-digit local part, remove the first 9 after area code
-    // Example: 5583987606350 -> 558387606350
-    if (cleaned.length === 13 && cleaned.startsWith('55')) {
-      const areaCode = cleaned.substring(2, 4);
-      const localNumber = cleaned.substring(4);
-      
-      // Check if it's a mobile number (starts with 9 and has 9 digits)
-      if (localNumber.length === 9 && localNumber.startsWith('9')) {
-        const withoutNine = localNumber.substring(1); // Remove the 9
-        cleaned = '55' + areaCode + withoutNine;
-        console.log(`📱 WhatsApp: Removed leading 9 from mobile number: ${cleaned}`);
-      }
-    }
-    
-    console.log(`📱 WhatsApp: Final formatted phone: ${cleaned}`);
-    return cleaned;
+    return this.normalizePhoneNumber(phone);
   }
 
   /**
