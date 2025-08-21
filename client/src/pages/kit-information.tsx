@@ -274,7 +274,8 @@ export default function KitInformation() {
                                 value={formatCPF(fieldProps.value || "")}
                                 onChange={(e) => {
                                   try {
-                                    const value = e.target.value.replace(/\D/g, "");
+                                    // Limit to exactly 11 digits
+                                    const value = e.target.value.replace(/\D/g, "").slice(0, 11);
                                     fieldProps.onChange(value);
 
                                     if (value.length === 11) {
@@ -286,6 +287,9 @@ export default function KitInformation() {
                                       } else {
                                         form.clearErrors(`kits.${index}.cpf`);
                                       }
+                                    } else if (value.length < 11) {
+                                      // Clear any previous error if CPF is still being typed
+                                      form.clearErrors(`kits.${index}.cpf`);
                                     }
                                   } catch (error) {
                                     console.warn("Error handling CPF change:", error);

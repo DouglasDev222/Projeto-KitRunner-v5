@@ -30,7 +30,8 @@ export function isValidCPF(cpf: string): boolean {
 
 export function formatCPF(cpf: string | null | undefined): string {
   if (!cpf) return '';
-  const cleanCPF = cpf.replace(/\D/g, "");
+  // Limit to exactly 11 digits maximum
+  const cleanCPF = cpf.replace(/\D/g, "").slice(0, 11);
   
   if (cleanCPF.length <= 3) {
     return cleanCPF;
@@ -38,11 +39,9 @@ export function formatCPF(cpf: string | null | undefined): string {
     return cleanCPF.replace(/(\d{3})(\d+)/, "$1.$2");
   } else if (cleanCPF.length <= 9) {
     return cleanCPF.replace(/(\d{3})(\d{3})(\d+)/, "$1.$2.$3");
-  } else if (cleanCPF.length <= 11) {
-    return cleanCPF.replace(/(\d{3})(\d{3})(\d{3})(\d+)/, "$1.$2.$3-$4");
+  } else {
+    return cleanCPF.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
   }
-  
-  return cleanCPF.slice(0, 11).replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
 }
 
 
