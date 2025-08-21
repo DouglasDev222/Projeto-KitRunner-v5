@@ -1490,6 +1490,33 @@ export default function AdminOrders() {
                 </CardContent>
               </Card>
 
+              {/* Kit Details */}
+              {selectedOrder.kits && selectedOrder.kits.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Detalhes dos Kits ({selectedOrder.kits.length})</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse border border-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="border border-gray-200 px-4 py-2 text-left font-medium">Nome</th>
+                          <th className="border border-gray-200 px-4 py-2 text-left font-medium">CPF</th>
+                          <th className="border border-gray-200 px-4 py-2 text-left font-medium">Tamanho da Camiseta</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedOrder.kits.map((kit: any, index: number) => (
+                          <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                            <td className="border border-gray-200 px-4 py-2">{kit.participantName}</td>
+                            <td className="border border-gray-200 px-4 py-2">{kit.participantCpf ? formatCPF(kit.participantCpf) : 'N/A'}</td>
+                            <td className="border border-gray-200 px-4 py-2">{kit.shirtSize || 'N/A'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
               {/* Order Status History */}
               <OrderStatusHistory orderId={selectedOrder.id} showTitle={true} isAdminContext={true} />
 
@@ -1713,6 +1740,38 @@ export default function AdminOrders() {
                 </Card>
               )}
 
+              {/* Kit Details */}
+              {selectedOrder.kits && selectedOrder.kits.length > 0 && (
+                <Card>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Detalhes dos Kits ({selectedOrder.kits.length})
+                    </h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-2">Nome</th>
+                            <th className="text-left py-2">CPF</th>
+                            <th className="text-left py-2">Tamanho da Camiseta</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedOrder.kits.map((kit: any, index: number) => (
+                            <tr key={index} className="border-b">
+                              <td className="py-2">{kit.participantName}</td>
+                              <td className="py-2">{kit.participantCpf ? formatCPF(kit.participantCpf) : 'N/A'}</td>
+                              <td className="py-2">{kit.shirtSize || 'N/A'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Order Status History */}
               <OrderStatusHistory orderId={selectedOrder.id} showTitle={true} isAdminContext={true} />
 
@@ -1759,48 +1818,12 @@ export default function AdminOrders() {
           </div>
           
           <div className="p-4">
-            <div className="space-y-6">
-              {/* Customer Info Card */}
-              <Card>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Informações do Cliente
-                  </h3>
-                  <div className="space-y-1 text-sm">
-                    <p><span className="font-medium">Nome:</span> {whatsAppOrder?.customer?.name}</p>
-                    <p><span className="font-medium">Telefone:</span> {whatsAppOrder?.customer?.phone}</p>
-                    <p><span className="font-medium">Pedido:</span> {whatsAppOrder?.orderNumber}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* WhatsApp Integration - Simplified mobile version */}
-              <Card>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold mb-3">Enviar Mensagem</h3>
-                  <div className="space-y-4">
-                    <Button 
-                      className="w-full"
-                      onClick={() => {
-                        if (whatsAppOrder?.customer?.phone) {
-                          const phone = whatsAppOrder.customer.phone.replace(/\D/g, '');
-                          const message = `Olá ${whatsAppOrder.customer.name}, tudo bem? Sobre seu pedido ${whatsAppOrder.orderNumber}...`;
-                          window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(message)}`, '_blank');
-                        }
-                      }}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Abrir WhatsApp
-                    </Button>
-                    
-                    <div className="text-xs text-muted-foreground text-center">
-                      Isso abrirá o WhatsApp Web ou aplicativo com uma mensagem pré-definida
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <WhatsAppModal
+              isOpen={true}
+              onClose={() => setMobileWhatsAppOpen(false)}
+              order={whatsAppOrder}
+              isMobile={true}
+            />
           </div>
         </div>
       )}

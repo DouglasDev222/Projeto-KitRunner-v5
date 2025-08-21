@@ -30,9 +30,10 @@ interface WhatsAppModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: any;
+  isMobile?: boolean;
 }
 
-export function WhatsAppModal({ isOpen, onClose, order }: WhatsAppModalProps) {
+export function WhatsAppModal({ isOpen, onClose, order, isMobile = false }: WhatsAppModalProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [customMessage, setCustomMessage] = useState("");
   const [previewContent, setPreviewContent] = useState("");
@@ -151,6 +152,151 @@ export function WhatsAppModal({ isOpen, onClose, order }: WhatsAppModalProps) {
         return 'Pendente';
     }
   };
+
+  // Se é mobile, retorna apenas o conteúdo sem Dialog wrapper
+  if (isMobile) {
+    return (
+      <div className="space-y-6">
+        {/* Customer Info - Mobile Optimized */}
+        <div className="bg-gray-50 p-3 rounded-lg">
+          <div className="flex flex-col gap-2 mb-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <User className="h-4 w-4 text-gray-600 flex-shrink-0" />
+              <span className="font-medium truncate">{order?.customer?.name}</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full h-10 text-xs"
+              onClick={() => {
+                const phone = order?.customer?.phone?.replace(/\D/g, '');
+                if (phone) {
+                  window.open(`https://api.whatsapp.com/send?phone=55${phone}`, '_blank');
+                }
+              }}
+              data-testid="button-open-whatsapp-direct"
+            >
+              <ExternalLink className="h-3 w-3 mr-1" />
+              Abrir WhatsApp
+            </Button>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Phone className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">{order?.customer?.phone}</span>
+          </div>
+        </div>
+
+        {/* Quick Send Buttons - Mobile Optimized */}
+        {!templatesLoading && (templates as any)?.templates?.filter((t: WhatsappTemplate) => t.quickSend).length > 0 && (
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Envio Rápido</Label>
+            <div className="grid grid-cols-1 gap-2">
+              {(templates as any).templates
+                .filter((template: WhatsappTemplate) => template.quickSend)
+                .map((template: WhatsappTemplate) => (
+                  <Button
+                    key={template.id}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs justify-start h-10 px-3"
+                    onClick={() => {
+                      const data = {
+                        orderId: order.id,
+                        templateId: template.id
+                      };
+                      sendMessageMutation.mutate(data);
+                    }}
+                    disabled={sendMessageMutation.isPending}
+                    data-testid={`button-quick-send-${template.id}`}
+                  >
+                    <MessageCircle className="h-3 w-3 mr-2 flex-shrink-0" />
+                    <span className="truncate">
+                      {sendMessageMutation.isPending ? "Enviando..." : template.name}
+                    </span>
+                  </Button>
+                ))
+              }
+            </div>
+            <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
+              💡 Clique para enviar rapidamente usando um template pré-definido
+            </div>
+          </div>
+        )}
+
+        {/* Template Selection */}
+        <div className="space-y-2">
+          <Label htmlFor="template-select">Selecionar Template</Label>
+          <Select 
+            value={selectedTemplateId} 
+            onValueChange={(value) => {
+              setSelectedTemplateId(value);
+              setCustomMessage("");
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Escolha um template..." />
+            </SelectTrigger>
+            <SelectContent>
+              {templatesLoading ? (
+                <SelectItem value="loading" disabled>Carregando...</SelectItem>
+              ) : (
+                (templates as any)?.templates?.map((template: WhatsappTemplate) => (
+                  <SelectItem key={template.id} value={template.id.toString()}>
+                    {template.name} {template.status && `(${template.status})`}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Custom Message */}
+        <div className="space-y-2">
+          <Label htmlFor="custom-message">Ou mensagem personalizada</Label>
+          <Textarea
+            id="custom-message"
+            placeholder="Digite sua mensagem personalizada..."
+            value={customMessage}
+            onChange={(e) => {
+              setCustomMessage(e.target.value);
+              setSelectedTemplateId("");
+            }}
+            rows={4}
+          />
+        </div>
+
+        {/* Preview */}
+        {previewContent && (
+          <div className="space-y-2">
+            <Label>Pré-visualização</Label>
+            <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
+              <div className="whitespace-pre-wrap text-sm">{previewContent}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Send Button - Mobile Optimized */}
+        <Button
+          onClick={handleSendMessage}
+          disabled={sendMessageMutation.isPending || (!selectedTemplateId && !customMessage.trim())}
+          className="w-full h-11 text-base font-medium"
+          data-testid="button-send-whatsapp"
+        >
+          {sendMessageMutation.isPending ? (
+            <div className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+              Enviando...
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Send className="h-4 w-4" />
+              Enviar Mensagem
+            </div>
+          )}
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
