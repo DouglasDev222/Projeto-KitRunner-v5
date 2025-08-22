@@ -423,6 +423,31 @@ export default function AddressConfirmation() {
       <div className="lg:hidden max-w-md mx-auto bg-white min-h-screen">
         <Header showBackButton onBack={getBackNavigation()} />
         <div className="p-4">
+          {/* Mobile Progress Indicator */}
+          <div className="flex items-center justify-center mb-6">
+            <div className="flex items-center space-x-3 text-xs">
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center text-xs">✓</div>
+                <span className="ml-1 text-neutral-600">Evento</span>
+              </div>
+              <div className="w-6 h-0.5 bg-primary"></div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center text-xs">2</div>
+                <span className="ml-1 text-primary font-medium">Endereço</span>
+              </div>
+              <div className="w-6 h-0.5 bg-neutral-300"></div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-neutral-300 text-neutral-600 rounded-full flex items-center justify-center text-xs">3</div>
+                <span className="ml-1 text-neutral-400 text-xs">Retirada</span>
+              </div>
+              <div className="w-6 h-0.5 bg-neutral-300"></div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-neutral-300 text-neutral-600 rounded-full flex items-center justify-center text-xs">4</div>
+                <span className="ml-1 text-neutral-400 text-xs">Pagamento</span>
+              </div>
+            </div>
+          </div>
+          
           <div className="flex items-center mb-4">
             <MapPin className="w-6 h-6 text-primary mr-2" />
             <h2 className="text-2xl font-bold text-neutral-800">Confirmar Endereço</h2>
