@@ -131,6 +131,12 @@ export default function Payment() {
     const loadSecurePricing = async () => {
       if (!selectedAddress || !event || !kitData) return;
       
+      // Don't interrupt ongoing PIX payment process
+      if (isProcessing && paymentMethod === 'pix') {
+        console.log('🔒 Skipping pricing validation during PIX generation to avoid UI interruption');
+        return;
+      }
+      
       setPricingLoading(true);
       setPricingError(null);
       
@@ -164,7 +170,7 @@ export default function Payment() {
     };
     
     loadSecurePricing();
-  }, [selectedAddress, event, kitData, id]);
+  }, [selectedAddress, event, kitData, id, isProcessing, paymentMethod]);
 
   const createOrderMutation = useMutation({
     mutationFn: async (orderData: OrderCreation) => {
@@ -246,7 +252,9 @@ export default function Payment() {
     );
   }
 
-  if (pricingLoading) {
+  // SECURITY FIX: Don't block UI completely during pricing calculation when PIX is being processed
+  // This fixes the issue where PIX generation gets interrupted by pricing validation
+  if (pricingLoading && !isProcessing && paymentMethod !== 'pix') {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
         <Header showBackButton onBack={() => setLocation(`/events/${id}/address`)} />

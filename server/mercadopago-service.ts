@@ -36,6 +36,7 @@ export interface PaymentData {
 
 export interface PIXPaymentResponse {
   id: number;
+  paymentId?: number;
   status: string;
   qr_code_base64?: string;
   qr_code?: string;

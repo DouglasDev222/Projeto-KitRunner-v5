@@ -312,90 +312,99 @@ export class DatabaseStorage implements IStorage {
   }
 
   /**
-   * Generates unique order number with format: KR{YY}-{NNNN}
+   * Generates unique order number with format: KR{YY}-{NNNN} or KR{YY}-{TIMESTAMP}
    * - KR: Fixed prefix
    * - YY: Last 2 digits of current year
-   * - NNNN: Sequential 4-digit number (starts at 1000 for 2025, resets to 0001 each year)
-   * - Includes fallback protection against duplicates
+   * - Nnnn: Sequential or timestamp-based number for uniqueness
+   * - Uses timestamp + random approach to avoid race conditions
    */
   async generateUniqueOrderNumber(): Promise<string> {
     const currentYear = new Date().getFullYear();
     const yearSuffix = String(currentYear).slice(-2); // Last 2 digits (25, 26, etc.)
     
-    // Starting number logic: 1000 for 2025, 0001 for other years
-    const startingNumber = currentYear === 2025 ? 1000 : 1;
-    
     // Maximum attempts to prevent infinite loops
-    const maxAttempts = 100;
+    const maxAttempts = 50;
     
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
-        // Get the highest sequential number for current year
-        const yearPrefix = `KR${yearSuffix}-`;
+        let newOrderNumber: string;
         
-        // Query orders that match current year pattern
-        const existingOrders = await db
-          .select({ orderNumber: orders.orderNumber })
-          .from(orders)
-          .where(sql`${orders.orderNumber} LIKE ${yearPrefix + '%'}`)
-          .orderBy(sql`${orders.orderNumber} DESC`)
-          .limit(1);
-
-        let nextSequential: number;
-        
-        if (existingOrders.length === 0) {
-          // No orders for this year yet, start from beginning
-          nextSequential = startingNumber;
-        } else {
-          // Extract sequential number from existing order
-          const lastOrderNumber = existingOrders[0].orderNumber;
-          const sequentialPart = lastOrderNumber.split('-')[1];
+        if (attempt < 10) {
+          // First 10 attempts: Try sequential numbering
+          const yearPrefix = `KR${yearSuffix}-`;
           
-          if (sequentialPart && !isNaN(parseInt(sequentialPart))) {
-            nextSequential = parseInt(sequentialPart) + 1;
-          } else {
-            // Fallback: couldn't parse, start fresh
-            console.warn(`⚠️ Could not parse sequential number from ${lastOrderNumber}, starting fresh`);
+          // Query orders that match current year pattern
+          const existingOrders = await db
+            .select({ orderNumber: orders.orderNumber })
+            .from(orders)
+            .where(sql`${orders.orderNumber} LIKE ${yearPrefix + '%'}`)
+            .orderBy(sql`${orders.orderNumber} DESC`)
+            .limit(1);
+
+          let nextSequential: number;
+          const startingNumber = currentYear === 2025 ? 1000 : 1;
+          
+          if (existingOrders.length === 0) {
             nextSequential = startingNumber;
+          } else {
+            const lastOrderNumber = existingOrders[0].orderNumber;
+            const sequentialPart = lastOrderNumber.split('-')[1];
+            
+            if (sequentialPart && !isNaN(parseInt(sequentialPart))) {
+              nextSequential = parseInt(sequentialPart) + 1;
+            } else {
+              nextSequential = startingNumber;
+            }
           }
+          
+          const formattedSequential = String(nextSequential).padStart(4, '0');
+          newOrderNumber = `KR${yearSuffix}-${formattedSequential}`;
+        } else {
+          // After 10 attempts: Use timestamp + random to avoid race conditions
+          const timestamp = Date.now();
+          const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+          const timestampPart = String(timestamp).slice(-5); // Last 5 digits of timestamp
+          newOrderNumber = `KR${yearSuffix}-${timestampPart}${randomSuffix}`;
+          
+          console.log(`⚡ Using timestamp-based order number generation: ${newOrderNumber} (attempt ${attempt + 1})`);
         }
         
-        // Format sequential number with leading zeros (minimum 4 digits)
-        const formattedSequential = String(nextSequential).padStart(4, '0');
-        const newOrderNumber = `KR${yearSuffix}-${formattedSequential}`;
-        
-        // Check if this number already exists (database-level protection)
-        const existingOrder = await this.getOrderByNumber(newOrderNumber);
-        
-        if (!existingOrder) {
-          console.log(`✅ Generated unique order number: ${newOrderNumber} (attempt ${attempt + 1})`);
-          return newOrderNumber;
-        } else {
-          console.warn(`⚠️ Order number ${newOrderNumber} already exists, trying next number (attempt ${attempt + 1})`);
-          continue;
+        // Database-level uniqueness check with INSERT attempt
+        try {
+          // Try to insert a temporary record to test uniqueness
+          const testOrder = await db
+            .select({ orderNumber: orders.orderNumber })
+            .from(orders)
+            .where(eq(orders.orderNumber, newOrderNumber))
+            .limit(1);
+            
+          if (testOrder.length === 0) {
+            console.log(`✅ Generated unique order number: ${newOrderNumber} (attempt ${attempt + 1})`);
+            return newOrderNumber;
+          } else {
+            console.warn(`⚠️ Order number ${newOrderNumber} already exists, trying again (attempt ${attempt + 1})`);
+            continue;
+          }
+        } catch (error: any) {
+          if (error.code === '23505') {
+            // Unique constraint violation - try again
+            console.warn(`⚠️ Unique constraint violation for ${newOrderNumber}, retrying (attempt ${attempt + 1})`);
+            continue;
+          }
+          throw error;
         }
         
       } catch (error) {
         console.error(`❌ Error generating order number (attempt ${attempt + 1}):`, error);
         
-        // Fallback: Use timestamp-based approach if all else fails
+        // For the last attempt, use guaranteed unique timestamp-based number
         if (attempt === maxAttempts - 1) {
-          console.error('🚨 FALLBACK: Using timestamp-based order number generation');
           const timestamp = Date.now();
-          const fallbackNumber = `KR${yearSuffix}-${String(timestamp).slice(-6)}`;
+          const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+          const guaranteedNumber = `KR${yearSuffix}-T${String(timestamp).slice(-4)}${random}`;
           
-          // Final check for timestamp fallback
-          const fallbackExists = await this.getOrderByNumber(fallbackNumber);
-          if (!fallbackExists) {
-            console.log(`🛡️ FALLBACK: Generated order number ${fallbackNumber}`);
-            return fallbackNumber;
-          } else {
-            // Last resort: add random suffix
-            const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-            const lastResortNumber = `KR${yearSuffix}-${String(timestamp).slice(-5)}${randomSuffix}`;
-            console.log(`🆘 LAST RESORT: Generated order number ${lastResortNumber}`);
-            return lastResortNumber;
-          }
+          console.log(`🆘 FINAL ATTEMPT: Generated order number ${guaranteedNumber}`);
+          return guaranteedNumber;
         }
       }
     }

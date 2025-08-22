@@ -3295,7 +3295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await db
         .update(orders)
         .set({
-          paymentId: (pixPayment.id || pixPayment.paymentId)?.toString() || null,
+          paymentId: pixPayment.id?.toString() || null,
           pixQrCode: pixPayment.qr_code_base64 || null,
           pixCopyPaste: pixPayment.qr_code || null,
           pixExpirationDate: pixExpiration,
