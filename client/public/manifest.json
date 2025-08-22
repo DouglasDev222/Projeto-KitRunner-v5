@@ -3,7 +3,7 @@
   "name": "KitRunner",
   "short_name": "KitRunner",
   "description": "Sistema de pedidos de kits esportivos",
-  "start_url": "/eventos",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1f2937",
