@@ -356,9 +356,26 @@ export default function KitInformation() {
                   </CardContent>
                 </Card>
               )) : (
-                <div className="text-center text-neutral-600 py-4">
-                  <p>Carregando formulários dos kits...</p>
-                </div>
+                <>
+                  {/* Mobile Loading */}
+                  <div className="lg:hidden text-center text-neutral-600 py-4">
+                    <p>Carregando formulários dos kits...</p>
+                  </div>
+                  
+                  {/* Desktop Loading */}
+                  <div className="hidden lg:block space-y-4 animate-pulse">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="bg-white border border-gray-200 rounded-lg p-6">
+                        <div className="h-6 bg-gray-200 rounded mb-4 w-24" />
+                        <div className="space-y-4">
+                          <div className="h-12 bg-gray-200 rounded-lg" />
+                          <div className="h-12 bg-gray-200 rounded-lg" />
+                          <div className="h-12 bg-gray-200 rounded-lg" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
 
