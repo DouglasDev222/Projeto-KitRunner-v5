@@ -77,11 +77,11 @@ export default function OrderConfirmation() {
   };
 
   const handleBackToHome = () => {
-    // Clear session storage and go to home
+    // Clear session storage and go to eventos
     sessionStorage.removeItem("customerData");
     sessionStorage.removeItem("kitData");
     sessionStorage.removeItem("orderConfirmation");
-    setLocation("/");
+    setLocation("/eventos");
   };
 
   return (
