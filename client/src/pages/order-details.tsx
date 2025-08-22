@@ -101,7 +101,7 @@ export default function OrderDetails() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center">
               <Package className="w-5 h-5 mr-2" />
-              Kits ({order.kitQuantity})
+              Retiradas - {order.kitQuantity} Kits
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -397,7 +397,7 @@ export default function OrderDetails() {
                   <CardHeader>
                     <CardTitle className="text-xl flex items-center">
                       <Package className="w-6 h-6 mr-3 text-purple-600" />
-                      Kits Solicitados ({order.kitQuantity})
+                      Retiradas Solicitadas - {order.kitQuantity} Kits
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
