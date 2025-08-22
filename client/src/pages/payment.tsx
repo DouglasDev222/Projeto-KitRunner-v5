@@ -406,7 +406,10 @@ export default function Payment() {
             </div>
           </div>
           
-          <h2 className="text-2xl font-bold text-neutral-800 mb-2">Pagamento</h2>
+          <div className="flex items-center mb-2">
+            <CreditCard className="w-6 h-6 text-purple-600 mr-3" />
+            <h2 className="text-2xl font-bold text-neutral-800">Pagamento</h2>
+          </div>
           <p className="text-neutral-600 mb-6">Finalize seu pedido escolhendo a forma de pagamento</p>
         
         {/* Order Summary */}
