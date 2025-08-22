@@ -133,24 +133,175 @@ export default function ProfileEdit() {
   // Show loading while auth context is initializing
   if (isLoading) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header showBackButton onBack={() => setLocation("/profile")} />
-        <div className="p-4 text-center">
-          <p className="text-neutral-600">Carregando...</p>
+      <>
+        {/* Mobile Loading */}
+        <div className="lg:hidden max-w-md mx-auto bg-white min-h-screen">
+          <Header showBackButton onBack={() => setLocation("/profile")} />
+          <div className="p-4 text-center">
+            <p className="text-neutral-600">Carregando...</p>
+          </div>
         </div>
-      </div>
+
+        {/* Desktop Loading */}
+        <div className="hidden lg:block min-h-screen bg-gray-50">
+          {/* Desktop Header Skeleton */}
+          <nav className="bg-white border-b border-gray-200 shadow-sm">
+            <div className="max-w-7xl mx-auto px-8">
+              <div className="flex items-center justify-between h-16 animate-pulse">
+                <div className="flex items-center">
+                  <div className="h-10 w-32 bg-gray-200 rounded" />
+                </div>
+                <div className="flex items-center space-x-8">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-8 w-20 bg-gray-200 rounded" />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </nav>
+
+          {/* Main Content Skeleton */}
+          <div className="max-w-6xl mx-auto pt-16 pb-8 px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+              {/* Left Column - Information Skeleton (2/5) */}
+              <div className="lg:col-span-2 lg:pr-8">
+                <div className="sticky top-24 animate-pulse">
+                  <div className="flex items-center mb-8">
+                    <div className="w-12 h-12 bg-gray-200 rounded mr-4" />
+                    <div>
+                      <div className="h-8 bg-gray-200 rounded mb-2 w-40" />
+                      <div className="h-6 bg-gray-200 rounded w-60" />
+                    </div>
+                  </div>
+
+                  {/* Security Info Card Skeleton */}
+                  <div className="border-amber-200 bg-amber-50 shadow-lg rounded-lg p-8 mb-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-6 h-6 bg-amber-200 rounded flex-shrink-0" />
+                      <div className="flex-1">
+                        <div className="h-6 bg-amber-200 rounded mb-3 w-48" />
+                        <div className="space-y-2">
+                          {[1, 2, 3].map((i) => (
+                            <div key={i} className="h-4 bg-amber-200 rounded w-full" />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Actions Card Skeleton */}
+                  <div className="shadow-lg rounded-lg p-8 bg-white">
+                    <div className="h-6 bg-gray-200 rounded mb-4 w-32" />
+                    <div className="space-y-3">
+                      {[1, 2].map((i) => (
+                        <div key={i} className="h-12 bg-gray-200 rounded w-full" />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Form Skeleton (3/5) */}
+              <div className="lg:col-span-3">
+                <div className="shadow-lg rounded-lg bg-white">
+                  <div className="p-10 pb-6 animate-pulse">
+                    <div className="flex items-center mb-2">
+                      <div className="w-6 h-6 bg-gray-200 rounded mr-3" />
+                      <div className="h-8 bg-gray-200 rounded w-48" />
+                    </div>
+                    <div className="h-4 bg-gray-200 rounded w-64" />
+                  </div>
+                  <div className="p-10 pt-0 animate-pulse">
+                    {/* Form Grid Skeleton */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Name Field */}
+                      <div className="md:col-span-2">
+                        <div className="h-5 bg-gray-200 rounded mb-2 w-32" />
+                        <div className="h-12 bg-gray-200 rounded" />
+                      </div>
+
+                      {/* Email and Phone Fields */}
+                      <div>
+                        <div className="h-5 bg-gray-200 rounded mb-2 w-16" />
+                        <div className="h-12 bg-gray-200 rounded" />
+                      </div>
+                      <div>
+                        <div className="h-5 bg-gray-200 rounded mb-2 w-20" />
+                        <div className="h-12 bg-gray-200 rounded" />
+                      </div>
+
+                      {/* Birth Date and CPF Fields */}
+                      <div>
+                        <div className="h-5 bg-gray-200 rounded mb-2 w-40" />
+                        <div className="h-12 bg-gray-200 rounded" />
+                      </div>
+                      <div>
+                        <div className="h-5 bg-gray-200 rounded mb-2 w-32" />
+                        <div className="h-12 bg-gray-100 rounded" />
+                      </div>
+                    </div>
+
+                    {/* Submit Button Skeleton */}
+                    <div className="pt-10">
+                      <div className="h-14 bg-gray-200 rounded w-full" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
     );
   }
 
   // If not authenticated, show loading while redirecting
   if (!isAuthenticated) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header showBackButton onBack={() => setLocation("/profile")} />
-        <div className="p-4 text-center">
-          <p className="text-neutral-600">Redirecionando para login...</p>
+      <>
+        {/* Mobile Loading */}
+        <div className="lg:hidden max-w-md mx-auto bg-white min-h-screen">
+          <Header showBackButton onBack={() => setLocation("/profile")} />
+          <div className="p-4 text-center">
+            <p className="text-neutral-600">Redirecionando para login...</p>
+          </div>
         </div>
-      </div>
+
+        {/* Desktop Loading */}
+        <div className="hidden lg:block min-h-screen bg-gray-50">
+          <nav className="bg-white border-b border-gray-200 shadow-sm">
+            <div className="max-w-7xl mx-auto px-8">
+              <div className="flex items-center justify-between h-16 animate-pulse">
+                <div className="flex items-center">
+                  <div className="h-10 w-32 bg-gray-200 rounded" />
+                </div>
+                <div className="flex items-center space-x-8">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-8 w-20 bg-gray-200 rounded" />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </nav>
+
+          <div className="max-w-6xl mx-auto pt-16 pb-8 px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+              <div className="lg:col-span-2 lg:pr-8">
+                <div className="text-center animate-pulse">
+                  <div className="h-8 bg-gray-200 rounded mb-4 w-48 mx-auto" />
+                  <div className="h-4 bg-gray-200 rounded w-32 mx-auto" />
+                </div>
+              </div>
+              <div className="lg:col-span-3">
+                <div className="shadow-lg rounded-lg bg-white p-10 animate-pulse">
+                  <div className="h-6 bg-gray-200 rounded mb-4 w-40" />
+                  <div className="h-4 bg-gray-200 rounded w-60" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
     );
   }
 
