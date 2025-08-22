@@ -3,7 +3,8 @@ import { Footer } from "@/components/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Package, Calendar, MapPin, User, CreditCard, Heart, Home, Plus, FileText, ArrowLeft } from "lucide-react";
+import { Package, Calendar, MapPin, User, CreditCard, Heart, Home, Plus, FileText, ArrowLeft } from "lucide-react"; 
+import { Button } from "@/components/ui/button";
 import { useLocation, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
@@ -253,37 +254,41 @@ export default function OrderDetails() {
 
               {/* Navigation Links */}
               <div className="flex items-center space-x-8">
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => setLocation("/")}
                   className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
                 >
                   <Home className="w-4 h-4" />
                   <span>Início</span>
-                </button>
+                </Button>
 
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => setLocation("/my-orders")}
                   className="flex items-center space-x-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-lg font-medium"
                 >
                   <Package className="w-4 h-4" />
                   <span>Pedidos</span>
-                </button>
+                </Button>
 
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => setLocation("/eventos")}
                   className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
                 >
                   <Calendar className="w-4 h-4" />
                   <span>Eventos</span>
-                </button>
+                </Button>
 
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => setLocation("/profile")}
                   className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
                 >
                   <User className="w-4 h-4" />
                   <span>Perfil</span>
-                </button>
+                </Button>
               </div>
             </div>
           </div>
