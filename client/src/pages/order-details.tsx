@@ -263,7 +263,7 @@ export default function OrderDetails() {
 
                 <button
                   onClick={() => setLocation("/my-orders")}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
+                  className="flex items-center space-x-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-lg font-medium"
                 >
                   <Package className="w-4 h-4" />
                   <span>Pedidos</span>
@@ -283,13 +283,6 @@ export default function OrderDetails() {
                 >
                   <User className="w-4 h-4" />
                   <span>Perfil</span>
-                </button>
-
-                <button
-                  className="flex items-center space-x-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-lg font-medium"
-                >
-                  <FileText className="w-4 h-4" />
-                  <span>Detalhes</span>
                 </button>
               </div>
             </div>
