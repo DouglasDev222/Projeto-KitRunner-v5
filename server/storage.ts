@@ -414,32 +414,60 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createOrder(insertOrder: InsertOrder): Promise<Order> {
-    const orderNumber = await this.generateUniqueOrderNumber();
-    const [order] = await db
-      .insert(orders)
-      .values({
-        ...insertOrder,
-        orderNumber,
-      })
-      .returning();
+    const maxRetries = 5;
     
-    // Add initial status history record
-    try {
-      console.log(`📋 Adding initial status history for order ${order.id} with status: ${order.status}`);
-      await this.addStatusHistory(
-        order.id, 
-        null, // No previous status for new orders
-        order.status, 
-        'system', 
-        'Sistema', 
-        'Pedido criado'
-      );
-      console.log(`✅ Initial status history added successfully for order ${order.id}`);
-    } catch (error) {
-      console.error(`❌ Error adding initial status history for order ${order.id}:`, error);
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const orderNumber = await this.generateUniqueOrderNumber();
+        
+        console.log(`🔄 Attempting to create order with number: ${orderNumber} (attempt ${attempt + 1})`);
+        
+        const [order] = await db
+          .insert(orders)
+          .values({
+            ...insertOrder,
+            orderNumber,
+          })
+          .returning();
+        
+        console.log(`✅ Order created successfully: ${orderNumber} (ID: ${order.id})`);
+        
+        // Add initial status history record
+        try {
+          console.log(`📋 Adding initial status history for order ${order.id} with status: ${order.status}`);
+          await this.addStatusHistory(
+            order.id, 
+            null, // No previous status for new orders
+            order.status, 
+            'system', 
+            'Sistema', 
+            'Pedido criado'
+          );
+          console.log(`✅ Initial status history added successfully for order ${order.id}`);
+        } catch (error) {
+          console.error(`❌ Error adding initial status history for order ${order.id}:`, error);
+        }
+        
+        return order;
+        
+      } catch (error: any) {
+        if (error.code === '23505' && error.constraint === 'orders_order_number_unique') {
+          console.warn(`⚠️ Unique constraint violation on attempt ${attempt + 1}, retrying...`);
+          if (attempt === maxRetries - 1) {
+            console.error(`🚨 Failed to create order after ${maxRetries} attempts due to unique constraint violations`);
+            throw new Error('Failed to create order after multiple attempts due to concurrency. Please try again.');
+          }
+          // Add a small random delay to reduce collision probability
+          await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 50));
+          continue;
+        } else {
+          console.error(`❌ Error creating order (attempt ${attempt + 1}):`, error);
+          throw error;
+        }
+      }
     }
     
-    return order;
+    throw new Error('Unexpected error: exceeded maximum retry attempts');
   }
 
   async getOrderById(id: number): Promise<Order | undefined> {
