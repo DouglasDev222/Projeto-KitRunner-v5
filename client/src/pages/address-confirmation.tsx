@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Edit3, CheckCircle, Plus, AlertTriangle, Loader2, Info } from "lucide-react";
+import { MapPin, Edit3, CheckCircle, Plus, AlertTriangle, Loader2, Info, ArrowLeft } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation, useParams } from "wouter";
@@ -418,14 +418,16 @@ export default function AddressConfirmation() {
   }
   
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen">
-      <Header showBackButton onBack={getBackNavigation()} />
-      <div className="p-4">
-        <div className="flex items-center mb-4">
-          <MapPin className="w-6 h-6 text-primary mr-2" />
-          <h2 className="text-2xl font-bold text-neutral-800">Confirmar Endereço</h2>
-        </div>
-        <p className="text-neutral-600 mb-6">Confirme o endereço de entrega para os kits</p>
+    <>
+      {/* Mobile Version */}
+      <div className="lg:hidden max-w-md mx-auto bg-white min-h-screen">
+        <Header showBackButton onBack={getBackNavigation()} />
+        <div className="p-4">
+          <div className="flex items-center mb-4">
+            <MapPin className="w-6 h-6 text-primary mr-2" />
+            <h2 className="text-2xl font-bold text-neutral-800">Confirmar Endereço</h2>
+          </div>
+          <p className="text-neutral-600 mb-6">Confirme o endereço de entrega para os kits</p>
         
         
 
@@ -717,20 +719,199 @@ export default function AddressConfirmation() {
           )}
         </div>
         
-        <Button 
-          className="w-full bg-primary text-white hover:bg-primary/90" 
-          size="lg"
-          onClick={handleConfirmAddress}
-          disabled={!selectedAddress || isEditing || !canContinue || pricingValidationStatus === 'validating'}
-        >
-          {pricingValidationStatus === 'validating' || isCheckingCepZone ? (
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Validando...
-            </div>
-          ) : cepZoneError ? 'CEP não disponível' : 'Confirmar Endereço'}
-        </Button>
+          <Button 
+            className="w-full bg-primary text-white hover:bg-primary/90" 
+            size="lg"
+            onClick={handleConfirmAddress}
+            disabled={!selectedAddress || isEditing || !canContinue}
+          >
+            {pricingValidationStatus === 'validating' || isCheckingCepZone ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Validando...
+              </div>
+            ) : cepZoneError ? 'CEP não disponível' : 'Confirmar Endereço'}
+          </Button>
+        </div>
       </div>
-    </div>
+
+      {/* Desktop Version */}
+      <div className="hidden lg:block min-h-screen bg-gray-50">
+        {/* Simple Back Button */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-4xl mx-auto px-8 py-4">
+            <Button
+              variant="ghost"
+              onClick={getBackNavigation()}
+              className="flex items-center text-gray-600 hover:text-purple-600"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar
+            </Button>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="max-w-4xl mx-auto py-8 px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column - Progress & Summary */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 sticky top-8">
+                <div className="flex items-center mb-4">
+                  <MapPin className="w-6 h-6 text-purple-600 mr-3" />
+                  <h3 className="text-xl font-semibold text-gray-900">Confirmar Endereço</h3>
+                </div>
+                <p className="text-gray-600 mb-6">Confirme o endereço de entrega para os kits</p>
+                
+                {/* Progress Indicator */}
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center text-sm">
+                    <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs mr-3">✓</div>
+                    <span className="text-gray-700">Evento selecionado</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs mr-3">2</div>
+                    <span className="font-medium text-gray-900">Confirmar endereço</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <div className="w-6 h-6 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-xs mr-3">3</div>
+                    <span className="text-gray-500">Selecionar kits</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <div className="w-6 h-6 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-xs mr-3">4</div>
+                    <span className="text-gray-500">Pagamento</span>
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                <div className="space-y-3">
+                  <Button 
+                    className="w-full bg-purple-600 text-white hover:bg-purple-700" 
+                    size="lg"
+                    onClick={handleConfirmAddress}
+                    disabled={!selectedAddress || isEditing || !canContinue}
+                  >
+                    {pricingValidationStatus === 'validating' || isCheckingCepZone ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Validando...
+                      </div>
+                    ) : cepZoneError ? 'CEP não disponível' : 'Confirmar Endereço'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column - Content */}
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-900 mb-8">Confirmar seu endereço de entrega</h2>
+                
+                {/* Enhanced Loading States */}
+                {(isCheckingCepZone || pricingValidationStatus === 'validating') && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-center gap-3">
+                      <Loader2 className="h-5 w-5 animate-spin text-yellow-600" />
+                      <span className="text-yellow-800 font-medium">
+                        {isCheckingCepZone ? 'Verificando zona de entrega...' : 'Validando precificação...'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* CEP Zone Error */}
+                {cepZoneError && (
+                  <Alert variant="destructive" className="mb-6">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      <div className="font-medium mb-1">CEP não disponível para entrega</div>
+                      <div className="text-sm">CEP não atendido nas zonas disponíveis. Se acha que isso pode ser um erro, entre em contato conosco.</div>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* CEP Zone Success Display */}
+                {calculatedCosts?.pricingType === 'cep_zones' && calculatedCosts.cepZoneName && !cepZoneError && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <MapPin className="h-5 w-5 text-green-600" />
+                      <span className="font-medium text-green-800">
+                        Zona de entrega: {calculatedCosts.cepZoneName}
+                      </span>
+                    </div>
+                    <p className="text-green-700">
+                      Taxa de entrega: R$ {calculatedCosts.deliveryPrice?.toFixed(2).replace('.', ',')}
+                    </p>
+                  </div>
+                )}
+
+                {/* Address Details */}
+                {selectedAddress && (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">Endereço de Entrega</h3>
+                      {!isEditing && (
+                        <Button
+                          variant="outline"
+                          onClick={handleEditAddress}
+                          className="flex items-center"
+                        >
+                          <Edit3 className="w-4 h-4 mr-2" />
+                          Editar
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {!isEditing && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-center mb-2">
+                          <Badge variant="secondary" className="mr-2">
+                            {selectedAddress.label}
+                          </Badge>
+                          {selectedAddress.isDefault && (
+                            <Badge variant="outline" className="text-xs">
+                              Padrão
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="font-medium text-gray-900">{customer.name}</p>
+                        <p className="text-gray-700">
+                          {selectedAddress.street}, {selectedAddress.number}
+                          {selectedAddress.complement && `, ${selectedAddress.complement}`}
+                        </p>
+                        <p className="text-gray-700">{selectedAddress.neighborhood}</p>
+                        <p className="text-gray-700">{selectedAddress.city} - {selectedAddress.state}</p>
+                        <p className="text-gray-700">{formatZipCode(selectedAddress.zipCode)}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Add New Address Button */}
+                <div className="mb-6">
+                  {hasReachedAddressLimit ? (
+                    <Alert>
+                      <Info className="w-4 h-4" />
+                      <AlertDescription>
+                        Você atingiu o limite máximo de 2 endereços. Mas você pode editar endereços existentes em seu perfil.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <Button 
+                      variant="outline"
+                      onClick={() => setLocation(`/events/${id}/address/new?from=event&eventId=${id}`)}
+                      className="w-full flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Adicionar Novo Endereço
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
