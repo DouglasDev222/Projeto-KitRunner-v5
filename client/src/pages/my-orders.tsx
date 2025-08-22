@@ -461,7 +461,7 @@ export default function MyOrders() {
                   <Package className="w-8 h-8 text-purple-600 mr-3" />
                   <div>
                     <h1 className="text-3xl font-bold text-gray-900">Meus Pedidos</h1>
-                    <p className="text-lg text-gray-600 mt-2">Acompanhe o status dos seus pedidos de kits</p>
+                    <p className="text-lg text-gray-600 mt-2">Acompanhe o status das suas solicitações de retiradas</p>
                   </div>
                 </div>
 
