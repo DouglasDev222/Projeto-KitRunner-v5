@@ -890,18 +890,7 @@ export default function AddressConfirmation() {
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setSelectedAddress(address);
-                                  form.reset({
-                                    street: address.street,
-                                    number: address.number,
-                                    complement: address.complement || "",
-                                    neighborhood: address.neighborhood,
-                                    city: address.city,
-                                    state: address.state,
-                                    zipCode: address.zipCode,
-                                    label: address.label
-                                  });
-                                  handleEditAddress();
+                                  setLocation(`/profile/address/${address.id}/edit?from=event&eventId=${id}`);
                                 }}
                                 className="flex items-center"
                               >
