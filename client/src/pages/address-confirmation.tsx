@@ -845,6 +845,77 @@ export default function AddressConfirmation() {
                   </div>
                 )}
 
+                {/* Address Selection for Desktop */}
+                {addresses && Array.isArray(addresses) && addresses.length > 1 && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Escolher Endereço</h3>
+                    <div className="space-y-3">
+                      {(addresses as Address[]).map((address: Address) => (
+                        <div key={address.id} className={`border-2 rounded-lg p-4 transition-all cursor-pointer ${
+                          selectedAddress?.id === address.id 
+                            ? "border-purple-600 bg-purple-50" 
+                            : "border-gray-200 bg-white hover:bg-gray-50"
+                        }`}
+                        onClick={() => {
+                          setPricingValidationStatus('validating');
+                          handleAddressSelect(address);
+                        }}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center mb-2">
+                                <Badge variant="secondary" className="mr-2">
+                                  {address.label}
+                                </Badge>
+                                {address.isDefault && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Padrão
+                                  </Badge>
+                                )}
+                                {selectedAddress?.id === address.id && (
+                                  <CheckCircle className="w-5 h-5 text-purple-600 ml-2" />
+                                )}
+                              </div>
+                              <p className="text-gray-900 font-medium">{customer.name}</p>
+                              <p className="text-gray-700">
+                                {address.street}, {address.number}
+                                {address.complement && `, ${address.complement}`}
+                              </p>
+                              <p className="text-gray-700">{address.neighborhood}</p>
+                              <p className="text-gray-700">{address.city} - {address.state}</p>
+                              <p className="text-gray-700">{formatZipCode(address.zipCode)}</p>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedAddress(address);
+                                  form.reset({
+                                    street: address.street,
+                                    number: address.number,
+                                    complement: address.complement || "",
+                                    neighborhood: address.neighborhood,
+                                    city: address.city,
+                                    state: address.state,
+                                    zipCode: address.zipCode,
+                                    label: address.label
+                                  });
+                                  handleEditAddress();
+                                }}
+                                className="flex items-center"
+                              >
+                                <Edit3 className="w-4 h-4 mr-1" />
+                                Editar
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Address Details */}
                 {selectedAddress && (
                   <div className="mb-6">
@@ -862,7 +933,187 @@ export default function AddressConfirmation() {
                       )}
                     </div>
                     
-                    {!isEditing && (
+                    {isEditing ? (
+                      <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleSaveAddress)} className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name="street"
+                              render={({ field }) => (
+                                <FormItem className="col-span-2">
+                                  <FormLabel>Rua</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Nome da rua" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="number"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Número</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="123" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="complement"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Complemento</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Apto 45" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="neighborhood"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Bairro</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Centro" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="city"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Cidade</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="João Pessoa" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="zipCode"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>CEP</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="58000-000"
+                                      maxLength={9}
+                                      value={field.value}
+                                      onChange={(e) => handleZipCodeChange(e.target.value)}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="label"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Identificação</FormLabel>
+                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Selecione o tipo" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="Casa">Casa</SelectItem>
+                                      <SelectItem value="Trabalho">Trabalho</SelectItem>
+                                      <SelectItem value="Apartamento">Apartamento</SelectItem>
+                                      <SelectItem value="Outro">Outro</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="state"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Estado</FormLabel>
+                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Estado" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="PB">Paraíba</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <FormField
+                              control={form.control}
+                              name="isDefault"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                  <div className="space-y-1 leading-none">
+                                    <FormLabel>
+                                      Definir como endereço padrão
+                                    </FormLabel>
+                                  </div>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          <div className="flex gap-3 pt-4">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={handleCancelEdit}
+                              className="flex-1"
+                            >
+                              Cancelar
+                            </Button>
+                            <Button
+                              type="submit"
+                              className="flex-1 bg-purple-600 text-white hover:bg-purple-700"
+                              disabled={updateAddressMutation.isPending}
+                            >
+                              {updateAddressMutation.isPending ? "Salvando..." : "Salvar"}
+                            </Button>
+                          </div>
+                        </form>
+                      </Form>
+                    ) : (
                       <div className="bg-gray-50 rounded-lg p-4">
                         <div className="flex items-center mb-2">
                           <Badge variant="secondary" className="mr-2">
