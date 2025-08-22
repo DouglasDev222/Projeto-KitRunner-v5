@@ -38,6 +38,7 @@ import AdminCoupons from "@/pages/admin/coupons";
 import AdminPolicies from "@/pages/admin/policies";
 import AdminWhatsApp from "@/pages/admin-whatsapp";
 import Landing from "@/pages/landing";
+import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 
 function Router() {
   return (
@@ -177,6 +178,7 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <Router />
+            <PWAInstallPrompt />
           </TooltipProvider>
         </AdminAuthProvider>
       </AuthProvider>
