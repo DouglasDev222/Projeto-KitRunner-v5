@@ -59,12 +59,92 @@ export default function OrderConfirmation() {
 
   if (isLoading || !displayData) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header />
-        <div className="p-4">
-          <p className="text-center text-neutral-600">Carregando...</p>
+      <>
+        {/* Mobile Loading */}
+        <div className="lg:hidden max-w-md mx-auto bg-white min-h-screen">
+          <Header />
+          <div className="p-4">
+            <p className="text-center text-neutral-600">Carregando...</p>
+          </div>
         </div>
-      </div>
+
+        {/* Desktop Loading */}
+        <div className="hidden lg:block min-h-screen bg-gray-50">
+          {/* Desktop Header Skeleton */}
+          <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="max-w-6xl mx-auto px-8 h-16 flex items-center justify-between animate-pulse">
+              <div className="flex items-center space-x-4">
+                <div className="h-10 w-32 bg-gray-200 rounded" />
+              </div>
+              <nav className="flex items-center space-x-6">
+                <div className="h-8 w-24 bg-gray-200 rounded" />
+              </nav>
+            </div>
+          </header>
+
+          {/* Main Content Skeleton */}
+          <main className="max-w-6xl mx-auto px-8 py-12">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
+              {/* Left Column - Success Message Skeleton */}
+              <div className="lg:col-span-2">
+                <div className="text-center mb-8 animate-pulse">
+                  <div className="bg-gray-200 rounded-full w-24 h-24 mx-auto mb-6" />
+                  
+                  <div className="h-10 bg-gray-200 rounded mb-4 w-3/4 mx-auto" />
+                  <div className="h-6 bg-gray-200 rounded mb-8 w-1/2 mx-auto" />
+                  
+                  <div className="bg-white rounded-lg p-6 shadow-lg border border-gray-200">
+                    <div className="h-6 bg-gray-200 rounded mb-2 w-32 mx-auto" />
+                    <div className="h-8 bg-gray-200 rounded w-24 mx-auto" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Order Details Skeleton */}
+              <div className="lg:col-span-3">
+                <div className="space-y-8">
+                  {/* Order Information Skeleton */}
+                  <div className="bg-white rounded-lg shadow-lg p-8 animate-pulse">
+                    <div className="h-8 bg-gray-200 rounded mb-6 w-48" />
+                    <div className="space-y-4">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="flex justify-between py-3 border-b border-gray-100">
+                          <div className="h-4 bg-gray-200 rounded w-32" />
+                          <div className="h-4 bg-gray-200 rounded w-40" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Next Steps Skeleton */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 animate-pulse">
+                    <div className="flex items-start">
+                      <div className="w-5 h-5 bg-blue-200 rounded mr-3 mt-1" />
+                      <div className="flex-1">
+                        <div className="h-6 bg-blue-200 rounded mb-4 w-32" />
+                        <div className="space-y-2">
+                          {[1, 2, 3, 4].map((i) => (
+                            <div key={i} className="flex items-start">
+                              <div className="w-2 h-2 bg-blue-200 rounded-full mr-2 mt-2" />
+                              <div className="h-4 bg-blue-200 rounded flex-1" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons Skeleton */}
+                  <div className="flex space-x-4 animate-pulse">
+                    <div className="flex-1 h-14 bg-gray-200 rounded" />
+                    <div className="flex-1 h-14 bg-gray-200 rounded" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+      </>
     );
   }
 
