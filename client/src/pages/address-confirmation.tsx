@@ -775,7 +775,7 @@ export default function AddressConfirmation() {
                   </div>
                   <div className="flex items-center text-sm">
                     <div className="w-6 h-6 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-xs mr-3">3</div>
-                    <span className="text-gray-500">Selecionar kits</span>
+                    <span className="text-gray-500">Informações de Retirada</span>
                   </div>
                   <div className="flex items-center text-sm">
                     <div className="w-6 h-6 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-xs mr-3">4</div>
