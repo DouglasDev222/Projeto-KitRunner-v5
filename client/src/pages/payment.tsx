@@ -5,7 +5,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Landmark, QrCode, Shield, Lock, Heart, Package, CheckCircle } from "lucide-react";
+import { CreditCard, Landmark, QrCode, Shield, Lock, Heart, Package, CheckCircle, ArrowLeft } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
@@ -335,30 +335,71 @@ export default function Payment() {
   // Show payment completed state
   if (paymentCompleted) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header />
-        <div className="p-4">
-          <div className="text-center py-8">
-            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-green-600 mb-2">Pagamento Aprovado!</h2>
-            <p className="text-neutral-600 mb-4">
-              Seu pedido foi confirmado com sucesso.
-            </p>
-            <p className="text-sm text-neutral-500">
-              Redirecionando para confirmação...
-            </p>
+      <>
+        {/* Mobile Version */}
+        <div className="lg:hidden max-w-md mx-auto bg-white min-h-screen">
+          <Header />
+          <div className="p-4">
+            <div className="text-center py-8">
+              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-green-600 mb-2">Pagamento Aprovado!</h2>
+              <p className="text-neutral-600 mb-4">
+                Seu pedido foi confirmado com sucesso.
+              </p>
+              <p className="text-sm text-neutral-500">
+                Redirecionando para confirmação...
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+
+        {/* Desktop Version */}
+        <div className="hidden lg:flex min-h-screen bg-gray-50 items-center justify-center">
+          <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200 max-w-md mx-auto">
+            <div className="text-center">
+              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-green-600 mb-2">Pagamento Aprovado!</h2>
+              <p className="text-gray-600 mb-4">
+                Seu pedido foi confirmado com sucesso.
+              </p>
+              <p className="text-sm text-gray-500">
+                Redirecionando para confirmação...
+              </p>
+            </div>
+          </div>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen">
-      <Header showBackButton onBack={() => setLocation(`/events/${id}/kits`)} />
-      <div className="p-4">
-        <h2 className="text-2xl font-bold text-neutral-800 mb-2">Pagamento</h2>
-        <p className="text-neutral-600 mb-6">Finalize seu pedido escolhendo a forma de pagamento</p>
+    <>
+      {/* Mobile Version */}
+      <div className="lg:hidden max-w-md mx-auto bg-white min-h-screen">
+        <Header showBackButton onBack={() => setLocation(`/events/${id}/kits`)} />
+        <div className="p-4">
+          {/* Mobile Progress Indicator */}
+          <div className="flex items-center justify-center mb-6">
+            <div className="flex items-center space-x-2 text-xs">
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center text-xs">✓</div>
+                <span className="ml-1 text-neutral-600">Endereço</span>
+              </div>
+              <div className="w-4 h-0.5 bg-primary"></div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center text-xs">✓</div>
+                <span className="ml-1 text-neutral-600">Retirada</span>
+              </div>
+              <div className="w-4 h-0.5 bg-primary"></div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center text-xs">3</div>
+                <span className="ml-1 text-primary font-medium">Pagamento</span>
+              </div>
+            </div>
+          </div>
+          
+          <h2 className="text-2xl font-bold text-neutral-800 mb-2">Pagamento</h2>
+          <p className="text-neutral-600 mb-6">Finalize seu pedido escolhendo a forma de pagamento</p>
         
         {/* Order Summary */}
         <Card className="mb-6">
@@ -618,7 +659,318 @@ export default function Payment() {
             )}
           </CardContent>
         </Card>
+        </div>
       </div>
-    </div>
+
+      {/* Desktop Version */}
+      <div className="hidden lg:block min-h-screen bg-gray-50">
+        {/* Simple Back Button */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-6xl mx-auto px-8 py-4">
+            <Button
+              variant="ghost"
+              onClick={() => setLocation(`/events/${id}/kits`)}
+              className="flex items-center text-gray-600 hover:text-purple-600"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar
+            </Button>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="max-w-6xl mx-auto py-8 px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column - Progress & Summary */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 sticky top-8">
+                <div className="flex items-center mb-4">
+                  <CreditCard className="w-6 h-6 text-purple-600 mr-3" />
+                  <h3 className="text-xl font-semibold text-gray-900">Pagamento</h3>
+                </div>
+                <p className="text-gray-600 mb-6">Finalize seu pedido</p>
+                
+                {/* Progress Indicator */}
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center text-sm">
+                    <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs mr-3">✓</div>
+                    <span className="text-gray-700">Evento selecionado</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs mr-3">✓</div>
+                    <span className="text-gray-700">Endereço confirmado</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs mr-3">✓</div>
+                    <span className="text-gray-700">Informações dos kits</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs mr-3">4</div>
+                    <span className="font-medium text-gray-900">Pagamento</span>
+                  </div>
+                </div>
+
+                {/* Order Summary */}
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold text-gray-900 mb-3">Resumo do Pedido</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Evento:</span>
+                      <span className="font-medium text-gray-800">{event.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Kits:</span>
+                      <span className="font-medium text-gray-800">{kitData.kitQuantity} kit{kitData.kitQuantity > 1 ? 's' : ''}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Endereço:</span>
+                      <span className="font-medium text-gray-800">
+                        {selectedAddress ? `${selectedAddress.neighborhood}, ${selectedAddress.city}` : "Não selecionado"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Pricing Breakdown */}
+                  <div className="border-t pt-3 mt-3">
+                    <h4 className="font-semibold text-gray-900 mb-2">Detalhamento</h4>
+                    
+                    {event?.fixedPrice ? (
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center">
+                          <Badge variant="secondary" className="mr-2 text-xs">Preço Fixo</Badge>
+                          <span className="text-gray-600">Todos os serviços</span>
+                        </div>
+                        <span className="font-medium text-gray-800">{formatCurrency(Number(event.fixedPrice))}</span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-gray-600">
+                          {securePricing?.pricingType === 'cep_zones' 
+                            ? `Entrega (${securePricing.zoneName})`
+                            : `Entrega`
+                          }
+                        </span>
+                        <span className="font-medium text-gray-800">{formatCurrency(pricing.deliveryCost)}</span>
+                      </div>
+                    )}
+                    
+                    {pricing.extraKitsCost > 0 && (
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-gray-600">{kitData.kitQuantity - 1} kit{kitData.kitQuantity > 2 ? 's' : ''} adicional{kitData.kitQuantity > 2 ? 'is' : ''}</span>
+                        <span className="font-medium text-gray-800">{formatCurrency(pricing.extraKitsCost)}</span>
+                      </div>
+                    )}
+                    
+                    {pricing.donationAmount > 0 && (
+                      <div className="flex justify-between items-center mb-1">
+                        <div className="flex items-center">
+                          <Heart className="w-3 h-3 text-red-500 mr-1" />
+                          <span className="text-gray-600">Doação ({kitData.kitQuantity}x)</span>
+                        </div>
+                        <span className="font-medium text-gray-800">{formatCurrency(pricing.donationAmount)}</span>
+                      </div>
+                    )}
+                    
+                    {/* Coupon discount */}
+                    {couponDiscount > 0 && (
+                      <div className="flex justify-between items-center mb-1 text-green-600">
+                        <span className="text-green-600">Desconto ({appliedCoupon?.code})</span>
+                        <span className="font-medium text-green-600">-{formatCurrency(couponDiscount)}</span>
+                      </div>
+                    )}
+                    
+                    <div className="border-t pt-3">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-gray-900">Total</span>
+                        <span className="font-bold text-lg text-purple-600">{formatCurrency(pricing.totalCost)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Security Notice */}
+                <div className="mt-6 p-3 bg-purple-50 rounded-lg">
+                  <div className="flex items-center">
+                    <Shield className="h-4 w-4 text-purple-600 mr-2" />
+                    <span className="text-sm text-purple-700 font-medium">Pagamento Seguro</span>
+                  </div>
+                  <p className="text-xs text-purple-600 mt-1">
+                    Seus dados são protegidos por criptografia SSL
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column - Payment Content */}
+            <div className="lg:col-span-2">
+              <div className="space-y-6">
+                {/* Coupon Section */}
+                <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Cupom de Desconto</h3>
+                  <CouponInput
+                    eventId={parseInt(id!)}
+                    totalAmount={basePricing.totalCost}
+                    onCouponApplied={handleCouponApplied}
+                    onCouponRemoved={handleCouponRemoved}
+                    appliedCoupon={appliedCoupon}
+                  />
+                </div>
+
+                {/* Kit Details */}
+                <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <Package className="w-5 h-5 mr-2" />
+                    Kits ({kitData.kitQuantity})
+                  </h3>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {kitData.kits.map((kit: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-800">{kit.name}</p>
+                          <p className="text-sm text-gray-600">{kit.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}</p>
+                        </div>
+                        <Badge variant="outline">{kit.shirtSize}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Payment Methods */}
+                {(!paymentMethod || paymentMethod === 'credit' || (paymentMethod === 'pix' && !pixData)) && (
+                  <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Forma de Pagamento</h3>
+                    
+                    <div className="[&_[role=radio]]:h-4 [&_[role=radio]]:w-4 [&_[role=radio]]:min-h-[1rem] [&_[role=radio]]:min-w-[1rem] [&_[role=radio]]:max-h-[1rem] [&_[role=radio]]:max-w-[1rem] [&_[role=radio]]:flex-shrink-0 [&_[role=radio]]:rounded-sm">
+                      <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "credit" | "pix")}>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50">
+                            <RadioGroupItem value="credit" id="credit" />
+                            <Label htmlFor="credit" className="flex items-center gap-3 cursor-pointer w-full">
+                              <CreditCard className="h-5 w-5 text-blue-600" />
+                              <div>
+                                <div className="font-medium">Cartão de Crédito</div>
+                                <div className="text-sm text-gray-600">Visa, Mastercard, Elo</div>
+                              </div>
+                            </Label>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50">
+                            <RadioGroupItem value="pix" id="pix" />
+                            <Label htmlFor="pix" className="flex items-center gap-3 cursor-pointer w-full">
+                              <QrCode className="h-5 w-5 text-purple-600" />
+                              <div>
+                                <div className="font-medium">PIX</div>
+                                <div className="text-sm text-gray-600">Pagamento instantâneo - Expira em 30 min</div>
+                              </div>
+                            </Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  </div>
+                )}
+
+                {/* Policy Acceptance */}
+                <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+                  <div className="[&_[role=checkbox]]:h-4 [&_[role=checkbox]]:w-4 [&_[role=checkbox]]:min-h-[1rem] [&_[role=checkbox]]:min-w-[1rem] [&_[role=checkbox]]:max-h-[1rem] [&_[role=checkbox]]:max-w-[1rem] [&_[role=checkbox]]:flex-shrink-0">
+                    <PolicyAcceptance
+                      type="order"
+                      checked={policyAccepted}
+                      onCheckedChange={setPolicyAccepted}
+                      required={true}
+                    />
+                  </div>
+                </div>
+
+                {/* Payment Processing Section */}
+                <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    {paymentMethod === 'pix' ? 'Pagamento PIX' : 'Pagamento com Cartão'}
+                  </h3>
+                  
+                  {/* Payment Error */}
+                  {paymentError && (
+                    <Alert className="mb-4 border-red-200 bg-red-50">
+                      <AlertDescription className="text-red-700">
+                        {paymentError}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {paymentMethod === 'credit' && (
+                    <CardPayment
+                      amount={pricing.totalCost}
+                      orderData={() => createOrderData(`${Date.now()}-${Math.random()}`)}
+                      createOrder={async (orderData) => {
+                        // Validate policy acceptance before creating order
+                        if (!policyAccepted) {
+                          throw new Error("É necessário aceitar a política de pedidos para prosseguir");
+                        }
+                        
+                        return new Promise((resolve, reject) => {
+                          createOrderMutation.mutate(orderData, {
+                            onSuccess: async (data) => {
+                              // Record policy acceptance after successful order creation
+                              await recordPolicyAcceptance(data.order.id);
+                              resolve(data);
+                            },
+                            onError: (error) => reject(error)
+                          });
+                        });
+                      }}
+                      customerData={{
+                        name: customer.name,
+                        email: customer.email,
+                        cpf: customer.cpf
+                      }}
+                      onSuccess={handlePaymentSuccess}
+                      onError={handlePaymentError}
+                      isProcessing={isProcessing}
+                      setIsProcessing={setIsProcessing}
+                      policyAccepted={policyAccepted}
+                    />
+                  )}
+                  
+                  {paymentMethod === 'pix' && (
+                    <PIXPayment
+                      amount={pricing.totalCost}
+                      orderData={() => createOrderData(`${Date.now()}-${Math.random()}`)}
+                      createOrder={async (orderData) => {
+                        // Validate policy acceptance before creating order
+                        if (!policyAccepted) {
+                          throw new Error("É necessário aceitar a política de pedidos para prosseguir");
+                        }
+                        
+                        return new Promise((resolve, reject) => {
+                          createOrderMutation.mutate(orderData, {
+                            onSuccess: async (data) => {
+                              // Record policy acceptance after successful order creation
+                              await recordPolicyAcceptance(data.order.id);
+                              resolve(data);
+                            },
+                            onError: (error) => reject(error)
+                          });
+                        });
+                      }}
+                      customerData={{
+                        name: customer.name,
+                        email: customer.email,
+                        cpf: customer.cpf
+                      }}
+                      onSuccess={handlePaymentSuccess}
+                      onError={handlePaymentError}
+                      isProcessing={isProcessing}
+                      setIsProcessing={setIsProcessing}
+                      policyAccepted={policyAccepted}
+                      onPixDataGenerated={setPixData}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
