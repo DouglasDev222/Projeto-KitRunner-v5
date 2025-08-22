@@ -5,9 +5,10 @@ async function throwIfResNotOk(res: Response) {
     try {
       const data = await res.json();
       
-      // If the response has a message field, use it
-      if (data && data.message) {
-        const error = new Error(data.message);
+      // If the response has a message or error field, use it
+      if (data && (data.message || data.error)) {
+        const errorMessage = data.message || data.error;
+        const error = new Error(errorMessage);
         // Attach the full response data to the error for additional context
         (error as any).responseData = data;
         throw error;

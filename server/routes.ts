@@ -535,7 +535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const message = errorMessages[eventAvailability.status as keyof typeof errorMessages] || 
           (eventAvailability.remainingStock === 0 
-            ? 'Este evento não possui mais kits disponíveis' 
+            ? 'Não possui mais retiradas disponíveis para este evento.' 
             : 'Este evento não está disponível para pedidos');
             
         return res.status(400).json({
