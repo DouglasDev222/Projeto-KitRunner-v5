@@ -86,21 +86,96 @@ export default function EventDetails() {
 
   if (isLoading) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header 
-          showBackButton 
-          title="Detalhes do Evento"
-        />
-        <div className="p-4">
-          <div className="animate-pulse">
-            <div className="h-48 bg-gray-200 rounded-lg mb-6" />
-            <div className="space-y-4">
-              <div className="h-32 bg-gray-200 rounded-lg" />
-              <div className="h-32 bg-gray-200 rounded-lg" />
+      <>
+        {/* Mobile Loading */}
+        <div className="lg:hidden max-w-md mx-auto bg-white min-h-screen">
+          <Header 
+            showBackButton 
+            title="Detalhes do Evento"
+          />
+          <div className="p-4">
+            <div className="animate-pulse">
+              <div className="h-48 bg-gray-200 rounded-lg mb-6" />
+              <div className="space-y-4">
+                <div className="h-32 bg-gray-200 rounded-lg" />
+                <div className="h-32 bg-gray-200 rounded-lg" />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+
+        {/* Desktop Loading */}
+        <div className="hidden lg:block min-h-screen bg-gray-50">
+          {/* Desktop Header Skeleton */}
+          <nav className="bg-white border-b border-gray-200 shadow-sm">
+            <div className="max-w-7xl mx-auto px-8">
+              <div className="flex items-center justify-between h-16">
+                <div className="flex items-center">
+                  <div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
+                </div>
+                <div className="flex items-center space-x-8">
+                  <div className="h-8 w-20 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-8 w-16 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-8 w-24 bg-gray-200 rounded animate-pulse" />
+                </div>
+              </div>
+            </div>
+          </nav>
+
+          {/* Main Content Skeleton */}
+          <main className="max-w-7xl mx-auto px-8 py-12">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+              {/* Left Column - Event Info Skeleton */}
+              <div className="lg:col-span-2 space-y-8">
+                {/* Hero Card Skeleton */}
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden animate-pulse">
+                  <div className="h-64 bg-gray-200" />
+                  <div className="p-8">
+                    <div className="h-8 bg-gray-200 rounded mb-4" />
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-6" />
+                    <div className="space-y-3">
+                      <div className="h-4 bg-gray-200 rounded w-1/2" />
+                      <div className="h-4 bg-gray-200 rounded w-2/3" />
+                      <div className="h-4 bg-gray-200 rounded w-1/3" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Info Cards Skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white rounded-xl shadow-md p-6 animate-pulse">
+                    <div className="h-6 bg-gray-200 rounded mb-4" />
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-full" />
+                      <div className="h-4 bg-gray-200 rounded w-3/4" />
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-xl shadow-md p-6 animate-pulse">
+                    <div className="h-6 bg-gray-200 rounded mb-4" />
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-full" />
+                      <div className="h-4 bg-gray-200 rounded w-2/3" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Action Card Skeleton */}
+              <div className="lg:col-span-1">
+                <div className="bg-white rounded-xl shadow-lg p-8 animate-pulse sticky top-6">
+                  <div className="h-6 bg-gray-200 rounded mb-6" />
+                  <div className="space-y-4 mb-8">
+                    <div className="h-4 bg-gray-200 rounded w-full" />
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                    <div className="h-4 bg-gray-200 rounded w-1/2" />
+                  </div>
+                  <div className="h-14 bg-gray-200 rounded-lg" />
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+      </>
     );
   }
 
