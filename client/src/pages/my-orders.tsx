@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Package, Calendar, MapPin, ChevronRight, User } from "lucide-react";
+import { Package, Calendar, MapPin, ChevronRight, User, ChevronLeft, ChevronDown } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
@@ -41,9 +41,12 @@ export default function MyOrders() {
   const [customer, setCustomer] = useState(null);
   const [showOrders, setShowOrders] = useState(false);
   const [lastKnownOrders, setLastKnownOrders] = useState<Order[] | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const ORDERS_PER_PAGE = 5;
 
   const form = useForm<CustomerIdentification>({
     resolver: zodResolver(customerIdentificationSchema),
@@ -55,20 +58,49 @@ export default function MyOrders() {
 
   const effectiveCustomer = user || customer;
 
-  const { data: orders, isLoading: ordersLoading } = useQuery<Order[]>({
-    queryKey: ["/api/customers", effectiveCustomer?.id, "orders"],
+  const { data: ordersData, isLoading: ordersLoading } = useQuery<{
+    orders: Order[];
+    total: number;
+    hasMore: boolean;
+  }>({
+    queryKey: ["/api/customers", effectiveCustomer?.id, "orders", currentPage],
+    queryFn: async () => {
+      const response = await apiRequest(
+        "GET",
+        `/api/customers/${effectiveCustomer!.id}/orders?page=${currentPage}&limit=${ORDERS_PER_PAGE}`
+      );
+      return response.json();
+    },
     enabled: !!effectiveCustomer?.id && (isAuthenticated || showOrders),
-    staleTime: 0, // Always fetch fresh data to detect admin changes
-    refetchOnMount: true, // Refetch when component mounts
+    staleTime: 0,
+    refetchOnMount: true,
   });
+
+  const orders = ordersData?.orders || [];
+  const hasMore = ordersData?.hasMore || false;
+  const totalOrders = ordersData?.total || 0;
+
+  // Update all orders when new page data arrives
+  useEffect(() => {
+    if (currentPage === 1 && orders) {
+      // First page - replace all orders
+      setAllOrders([...orders]);
+    } else if (orders && orders.length > 0) {
+      // Subsequent pages - append new orders
+      setAllOrders(prev => {
+        const existingIds = new Set(prev.map(o => o.id));
+        const newOrders = orders.filter(o => !existingIds.has(o.id));
+        return [...prev, ...newOrders];
+      });
+    }
+  }, [orders, currentPage]);
 
   // Effect to detect status changes and notify user
   useEffect(() => {
-    if (orders && orders.length > 0 && lastKnownOrders) {
-      // Compare current orders with last known orders to detect status changes
+    if (allOrders && allOrders.length > 0 && lastKnownOrders) {
       const statusChanges: { orderNumber: string, oldStatus: string, newStatus: string }[] = [];
 
-      orders.forEach(currentOrder => {
+      allOrders.forEach(currentOrder => {
         const previousOrder = lastKnownOrders.find(o => o.id === currentOrder.id);
         if (previousOrder && previousOrder.status !== currentOrder.status) {
           statusChanges.push({
@@ -79,7 +111,6 @@ export default function MyOrders() {
         }
       });
 
-      // Show notifications for status changes
       if (statusChanges.length > 0) {
         statusChanges.forEach(change => {
           console.log('📋 Status updated for order', change.orderNumber, 'from', change.oldStatus, 'to', change.newStatus);
@@ -92,11 +123,10 @@ export default function MyOrders() {
       }
     }
 
-    // Update last known orders after checking for changes
-    if (orders) {
-      setLastKnownOrders([...orders]);
+    if (allOrders) {
+      setLastKnownOrders([...allOrders]);
     }
-  }, [orders, toast]); // Remove lastKnownOrders from dependencies to prevent infinite loop
+  }, [allOrders, toast]);
 
   // Helper function to convert status to readable text
   const getStatusText = (status: string) => {
@@ -163,6 +193,17 @@ export default function MyOrders() {
     setLocation(`/orders/${orderNumber}`);
   };
 
+  const handleLoadMore = () => {
+    setCurrentPage(prev => prev + 1);
+  };
+
+  const displayedOrders = allOrders
+    .sort(
+      (a: Order, b: Order) =>
+        new Date(b.createdAt).getTime() -
+        new Date(a.createdAt).getTime(),
+    );
+
   // Loading state
   if (isLoading) {
     return (
@@ -211,57 +252,55 @@ export default function MyOrders() {
             Meus Pedidos
           </h3>
 
-          {ordersLoading ? (
+          {currentPage === 1 && ordersLoading ? (
             <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3, 4, 5].map((i) => (
                 <div
                   key={i}
                   className="h-24 bg-gray-200 rounded-lg animate-pulse"
                 />
               ))}
             </div>
-          ) : orders && Array.isArray(orders) && orders.length > 0 ? (
+          ) : displayedOrders && displayedOrders.length > 0 ? (
             <div className="space-y-4">
-              {orders
-                .sort(
-                  (a: Order, b: Order) =>
-                    new Date(b.createdAt).getTime() -
-                    new Date(a.createdAt).getTime(),
-                )
-                .map((order: Order) => (
-                  <Card
-                    key={order.id}
-                    className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => handleOrderClick(order.orderNumber)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="font-semibold text-neutral-800">
-                              #{order.orderNumber}
-                            </p>
-                            {getStatusBadge(order.status, isMobile)}
-                          </div>
+              {displayedOrders.map((order: Order) => (
+                <Card
+                  key={order.id}
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => handleOrderClick(order.orderNumber)}
+                  data-testid={`card-order-${order.id}`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="font-semibold text-neutral-800" data-testid={`text-order-number-${order.id}`}>
+                            #{order.orderNumber}
+                          </p>
+                          {getStatusBadge(order.status, isMobile)}
+                        </div>
 
-                          {/* Event name - more prominent */}
-                          <div className="mb-2">
-                            <p className="font-medium text-neutral-800 text-sm">
-                              {order.event?.name ||
-                                `Evento ID: ${order.eventId}` ||
-                                "Evento não identificado"}
-                            </p>
-                          </div>
+                        {/* Event name - more prominent */}
+                        <div className="mb-2">
+                          <p className="font-medium text-neutral-800 text-sm" data-testid={`text-event-name-${order.id}`}>
+                            {(order as any).event?.name ||
+                              `Evento ID: ${order.eventId}` ||
+                              "Evento não identificado"}
+                          </p>
+                        </div>
 
-                          {/* Kit quantity and date on same line */}
-                          <div className="flex items-center justify-between text-sm text-neutral-600 mb-2">
-                            <div className="flex items-center">
-                              <Package className="w-4 h-4 mr-1" />
+                        {/* Kit quantity and date on same line */}
+                        <div className="flex items-center justify-between text-sm text-neutral-600 mb-2">
+                          <div className="flex items-center">
+                            <Package className="w-4 h-4 mr-1" />
+                            <span data-testid={`text-kit-quantity-${order.id}`}>
                               {order.kitQuantity} kit
                               {order.kitQuantity > 1 ? "s" : ""}
-                            </div>
-                            <div className="flex items-center">
-                              <Calendar className="w-4 h-4 mr-1" />
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <Calendar className="w-4 h-4 mr-1" />
+                            <span data-testid={`text-order-date-${order.id}`}>
                               {(() => {
                                 try {
                                   const dateStr = order.createdAt
@@ -279,28 +318,55 @@ export default function MyOrders() {
                                   );
                                 }
                               })()}
-                            </div>
+                            </span>
                           </div>
-
-                          <p className="text-lg font-bold text-primary">
-                            {formatCurrency(parseFloat(order.totalCost))}
-                          </p>
                         </div>
-                        <ChevronRight className="w-5 h-5 text-neutral-400 ml-4" />
+
+                        <p className="text-lg font-bold text-primary" data-testid={`text-order-total-${order.id}`}>
+                          {formatCurrency(parseFloat(order.totalCost))}
+                        </p>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      <ChevronRight className="w-5 h-5 text-neutral-400 ml-4" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              
+              {/* Load More Button */}
+              {hasMore && (
+                <div className="flex justify-center pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={handleLoadMore}
+                    disabled={ordersLoading}
+                    className="w-full"
+                    data-testid="button-load-more"
+                  >
+                    {ordersLoading ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                        Carregando...
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <ChevronDown className="w-4 h-4 mr-2" />
+                        Carregar mais ({totalOrders - displayedOrders.length} restantes)
+                      </div>
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
           ) : (
             <Card>
               <CardContent className="p-6 text-center">
                 <Package className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
-                <p className="text-neutral-600">Nenhum pedido encontrado</p>
+                <p className="text-neutral-600" data-testid="text-no-orders">Nenhum pedido encontrado</p>
                 <Button
                   variant="outline"
                   className="mt-4"
                   onClick={() => setLocation("/eventos")}
+                  data-testid="button-new-order"
                 >
                   Fazer Novo Pedido
                 </Button>

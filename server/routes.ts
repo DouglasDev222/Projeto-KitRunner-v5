@@ -768,8 +768,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/customers/:id/orders", requireOwnership('id', 'customer'), async (req: AuthenticatedRequest, res) => {
     try {
       const customerId = parseInt(req.params.id);
-      const orders = await storage.getOrdersByCustomerId(customerId);
-      res.json(orders);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 5;
+      const result = await storage.getOrdersByCustomerId(customerId, page, limit);
+      res.json(result);
     } catch (error) {
       res.status(500).json({ message: "Erro ao buscar pedidos" });
     }

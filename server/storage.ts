@@ -62,7 +62,7 @@ export interface IStorage {
   getOrderById(id: number): Promise<Order | undefined>;
   getOrderByNumber(orderNumber: string): Promise<Order | undefined>;
   getOrderByIdempotencyKey(idempotencyKey: string): Promise<Order | undefined>;
-  getOrdersByCustomerId(customerId: number): Promise<Order[]>;
+  getOrdersByCustomerId(customerId: number, page?: number, limit?: number): Promise<{ orders: Order[]; total: number; hasMore: boolean }>;
 
   // Kits
   createKit(kit: InsertKit): Promise<Kit>;
@@ -457,14 +457,25 @@ export class DatabaseStorage implements IStorage {
     return order || undefined;
   }
 
-  async getOrdersByCustomerId(customerId: number): Promise<any[]> {
+  async getOrdersByCustomerId(customerId: number, page = 1, limit = 5): Promise<{ orders: any[]; total: number; hasMore: boolean }> {
     try {
-      // First get orders
+      // First get total count
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(orders)
+        .where(eq(orders.customerId, customerId));
+      
+      const total = Number(count);
+      const offset = (page - 1) * limit;
+      
+      // Then get paginated orders
       const ordersList = await db
         .select()
         .from(orders)
         .where(eq(orders.customerId, customerId))
-        .orderBy(desc(orders.createdAt));
+        .orderBy(desc(orders.createdAt))
+        .limit(limit)
+        .offset(offset);
       
       // Then get event details for each order
       const result = [];
@@ -488,8 +499,10 @@ export class DatabaseStorage implements IStorage {
         });
       }
       
-      console.log(`✅ Found ${result.length} orders for customer ${customerId}`);
-      return result;
+      const hasMore = offset + limit < total;
+      
+      console.log(`✅ Found ${result.length} orders for customer ${customerId} (page ${page}, total ${total})`);
+      return { orders: result, total, hasMore };
     } catch (error) {
       console.error(`❌ Error getting orders for customer ${customerId}:`, error);
       throw error;
@@ -1654,8 +1667,14 @@ class MockStorage implements IStorage {
     return this.orders.find(o => (o as any).idempotencyKey === idempotencyKey);
   }
 
-  async getOrdersByCustomerId(customerId: number): Promise<Order[]> {
-    return this.orders.filter(o => o.customerId === customerId);
+  async getOrdersByCustomerId(customerId: number, page = 1, limit = 5): Promise<{ orders: Order[]; total: number; hasMore: boolean }> {
+    const allOrders = this.orders.filter(o => o.customerId === customerId);
+    const total = allOrders.length;
+    const offset = (page - 1) * limit;
+    const orders = allOrders.slice(offset, offset + limit);
+    const hasMore = offset + limit < total;
+    
+    return { orders, total, hasMore };
   }
 
   async createKit(kit: InsertKit): Promise<Kit> {
