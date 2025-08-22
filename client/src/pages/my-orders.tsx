@@ -42,7 +42,6 @@ export default function MyOrders() {
   const [showOrders, setShowOrders] = useState(false);
   const [lastKnownOrders, setLastKnownOrders] = useState<Order[] | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [allOrders, setAllOrders] = useState<Order[]>([]);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -77,30 +76,15 @@ export default function MyOrders() {
   });
 
   const orders = ordersData?.orders || [];
-  const hasMore = ordersData?.hasMore || false;
   const totalOrders = ordersData?.total || 0;
-
-  // Update all orders when new page data arrives
-  useEffect(() => {
-    if (currentPage === 1 && orders) {
-      // First page - replace all orders
-      setAllOrders([...orders]);
-    } else if (orders && orders.length > 0) {
-      // Subsequent pages - append new orders
-      setAllOrders(prev => {
-        const existingIds = new Set(prev.map(o => o.id));
-        const newOrders = orders.filter(o => !existingIds.has(o.id));
-        return [...prev, ...newOrders];
-      });
-    }
-  }, [orders, currentPage]);
+  const totalPages = Math.ceil(totalOrders / ORDERS_PER_PAGE);
 
   // Effect to detect status changes and notify user
   useEffect(() => {
-    if (allOrders && allOrders.length > 0 && lastKnownOrders) {
+    if (orders && orders.length > 0 && lastKnownOrders) {
       const statusChanges: { orderNumber: string, oldStatus: string, newStatus: string }[] = [];
 
-      allOrders.forEach(currentOrder => {
+      orders.forEach(currentOrder => {
         const previousOrder = lastKnownOrders.find(o => o.id === currentOrder.id);
         if (previousOrder && previousOrder.status !== currentOrder.status) {
           statusChanges.push({
@@ -123,10 +107,10 @@ export default function MyOrders() {
       }
     }
 
-    if (allOrders) {
-      setLastKnownOrders([...allOrders]);
+    if (orders && orders.length > 0) {
+      setLastKnownOrders([...orders]);
     }
-  }, [allOrders, toast]);
+  }, [orders, toast, lastKnownOrders]);
 
   // Helper function to convert status to readable text
   const getStatusText = (status: string) => {
@@ -193,11 +177,48 @@ export default function MyOrders() {
     setLocation(`/orders/${orderNumber}`);
   };
 
-  const handleLoadMore = () => {
-    setCurrentPage(prev => prev + 1);
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
-  const displayedOrders = allOrders
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxPagesToShow = 5;
+    
+    if (totalPages <= maxPagesToShow) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      let start = Math.max(1, currentPage - 2);
+      let end = Math.min(totalPages, start + maxPagesToShow - 1);
+      
+      if (end - start < maxPagesToShow - 1) {
+        start = Math.max(1, end - maxPagesToShow + 1);
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+    }
+    
+    return pages;
+  };
+
+  const displayedOrders = orders
     .sort(
       (a: Order, b: Order) =>
         new Date(b.createdAt).getTime() -
@@ -252,7 +273,7 @@ export default function MyOrders() {
             Meus Pedidos
           </h3>
 
-          {currentPage === 1 && ordersLoading ? (
+          {ordersLoading ? (
             <div className="space-y-4">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div
@@ -332,28 +353,52 @@ export default function MyOrders() {
                 </Card>
               ))}
               
-              {/* Load More Button */}
-              {hasMore && (
-                <div className="flex justify-center pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={handleLoadMore}
-                    disabled={ordersLoading}
-                    className="w-full"
-                    data-testid="button-load-more"
-                  >
-                    {ordersLoading ? (
-                      <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-                        Carregando...
-                      </div>
-                    ) : (
-                      <div className="flex items-center">
-                        <ChevronDown className="w-4 h-4 mr-2" />
-                        Carregar mais ({totalOrders - displayedOrders.length} restantes)
-                      </div>
-                    )}
-                  </Button>
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex flex-col items-center pt-6 space-y-4">
+                  {/* Page info */}
+                  <p className="text-sm text-neutral-600" data-testid="text-page-info">
+                    Página {currentPage} de {totalPages} ({totalOrders} pedidos no total)
+                  </p>
+                  
+                  {/* Page controls */}
+                  <div className="flex items-center space-x-2">
+                    {/* Previous button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePrevPage}
+                      disabled={currentPage === 1 || ordersLoading}
+                      data-testid="button-previous-page"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    
+                    {/* Page numbers */}
+                    {getPageNumbers().map((pageNum) => (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(pageNum)}
+                        disabled={ordersLoading}
+                        data-testid={`button-page-${pageNum}`}
+                      >
+                        {pageNum}
+                      </Button>
+                    ))}
+                    
+                    {/* Next button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleNextPage}
+                      disabled={currentPage === totalPages || ordersLoading}
+                      data-testid="button-next-page"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
