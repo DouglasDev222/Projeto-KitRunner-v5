@@ -359,7 +359,7 @@ export default function KitInformation() {
                 <>
                   {/* Mobile Loading */}
                   <div className="lg:hidden text-center text-neutral-600 py-4">
-                    <p>Carregando formulários dos kits...</p>
+                    <p>Carregando...</p>
                   </div>
                   
                   {/* Desktop Loading */}
