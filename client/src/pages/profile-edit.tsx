@@ -546,11 +546,11 @@ export default function ProfileEdit() {
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() => setLocation("/profile/addresses")}
+                      onClick={() => setLocation("/profile")}
                       className="w-full justify-start text-left"
                     >
                       <Home className="w-4 h-4 mr-3" />
-                      Gerenciar Endereços
+                      Ver Endereços
                     </Button>
                   </div>
                 </CardContent>
