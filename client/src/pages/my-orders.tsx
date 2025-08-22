@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Package, Calendar, MapPin, ChevronRight, User, ChevronLeft, ChevronDown } from "lucide-react";
+import { Package, Calendar, MapPin, ChevronRight, User, ChevronLeft, ChevronDown, Home, Plus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
@@ -79,38 +79,14 @@ export default function MyOrders() {
   const totalOrders = ordersData?.total || 0;
   const totalPages = Math.ceil(totalOrders / ORDERS_PER_PAGE);
 
-  // Effect to detect status changes and notify user
+  // Effect to track order changes (disabled to prevent infinite loops)
+  // TODO: Implement proper status change detection later
   useEffect(() => {
-    if (orders && orders.length > 0 && lastKnownOrders) {
-      const statusChanges: { orderNumber: string, oldStatus: string, newStatus: string }[] = [];
-
-      orders.forEach(currentOrder => {
-        const previousOrder = lastKnownOrders.find(o => o.id === currentOrder.id);
-        if (previousOrder && previousOrder.status !== currentOrder.status) {
-          statusChanges.push({
-            orderNumber: currentOrder.orderNumber,
-            oldStatus: previousOrder.status,
-            newStatus: currentOrder.status
-          });
-        }
-      });
-
-      if (statusChanges.length > 0) {
-        statusChanges.forEach(change => {
-          console.log('📋 Status updated for order', change.orderNumber, 'from', change.oldStatus, 'to', change.newStatus);
-          toast({
-            title: "Status do pedido atualizado",
-            description: `Pedido ${change.orderNumber} foi atualizado para: ${getStatusText(change.newStatus)}`,
-            variant: "default",
-          });
-        });
-      }
-    }
-
-    if (orders && orders.length > 0) {
+    // Simple tracking without comparison to avoid infinite loops
+    if (orders && orders.length > 0 && !lastKnownOrders) {
       setLastKnownOrders([...orders]);
     }
-  }, [orders, toast, lastKnownOrders]);
+  }, [orders, lastKnownOrders]);
 
   // Helper function to convert status to readable text
   const getStatusText = (status: string) => {
@@ -254,173 +230,431 @@ export default function MyOrders() {
   // Authenticated or identified customer view
   if (isAuthenticated || (showOrders && customer)) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col page-with-footer">
-        <Header showBackButton onBack={() => setLocation("/profile")} />
-        <div className="p-4 flex-grow">
-          <div className="flex items-center mb-6">
-            <User className="w-6 h-6 text-primary mr-2" />
-            <div>
-              <h2 className="text-xl font-bold text-neutral-800">
-                {effectiveCustomer!.name}
-              </h2>
-              <p className="text-sm text-neutral-600">
-                {formatCPF(effectiveCustomer!.cpf)}
-              </p>
+      <>
+        {/* Mobile Version */}
+        <div className="lg:hidden max-w-md mx-auto bg-white min-h-screen flex flex-col page-with-footer">
+          <Header showBackButton onBack={() => setLocation("/profile")} />
+          <div className="p-4 flex-grow">
+            <div className="flex items-center mb-6">
+              <User className="w-6 h-6 text-primary mr-2" />
+              <div>
+                <h2 className="text-xl font-bold text-neutral-800">
+                  {effectiveCustomer!.name}
+                </h2>
+                <p className="text-sm text-neutral-600">
+                  {formatCPF(effectiveCustomer!.cpf)}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <h3 className="text-lg font-semibold text-neutral-800 mb-4">
-            Meus Pedidos
-          </h3>
+            <h3 className="text-lg font-semibold text-neutral-800 mb-4">
+              Meus Pedidos
+            </h3>
 
-          {ordersLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div
-                  key={i}
-                  className="h-24 bg-gray-200 rounded-lg animate-pulse"
-                />
-              ))}
-            </div>
-          ) : displayedOrders && displayedOrders.length > 0 ? (
-            <div className="space-y-4">
-              {displayedOrders.map((order: Order) => (
-                <Card
-                  key={order.id}
-                  className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => handleOrderClick(order.orderNumber)}
-                  data-testid={`card-order-${order.id}`}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="font-semibold text-neutral-800" data-testid={`text-order-number-${order.id}`}>
-                            #{order.orderNumber}
-                          </p>
-                          {getStatusBadge(order.status, isMobile)}
-                        </div>
-
-                        {/* Event name - more prominent */}
-                        <div className="mb-2">
-                          <p className="font-medium text-neutral-800 text-sm" data-testid={`text-event-name-${order.id}`}>
-                            {(order as any).event?.name ||
-                              `Evento ID: ${order.eventId}` ||
-                              "Evento não identificado"}
-                          </p>
-                        </div>
-
-                        {/* Kit quantity and date on same line */}
-                        <div className="flex items-center justify-between text-sm text-neutral-600 mb-2">
-                          <div className="flex items-center">
-                            <Package className="w-4 h-4 mr-1" />
-                            <span data-testid={`text-kit-quantity-${order.id}`}>
-                              {order.kitQuantity} kit
-                              {order.kitQuantity > 1 ? "s" : ""}
-                            </span>
+            {ordersLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div
+                    key={i}
+                    className="h-24 bg-gray-200 rounded-lg animate-pulse"
+                  />
+                ))}
+              </div>
+            ) : displayedOrders && displayedOrders.length > 0 ? (
+              <div className="space-y-4">
+                {displayedOrders.map((order: Order) => (
+                  <Card
+                    key={order.id}
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => handleOrderClick(order.orderNumber)}
+                    data-testid={`card-order-${order.id}`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="font-semibold text-neutral-800" data-testid={`text-order-number-${order.id}`}>
+                              #{order.orderNumber}
+                            </p>
+                            {getStatusBadge(order.status, isMobile)}
                           </div>
-                          <div className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-1" />
-                            <span data-testid={`text-order-date-${order.id}`}>
-                              {(() => {
-                                try {
-                                  const dateStr = order.createdAt
-                                    ? (typeof order.createdAt === "string"
-                                        ? order.createdAt
-                                        : new Date(
-                                            order.createdAt,
-                                          ).toISOString()
-                                      ).split("T")[0]
-                                    : new Date().toISOString().split("T")[0];
-                                  return formatDate(dateStr);
-                                } catch {
-                                  return formatDate(
-                                    new Date().toISOString().split("T")[0],
-                                  );
-                                }
-                              })()}
-                            </span>
-                          </div>
-                        </div>
 
-                        <p className="text-lg font-bold text-primary" data-testid={`text-order-total-${order.id}`}>
-                          {formatCurrency(parseFloat(order.totalCost))}
-                        </p>
+                          {/* Event name - more prominent */}
+                          <div className="mb-2">
+                            <p className="font-medium text-neutral-800 text-sm" data-testid={`text-event-name-${order.id}`}>
+                              {(order as any).event?.name ||
+                                `Evento ID: ${order.eventId}` ||
+                                "Evento não identificado"}
+                            </p>
+                          </div>
+
+                          {/* Kit quantity and date on same line */}
+                          <div className="flex items-center justify-between text-sm text-neutral-600 mb-2">
+                            <div className="flex items-center">
+                              <Package className="w-4 h-4 mr-1" />
+                              <span data-testid={`text-kit-quantity-${order.id}`}>
+                                {order.kitQuantity} kit
+                                {order.kitQuantity > 1 ? "s" : ""}
+                              </span>
+                            </div>
+                            <div className="flex items-center">
+                              <Calendar className="w-4 h-4 mr-1" />
+                              <span data-testid={`text-order-date-${order.id}`}>
+                                {(() => {
+                                  try {
+                                    const dateStr = order.createdAt
+                                      ? (typeof order.createdAt === "string"
+                                          ? order.createdAt
+                                          : new Date(
+                                              order.createdAt,
+                                            ).toISOString()
+                                        ).split("T")[0]
+                                      : new Date().toISOString().split("T")[0];
+                                    return formatDate(dateStr);
+                                  } catch {
+                                    return formatDate(
+                                      new Date().toISOString().split("T")[0],
+                                    );
+                                  }
+                                })()}
+                              </span>
+                            </div>
+                          </div>
+
+                          <p className="text-lg font-bold text-primary" data-testid={`text-order-total-${order.id}`}>
+                            {formatCurrency(parseFloat(order.totalCost))}
+                          </p>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-neutral-400 ml-4" />
                       </div>
-                      <ChevronRight className="w-5 h-5 text-neutral-400 ml-4" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              
-              {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <div className="flex flex-col items-center pt-6 space-y-4">
-                  {/* Page info */}
-                  <p className="text-sm text-neutral-600" data-testid="text-page-info">
-                    Página {currentPage} de {totalPages} ({totalOrders} pedidos no total)
-                  </p>
-                  
-                  {/* Page controls */}
-                  <div className="flex items-center space-x-2">
-                    {/* Previous button */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handlePrevPage}
-                      disabled={currentPage === 1 || ordersLoading}
-                      data-testid="button-previous-page"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+                
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex flex-col items-center pt-6 space-y-4">
+                    {/* Page info */}
+                    <p className="text-sm text-neutral-600" data-testid="text-page-info">
+                      Página {currentPage} de {totalPages} ({totalOrders} pedidos no total)
+                    </p>
                     
-                    {/* Page numbers */}
-                    {getPageNumbers().map((pageNum) => (
+                    {/* Page controls */}
+                    <div className="flex items-center space-x-2">
+                      {/* Previous button */}
                       <Button
-                        key={pageNum}
-                        variant={currentPage === pageNum ? "default" : "outline"}
+                        variant="outline"
                         size="sm"
-                        onClick={() => handlePageChange(pageNum)}
-                        disabled={ordersLoading}
-                        data-testid={`button-page-${pageNum}`}
+                        onClick={handlePrevPage}
+                        disabled={currentPage === 1 || ordersLoading}
+                        data-testid="button-previous-page"
                       >
-                        {pageNum}
+                        <ChevronLeft className="w-4 h-4" />
                       </Button>
-                    ))}
-                    
-                    {/* Next button */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleNextPage}
-                      disabled={currentPage === totalPages || ordersLoading}
-                      data-testid="button-next-page"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
+                      
+                      {/* Page numbers */}
+                      {getPageNumbers().map((pageNum) => (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handlePageChange(pageNum)}
+                          disabled={ordersLoading}
+                          data-testid={`button-page-${pageNum}`}
+                        >
+                          {pageNum}
+                        </Button>
+                      ))}
+                      
+                      {/* Next button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleNextPage}
+                        disabled={currentPage === totalPages || ordersLoading}
+                        data-testid="button-next-page"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <Package className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
+                  <p className="text-neutral-600" data-testid="text-no-orders">Nenhum pedido encontrado</p>
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => setLocation("/eventos")}
+                    data-testid="button-new-order"
+                  >
+                    Fazer Novo Pedido
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+          <Footer />
+        </div>
+
+        {/* Desktop Version */}
+        <div className="hidden lg:block min-h-screen bg-gray-50">
+          {/* Desktop Header */}
+          <nav className="bg-white border-b border-gray-200 shadow-sm">
+            <div className="max-w-7xl mx-auto px-8">
+              <div className="flex items-center justify-between h-16">
+                {/* Logo */}
+                <div className="flex items-center">
+                  <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
+                </div>
+
+                {/* Navigation Links */}
+                <div className="flex items-center space-x-8">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setLocation("/")}
+                    className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
+                  >
+                    <Home className="w-4 h-4" />
+                    <span>Início</span>
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    className="flex items-center space-x-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-lg font-medium"
+                  >
+                    <Package className="w-4 h-4" />
+                    <span>Pedidos</span>
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    onClick={() => setLocation("/eventos")}
+                    className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
+                  >
+                    <Package className="w-4 h-4" />
+                    <span>Eventos</span>
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    onClick={() => setLocation("/profile")}
+                    className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
+                  >
+                    <User className="w-4 h-4" />
+                    <span>Perfil</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </nav>
+
+          {/* Main Content */}
+          <div className="max-w-6xl mx-auto pt-16 pb-8 px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+              {/* Left Column - Customer Info */}
+              <div className="lg:col-span-2 lg:pr-8">
+                <div className="flex items-center mb-6">
+                  <Package className="w-8 h-8 text-purple-600 mr-3" />
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-900">Meus Pedidos</h1>
+                    <p className="text-lg text-gray-600 mt-2">Acompanhe o status dos seus pedidos de kits</p>
                   </div>
                 </div>
-              )}
+
+                <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+                  <h3 className="font-semibold text-xl text-gray-900 mb-4">Informações do Cliente</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3">
+                      <User className="w-5 h-5 text-purple-600" />
+                      <span className="text-gray-700 font-medium">{effectiveCustomer!.name}</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Package className="w-5 h-5 text-purple-600" />
+                      <span className="text-gray-700">{formatCPF(effectiveCustomer!.cpf)}</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <MapPin className="w-5 h-5 text-purple-600" />
+                      <span className="text-gray-700">{totalOrders} pedidos no total</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <h4 className="font-medium text-gray-900 mb-3">Ações Rápidas</h4>
+                    <div className="space-y-2">
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start"
+                        onClick={() => setLocation("/profile")}
+                      >
+                        <User className="w-4 h-4 mr-2" />
+                        Ver Perfil
+                      </Button>
+                      <Button
+                        className="w-full justify-start bg-purple-600 hover:bg-purple-700"
+                        onClick={() => setLocation("/eventos")}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Fazer Novo Pedido
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Orders List */}
+              <div className="lg:col-span-3">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                  <div className="p-6 border-b border-gray-200">
+                    <h2 className="text-2xl font-bold text-gray-900">Lista de Pedidos</h2>
+                    {totalOrders > 0 && (
+                      <p className="text-gray-600 mt-2">
+                        Página {currentPage} de {totalPages} • {totalOrders} pedidos no total
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="p-6">
+                    {ordersLoading ? (
+                      <div className="space-y-4">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div
+                            key={i}
+                            className="h-32 bg-gray-200 rounded-lg animate-pulse"
+                          />
+                        ))}
+                      </div>
+                    ) : displayedOrders && displayedOrders.length > 0 ? (
+                      <div className="space-y-4">
+                        {displayedOrders.map((order: Order) => (
+                          <Card
+                            key={order.id}
+                            className="cursor-pointer hover:shadow-lg transition-shadow border-l-4 border-l-purple-500"
+                            onClick={() => handleOrderClick(order.orderNumber)}
+                            data-testid={`card-order-${order.id}`}
+                          >
+                            <CardContent className="p-6">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div>
+                                      <p className="text-xl font-bold text-gray-900" data-testid={`text-order-number-${order.id}`}>
+                                        #{order.orderNumber}
+                                      </p>
+                                      <p className="text-sm text-gray-600 mt-1">
+                                        Pedido realizado em {(() => {
+                                          try {
+                                            const dateStr = order.createdAt
+                                              ? (typeof order.createdAt === "string"
+                                                  ? order.createdAt
+                                                  : new Date(order.createdAt).toISOString()
+                                                ).split("T")[0]
+                                              : new Date().toISOString().split("T")[0];
+                                            return formatDate(dateStr);
+                                          } catch {
+                                            return formatDate(new Date().toISOString().split("T")[0]);
+                                          }
+                                        })()}
+                                      </p>
+                                    </div>
+                                    {getStatusBadge(order.status, false)}
+                                  </div>
+
+                                  <div className="mb-4">
+                                    <p className="text-lg font-semibold text-gray-800" data-testid={`text-event-name-${order.id}`}>
+                                      {(order as any).event?.name ||
+                                        `Evento ID: ${order.eventId}` ||
+                                        "Evento não identificado"}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-6 text-gray-600">
+                                      <div className="flex items-center">
+                                        <Package className="w-5 h-5 mr-2" />
+                                        <span data-testid={`text-kit-quantity-${order.id}`}>
+                                          {order.kitQuantity} kit{order.kitQuantity > 1 ? "s" : ""}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <p className="text-2xl font-bold text-purple-600" data-testid={`text-order-total-${order.id}`}>
+                                      {formatCurrency(parseFloat(order.totalCost))}
+                                    </p>
+                                  </div>
+                                </div>
+                                <ChevronRight className="w-6 h-6 text-gray-400 ml-6" />
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                        
+                        {/* Desktop Pagination Controls */}
+                        {totalPages > 1 && (
+                          <div className="flex flex-col items-center pt-8 space-y-4">
+                            <div className="flex items-center space-x-3">
+                              <Button
+                                variant="outline"
+                                onClick={handlePrevPage}
+                                disabled={currentPage === 1 || ordersLoading}
+                                data-testid="button-previous-page"
+                                className="px-6"
+                              >
+                                <ChevronLeft className="w-4 h-4 mr-2" />
+                                Anterior
+                              </Button>
+                              
+                              {getPageNumbers().map((pageNum) => (
+                                <Button
+                                  key={pageNum}
+                                  variant={currentPage === pageNum ? "default" : "outline"}
+                                  onClick={() => handlePageChange(pageNum)}
+                                  disabled={ordersLoading}
+                                  data-testid={`button-page-${pageNum}`}
+                                  className={currentPage === pageNum ? "bg-purple-600 hover:bg-purple-700" : ""}
+                                >
+                                  {pageNum}
+                                </Button>
+                              ))}
+                              
+                              <Button
+                                variant="outline"
+                                onClick={handleNextPage}
+                                disabled={currentPage === totalPages || ordersLoading}
+                                data-testid="button-next-page"
+                                className="px-6"
+                              >
+                                Próximo
+                                <ChevronRight className="w-4 h-4 ml-2" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">Nenhum pedido encontrado</h3>
+                        <p className="text-gray-600 mb-6">Você ainda não fez nenhum pedido</p>
+                        <Button
+                          className="bg-purple-600 hover:bg-purple-700"
+                          onClick={() => setLocation("/eventos")}
+                          data-testid="button-new-order"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Fazer Primeiro Pedido
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
-          ) : (
-            <Card>
-              <CardContent className="p-6 text-center">
-                <Package className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
-                <p className="text-neutral-600" data-testid="text-no-orders">Nenhum pedido encontrado</p>
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => setLocation("/eventos")}
-                  data-testid="button-new-order"
-                >
-                  Fazer Novo Pedido
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+          </div>
         </div>
-        <Footer />
-      </div>
+      </>
     );
   }
 
