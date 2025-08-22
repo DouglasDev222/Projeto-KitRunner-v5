@@ -470,53 +470,6 @@ export default function EventDetails() {
             {/* Right Column - Event Details */}
             <div className="lg:col-span-2">
               <div className="space-y-6">
-                {/* Event Information */}
-                <Card className="shadow-lg">
-                  <CardContent className="p-6">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Informações do Evento</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <div className="flex items-start space-x-3">
-                          <Calendar className="w-5 h-5 text-purple-600 mt-1" />
-                          <div>
-                            <p className="font-medium text-gray-900">Data</p>
-                            <p className="text-gray-600">{(() => {
-                              const [year, month, day] = event.date.split('-');
-                              const brasilianDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                              return brasilianDate.toLocaleDateString('pt-BR');
-                            })()}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start space-x-3">
-                          <MapPin className="w-5 h-5 text-purple-600 mt-1" />
-                          <div>
-                            <p className="font-medium text-gray-900">Local</p>
-                            <p className="text-gray-600">{event.location}</p>
-                            <p className="text-gray-600">{event.city} - {event.state}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Important Information */}
-                <Alert className="border-blue-200 bg-blue-50">
-                  <Shield className="h-4 w-4 text-blue-600" />
-                  <AlertDescription className="text-blue-800">
-                    <div className="space-y-2">
-                      <p className="font-medium">Importante:</p>
-                      <p className="text-sm">
-                        Para utilizar nosso serviço, você precisa estar devidamente inscrito no evento através da página oficial da organização. 
-                        Após a inscrição, basta solicitar a retirada conosco com seu número de inscrição e dados necessários.
-                      </p>
-                      <p className="text-sm font-medium">
-                        Este é um serviço independente, sem vínculo com a organização do evento. Nossa missão é facilitar sua experiência!
-                      </p>
-                    </div>
-                  </AlertDescription>
-                </Alert>
-
                 {/* KitRunner Service */}
                 <Card className="shadow-lg">
                   <CardContent className="p-6">
@@ -547,47 +500,22 @@ export default function EventDetails() {
                   </CardContent>
                 </Card>
 
-                {/* Pricing Information */}
-                <Card className="shadow-lg">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-semibold text-gray-900">Informações de Preço</h3>
-                      <DollarSign className="w-6 h-6 text-purple-600" />
+                {/* Important Information */}
+                <Alert className="border-blue-200 bg-blue-50">
+                  <Shield className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <div className="space-y-2">
+                      <p className="font-medium">Importante:</p>
+                      <p className="text-sm">
+                        Para utilizar nosso serviço, você precisa estar devidamente inscrito no evento através da página oficial da organização. 
+                        Após a inscrição, basta solicitar a retirada conosco com seu número de inscrição e dados necessários.
+                      </p>
+                      <p className="text-sm font-medium">
+                        Este é um serviço independente, sem vínculo com a organização do evento. Nossa missão é facilitar sua experiência!
+                      </p>
                     </div>
-                    
-                    {event.pricingType === 'fixed' ? (
-                      <div className="text-center p-6 bg-blue-50 rounded-lg">
-                        <Badge variant="secondary" className="mb-3">Preço Fixo</Badge>
-                        <p className="text-3xl font-bold text-purple-600 mb-3">{formatCurrency(Number(event.fixedPrice))}</p>
-                        <p className="text-gray-600 mb-4">
-                          Preço único que inclui todos os serviços de retirada e entrega
-                        </p>
-                        {event.extraKitPrice && (
-                          <p className="text-sm text-gray-500">
-                            Kits adicionais: {formatCurrency(Number(event.extraKitPrice))} cada
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                          <span className="text-gray-700 font-medium">
-                            {event.pricingType === 'cep_zones' ? 'Entrega (varia por zona):' : 'Entrega (varia por distância):'}
-                          </span>
-                          <span className="text-lg font-bold text-purple-600">
-                            A partir de {minimumPriceData ? formatCurrency(minimumPriceData.minimumPrice) : 'R$ 10,00'}
-                          </span>
-                        </div>
-                        {event.extraKitPrice && (
-                          <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                            <span className="text-gray-700 font-medium">Kits adicionais:</span>
-                            <span className="text-lg font-bold text-purple-600">{formatCurrency(Number(event.extraKitPrice))} cada</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                  </AlertDescription>
+                </Alert>
 
                 {/* Donation Information */}
                 {event.donationRequired && (
@@ -603,6 +531,46 @@ export default function EventDetails() {
                     </AlertDescription>
                   </Alert>
                 )}
+
+                {/* Pricing Information */}
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="flex items-center mb-3">
+                    <DollarSign className="w-5 h-5 text-purple-600 mr-2" />
+                    <h3 className="text-lg font-medium text-gray-900">Informações de Preço</h3>
+                  </div>
+                  
+                  {event.pricingType === 'fixed' ? (
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Preço fixo:</span>
+                        <span className="font-bold text-purple-600">{formatCurrency(Number(event.fixedPrice))}</span>
+                      </div>
+                      {event.extraKitPrice && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Kits adicionais:</span>
+                          <span className="text-sm font-medium text-purple-600">{formatCurrency(Number(event.extraKitPrice))} cada</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">
+                          {event.pricingType === 'cep_zones' ? 'Entrega (varia por zona):' : 'Entrega (varia por distância):'}
+                        </span>
+                        <span className="font-bold text-purple-600">
+                          A partir de {minimumPriceData ? formatCurrency(minimumPriceData.minimumPrice) : 'R$ 10,00'}
+                        </span>
+                      </div>
+                      {event.extraKitPrice && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Kits adicionais:</span>
+                          <span className="text-sm font-medium text-purple-600">{formatCurrency(Number(event.extraKitPrice))} cada</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Status Warning */}
                 {statusMessage && (
