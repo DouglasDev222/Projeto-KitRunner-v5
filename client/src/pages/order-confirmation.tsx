@@ -169,7 +169,7 @@ export default function OrderConfirmation() {
         <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="max-w-6xl mx-auto px-8 h-16 flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-primary">KitRunner</h1>
+              <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
             </div>
             <nav className="flex items-center space-x-6">
               <Button 
