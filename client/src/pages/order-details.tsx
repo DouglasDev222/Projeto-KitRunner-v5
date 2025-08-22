@@ -301,7 +301,7 @@ export default function OrderDetails() {
                     {formatDate(order.createdAt.split('T')[0])}
                   </p>
                 </div>
-                <div className="mb-4">
+                <div className="mb-4 flex justify-end">
                   {getStatusBadge(order.status, false)}
                 </div>
 
