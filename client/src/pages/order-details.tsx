@@ -3,7 +3,7 @@ import { Footer } from "@/components/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Package, Calendar, MapPin, User, CreditCard, Heart, Home, Plus, FileText } from "lucide-react";
+import { Package, Calendar, MapPin, User, CreditCard, Heart, Home, Plus, FileText, ArrowLeft } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
@@ -338,8 +338,8 @@ export default function OrderDetails() {
                       onClick={() => setLocation("/my-orders")}
                       className="w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors flex items-center"
                     >
-                      <Package className="w-4 h-4 mr-2" />
-                      Ver Todos os Pedidos
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Voltar
                     </button>
                     <button
                       onClick={() => setLocation("/eventos")}
