@@ -295,13 +295,13 @@ export default function OrderDetails() {
             {/* Left Column - Order Summary */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 sticky top-24">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">#{order.orderNumber}</h1>
-                    <p className="text-gray-600 mt-1">
-                      {formatDate(order.createdAt.split('T')[0])}
-                    </p>
-                  </div>
+                <div className="mb-2">
+                  <h1 className="text-2xl font-bold text-gray-900">#{order.orderNumber}</h1>
+                  <p className="text-gray-600 mt-1">
+                    {formatDate(order.createdAt.split('T')[0])}
+                  </p>
+                </div>
+                <div className="mb-4">
                   {getStatusBadge(order.status, false)}
                 </div>
 
