@@ -2403,19 +2403,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 await storage.updateOrderStatus(order.id, 'confirmado', 'mercadopago', 'Mercado Pago', 'Pagamento aprovado via verificação de status');
                 console.log(`✅ Order ${orderId} status successfully updated to confirmado`);
 
-                // Send ONLY admin notifications (customer email sent automatically by updateOrderStatus)
-                try {
-                  const fullOrder = await storage.getOrderWithFullDetails(order.id);
-                  if (fullOrder) {
-                    const emailService = new EmailService(storage);
-                    const { EmailDataMapper } = await import('./email/email-data-mapper');
-                    const adminNotificationData = EmailDataMapper.mapToAdminOrderConfirmation(fullOrder);
-                    await emailService.sendAdminOrderConfirmations(adminNotificationData, fullOrder.id);
-                    console.log(`📧 Admin notification sent for order ${fullOrder.orderNumber}`);
-                  }
-                } catch (adminEmailError) {
-                  console.error('Error sending admin order confirmation:', adminEmailError);
-                }
+                // NOTE: Admin notifications for PIX are sent via webhook only
+                // This avoids duplicate emails since PIX payments are processed asynchronously
+                console.log(`📧 PIX payment confirmed - admin notifications will be sent via webhook`)
               } else if (result.status === 'cancelled' || result.status === 'rejected') {
                 console.log(`❌ Payment failed for order ${orderId} (ID: ${order.id}) - updating to cancelado`);
                 await storage.updateOrderStatus(order.id, 'cancelado', 'mercadopago', 'Mercado Pago', 'Pagamento rejeitado via verificação de status');
