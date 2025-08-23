@@ -49,11 +49,29 @@ export class EmailService {
   private storage: DatabaseStorage;
   private fromEmail: string;
   private fromName: string;
+  private static lastResendCall: number = 0;
+  private static readonly RESEND_RATE_LIMIT_MS = 600; // 600ms between calls (1.67 calls/sec, under 2/sec limit)
 
   constructor(storage: DatabaseStorage) {
     this.storage = storage;
     this.fromEmail = process.env.RESEND_FROM_EMAIL || process.env.SENDGRID_FROM_EMAIL || 'contato@kitrunner.com.br';
     this.fromName = process.env.RESEND_FROM_NAME || process.env.SENDGRID_FROM_NAME || 'KitRunner';
+  }
+
+  /**
+   * Wait for Resend rate limit (max 2 calls per second)
+   */
+  private async waitForResendRateLimit(): Promise<void> {
+    const now = Date.now();
+    const timeSinceLastCall = now - EmailService.lastResendCall;
+    
+    if (timeSinceLastCall < EmailService.RESEND_RATE_LIMIT_MS) {
+      const waitTime = EmailService.RESEND_RATE_LIMIT_MS - timeSinceLastCall;
+      console.log(`⏳ Rate limiting: waiting ${waitTime}ms before Resend call`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    
+    EmailService.lastResendCall = Date.now();
   }
 
   /**
@@ -69,6 +87,9 @@ export class EmailService {
     // Try Resend first
     if (RESEND_ENABLED) {
       try {
+        // Rate limiting: ensure we don't exceed 2 calls per second
+        await this.waitForResendRateLimit();
+        
         console.log('📧 Attempting to send email via Resend...');
         const { data, error } = await resend.emails.send({
           from: `${this.fromName} <${this.fromEmail}>`,
