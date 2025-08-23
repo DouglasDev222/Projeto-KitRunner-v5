@@ -1,4 +1,5 @@
 import sgMail from '@sendgrid/mail';
+import { Resend } from 'resend';
 import { DatabaseStorage } from '../storage';
 import { db } from '../db';
 import { adminUsers } from '@shared/schema';
@@ -22,14 +23,26 @@ import {
   EmailType
 } from './email-types';
 
-// Configure SendGrid (optional - will log if not configured)
+// Configure Resend (primary) and SendGrid (fallback)
+const resend = new Resend(process.env.RESEND_API_KEY);
+const RESEND_ENABLED = !!process.env.RESEND_API_KEY;
 const SENDGRID_ENABLED = !!process.env.SENDGRID_API_KEY;
+
+if (RESEND_ENABLED) {
+  console.log('📧 Resend configured successfully (primary provider)');
+} else {
+  console.log('⚠️ Resend not configured');
+}
 
 if (SENDGRID_ENABLED) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
-  console.log('📧 SendGrid configured successfully');
+  console.log('📧 SendGrid configured successfully (fallback provider)');
 } else {
-  console.log('⚠️ SendGrid not configured - email notifications disabled');
+  console.log('⚠️ SendGrid not configured');
+}
+
+if (!RESEND_ENABLED && !SENDGRID_ENABLED) {
+  console.log('❌ No email providers configured - email notifications disabled');
 }
 
 export class EmailService {
@@ -39,8 +52,88 @@ export class EmailService {
 
   constructor(storage: DatabaseStorage) {
     this.storage = storage;
-    this.fromEmail = process.env.SENDGRID_FROM_EMAIL || 'contato@kitrunner.com.br';
-    this.fromName = process.env.SENDGRID_FROM_NAME || 'KitRunner';
+    this.fromEmail = process.env.RESEND_FROM_EMAIL || process.env.SENDGRID_FROM_EMAIL || 'contato@kitrunner.com.br';
+    this.fromName = process.env.RESEND_FROM_NAME || process.env.SENDGRID_FROM_NAME || 'KitRunner';
+  }
+
+  /**
+   * Send email with Resend (primary) and SendGrid fallback
+   */
+  private async sendEmailWithFallback(emailData: {
+    to: string;
+    subject: string;
+    html: string;
+    text: string;
+  }): Promise<{ success: boolean; messageId?: string; error?: any; provider?: string }> {
+    
+    // Try Resend first
+    if (RESEND_ENABLED) {
+      try {
+        console.log('📧 Attempting to send email via Resend...');
+        const { data, error } = await resend.emails.send({
+          from: `${this.fromName} <${this.fromEmail}>`,
+          to: emailData.to,
+          subject: emailData.subject,
+          html: emailData.html,
+          text: emailData.text,
+        });
+
+        if (error) {
+          console.error('❌ Resend error:', error);
+          throw new Error(error.message || 'Resend send failed');
+        }
+
+        console.log('✅ Email sent successfully via Resend');
+        return {
+          success: true,
+          messageId: data?.id,
+          provider: 'resend'
+        };
+      } catch (error) {
+        console.error('❌ Resend failed, trying SendGrid fallback...');
+      }
+    }
+
+    // Fallback to SendGrid
+    if (SENDGRID_ENABLED) {
+      try {
+        console.log('📧 Attempting to send email via SendGrid (fallback)...');
+        const msg = {
+          to: emailData.to,
+          from: {
+            email: this.fromEmail,
+            name: this.fromName
+          },
+          subject: emailData.subject,
+          text: emailData.text,
+          html: emailData.html,
+        };
+
+        const response = await sgMail.send(msg);
+        console.log('✅ Email sent successfully via SendGrid (fallback)');
+        
+        return {
+          success: true,
+          messageId: response[0].headers['x-message-id'] || undefined,
+          provider: 'sendgrid'
+        };
+      } catch (error) {
+        console.error('❌ SendGrid also failed:', error);
+        return {
+          success: false,
+          error,
+          provider: 'sendgrid'
+        };
+      }
+    }
+
+    // No providers available
+    console.log('📧 No email providers available - would send email to:', emailData.to);
+    return {
+      success: false,
+      error: 'No email providers configured',
+      provider: 'none'
+    };
   }
 
   /**
@@ -48,40 +141,39 @@ export class EmailService {
    */
   async sendServiceConfirmation(data: ServiceConfirmationData, recipientEmail: string, orderId?: number, customerId?: number): Promise<boolean> {
     try {
-      if (!SENDGRID_ENABLED) {
-        console.log('📧 Email service disabled - would send service confirmation to:', recipientEmail);
+      if (!RESEND_ENABLED && !SENDGRID_ENABLED) {
+        console.log('📧 No email providers available - would send service confirmation to:', recipientEmail);
         return false;
       }
 
       const template = generateServiceConfirmationTemplate(data);
       
-      const msg = {
-        to: recipientEmail,
-        from: {
-          email: this.fromEmail,
-          name: this.fromName
-        },
-        subject: template.subject,
-        text: template.text,
-        html: template.html,
-      };
-
       console.log('📧 Sending order confirmation email to:', recipientEmail);
-      const response = await sgMail.send(msg);
-      
-      // Log success
-      await this.logEmail({
-        orderId,
-        customerId,
-        emailType: 'service_confirmation',
-        recipientEmail,
+      const result = await this.sendEmailWithFallback({
+        to: recipientEmail,
         subject: template.subject,
-        status: 'sent',
-        sendgridMessageId: response[0].headers['x-message-id'] || undefined,
+        html: template.html,
+        text: template.text,
       });
+      
+      if (result.success) {
+        // Log success
+        await this.logEmail({
+          orderId,
+          customerId,
+          emailType: 'service_confirmation',
+          recipientEmail,
+          subject: template.subject,
+          status: 'sent',
+          messageId: result.messageId,
+          provider: result.provider,
+        });
 
-      console.log('✅ Service confirmation email sent successfully');
-      return true;
+        console.log('✅ Service confirmation email sent successfully');
+        return true;
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error) {
       console.error('❌ Error sending order confirmation email:', error);
       
@@ -105,40 +197,39 @@ export class EmailService {
    */
   async sendKitEnRoute(data: KitEnRouteData, recipientEmail: string, orderId?: number, customerId?: number): Promise<boolean> {
     try {
-      if (!SENDGRID_ENABLED) {
-        console.log('📧 Email service disabled - would send kit en route to:', recipientEmail);
+      if (!RESEND_ENABLED && !SENDGRID_ENABLED) {
+        console.log('📧 No email providers available - would send kit en route to:', recipientEmail);
         return false;
       }
 
       const template = generateKitEnRouteTemplate(data);
       
-      const msg = {
-        to: recipientEmail,
-        from: {
-          email: this.fromEmail,
-          name: this.fromName
-        },
-        subject: template.subject,
-        text: template.text,
-        html: template.html,
-      };
-
       console.log('📧 Sending kit en route email to:', recipientEmail);
-      const response = await sgMail.send(msg);
-      
-      // Log success
-      await this.logEmail({
-        orderId,
-        customerId,
-        emailType: 'kit_en_route',
-        recipientEmail,
+      const result = await this.sendEmailWithFallback({
+        to: recipientEmail,
         subject: template.subject,
-        status: 'sent',
-        sendgridMessageId: response[0].headers['x-message-id'] || undefined,
+        html: template.html,
+        text: template.text,
       });
+      
+      if (result.success) {
+        // Log success
+        await this.logEmail({
+          orderId,
+          customerId,
+          emailType: 'kit_en_route',
+          recipientEmail,
+          subject: template.subject,
+          status: 'sent',
+          messageId: result.messageId,
+          provider: result.provider,
+        });
 
-      console.log('✅ Kit en route email sent successfully');
-      return true;
+        console.log('✅ Kit en route email sent successfully');
+        return true;
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error) {
       console.error('❌ Error sending kit en route email:', error);
       
@@ -162,40 +253,39 @@ export class EmailService {
    */
   async sendDeliveryConfirmation(data: DeliveryConfirmationData, recipientEmail: string, orderId?: number, customerId?: number): Promise<boolean> {
     try {
-      if (!SENDGRID_ENABLED) {
-        console.log('📧 Email service disabled - would send delivery confirmation to:', recipientEmail);
+      if (!RESEND_ENABLED && !SENDGRID_ENABLED) {
+        console.log('📧 No email providers available - would send delivery confirmation to:', recipientEmail);
         return false;
       }
 
       const template = generateDeliveryConfirmationTemplate(data);
       
-      const msg = {
-        to: recipientEmail,
-        from: {
-          email: this.fromEmail,
-          name: this.fromName
-        },
-        subject: template.subject,
-        text: template.text,
-        html: template.html,
-      };
-
       console.log('📧 Sending delivery confirmation email to:', recipientEmail);
-      const response = await sgMail.send(msg);
-      
-      // Log success
-      await this.logEmail({
-        orderId,
-        customerId,
-        emailType: 'delivery_confirmation',
-        recipientEmail,
+      const result = await this.sendEmailWithFallback({
+        to: recipientEmail,
         subject: template.subject,
-        status: 'sent',
-        sendgridMessageId: response[0].headers['x-message-id'] || undefined,
+        html: template.html,
+        text: template.text,
       });
+      
+      if (result.success) {
+        // Log success
+        await this.logEmail({
+          orderId,
+          customerId,
+          emailType: 'delivery_confirmation',
+          recipientEmail,
+          subject: template.subject,
+          status: 'sent',
+          messageId: result.messageId,
+          provider: result.provider,
+        });
 
-      console.log('✅ Delivery confirmation email sent successfully');
-      return true;
+        console.log('✅ Delivery confirmation email sent successfully');
+        return true;
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error) {
       console.error('❌ Error sending delivery confirmation email:', error);
       
@@ -219,40 +309,39 @@ export class EmailService {
    */
   async sendStatusUpdateEmail(data: StatusUpdateData, recipientEmail: string, orderId?: number, customerId?: number): Promise<boolean> {
     try {
-      if (!SENDGRID_ENABLED) {
-        console.log('📧 Email service disabled - would send status update to:', recipientEmail);
+      if (!RESEND_ENABLED && !SENDGRID_ENABLED) {
+        console.log('📧 No email providers available - would send status update to:', recipientEmail);
         return false;
       }
 
       const template = generateStatusUpdateTemplate(data);
       
-      const msg = {
-        to: recipientEmail,
-        from: {
-          email: this.fromEmail,
-          name: this.fromName
-        },
-        subject: template.subject,
-        text: template.text,
-        html: template.html,
-      };
-
       console.log('📧 Sending status update email to:', recipientEmail);
-      const response = await sgMail.send(msg);
-      
-      // Log success
-      await this.logEmail({
-        orderId,
-        customerId,
-        emailType: 'status_update',
-        recipientEmail,
+      const result = await this.sendEmailWithFallback({
+        to: recipientEmail,
         subject: template.subject,
-        status: 'sent',
-        sendgridMessageId: response[0].headers['x-message-id'] || undefined,
+        html: template.html,
+        text: template.text,
       });
+      
+      if (result.success) {
+        // Log success
+        await this.logEmail({
+          orderId,
+          customerId,
+          emailType: 'status_update',
+          recipientEmail,
+          subject: template.subject,
+          status: 'sent',
+          messageId: result.messageId,
+          provider: result.provider,
+        });
 
-      console.log('✅ Status update email sent successfully');
-      return true;
+        console.log('✅ Status update email sent successfully');
+        return true;
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error) {
       console.error('❌ Error sending status update email:', error);
       
@@ -276,40 +365,39 @@ export class EmailService {
    */
   async sendPaymentPending(data: PaymentPendingData, recipientEmail: string, orderId?: number, customerId?: number): Promise<boolean> {
     try {
-      if (!SENDGRID_ENABLED) {
-        console.log('📧 Email service disabled - would send payment pending to:', recipientEmail);
+      if (!RESEND_ENABLED && !SENDGRID_ENABLED) {
+        console.log('📧 No email providers available - would send payment pending to:', recipientEmail);
         return false;
       }
 
       const template = generatePaymentPendingTemplate(data);
       
-      const msg = {
-        to: recipientEmail,
-        from: {
-          email: this.fromEmail,
-          name: this.fromName
-        },
-        subject: template.subject,
-        text: template.text,
-        html: template.html,
-      };
-
       console.log('📧 Sending payment pending email to:', recipientEmail);
-      const response = await sgMail.send(msg);
-      
-      // Log success
-      await this.logEmail({
-        orderId,
-        customerId,
-        emailType: 'payment_pending',
-        recipientEmail,
+      const result = await this.sendEmailWithFallback({
+        to: recipientEmail,
         subject: template.subject,
-        status: 'sent',
-        sendgridMessageId: response[0].headers['x-message-id'] || undefined,
+        html: template.html,
+        text: template.text,
       });
+      
+      if (result.success) {
+        // Log success
+        await this.logEmail({
+          orderId,
+          customerId,
+          emailType: 'payment_pending',
+          recipientEmail,
+          subject: template.subject,
+          status: 'sent',
+          messageId: result.messageId,
+          provider: result.provider,
+        });
 
-      console.log('✅ Payment pending email sent successfully');
-      return true;
+        console.log('✅ Payment pending email sent successfully');
+        return true;
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error) {
       console.error('❌ Error sending payment pending email:', error);
       
@@ -333,21 +421,20 @@ export class EmailService {
    */
   async sendTestEmail(recipientEmail: string): Promise<boolean> {
     try {
-      if (!SENDGRID_ENABLED) {
-        console.log('📧 Email service disabled - would send test email to:', recipientEmail);
+      if (!RESEND_ENABLED && !SENDGRID_ENABLED) {
+        console.log('📧 No email providers available - would send test email to:', recipientEmail);
         return false;
       }
-      const msg = {
-        to: recipientEmail,
-        from: {
-          email: this.fromEmail,
-          name: this.fromName
-        },
-        subject: 'Teste de Integração SendGrid - KitRunner',
-        text: `
-Teste de Integração SendGrid - KitRunner
 
-Este é um email de teste para verificar a integração com o SendGrid.
+      const providerText = RESEND_ENABLED ? 'Resend' : 'SendGrid';
+      
+      const emailData = {
+        to: recipientEmail,
+        subject: `Teste de Integração ${providerText} - KitRunner`,
+        text: `
+Teste de Integração ${providerText} - KitRunner
+
+Este é um email de teste para verificar a integração com o ${providerText}.
 
 Se você recebeu este email, a configuração está funcionando corretamente!
 
@@ -360,7 +447,7 @@ Sistema: KitRunner Email Notification System
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Teste SendGrid - KitRunner</title>
+  <title>Teste ${providerText} - KitRunner</title>
 </head>
 <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
   <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; overflow: hidden;">
@@ -375,11 +462,11 @@ Sistema: KitRunner Email Notification System
     <div style="padding: 30px;">
       <h2 style="color: #1e40af; margin: 0 0 20px 0;">✅ Configuração Bem-Sucedida!</h2>
       
-      <p>Este é um email de teste para verificar a integração com o SendGrid.</p>
+      <p>Este é um email de teste para verificar a integração com o <strong>${providerText}</strong>.</p>
       
       <p>Se você recebeu este email, significa que:</p>
       <ul>
-        <li>A chave da API SendGrid está configurada corretamente</li>
+        <li>A chave da API ${providerText} está configurada corretamente</li>
         <li>O serviço de email está funcionando</li>
         <li>Os templates HTML estão sendo renderizados</li>
         <li>O sistema está pronto para enviar notificações reais</li>
@@ -388,7 +475,8 @@ Sistema: KitRunner Email Notification System
       <div style="background-color: #f0fdf4; border: 2px solid #10B981; padding: 20px; border-radius: 8px; margin: 20px 0;">
         <h3 style="margin: 0 0 10px 0; color: #16a34a;">Sistema Operacional</h3>
         <p style="margin: 0;"><strong>Data/Hora:</strong> ${new Date().toLocaleString('pt-BR')}</p>
-        <p style="margin: 5px 0 0 0;"><strong>Status:</strong> Integração SendGrid ativa</p>
+        <p style="margin: 5px 0 0 0;"><strong>Status:</strong> Integração ${providerText} ativa</p>
+        <p style="margin: 5px 0 0 0;"><strong>Provedor:</strong> ${RESEND_ENABLED ? 'Resend (principal)' : 'SendGrid (fallback)'}</p>
       </div>
 
       <p><strong>Próximos passos:</strong></p>
@@ -411,19 +499,24 @@ Sistema: KitRunner Email Notification System
       };
 
       console.log('📧 Sending test email to:', recipientEmail);
-      const response = await sgMail.send(msg);
+      const result = await this.sendEmailWithFallback(emailData);
       
-      // Log test email
-      await this.logEmail({
-        emailType: 'service_confirmation', // Use existing type for test
-        recipientEmail,
-        subject: msg.subject,
-        status: 'sent',
-        sendgridMessageId: response[0].headers['x-message-id'] || undefined,
-      });
+      if (result.success) {
+        // Log test email
+        await this.logEmail({
+          emailType: 'service_confirmation', // Use existing type for test
+          recipientEmail,
+          subject: emailData.subject,
+          status: 'sent',
+          messageId: result.messageId,
+          provider: result.provider,
+        });
 
-      console.log('✅ Test email sent successfully');
-      return true;
+        console.log('✅ Test email sent successfully');
+        return true;
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error) {
       console.error('❌ Error sending test email:', error);
       
@@ -431,7 +524,7 @@ Sistema: KitRunner Email Notification System
       await this.logEmail({
         emailType: 'service_confirmation',
         recipientEmail,
-        subject: 'Teste de Integração SendGrid - KitRunner',
+        subject: `Teste de Integração ${RESEND_ENABLED ? 'Resend' : 'SendGrid'} - KitRunner`,
         status: 'failed',
         errorMessage: error instanceof Error ? error.message : String(error),
       });
@@ -450,11 +543,23 @@ Sistema: KitRunner Email Notification System
     recipientEmail: string;
     subject: string;
     status: 'sent' | 'failed' | 'delivered' | 'bounced';
+    messageId?: string;
+    provider?: string;
     sendgridMessageId?: string;
     errorMessage?: string;
   }): Promise<void> {
     try {
-      await this.storage.createEmailLog(emailData);
+      // Map the messageId to sendgridMessageId for database compatibility
+      const dbEmailData = {
+        ...emailData,
+        sendgridMessageId: emailData.messageId || emailData.sendgridMessageId,
+      };
+      
+      // Remove temporary fields not in database schema
+      delete (dbEmailData as any).messageId;
+      delete (dbEmailData as any).provider;
+      
+      await this.storage.createEmailLog(dbEmailData);
     } catch (error) {
       console.error('❌ Error logging email:', error);
     }

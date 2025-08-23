@@ -91,7 +91,7 @@ export function AdminEmailTest() {
         <div>
           <h1 className="text-3xl font-bold">Teste de Email</h1>
           <p className="text-muted-foreground">
-            Teste a integração SendGrid enviando emails de verificação
+            Teste a integração de email (Resend/SendGrid) enviando emails de verificação
           </p>
         </div>
 

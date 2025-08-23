@@ -216,18 +216,18 @@ No painel do Resend, configurar:
 
 ## ✅ Checklist de Validação
 
-- [ ] Resend instalado e configurado
-- [ ] API key funcionando
+- [x] Resend instalado e configurado
+- [x] API key funcionando
 - [ ] Domínio verificado no Resend
-- [ ] EmailService modificado
-- [ ] Todos os métodos atualizados
-- [ ] Logs funcionando corretamente
-- [ ] Página de teste admin atualizada
-- [ ] Script de teste criado
-- [ ] Emails sendo entregues corretamente
-- [ ] Templates renderizando bem
-- [ ] Fallback funcionando (se implementado)
-- [ ] Documentação atualizada
+- [x] EmailService modificado
+- [x] Todos os métodos atualizados
+- [x] Logs funcionando corretamente
+- [x] Página de teste admin atualizada
+- [x] Script de teste criado
+- [x] Emails sendo entregues corretamente
+- [x] Templates renderizando bem
+- [x] Fallback funcionando (se implementado)
+- [x] Documentação atualizada
 
 ## 🔄 Rollback Plan
 
