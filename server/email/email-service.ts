@@ -598,17 +598,16 @@ Sistema: KitRunner Email Notification System
    */
   static async sendOrderTimeoutNotification(data: any): Promise<boolean> {
     try {
-      if (!SENDGRID_ENABLED) {
+      if (!RESEND_ENABLED && !SENDGRID_ENABLED) {
         console.log('📧 Email service disabled - would send timeout notification to:', data.customerEmail);
         return false;
       }
 
-      const msg = {
+      // Create a temporary EmailService instance for static method
+      const emailService = new EmailService({} as any);
+      
+      const emailData = {
         to: data.customerEmail,
-        from: {
-          email: process.env.SENDGRID_FROM_EMAIL || 'contato@kitrunner.com.br',
-          name: process.env.SENDGRID_FROM_NAME || 'KitRunner'
-        },
         subject: data.subject || `Pedido ${data.orderNumber} foi cancelado`,
         text: `Olá ${data.customerName}, seu pedido ${data.orderNumber} para o evento ${data.eventName} foi cancelado automaticamente após ${data.timeoutHours} horas sem pagamento.`,
         html: `
@@ -623,10 +622,14 @@ Sistema: KitRunner Email Notification System
       };
 
       console.log('📧 Sending timeout notification email to:', data.customerEmail);
-      await sgMail.send(msg);
+      const result = await emailService.sendEmailWithFallback(emailData);
       
-      console.log(`⏰ Timeout notification sent successfully to ${data.customerEmail} for order ${data.orderNumber}`);
-      return true;
+      if (result.success) {
+        console.log(`⏰ Timeout notification sent successfully to ${data.customerEmail} for order ${data.orderNumber}`);
+        return true;
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error) {
       console.error(`⏰ Error sending timeout notification for order ${data.orderNumber}:`, error);
       return false;
@@ -638,39 +641,40 @@ Sistema: KitRunner Email Notification System
    */
   async sendAdminOrderConfirmation(data: AdminOrderConfirmationData, recipientEmail: string, orderId?: number): Promise<boolean> {
     try {
-      if (!SENDGRID_ENABLED) {
+      if (!RESEND_ENABLED && !SENDGRID_ENABLED) {
         console.log('📧 Email service disabled - would send admin order confirmation to:', recipientEmail);
         return false;
       }
 
       const template = generateAdminOrderConfirmationTemplate(data);
       
-      const msg = {
+      const emailData = {
         to: recipientEmail,
-        from: {
-          email: this.fromEmail,
-          name: this.fromName
-        },
         subject: template.subject,
         text: template.text,
         html: template.html,
       };
 
       console.log('📧 Sending admin order confirmation email to:', recipientEmail);
-      const response = await sgMail.send(msg);
+      const result = await this.sendEmailWithFallback(emailData);
       
-      // Log success
-      await this.logEmail({
-        orderId,
-        emailType: 'admin_order_confirmation',
-        recipientEmail,
-        subject: template.subject,
-        status: 'sent',
-        sendgridMessageId: response[0].headers['x-message-id'] || undefined,
-      });
+      if (result.success) {
+        // Log success
+        await this.logEmail({
+          orderId,
+          emailType: 'admin_order_confirmation',
+          recipientEmail,
+          subject: template.subject,
+          status: 'sent',
+          messageId: result.messageId,
+          provider: result.provider,
+        });
 
-      console.log('✅ Admin order confirmation email sent successfully');
-      return true;
+        console.log('✅ Admin order confirmation email sent successfully');
+        return true;
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error) {
       console.error('❌ Error sending admin order confirmation email:', error);
       
