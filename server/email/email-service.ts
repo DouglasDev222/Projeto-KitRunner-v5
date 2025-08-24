@@ -50,7 +50,7 @@ export class EmailService {
   private fromEmail: string;
   private fromName: string;
   private static lastResendCall: number = 0;
-  private static readonly RESEND_RATE_LIMIT_MS = 600; // 600ms between calls (1.67 calls/sec, under 2/sec limit)
+  private static readonly RESEND_RATE_LIMIT_MS = 1200; // 1200ms between calls (0.83 calls/sec, well under 2/sec limit)
 
   constructor(storage: DatabaseStorage) {
     this.storage = storage;
@@ -60,6 +60,7 @@ export class EmailService {
 
   /**
    * Wait for Resend rate limit (max 2 calls per second)
+   * FIXED: Increased to 1200ms for safety when multiple flows send emails
    */
   private async waitForResendRateLimit(): Promise<void> {
     const now = Date.now();
@@ -737,7 +738,7 @@ Sistema: KitRunner Email Notification System
         return true;
       }
 
-      console.log(`📧 Sending admin order confirmation to ${admins.length} administrator(s) sequentially`);
+      console.log(`📧 Sending admin order confirmation to ${admins.length} administrator(s) sequentially (with 1200ms rate limiting)`);
       
       // Send emails SEQUENTIALLY to respect rate limiting
       let successful = 0;

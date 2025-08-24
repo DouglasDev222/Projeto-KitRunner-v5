@@ -2559,12 +2559,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log(`✅ Webhook: Order ${orderId} status successfully updated to confirmed`);
 
                 // Send admin order confirmation notifications
+                // FIXED: Add delay to prevent rate limiting conflicts with payment flow
                 try {
+                  // Wait a bit to avoid conflicts with payment flow admin emails
+                  await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+                  
                   const fullOrder = await storage.getOrderWithFullDetails(order.id);
                   if (fullOrder) {
                     const emailService = new EmailService(storage);
                     const { EmailDataMapper } = await import('./email/email-data-mapper');
                     const adminNotificationData = EmailDataMapper.mapToAdminOrderConfirmation(fullOrder);
+                    console.log(`📧 Webhook: Sending admin notification for order ${fullOrder.orderNumber} (with delay to prevent rate limiting)`);
                     await emailService.sendAdminOrderConfirmations(adminNotificationData, fullOrder.id);
                     console.log(`📧 Webhook: Admin notification sent for order ${fullOrder.orderNumber}`);
                   }
