@@ -1342,38 +1342,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Administrador', 
         reason || 'Status alterado pelo administrador',
         undefined, // bulkOperationId
-        false // Don't send automatic email - we'll handle it manually based on sendEmail parameter
+        false // Don't send automatic email - we handle it manually to respect sendEmail parameter
       );
 
       if (!order) {
         return res.status(404).json({ message: "Pedido não encontrado" });
       }
 
-      // For admin status changes, let the automatic system handle specific emails
-      // Only send generic status updates for non-specific statuses when requested
-      if (currentOrder && oldStatus !== status && sendEmail && !['confirmado', 'em_transito', 'entregue'].includes(status)) {
-        console.log('📧 Sending generic status update email because sendEmail is true');
-        const emailService = new EmailService(storage);
-        const { EmailDataMapper } = await import("./email/email-data-mapper");
+      // Send email if requested by admin for status changes
+      if (currentOrder && oldStatus !== status && sendEmail) {
+        try {
+          const emailService = new EmailService(storage);
+          const { EmailDataMapper } = await import("./email/email-data-mapper");
+          let emailSent = false;
 
-        // Prepare status update data using the mapper
-        const statusUpdateData = EmailDataMapper.mapToStatusUpdate(
-          currentOrder, 
-          oldStatus || '', 
-          status
-        );
+          console.log(`📧 Sending email for status change from ${oldStatus} to ${status}`);
 
-        // Send email asynchronously (don't block the response)
-        emailService.sendStatusUpdateEmail(
-          statusUpdateData,
-          currentOrder.customer.email,
-          currentOrder.id,
-          currentOrder.customer.id
-        ).catch(error => {
-          console.error('❌ Failed to send generic status update email:', error);
-        });
+          // Send specific email based on new status
+          switch (status) {
+            case 'confirmado':
+              const confirmationData = EmailDataMapper.mapToServiceConfirmation(currentOrder);
+              emailSent = await emailService.sendServiceConfirmation(
+                confirmationData, 
+                currentOrder.customer.email, 
+                currentOrder.id, 
+                currentOrder.customer.id
+              );
+              break;
+
+            case 'em_transito':
+              const enRouteData = EmailDataMapper.mapToKitEnRoute(currentOrder);
+              emailSent = await emailService.sendKitEnRoute(
+                enRouteData, 
+                currentOrder.customer.email, 
+                currentOrder.id, 
+                currentOrder.customer.id
+              );
+              break;
+
+            case 'entregue':
+              const deliveryData = EmailDataMapper.mapToDeliveryConfirmation(currentOrder);
+              emailSent = await emailService.sendDeliveryConfirmation(
+                deliveryData, 
+                currentOrder.customer.email, 
+                currentOrder.id, 
+                currentOrder.customer.id
+              );
+              break;
+
+            default:
+              // For other statuses, send generic status update
+              const statusUpdateData = EmailDataMapper.mapToStatusUpdate(
+                currentOrder, 
+                oldStatus || '', 
+                status
+              );
+              emailSent = await emailService.sendStatusUpdateEmail(
+                statusUpdateData,
+                currentOrder.customer.email,
+                currentOrder.id,
+                currentOrder.customer.id
+              );
+              break;
+          }
+
+          if (emailSent) {
+            console.log(`✅ Email sent successfully for order ${currentOrder.orderNumber} status change to ${status}`);
+          }
+        } catch (emailError) {
+          console.error(`❌ Failed to send email for order ${currentOrder.orderNumber}:`, emailError);
+        }
       } else if (currentOrder && oldStatus !== status) {
-        console.log(`📧 Status change to ${status} - specific email will be handled by automatic system`);
+        console.log(`📧 Status change to ${status} - email not requested by admin`);
       }
 
       res.json(order);
