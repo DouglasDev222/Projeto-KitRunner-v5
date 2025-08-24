@@ -616,6 +616,7 @@ Sistema: KitRunner Email Notification System
 
   /**
    * Send order timeout notification email
+   * FIXED: Use shared rate limiting by using a singleton instance
    */
   static async sendOrderTimeoutNotification(data: any): Promise<boolean> {
     try {
@@ -624,8 +625,10 @@ Sistema: KitRunner Email Notification System
         return false;
       }
 
-      // Create a temporary EmailService instance for static method
-      const emailService = new EmailService({} as any);
+      // Use shared instance to respect rate limiting
+      const { DatabaseStorage } = await import('../storage');
+      const storage = new DatabaseStorage();
+      const emailService = new EmailService(storage);
       
       const emailData = {
         to: data.customerEmail,
@@ -715,6 +718,7 @@ Sistema: KitRunner Email Notification System
 
   /**
    * Send admin order confirmations to all admins with receiveOrderEmails = true
+   * FIXED: Send emails sequentially to respect Resend rate limiting
    */
   async sendAdminOrderConfirmations(data: AdminOrderConfirmationData, orderId?: number): Promise<boolean> {
     try {
@@ -733,21 +737,25 @@ Sistema: KitRunner Email Notification System
         return true;
       }
 
-      console.log(`📧 Sending admin order confirmation to ${admins.length} administrator(s)`);
+      console.log(`📧 Sending admin order confirmation to ${admins.length} administrator(s) sequentially`);
       
-      // Send emails in parallel to all admin recipients
-      const emailPromises = admins.map((admin: { id: number; email: string; fullName: string }) => 
-        this.sendAdminOrderConfirmation(data, admin.email, orderId)
-      );
+      // Send emails SEQUENTIALLY to respect rate limiting
+      let successful = 0;
+      let failed = 0;
       
-      const results = await Promise.allSettled(emailPromises);
-      
-      // Count successful sends
-      const successful = results.filter((result: PromiseSettledResult<boolean>) => 
-        result.status === 'fulfilled' && result.value === true
-      ).length;
-      
-      const failed = results.length - successful;
+      for (const admin of admins) {
+        try {
+          const result = await this.sendAdminOrderConfirmation(data, admin.email, orderId);
+          if (result) {
+            successful++;
+          } else {
+            failed++;
+          }
+        } catch (error) {
+          console.error(`❌ Failed to send admin email to ${admin.email}:`, error);
+          failed++;
+        }
+      }
       
       if (successful > 0) {
         console.log(`✅ Admin order confirmation sent to ${successful} administrator(s)`);
