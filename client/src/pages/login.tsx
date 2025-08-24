@@ -145,7 +145,8 @@ export default function Login() {
   };
 
   const handleRegister = () => {
-    // Clear form and go to events to start registration flow
+    // Preserve the return path when redirecting to registration
+    // Don't clear loginReturnPath here - let registration handle it
     setLocation("/register");
   };
 
@@ -155,6 +156,8 @@ export default function Login() {
     if (currentCpf) {
       sessionStorage.setItem("registrationCpf", currentCpf);
     }
+    // Preserve the return path when redirecting to registration
+    // Don't clear loginReturnPath here - let registration handle it
     setLocation("/register");
   };
 

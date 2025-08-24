@@ -16,7 +16,7 @@ const getEventStatusMessage = (event: Event, isPastEvent: boolean): string | nul
   if (isPastEvent) {
     return "Este evento já foi finalizado e não aceita mais pedidos.";
   }
-  
+
   switch (event.status) {
     case 'inativo':
       return "Este evento ainda não está disponível para pedidos. Em breve!";
@@ -36,7 +36,7 @@ const isEventAvailable = (event: Event, isPastEvent: boolean): boolean => {
 
 const getButtonText = (event: Event, isPastEvent: boolean): string => {
   if (isPastEvent) return "Evento Finalizado";
-  
+
   switch (event.status) {
     case 'ativo':
       return "Solicitar Retirada do Kit";
@@ -195,9 +195,9 @@ export default function EventDetails() {
 
   const handleRequestPickup = () => {
     if (!isAuthenticated) {
-      // Store the intended destination for after login
+      // Set return path for event flow
       sessionStorage.setItem("loginReturnPath", `/events/${id}/address`);
-      setLocation(`/login`);
+      setLocation("/login");
     } else {
       // User is authenticated, store user data and proceed directly to address
       sessionStorage.setItem("customerData", JSON.stringify(user));
@@ -352,7 +352,7 @@ export default function EventDetails() {
                 <h3 className="font-semibold text-lg text-neutral-800">Informações de Preço</h3>
                 <DollarSign className="w-5 h-5 text-primary" />
               </div>
-              
+
               {event.pricingType === 'fixed' ? (
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
                   <Badge variant="secondary" className="mb-2">Preço Fixo</Badge>
@@ -613,7 +613,7 @@ export default function EventDetails() {
                     <DollarSign className="w-5 h-5 text-purple-600 mr-2" />
                     <h3 className="text-lg font-medium text-gray-900">Informações de Preço</h3>
                   </div>
-                  
+
                   {event.pricingType === 'fixed' ? (
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">

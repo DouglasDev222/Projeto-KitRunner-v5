@@ -83,10 +83,35 @@ export default function CustomerRegistration() {
         // Continue with registration flow even if policy recording fails
       }
 
+      // Check if there's a return path from login flow (for event flow)
+      const returnPath = sessionStorage.getItem("loginReturnPath");
+      
       if (isStandaloneRegistration) {
-        // Standalone registration - log in user and go to profile
-        login(data.customer);
-        setLocation("/profile");
+        // Check if user came from event flow but through standalone registration
+        if (returnPath && returnPath.includes("/events/") && returnPath.includes("/address")) {
+          // Extract event ID from return path
+          const eventIdMatch = returnPath.match(/\/events\/(\d+)\/address/);
+          if (eventIdMatch) {
+            const eventId = eventIdMatch[1];
+            // Store data and continue event flow
+            sessionStorage.setItem("customerData", JSON.stringify(data.customer));
+            sessionStorage.setItem("customerAddresses", JSON.stringify(data.addresses));
+            sessionStorage.removeItem("loginReturnPath");
+            login(data.customer);
+            setLocation(`/events/${eventId}/address`);
+            return;
+          }
+        }
+        
+        // Standard standalone registration - log in user and go to profile
+        if (returnPath) {
+          sessionStorage.removeItem("loginReturnPath");
+          login(data.customer);
+          setLocation(returnPath);
+        } else {
+          login(data.customer);
+          setLocation("/profile");
+        }
       } else {
         // Event flow registration - store data and continue to address confirmation
         sessionStorage.setItem("customerData", JSON.stringify(data.customer));
