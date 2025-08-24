@@ -441,6 +441,19 @@ export default function CustomerRegistration() {
             >
               {registerMutation.isPending ? "Cadastrando..." : "Finalizar Cadastro"}
             </Button>
+            
+            <div className="mt-6 text-center">
+              <p className="text-sm text-neutral-600 mb-3">
+                Já tem uma conta?
+              </p>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={getBackNavigation()}
+              >
+                Já sou cadastrado - Entrar
+              </Button>
+            </div>
           </form>
         </Form>
       </div>
@@ -859,6 +872,19 @@ export default function CustomerRegistration() {
                     >
                       {registerMutation.isPending ? "Cadastrando..." : "Finalizar Cadastro"}
                     </Button>
+                    
+                    <div className="mt-8 text-center">
+                      <p className="text-gray-600 mb-4">
+                        Já tem uma conta?
+                      </p>
+                      <Button
+                        variant="outline"
+                        className="w-full h-12 text-lg"
+                        onClick={() => setLocation("/login")}
+                      >
+                        Já sou cadastrado - Entrar
+                      </Button>
+                    </div>
                   </form>
                 </Form>
               </CardContent>
