@@ -91,12 +91,21 @@ const Landing = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="text-lg px-8 py-6" onClick={handleSolicitarRetirada}>
-              <Zap className="h-5 w-5" />
-              Solicitar Retirada
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="text-lg px-8 py-6 order-2 sm:order-1" 
+              onClick={() => setLocation("/login")}
+            >
+              Entrar
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-6">
-              Como Funciona
+            <Button 
+              size="lg" 
+              className="text-lg px-8 py-6 order-1 sm:order-2 bg-primary hover:bg-primary/90" 
+              onClick={() => setLocation("/register")}
+            >
+              <Zap className="h-5 w-5" />
+              Cadastrar
             </Button>
           </div>
         </div>
@@ -302,10 +311,24 @@ const Landing = () => {
               <div className="text-4xl mb-4">📦</div>
               <h3 className="text-xl font-semibold text-foreground mb-2">Pronto para começar?</h3>
               <p className="text-muted-foreground mb-6">Faça seu primeiro pedido agora</p>
-              <Button size="lg" className="w-full" onClick={handleSolicitarRetirada}>
-                <Zap className="h-5 w-5" />
-                Solicitar Retirada Agora
-              </Button>
+              <div className="flex flex-col gap-3">
+                <Button 
+                  size="lg" 
+                  className="w-full bg-primary hover:bg-primary/90" 
+                  onClick={() => setLocation("/register")}
+                >
+                  <Zap className="h-5 w-5" />
+                  Cadastrar Agora
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="w-full" 
+                  onClick={() => setLocation("/login")}
+                >
+                  Já tenho conta - Entrar
+                </Button>
+              </div>
             </div>
           </div>
         </div>
