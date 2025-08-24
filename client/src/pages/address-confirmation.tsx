@@ -961,63 +961,109 @@ export default function AddressConfirmation() {
                   </div>
                 )}
 
-                {/* Address Selection for Desktop */}
-                {addresses && Array.isArray(addresses) && addresses.length > 1 && (
+                {/* Address Selection/Display for Desktop */}
+                {addresses && Array.isArray(addresses) && addresses.length > 0 && (
                   <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Escolher Endereço</h3>
-                    <div className="space-y-3">
-                      {(addresses as Address[]).map((address: Address) => (
-                        <div key={address.id} className={`border-2 rounded-lg p-4 transition-all cursor-pointer ${
-                          selectedAddress?.id === address.id 
-                            ? "border-purple-600 bg-purple-50" 
-                            : "border-gray-200 bg-white hover:bg-gray-50"
-                        }`}
-                        onClick={() => {
-                          setPricingValidationStatus('validating');
-                          handleAddressSelect(address);
-                        }}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center mb-2">
-                                <Badge variant="secondary" className="mr-2">
-                                  {address.label}
-                                </Badge>
-                                {address.isDefault && (
-                                  <Badge variant="outline" className="text-xs">
-                                    Padrão
-                                  </Badge>
-                                )}
-                                {selectedAddress?.id === address.id && (
-                                  <CheckCircle className="w-5 h-5 text-purple-600 ml-2" />
-                                )}
+                    {addresses.length > 1 ? (
+                      <>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Escolher Endereço</h3>
+                        <div className="space-y-3">
+                          {(addresses as Address[]).map((address: Address) => (
+                            <div key={address.id} className={`border-2 rounded-lg p-4 transition-all cursor-pointer ${
+                              selectedAddress?.id === address.id 
+                                ? "border-purple-600 bg-purple-50" 
+                                : "border-gray-200 bg-white hover:bg-gray-50"
+                            }`}
+                            onClick={() => {
+                              setPricingValidationStatus('validating');
+                              handleAddressSelect(address);
+                            }}>
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center mb-2">
+                                    <Badge variant="secondary" className="mr-2">
+                                      {address.label}
+                                    </Badge>
+                                    {address.isDefault && (
+                                      <Badge variant="outline" className="text-xs">
+                                        Padrão
+                                      </Badge>
+                                    )}
+                                    {selectedAddress?.id === address.id && (
+                                      <CheckCircle className="w-5 h-5 text-purple-600 ml-2" />
+                                    )}
+                                  </div>
+                                  <p className="text-gray-900 font-medium">{customer.name}</p>
+                                  <p className="text-gray-700">
+                                    {address.street}, {address.number}
+                                    {address.complement && `, ${address.complement}`}
+                                  </p>
+                                  <p className="text-gray-700">{address.neighborhood}</p>
+                                  <p className="text-gray-700">{address.city} - {address.state}</p>
+                                  <p className="text-gray-700">{formatZipCode(address.zipCode)}</p>
+                                </div>
+                                <div className="flex flex-col items-end gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setLocation(`/profile/address/${address.id}/edit?from=event&eventId=${id}`);
+                                    }}
+                                    className="flex items-center"
+                                  >
+                                    <Edit3 className="w-4 h-4 mr-1" />
+                                    Editar
+                                  </Button>
+                                </div>
                               </div>
-                              <p className="text-gray-900 font-medium">{customer.name}</p>
-                              <p className="text-gray-700">
-                                {address.street}, {address.number}
-                                {address.complement && `, ${address.complement}`}
-                              </p>
-                              <p className="text-gray-700">{address.neighborhood}</p>
-                              <p className="text-gray-700">{address.city} - {address.state}</p>
-                              <p className="text-gray-700">{formatZipCode(address.zipCode)}</p>
                             </div>
-                            <div className="flex flex-col items-end gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setLocation(`/profile/address/${address.id}/edit?from=event&eventId=${id}`);
-                                }}
-                                className="flex items-center"
-                              >
-                                <Edit3 className="w-4 h-4 mr-1" />
-                                Editar
-                              </Button>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Endereço de Entrega</h3>
+                        {selectedAddress && (
+                          <div className="border-2 border-purple-600 bg-purple-50 rounded-lg p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center mb-2">
+                                  <Badge variant="secondary" className="mr-2">
+                                    {selectedAddress.label}
+                                  </Badge>
+                                  {selectedAddress.isDefault && (
+                                    <Badge variant="outline" className="text-xs">
+                                      Padrão
+                                    </Badge>
+                                  )}
+                                  <CheckCircle className="w-5 h-5 text-purple-600 ml-2" />
+                                </div>
+                                <p className="text-gray-900 font-medium">{customer.name}</p>
+                                <p className="text-gray-700">
+                                  {selectedAddress.street}, {selectedAddress.number}
+                                  {selectedAddress.complement && `, ${selectedAddress.complement}`}
+                                </p>
+                                <p className="text-gray-700">{selectedAddress.neighborhood}</p>
+                                <p className="text-gray-700">{selectedAddress.city} - {selectedAddress.state}</p>
+                                <p className="text-gray-700">{formatZipCode(selectedAddress.zipCode)}</p>
+                              </div>
+                              <div className="flex flex-col items-end gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setLocation(`/profile/address/${selectedAddress.id}/edit?from=event&eventId=${id}`)}
+                                  className="flex items-center"
+                                >
+                                  <Edit3 className="w-4 h-4 mr-1" />
+                                  Editar
+                                </Button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
 
