@@ -919,11 +919,14 @@ export class DatabaseStorage implements IStorage {
         .returning();
 
       // Send email notification based on the new status (async, don't block)
-      // Always send specific emails (confirmado, em_transito, entregue)
-      // Only send generic status updates when sendEmail is true
-      this.sendStatusChangeEmail(targetOrderId, previousStatus, status, sendEmail).catch(error => {
-        console.error(`❌ Failed to send status change email for order ${targetOrderId}:`, error);
-      });
+      // FIXED: Only send emails when sendEmail is true to prevent duplicates in bulk operations
+      if (sendEmail) {
+        this.sendStatusChangeEmail(targetOrderId, previousStatus, status, sendEmail).catch(error => {
+          console.error(`❌ Failed to send status change email for order ${targetOrderId}:`, error);
+        });
+      } else {
+        console.log(`📧 Skipping automatic email for order ${targetOrderId} - sendEmail is false`);
+      }
       
       return order;
     }
