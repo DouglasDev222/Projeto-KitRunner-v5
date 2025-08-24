@@ -73,7 +73,23 @@ const Landing = () => {
           <div className="flex items-center gap-2">
             <img src="/logo.webp" alt="KitRunner Logo" className="h-8 w-auto" />
           </div>
-          <Button onClick={handleSolicitarRetirada}>Solicitar Retirada</Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="hidden sm:inline-flex"
+              onClick={() => setLocation("/login")}
+            >
+              Entrar
+            </Button>
+            <Button 
+              size="sm"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+              onClick={() => setLocation("/register")}
+            >
+              Cadastrar
+            </Button>
+          </div>
         </div>
       </header>
 
