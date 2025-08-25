@@ -69,7 +69,7 @@ export default function Profile() {
 
   const handleLogout = () => {
     logout();
-    setLocation("/");
+    setLocation("/eventos");
   };
 
   // Use effect to handle redirection to avoid React warning
