@@ -7,7 +7,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Package, Calendar, MapPin, User, CreditCard, Heart, Home, Plus, FileText, ArrowLeft, MessageCircle, AlertTriangle } from "lucide-react"; 
 import { Button } from "@/components/ui/button";
 import { useLocation, useParams } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
 import { formatCPF } from "@/lib/cpf-validator";
 import { calculatePricing, formatPricingBreakdown } from "@/lib/pricing-calculator";
@@ -15,27 +16,165 @@ import { getStatusBadge } from "@/lib/status-utils";
 import { OrderStatusHistory } from "@/components/order-status-history";
 import { PendingPayment } from "@/components/pending-payment";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useToast } from "@/hooks/use-toast";
 import type { Order, Kit, Address, Event } from "@shared/schema";
 
 export default function OrderDetails() {
   const [, setLocation] = useLocation();
   const { orderNumber } = useParams<{ orderNumber: string }>();
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  
+  // Estados para reatividade e notificações
+  const [lastOrderStatus, setLastOrderStatus] = useState<string>('');
+  const [hasNotificationPermission, setHasNotificationPermission] = useState<boolean>(false);
 
   // Function to handle WhatsApp redirect
   const handleWhatsAppRedirect = () => {
     window.open('https://wa.me/5583981302961', '_blank');
   };
 
+  // Função para tocar som de notificação
+  const playNotificationSound = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      // Tom de sucesso para pagamento confirmado
+      oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.15);
+      oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.3);
+
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (error) {
+      console.log('Não foi possível reproduzir som de notificação:', error);
+    }
+  };
+
+  // Request notification permission
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        setHasNotificationPermission(true);
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+          setHasNotificationPermission(permission === 'granted');
+        });
+      }
+    }
+  }, []);
+
+  // Reatividade: Query com configurações conforme SOLUCAO_REATIVIDADE_IMPLEMENTADA.md
   const { data: order, isLoading } = useQuery({
     queryKey: ["/api/orders/" + orderNumber],
     enabled: !!orderNumber,
+    // Configurações de reatividade para detectar mudanças de status
+    staleTime: 0, // Sempre buscar dados frescos
+    refetchOnMount: true, // Revalida quando componente monta  
+    refetchOnWindowFocus: true, // Revalida quando janela ganha foco
+    // Polling mais agressivo para pagamentos PIX aguardando confirmação
+    refetchInterval: (query) => {
+      const data = query.state.data as any;
+      // Se o pedido está aguardando pagamento PIX, poll a cada 5 segundos
+      if (data?.status === 'aguardando_pagamento' && data?.paymentMethod === 'pix') {
+        return 5000;
+      }
+      // Para outros status, polling menos frequente
+      return data?.status === 'aguardando_pagamento' ? 15000 : 30000;
+    }
   });
 
   const { data: kits } = useQuery({
     queryKey: ["/api/orders", order?.id, "kits"],
     enabled: !!order?.id,
+    // Configurações de reatividade
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
+
+  // Detectar mudanças de status e exibir notificações
+  useEffect(() => {
+    if (order && order.status) {
+      // Se já temos um status anterior e ele mudou
+      if (lastOrderStatus && lastOrderStatus !== order.status) {
+        const statusChanged = {
+          from: lastOrderStatus,
+          to: order.status
+        };
+
+        // Notificação especial para pagamento confirmado
+        if (statusChanged.from === 'aguardando_pagamento' && statusChanged.to === 'confirmado') {
+          // Tocar som de sucesso
+          playNotificationSound();
+          
+          // Toast de pagamento confirmado
+          toast({
+            title: "🎉 Pagamento confirmado!",
+            description: "Seu pagamento foi processado com sucesso. O pedido foi confirmado!",
+            duration: 8000,
+          });
+
+          // Notificação do navegador
+          if (hasNotificationPermission && typeof window !== 'undefined' && 'Notification' in window) {
+            new Notification('KitRunner - Pagamento Confirmado! 🎉', {
+              body: `Seu pedido ${order.orderNumber} foi confirmado! O pagamento foi processado com sucesso.`,
+              icon: '/favicon.ico',
+              tag: 'payment-confirmed'
+            });
+          }
+
+          // Invalidar caches relacionados conforme padrão de reatividade
+          queryClient.invalidateQueries({ queryKey: ["/api/orders", order.orderNumber] });
+          queryClient.invalidateQueries({ queryKey: ["/api/customers"] }); // Pode afetar dados do cliente
+          queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] }); // Atualizar admin
+          queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] }); // Atualizar estatísticas
+        }
+        
+        // Notificação para outros status importantes
+        else if (statusChanged.to === 'em_transito') {
+          toast({
+            title: "📦 Pedido em trânsito!",
+            description: "Seu pedido saiu para entrega. Acompanhe o progresso aqui!",
+            duration: 5000,
+          });
+        }
+        else if (statusChanged.to === 'entregue') {
+          toast({
+            title: "✅ Pedido entregue!",
+            description: "Seu pedido foi entregue com sucesso. Obrigado!",
+            duration: 6000,
+          });
+          playNotificationSound();
+        }
+        else if (statusChanged.to === 'cancelado') {
+          toast({
+            title: "❌ Pedido cancelado",
+            description: "Seu pedido foi cancelado. Entre em contato se precisar de ajuda.",
+            duration: 6000,
+            variant: "destructive",
+          });
+        }
+
+        // Invalidação geral de caches para qualquer mudança de status
+        queryClient.invalidateQueries({ queryKey: ["/api/orders", order.orderNumber] });
+        queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      }
+
+      // Atualizar status anterior
+      setLastOrderStatus(order.status);
+    }
+  }, [order?.status, lastOrderStatus, hasNotificationPermission, toast, playNotificationSound, queryClient, order?.orderNumber]);
 
   if (isLoading) {
     return (
