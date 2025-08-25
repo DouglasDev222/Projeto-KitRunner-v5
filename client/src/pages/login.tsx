@@ -289,18 +289,20 @@ export default function Login() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
+              <a href="/eventos">
+                <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
+              </a>
             </div>
 
             {/* Navigation Links */}
             <div className="flex items-center space-x-8">
               <Button
                 variant="ghost"
-                onClick={() => setLocation("/")}
+                onClick={() => setLocation("/eventos")}
                 className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
               >
                 <Calendar className="w-4 h-4" />
-                <span>Início</span>
+                <span>Eventos</span>
               </Button>
 
               <Button
@@ -317,19 +319,10 @@ export default function Login() {
 
               <Button
                 variant="ghost"
-                onClick={() => setLocation("/eventos")}
-                className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
-              >
-                <Calendar className="w-4 h-4" />
-                <span>Eventos</span>
-              </Button>
-
-              <Button
-                variant="ghost"
                 className="flex items-center space-x-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-lg font-medium"
               >
                 <Users className="w-4 h-4" />
-                <span>Perfil</span>
+                <span>Entrar</span>
               </Button>
             </div>
           </div>

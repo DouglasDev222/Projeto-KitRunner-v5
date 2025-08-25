@@ -18,6 +18,7 @@ import { useLocation } from "wouter";
 import { formatDate } from "@/lib/brazilian-formatter";
 import { useState, useMemo } from "react";
 import type { Event } from "@shared/schema";
+import { useAuth } from "@/lib/auth-context";
 
 type FilterType = "all" | "week" | "month";
 
@@ -75,6 +76,7 @@ export default function Events() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<FilterType>("all");
+  const { isAuthenticated } = useAuth();
 
   const { data: events, isLoading } = useQuery<Event[]>({
     queryKey: ["/api/events"],
@@ -469,14 +471,25 @@ export default function Events() {
                   <span>Pedidos</span>
                 </Button>
 
-                <Button
-                  variant="ghost"
-                  onClick={() => setLocation("/profile")}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
-                >
-                  <User className="w-4 h-4" />
-                  <span>Perfil</span>
-                </Button>
+                {isAuthenticated ? (
+                  <Button
+                    variant="ghost"
+                    onClick={() => setLocation("/profile")}
+                    className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
+                  >
+                    <User className="w-4 h-4" />
+                    <span>Perfil</span>
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    onClick={() => setLocation("/login")}
+                    className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
+                  >
+                    <User className="w-4 h-4" />
+                    <span>Entrar</span>
+                  </Button>
+                )}
               </div>
             </div>
           </div>
