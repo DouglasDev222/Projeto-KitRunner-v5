@@ -10,7 +10,7 @@ import { Link, useLocation } from 'wouter';
 
 export function AdminLogin() {
   const [location, setLocation] = useLocation();
-  const { login, isLoading } = useAdminAuth();
+  const { login } = useAdminAuth();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -18,6 +18,7 @@ export function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,21 +29,22 @@ export function AdminLogin() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const result = await login(formData.username, formData.password);
-      console.log('Login result:', result); // Debug log
       
       if (result.success) {
         // Redirecionar para dashboard admin
         setLocation('/admin');
       } else {
         const errorMessage = result.error || 'Erro ao fazer login';
-        console.log('Setting error:', errorMessage); // Debug log
         setError(errorMessage);
       }
     } catch (err) {
       console.error('Unexpected error during login:', err);
       setError('Erro inesperado. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -79,9 +81,6 @@ export function AdminLogin() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              
-              {/* Debug - remover depois */}
-              {console.log('Current error state:', error)}
 
               <div className="space-y-2">
                 <Label htmlFor="username">Nome de usuário</Label>
@@ -94,7 +93,7 @@ export function AdminLogin() {
                     className="pl-10"
                     value={formData.username}
                     onChange={(e) => handleInputChange('username', e.target.value)}
-                    disabled={isLoading}
+                    disabled={isSubmitting}
                     autoComplete="username"
                   />
                 </div>
@@ -111,14 +110,14 @@ export function AdminLogin() {
                     className="pl-10 pr-10"
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
-                    disabled={isLoading}
+                    disabled={isSubmitting}
                     autoComplete="current-password"
                   />
                   <button
                     type="button"
                     className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
                     onClick={() => setShowPassword(!showPassword)}
-                    disabled={isLoading}
+                    disabled={isSubmitting}
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -138,7 +137,7 @@ export function AdminLogin() {
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    disabled={isLoading}
+                    disabled={isSubmitting}
                   />
                   <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
                     Lembrar-me
@@ -165,7 +164,7 @@ export function AdminLogin() {
                 className="w-full"
                 disabled={isLoading}
               >
-                {isLoading ? 'Entrando...' : 'Entrar'}
+                {isSubmitting ? 'Entrando...' : 'Entrar'}
               </Button>
             </form>
           </CardContent>
