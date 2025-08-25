@@ -1,0 +1,171 @@
+Qualidade da integração
+A medição é um processo que certifica o nível de segurança e experiência de uma integração. A qualidade ideal garante uma maior taxa de aprovação de pagamentos. Saber mais
+
+Medir de novo
+35
+de 100
+
+Identificamos pendências na sua integração
+Realize as outras ações recomendadas e melhore a qualidade da sua integração.
+Você precisa pelo menos 73 pontos para aprovar.
+
+Última medição em 25/08/2025 13:57:00 com Payment ID produtivo 123013053155.
+
+Aprovação dos pagamentos
+9 ações pendentes
+
+Ação obrigatória
+Identificador do dispositivo
+Use nosso SDK Oficial MercadoPago.JS V2 para tokenizar os cartões, ou implemente o device ID no seu site.
+
+Ação recomendada
+Nome do comprador
+Envie-nos o campo "payer.first_name" pelo request da seção "Pagamentos" para melhorar o índice de aprovação. Essa informação nos permite otimizar a validação de segurança dos pagamentos e, assim, reduzir as chances do nosso mecanismo de prevenção de fraudes de recusá-los.
+
+Ação recomendada
+Sobrenome do comprador
+Envie-nos o campo "payer.last_name" pelo request da seção "Pagamentos" para melhorar o índice de aprovação. Essa informação nos permite otimizar a validação de segurança dos pagamentos e, assim, reduzir as chances do nosso mecanismo de prevenção de fraudes de recusá-los.
+
+Ação recomendada
+Categoria do item
+Envie-nos os "items.category_id" pelo request da seção "Pagamentos" para melhorar o índice de aprovação. Essas informações nos permitem otimizar a validação de segurança dos pagamentos e, assim, reduzir as chances do nosso mecanismo de prevenção de fraudes de recusá-los.
+
+Ação recomendada
+Descrição do item
+Envie-nos o campo "items.description" pelo request da seção "Pagamentos" para melhorar o índice de aprovação. Essa informação nos permite otimizar a validação de segurança dos pagamentos e, assim, reduzir as chances do nosso mecanismo de prevenção de fraudes de recusá-los.
+
+Ação recomendada
+Código do item
+Envie-nos o campo "items.id" pelo request da seção "Pagamentos" para melhorar o índice de aprovação. Essa informação nos permite otimizar a validação de segurança dos pagamentos e, assim, reduzir as chances do nosso mecanismo de prevenção de fraudes de recusá-los.
+
+Ação recomendada
+Quantidade do produto/serviço
+Envie-nos o campo "items.quantity" pelo request da seção "Pagamentos" para mostrar o detalhe do carrinho de compras do Checkout Pro.
+
+Ação recomendada
+Nome do item
+Envie-nos o campo "items.title" pelo request da seção "Pagamentos" para melhorar o índice de aprovação. Essa informação nos permite otimizar a validação de segurança dos pagamentos e, assim, reduzir as chances do nosso mecanismo de prevenção de fraudes de recusá-los.
+
+Ação recomendada
+Preço do item
+Envie-nos o campo "items.unit_price" pelo request da seção "Pagamentos" para mostrar o detalhe do carrinho de compras do Checkout Pro.
+
+Ação obrigatória
+E-mail do comprador
+Envie-nos o campo "payer.email" pelo request da seção "Pagamentos" para melhorar o índice de aprovação. Essa informação nos permite otimizar a validação de segurança dos pagamentos e, assim, reduzir as chances do nosso mecanismo de prevenção de fraudes de recusá-los.
+
+Ação recomendada
+Código do emissor do meio de pagamento
+Envie-nos o campo "issuer_id" correspondente ao meio de pagamento selecionado para evitar que haja erros ao processar o pagamento.
+
+Boas práticas
+Não impacta na pontuação
+Endereço do comprador
+Se você tiver esta informação, por favor, envie-nos o dado do campo "payer.address" pelo request da seção "Pagamentos" para melhorar o índice de aprovação. Quanto mais informações a opção "Payer" tiver, melhor será a validação de segurança dos pagamentos e, assim, as chances do nosso mecanismo de prevenção de fraudes recusá-los diminui.
+
+Boas práticas
+Não impacta na pontuação
+Identificação do comprador
+Se você tiver esta informação, por favor, envie-nos o campo "payer.identification" pelo request da seção "Pagamentos" para melhorar o índice de aprovação. Quanto mais informações a opção "Payer" tiver, melhor será a validação de segurança dos pagamentos e, assim, as chances do nosso mecanismo de prevenção de fraudes recusá-los diminui.
+
+Boas práticas
+Não impacta na pontuação
+Telefone do comprador
+Se você tiver esta informação, por favor, envie-nos o dado do campo "payer.phone" pelo request da seção "Pagamentos" para melhorar o índice de aprovação. Quanto mais informações a opção "Payer" tiver, melhor será a validação de segurança dos pagamentos e, assim, as chances do nosso mecanismo de prevenção de fraudes recusá-los diminui.
+
+Conciliação financeira
+Ação obrigatória
+Notificações Webhook
+Envie-nos o endpoint destinado ao recebimento de notificações Webhook no campo "notification_url", pelo request da seção "Pagamentos".
+
+Ação obrigatória
+Referência externa
+Pelo campo "external_reference", no request da seção "Pagamentos", envie-nos um código único que te permita correlacionar o payment_id do Mercado Pago com o ID interno do seu sistema.
+
+Boas práticas
+Não impacta na pontuação
+Consute o pagamento notificado
+Por favor, atualize as informações necessárias na sua plataforma em caso de notificação de pagamentos.
+
+Boas práticas
+Não impacta na pontuação
+Contestações
+Gerencie suas contestações pela API.
+
+Boas práticas
+Não impacta na pontuação
+Cancelamentos
+É possível cancelar um pagamento que tenha os status "Pending" ou "In process".
+
+Boas práticas
+Não impacta na pontuação
+Devoluções
+Gerencie as devoluções parciais ou totais com a nossa "API refund".
+
+Boas práticas
+Não impacta na pontuação
+Relatório "Liberações"
+Saiba o que compõe seu saldo disponível no Mercado Pago.
+
+Boas práticas
+Não impacta na pontuação
+Relatório "Todas as transações"
+Confira as transações que afetaram seu saldo.
+
+Escalabilidade
+1 ação pendente
+
+Ação obrigatória
+SDK do frontend
+Instale o SDK MercadoPago.JS V2 para simplificar o uso e interagir de forma segura com nossas APIs.
+
+Ação recomendada
+SDK do backend
+Use nossos SDKs de backend e conte com os recursos de server-side das nossas soluções de pagamento on-line.
+
+Experiência de compra
+1 ação pendente
+
+Ação recomendada
+Descrição - Fatura do cartão
+Envie-nos o campo statement_descriptor na solicitação da seção "Pagamentos" para diminuir as chances de contestações.
+
+Boas práticas
+Não impacta na pontuação
+Resposta binária
+Se sua loja precisar que o pagamento seja aprovado na hora, por favor, envie-nos o campo "binary_mode"=true pelo request da seção "Pagamentos".
+
+Boas práticas
+Não impacta na pontuação
+Reserva de fundos
+Para fazer uma autorização de reserva, envie-nos o campo "capture"=false" no request do pagamento.
+
+Boas práticas
+Não impacta na pontuação
+Logotipos oficiais do Mercado Pago
+Mostre o logotipo do Mercado Pago no seu site para transmitir mais confiança para os compradores e aumentar suas chances de receber pagamentos on-line.
+
+Boas práticas
+Não impacta na pontuação
+Mensagens de resposta
+Mostre mensagens claras para os usuários, antes de eles serem direcionados para o checkout e na hora de voltarem para seu site.
+
+Boas práticas
+Não impacta na pontuação
+Identificador do cliente
+Otimize a experiência dos seus clientes na próxima vez que eles comprarem ao implementar o gerenciamento de cartões e clientes.
+
+Seguridad
+3 ações pendentes
+
+Ação obrigatória
+Certificados SSL
+Implemente o certificado SSL autoassinado no seu site.
+
+Ação obrigatória
+Certificados TLS
+Implemente certificados TLS 1.2 ou superiores.
+
+Ação obrigatória
+Formulário de Cartões - PCI Compliance
+Capture os dados do cartão por meio dos "Secure Fields".
