@@ -159,12 +159,13 @@ export default function Events() {
     const oneMonthFromNow = new Date();
     oneMonthFromNow.setMonth(now.getMonth() + 1);
 
-    // Filter by search term
+    // Filter by available status and search term
     let filtered = events.filter(
       (event) =>
-        event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.available && 
+        (event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         event.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        event.city.toLowerCase().includes(searchTerm.toLowerCase()),
+        event.city.toLowerCase().includes(searchTerm.toLowerCase())),
     );
 
     // Apply date filters
