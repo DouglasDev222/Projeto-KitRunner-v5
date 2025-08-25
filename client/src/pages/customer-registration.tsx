@@ -20,11 +20,28 @@ import { PolicyAcceptance } from "@/components/policy-acceptance";
 import { useAcceptPolicy } from "@/hooks/use-policy";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+// Função para formatar data brasileira (DD/MM/AAAA)
+const formatBrazilianDate = (value: string): string => {
+  const numbers = value.replace(/\D/g, "");
+  if (numbers.length <= 2) return numbers;
+  if (numbers.length <= 4) return `${numbers.slice(0, 2)}/${numbers.slice(2)}`;
+  return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
+};
+
+// Função para converter data brasileira para formato ISO (YYYY-MM-DD)
+const brazilianToIsoDate = (brazilianDate: string): string => {
+  if (!brazilianDate || brazilianDate.length !== 10) return "";
+  const [day, month, year] = brazilianDate.split("/");
+  if (!day || !month || !year || year.length !== 4) return "";
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+};
+
 export default function CustomerRegistration() {
   const [, setLocation] = useLocation();
   const { id } = useParams<{ id: string }>();
   const [error, setError] = useState<string | null>(null);
   const [policyAccepted, setPolicyAccepted] = useState(false);
+  const [formattedBirthDate, setFormattedBirthDate] = useState("");
   const { login } = useAuth();
   const acceptPolicyMutation = useAcceptPolicy();
   
@@ -130,6 +147,12 @@ export default function CustomerRegistration() {
     // Validate policy acceptance
     if (!policyAccepted) {
       setError("É necessário aceitar os termos de cadastro para prosseguir");
+      return;
+    }
+
+    // Para mobile, validar se a data foi convertida corretamente
+    if (isMobile && formattedBirthDate && !data.birthDate) {
+      setError("Data de nascimento inválida. Use o formato DD/MM/AAAA");
       return;
     }
     
@@ -257,7 +280,19 @@ export default function CustomerRegistration() {
                       <FormItem>
                         <FormLabel>Data de Nascimento</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input
+                            type="text"
+                            placeholder="DD/MM/AAAA"
+                            value={formattedBirthDate}
+                            onChange={(e) => {
+                              const formatted = formatBrazilianDate(e.target.value);
+                              setFormattedBirthDate(formatted);
+                              // Atualizar o campo do formulário com a data ISO para validação
+                              const isoDate = brazilianToIsoDate(formatted);
+                              field.onChange(isoDate);
+                            }}
+                            maxLength={10}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
