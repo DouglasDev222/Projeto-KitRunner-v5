@@ -111,7 +111,7 @@ export default function AdminOrders() {
     };
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(10);
   const [selectedOrders, setSelectedOrders] = useState<number[]>([]);
   const [bulkStatusModalOpen, setBulkStatusModalOpen] = useState(false);
   const [bulkNewStatus, setBulkNewStatus] = useState("");
@@ -475,6 +475,11 @@ export default function AdminOrders() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (newPageSize: string) => {
+    setPageSize(Number(newPageSize));
+    setCurrentPage(1); // Reset to first page when changing page size
   };
 
   const handleSelectOrder = (orderId: number, checked: boolean) => {
@@ -1303,11 +1308,28 @@ export default function AdminOrders() {
                   </Table>
                 </div>
                 
-                {/* Pagination - Mobile Optimized */}
-                {totalPages > 1 && (
-                  <div className="mt-6 space-y-4">
-                    {/* Status Text - Hidden on Mobile if too long */}
-                    <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
+                {/* Pagination Controls and Page Size Selector */}
+                <div className="mt-6 space-y-4">
+                  {/* Page Size Selector and Status Text */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    {/* Page Size Selector */}
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-muted-foreground whitespace-nowrap">Itens por página:</span>
+                      <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                        <SelectTrigger className="w-16 h-8 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="20">20</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Status Text */}
+                    <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-right">
                       <span className="hidden sm:inline">
                         Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, totalOrders)} de {totalOrders} pedidos
                       </span>
@@ -1315,8 +1337,10 @@ export default function AdminOrders() {
                         Página {currentPage} de {totalPages}
                       </span>
                     </div>
-                    
-                    {/* Smart Pagination for Mobile */}
+                  </div>
+                  
+                  {/* Pagination - Mobile Optimized */}
+                  {totalPages > 1 && (
                     <div className="flex justify-center">
                       <Pagination>
                         <PaginationContent className="flex-wrap gap-1">
@@ -1441,8 +1465,8 @@ export default function AdminOrders() {
                         </PaginationContent>
                       </Pagination>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
           </CardContent>
