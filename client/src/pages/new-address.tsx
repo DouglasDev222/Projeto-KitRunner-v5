@@ -237,9 +237,10 @@ export default function NewAddress() {
                         placeholder="00000-000"
                         value={formatZipCode(field.value)}
                         onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, "");
+                          const value = e.target.value.replace(/\D/g, "").slice(0, 8);
                           field.onChange(value);
                         }}
+                        maxLength={9}
                       />
                     </FormControl>
                     <FormMessage />
@@ -582,9 +583,10 @@ export default function NewAddress() {
                                     className="h-12 text-base mt-2"
                                     value={formatZipCode(field.value)}
                                     onChange={(e) => {
-                                      const value = e.target.value.replace(/\D/g, "");
+                                      const value = e.target.value.replace(/\D/g, "").slice(0, 8);
                                       field.onChange(value);
                                     }}
+                                    maxLength={9}
                                   />
                                 </FormControl>
                                 <FormMessage />
