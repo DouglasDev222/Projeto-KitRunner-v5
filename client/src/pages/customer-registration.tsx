@@ -522,8 +522,8 @@ export default function CustomerRegistration() {
             </div>
           </form>
         </Form>
+          <Footer />
         </div>
-        <Footer />
       </div>
     );
   }
