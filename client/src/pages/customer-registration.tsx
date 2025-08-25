@@ -483,13 +483,15 @@ export default function CustomerRegistration() {
             
             {/* Policy Acceptance */}
             <Card>
-              <CardContent className="p-4">
-                <PolicyAcceptance
-                  type="register"
-                  checked={policyAccepted}
-                  onCheckedChange={setPolicyAccepted}
-                  required={true}
-                />
+              <CardContent className="p-3">
+                <div className="max-w-full overflow-hidden">
+                  <PolicyAcceptance
+                    type="register"
+                    checked={policyAccepted}
+                    onCheckedChange={setPolicyAccepted}
+                    required={true}
+                  />
+                </div>
               </CardContent>
             </Card>
 
