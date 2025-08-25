@@ -214,7 +214,7 @@ export default function OrderDetails() {
                 </p>
                 <Button 
                   onClick={() => window.open('https://wa.me/5583981302961', '_blank')}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center space-x-2"
+                  className="w-full h-11 bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2 text-sm font-medium"
                 >
                   <MessageCircle className="w-4 h-4" />
                   <span>Enviar Comprovante via WhatsApp</span>
