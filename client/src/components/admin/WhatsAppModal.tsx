@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,10 @@ export function WhatsAppModal({ isOpen, onClose, order, isMobile = false }: What
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [customMessage, setCustomMessage] = useState("");
   const [previewContent, setPreviewContent] = useState("");
+  const [holdingButton, setHoldingButton] = useState<number | null>(null);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -153,6 +157,62 @@ export function WhatsAppModal({ isOpen, onClose, order, isMobile = false }: What
     }
   };
 
+  const handleQuickSendMouseDown = (template: WhatsappTemplate) => {
+    if (!order?.id) {
+      toast({
+        title: "Erro",
+        description: "Pedido não encontrado. Feche e abra o modal novamente.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setHoldingButton(template.id);
+    setHoldProgress(0);
+
+    // Progress animation
+    progressIntervalRef.current = setInterval(() => {
+      setHoldProgress(prev => {
+        if (prev >= 100) {
+          if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+          return 100;
+        }
+        return prev + (100 / 30); // 30 steps for 3 seconds (100ms each)
+      });
+    }, 100);
+
+    // Hold timer
+    holdTimerRef.current = setTimeout(() => {
+      const data = {
+        orderId: order.id,
+        templateId: template.id
+      };
+      sendMessageMutation.mutate(data);
+      handleQuickSendMouseUp();
+    }, 3000);
+  };
+
+  const handleQuickSendMouseUp = () => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    setHoldingButton(null);
+    setHoldProgress(0);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    };
+  }, []);
+
   // Se é mobile, retorna apenas o conteúdo sem Dialog wrapper
   if (isMobile) {
     return (
@@ -198,27 +258,26 @@ export function WhatsAppModal({ isOpen, onClose, order, isMobile = false }: What
                     key={template.id}
                     variant="outline"
                     size="sm"
-                    className="text-xs justify-start h-10 px-3"
-                    onClick={() => {
-                      const data = {
-                        orderId: order.id,
-                        templateId: template.id
-                      };
-                      sendMessageMutation.mutate(data);
-                    }}
+                    className="text-xs justify-start h-10 px-3 relative overflow-hidden"
+                    onMouseDown={() => handleQuickSendMouseDown(template)}
+                    onMouseUp={handleQuickSendMouseUp}
+                    onMouseLeave={handleQuickSendMouseUp} // Also cancel on leave
                     disabled={sendMessageMutation.isPending}
                     data-testid={`button-quick-send-${template.id}`}
                   >
+                    {sendMessageMutation.isPending && holdingButton === template.id && (
+                      <div className="absolute inset-0 bg-blue-500 opacity-50" style={{ width: `${holdProgress}%` }} />
+                    )}
                     <MessageCircle className="h-3 w-3 mr-2 flex-shrink-0" />
                     <span className="truncate">
-                      {sendMessageMutation.isPending ? "Enviando..." : template.name}
+                      {sendMessageMutation.isPending && holdingButton === template.id ? "Enviando..." : template.name}
                     </span>
                   </Button>
                 ))
               }
             </div>
             <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
-              💡 Clique para enviar rapidamente usando um template pré-definido
+              💡 Segure para enviar rapidamente usando um template pré-definido
             </div>
           </div>
         )}
@@ -363,27 +422,26 @@ export function WhatsAppModal({ isOpen, onClose, order, isMobile = false }: What
                             key={template.id}
                             variant="outline"
                             size="sm"
-                            className="text-xs justify-start h-10 px-3"
-                            onClick={() => {
-                              const data = {
-                                orderId: order.id,
-                                templateId: template.id
-                              };
-                              sendMessageMutation.mutate(data);
-                            }}
+                            className="text-xs justify-start h-10 px-3 relative overflow-hidden"
+                            onMouseDown={() => handleQuickSendMouseDown(template)}
+                            onMouseUp={handleQuickSendMouseUp}
+                            onMouseLeave={handleQuickSendMouseUp} // Also cancel on leave
                             disabled={sendMessageMutation.isPending}
                             data-testid={`button-quick-send-${template.id}`}
                           >
+                            {sendMessageMutation.isPending && holdingButton === template.id && (
+                              <div className="absolute inset-0 bg-blue-500 opacity-50" style={{ width: `${holdProgress}%` }} />
+                            )}
                             <MessageCircle className="h-3 w-3 mr-2 flex-shrink-0" />
                             <span className="truncate">
-                              {sendMessageMutation.isPending ? "Enviando..." : template.name}
+                              {sendMessageMutation.isPending && holdingButton === template.id ? "Enviando..." : template.name}
                             </span>
                           </Button>
                         ))
                       }
                     </div>
                     <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
-                      💡 Clique para enviar rapidamente usando um template pré-definido
+                      💡 Segure para enviar rapidamente usando um template pré-definido
                     </div>
                   </div>
                 )}
