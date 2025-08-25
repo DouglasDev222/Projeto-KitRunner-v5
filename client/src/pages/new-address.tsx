@@ -5,7 +5,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Home, Package, User, MapPin } from "lucide-react";
+import { Home, Package, User, MapPin, Calendar, Users } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation, useParams, useSearch } from "wouter";
@@ -30,12 +30,12 @@ export default function NewAddress() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
-  
+
   // Parse query parameters for navigation context
   const searchParams = new URLSearchParams(search);
   const from = searchParams.get('from'); // 'profile' or 'event'
   const eventId = searchParams.get('eventId'); // for event context
-  
+
   // Determine correct navigation target based on context
   const getNavigationTarget = () => {
     if (from === 'event' && eventId) {
@@ -50,7 +50,7 @@ export default function NewAddress() {
       return '/profile';
     }
   };
-  
+
   // Get customer data - prefer auth user, fallback to session
   const customerData = sessionStorage.getItem("customerData");
   const sessionCustomer = customerData ? JSON.parse(customerData) : null;
@@ -58,7 +58,7 @@ export default function NewAddress() {
 
   // Check if this is an edit operation by looking at the route pattern
   const isEditRoute = window.location.pathname.includes('/edit');
-  
+
   // For editing, get existing address data (only if this is an edit route)
   const { data: existingAddress } = useQuery({
     queryKey: ["/api/addresses", id],
@@ -112,7 +112,7 @@ export default function NewAddress() {
   const saveAddressMutation = useMutation({
     mutationFn: async (data: AddressFormData) => {
       const { isDefault, ...addressData } = data;
-      
+
       if (isEditing && existingAddress) {
         // Update existing address
         const response = await apiRequest("PUT", `/api/addresses/${existingAddress.id}`, {
@@ -174,7 +174,7 @@ export default function NewAddress() {
             Você já possui o número máximo de endereços permitidos (2). 
             Para adicionar um novo endereço, você deve primeiro excluir um dos endereços existentes.
           </p>
-          
+
           <Button 
             onClick={handleCancel}
             className="w-full"
@@ -419,18 +419,20 @@ export default function NewAddress() {
             <div className="flex items-center justify-between h-16">
               {/* Logo */}
               <div className="flex items-center">
-                <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
+                <a href="/eventos">
+                  <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
+                </a>
               </div>
 
               {/* Navigation Links */}
               <div className="flex items-center space-x-8">
                 <Button
                   variant="ghost"
-                  onClick={() => setLocation("/")}
+                  onClick={() => setLocation("/eventos")}
                   className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
                 >
-                  <Home className="w-4 h-4" />
-                  <span>Início</span>
+                  <Calendar className="w-4 h-4" />
+                  <span>Eventos</span>
                 </Button>
 
                 <Button
@@ -444,17 +446,8 @@ export default function NewAddress() {
 
                 <Button
                   variant="ghost"
-                  onClick={() => setLocation("/eventos")}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
-                >
-                  <Package className="w-4 h-4" />
-                  <span>Eventos</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
                   onClick={() => setLocation("/profile")}
-                  className="flex items-center space-x-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-lg font-medium"
+                  className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
                 >
                   <User className="w-4 h-4" />
                   <span>Perfil</span>

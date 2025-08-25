@@ -432,18 +432,20 @@ export default function EventDetails() {
             <div className="flex items-center justify-between h-16">
               {/* Logo */}
               <div className="flex items-center">
-                <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
+                <a href="/eventos">
+                  <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
+                </a>
               </div>
 
               {/* Navigation Links */}
               <div className="flex items-center space-x-8">
                 <Button
                   variant="ghost"
-                  onClick={() => setLocation("/")}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
+                  onClick={() => setLocation("/eventos")}
+                  className="flex items-center space-x-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-lg font-medium"
                 >
-                  <Home className="w-4 h-4" />
-                  <span>Início</span>
+                  <Calendar className="w-4 h-4" />
+                  <span>Eventos</span>
                 </Button>
 
                 <Button
@@ -453,15 +455,6 @@ export default function EventDetails() {
                 >
                   <Package className="w-4 h-4" />
                   <span>Pedidos</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  onClick={() => setLocation("/eventos")}
-                  className="flex items-center space-x-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-lg font-medium"
-                >
-                  <Calendar className="w-4 h-4" />
-                  <span>Eventos</span>
                 </Button>
 
                 <Button

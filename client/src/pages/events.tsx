@@ -10,7 +10,7 @@ import {
   Search,
   Package,
   Clock,
-  Users,
+  User,
   Zap,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -445,32 +445,13 @@ export default function Events() {
             <div className="flex items-center justify-between h-16">
               {/* Logo */}
               <div className="flex items-center">
-                <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
+                <a href="/eventos">
+                  <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
+                </a>
               </div>
 
               {/* Navigation Links */}
               <div className="flex items-center space-x-8">
-                <Button
-                  variant="ghost"
-                  onClick={() => setLocation("/")}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
-                >
-                  <Calendar className="w-4 h-4" />
-                  <span>Início</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    sessionStorage.setItem("loginReturnPath", "/my-orders");
-                    setLocation("/my-orders");
-                  }}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
-                >
-                  <Package className="w-4 h-4" />
-                  <span>Pedidos</span>
-                </Button>
-
                 <Button
                   variant="ghost"
                   className="flex items-center space-x-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-lg font-medium"
@@ -481,10 +462,19 @@ export default function Events() {
 
                 <Button
                   variant="ghost"
+                  onClick={() => setLocation("/my-orders")}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
+                >
+                  <Package className="w-4 h-4" />
+                  <span>Pedidos</span>
+                </Button>
+
+                <Button
+                  variant="ghost"
                   onClick={() => setLocation("/profile")}
                   className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
                 >
-                  <Users className="w-4 h-4" />
+                  <User className="w-4 h-4" />
                   <span>Perfil</span>
                 </Button>
               </div>

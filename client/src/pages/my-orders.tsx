@@ -173,7 +173,7 @@ export default function MyOrders() {
   const getPageNumbers = () => {
     const pages = [];
     const maxPagesToShow = 5;
-    
+
     if (totalPages <= maxPagesToShow) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -181,16 +181,16 @@ export default function MyOrders() {
     } else {
       let start = Math.max(1, currentPage - 2);
       let end = Math.min(totalPages, start + maxPagesToShow - 1);
-      
+
       if (end - start < maxPagesToShow - 1) {
         start = Math.max(1, end - maxPagesToShow + 1);
       }
-      
+
       for (let i = start; i <= end; i++) {
         pages.push(i);
       }
     }
-    
+
     return pages;
   };
 
@@ -330,7 +330,7 @@ export default function MyOrders() {
                     </CardContent>
                   </Card>
                 ))}
-                
+
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
                   <div className="flex flex-col items-center pt-6 space-y-4">
@@ -338,7 +338,7 @@ export default function MyOrders() {
                     <p className="text-sm text-neutral-600" data-testid="text-page-info">
                       Página {currentPage} de {totalPages} ({totalOrders} pedidos no total)
                     </p>
-                    
+
                     {/* Page controls */}
                     <div className="flex items-center space-x-2">
                       {/* Previous button */}
@@ -351,7 +351,7 @@ export default function MyOrders() {
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </Button>
-                      
+
                       {/* Page numbers */}
                       {getPageNumbers().map((pageNum) => (
                         <Button
@@ -365,7 +365,7 @@ export default function MyOrders() {
                           {pageNum}
                         </Button>
                       ))}
-                      
+
                       {/* Next button */}
                       <Button
                         variant="outline"
@@ -408,18 +408,20 @@ export default function MyOrders() {
               <div className="flex items-center justify-between h-16">
                 {/* Logo */}
                 <div className="flex items-center">
-                  <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
+                  <a href="/eventos">
+                    <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
+                  </a>
                 </div>
 
                 {/* Navigation Links */}
                 <div className="flex items-center space-x-8">
                   <Button
                     variant="ghost"
-                    onClick={() => setLocation("/")}
+                    onClick={() => setLocation("/eventos")}
                     className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
                   >
-                    <Home className="w-4 h-4" />
-                    <span>Início</span>
+                    <Calendar className="w-4 h-4" />
+                    <span>Eventos</span>
                   </Button>
 
                   <Button
@@ -428,15 +430,6 @@ export default function MyOrders() {
                   >
                     <Package className="w-4 h-4" />
                     <span>Pedidos</span>
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    onClick={() => setLocation("/eventos")}
-                    className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
-                  >
-                    <Package className="w-4 h-4" />
-                    <span>Eventos</span>
                   </Button>
 
                   <Button
@@ -590,7 +583,7 @@ export default function MyOrders() {
                             </CardContent>
                           </Card>
                         ))}
-                        
+
                         {/* Desktop Pagination Controls */}
                         {totalPages > 1 && (
                           <div className="flex flex-col items-center pt-8 space-y-4">
@@ -605,7 +598,7 @@ export default function MyOrders() {
                                 <ChevronLeft className="w-4 h-4 mr-2" />
                                 Anterior
                               </Button>
-                              
+
                               {getPageNumbers().map((pageNum) => (
                                 <Button
                                   key={pageNum}
@@ -618,7 +611,7 @@ export default function MyOrders() {
                                   {pageNum}
                                 </Button>
                               ))}
-                              
+
                               <Button
                                 variant="outline"
                                 onClick={handleNextPage}
