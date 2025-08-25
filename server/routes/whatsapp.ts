@@ -1078,7 +1078,7 @@ router.post('/send-message', async (req: Request, res: Response) => {
     const { orderId, templateId, customMessage } = validation.data;
     
     const { db } = await import('../db');
-    const { orders, customers, events, addresses, whatsappTemplates, whatsappMessages } = await import('@shared/schema');
+    const { orders, customers, events, addresses, kits, whatsappTemplates, whatsappMessages } = await import('@shared/schema');
     
     // Buscar dados do pedido
     const [order] = await db
@@ -1094,6 +1094,12 @@ router.post('/send-message', async (req: Request, res: Response) => {
       .innerJoin(addresses, eq(orders.addressId, addresses.id))
       .where(eq(orders.id, orderId))
       .limit(1);
+    
+    // Buscar kits do pedido
+    const orderKits = await db
+      .select()
+      .from(kits)
+      .where(eq(kits.orderId, orderId));
     
     if (!order) {
       return res.status(404).json({
@@ -1132,13 +1138,20 @@ router.post('/send-message', async (req: Request, res: Response) => {
         `${order.address.street}, ${order.address.number} - ${order.address.neighborhood}, ${order.address.city}/${order.address.state}`
       );
       
+      // Preparar lista de kits formatada
+      const kitsList = orderKits && orderKits.length > 0 
+        ? orderKits.map((kit: any, index: number) => 
+            `${index + 1}. ${kit.name} - Tamanho: ${kit.shirtSize}`
+          ).join('\n')
+        : `${order.order.kitQuantity} kit(s) solicitado(s)`;
+      
       // Placeholders do sistema antigo
       messageContent = messageContent.replace(/\{\{cliente\}\}/g, order.customer.name);
       messageContent = messageContent.replace(/\{\{evento\}\}/g, order.event.name);
       messageContent = messageContent.replace(/\{\{qtd_kits\}\}/g, order.order.kitQuantity.toString());
       messageContent = messageContent.replace(/\{\{numero_pedido\}\}/g, order.order.orderNumber);
       messageContent = messageContent.replace(/\{\{data_entrega\}\}/g, 'em breve');
-      messageContent = messageContent.replace(/\{\{lista_kits\}\}/g, `${order.order.kitQuantity} kit(s) solicitado(s)`);
+      messageContent = messageContent.replace(/\{\{lista_kits\}\}/g, kitsList);
     } else if (customMessage) {
       messageContent = customMessage;
     }
