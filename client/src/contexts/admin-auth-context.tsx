@@ -79,12 +79,16 @@ export function AdminAuthProvider({ children }: AdminAuthProviderProps) {
 
       const data = await response.json();
 
-      if (data.success) {
+      if (response.ok && data.success) {
         localStorage.setItem('adminToken', data.token);
         setAdmin(data.user);
         return { success: true };
       } else {
-        return { success: false, error: data.error };
+        // Retorna o erro específico do servidor ou uma mensagem padrão
+        return { 
+          success: false, 
+          error: data.error || 'Credenciais inválidas'
+        };
       }
     } catch (error) {
       console.error('Login error:', error);
