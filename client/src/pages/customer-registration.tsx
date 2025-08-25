@@ -218,10 +218,15 @@ export default function CustomerRegistration() {
                             {...field}
                             value={formatCPF(field.value)}
                             onChange={(e) => {
-                              const value = e.target.value.replace(/\D/g, "");
+                              const value = e.target.value.replace(/\D/g, "").slice(0, 11);
                               field.onChange(value);
                               
-                              // Validate CPF if it has 11 digits
+                              // Clear errors if less than 11 digits
+                              if (value.length < 11) {
+                                form.clearErrors("cpf");
+                              }
+                              
+                              // Validate CPF only if it has exactly 11 digits
                               if (value.length === 11) {
                                 if (!isValidCPF(value)) {
                                   form.setError("cpf", {
@@ -234,7 +239,7 @@ export default function CustomerRegistration() {
                               }
                             }}
                             className={
-                              field.value.length === 11 && !isValidCPF(field.value) 
+                              field.value && field.value.length === 11 && !isValidCPF(field.value) 
                                 ? "border-red-500" 
                                 : ""
                             }
@@ -615,9 +620,15 @@ export default function CustomerRegistration() {
                                   {...field}
                                   value={formatCPF(field.value)}
                                   onChange={(e) => {
-                                    const value = e.target.value.replace(/\D/g, "");
+                                    const value = e.target.value.replace(/\D/g, "").slice(0, 11);
                                     field.onChange(value);
                                     
+                                    // Clear errors if less than 11 digits
+                                    if (value.length < 11) {
+                                      form.clearErrors("cpf");
+                                    }
+                                    
+                                    // Validate CPF only if it has exactly 11 digits
                                     if (value.length === 11) {
                                       if (!isValidCPF(value)) {
                                         form.setError("cpf", {
@@ -630,7 +641,7 @@ export default function CustomerRegistration() {
                                     }
                                   }}
                                   className={`h-12 ${
-                                    field.value.length === 11 && !isValidCPF(field.value) 
+                                    field.value && field.value.length === 11 && !isValidCPF(field.value) 
                                       ? "border-red-500" 
                                       : ""
                                   }`}
