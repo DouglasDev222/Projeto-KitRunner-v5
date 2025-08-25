@@ -1577,8 +1577,8 @@ export default function AdminOrders() {
                             <span className="font-medium">Kit #{index + 1}</span>
                             <Badge variant="secondary">{kit.shirtSize}</Badge>
                           </div>
-                          <p><span className="font-medium">Nome:</span> {kit.participantName}</p>
-                          <p><span className="font-medium">CPF:</span> {kit.participantCpf ? formatCPF(kit.participantCpf) : 'N/A'}</p>
+                          <p><span className="font-medium">Nome:</span> {kit.name || kit.participantName || 'N/A'}</p>
+                          <p><span className="font-medium">CPF:</span> {(kit.cpf || kit.participantCpf) ? formatCPF(kit.cpf || kit.participantCpf) : 'N/A'}</p>
                         </div>
                       </Card>
                     ))}
@@ -1596,8 +1596,8 @@ export default function AdminOrders() {
                       <TableBody>
                         {selectedOrder.kits?.map((kit: any, index: number) => (
                           <TableRow key={kit.id || index}>
-                            <TableCell className="font-medium">{kit.name}</TableCell>
-                            <TableCell>{kit.cpf ? formatCPF(kit.cpf) : 'N/A'}</TableCell>
+                            <TableCell className="font-medium">{kit.name || kit.participantName || 'N/A'}</TableCell>
+                            <TableCell>{(kit.cpf || kit.participantCpf) ? formatCPF(kit.cpf || kit.participantCpf) : 'N/A'}</TableCell>
                             <TableCell>{kit.shirtSize}</TableCell>
                           </TableRow>
                         ))}
@@ -1607,32 +1607,6 @@ export default function AdminOrders() {
                 </CardContent>
               </Card>
 
-              {/* Kit Details */}
-              {selectedOrder.kits && selectedOrder.kits.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Detalhes dos Kits ({selectedOrder.kits.length})</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm border-collapse border border-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="border border-gray-200 px-4 py-2 text-left font-medium">Nome</th>
-                          <th className="border border-gray-200 px-4 py-2 text-left font-medium">CPF</th>
-                          <th className="border border-gray-200 px-4 py-2 text-left font-medium">Tamanho da Camiseta</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {selectedOrder.kits.map((kit: any, index: number) => (
-                          <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td className="border border-gray-200 px-4 py-2">{kit.name || 'N/A'}</td>
-                            <td className="border border-gray-200 px-4 py-2">{kit.cpf ? formatCPF(kit.cpf) : 'N/A'}</td>
-                            <td className="border border-gray-200 px-4 py-2">{kit.shirtSize || 'N/A'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
 
               {/* Order Status History */}
               <OrderStatusHistory orderId={selectedOrder.id} showTitle={true} isAdminContext={true} />
@@ -1877,8 +1851,8 @@ export default function AdminOrders() {
                         <tbody>
                           {selectedOrder.kits.map((kit: any, index: number) => (
                             <tr key={index} className="border-b">
-                              <td className="py-2">{kit.name || 'N/A'}</td>
-                              <td className="py-2">{kit.cpf ? formatCPF(kit.cpf) : 'N/A'}</td>
+                              <td className="py-2">{kit.name || kit.participantName || 'N/A'}</td>
+                              <td className="py-2">{(kit.cpf || kit.participantCpf) ? formatCPF(kit.cpf || kit.participantCpf) : 'N/A'}</td>
                               <td className="py-2">{kit.shirtSize || 'N/A'}</td>
                             </tr>
                           ))}
