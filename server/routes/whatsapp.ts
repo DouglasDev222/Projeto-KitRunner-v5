@@ -1101,6 +1101,10 @@ router.post('/send-message', async (req: Request, res: Response) => {
       .from(kits)
       .where(eq(kits.orderId, orderId));
     
+    console.log('🔍 Debug - Order ID:', orderId);
+    console.log('🔍 Debug - Kits found:', orderKits.length);
+    console.log('🔍 Debug - Kits data:', JSON.stringify(orderKits, null, 2));
+    
     if (!order) {
       return res.status(404).json({
         success: false,
@@ -1144,6 +1148,8 @@ router.post('/send-message', async (req: Request, res: Response) => {
             `${index + 1}. ${kit.name} - Tamanho: ${kit.shirtSize}`
           ).join('\n')
         : `${order.order.kitQuantity} kit(s) solicitado(s)`;
+      
+      console.log('🔍 Debug - Final kitsList:', kitsList);
       
       // Placeholders do sistema antigo
       messageContent = messageContent.replace(/\{\{cliente\}\}/g, order.customer.name);
