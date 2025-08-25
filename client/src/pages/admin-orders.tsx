@@ -1839,25 +1839,25 @@ export default function AdminOrders() {
                       <Package className="h-4 w-4" />
                       Detalhes dos Kits ({selectedOrder.kits.length})
                     </h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left py-2">Nome</th>
-                            <th className="text-left py-2">CPF</th>
-                            <th className="text-left py-2">Tamanho da Camiseta</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedOrder.kits.map((kit: any, index: number) => (
-                            <tr key={index} className="border-b">
-                              <td className="py-2">{kit.name || kit.participantName || 'N/A'}</td>
-                              <td className="py-2">{(kit.cpf || kit.participantCpf) ? formatCPF(kit.cpf || kit.participantCpf) : 'N/A'}</td>
-                              <td className="py-2">{kit.shirtSize || 'N/A'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div className="space-y-3">
+                      {selectedOrder.kits.map((kit: any, index: number) => (
+                        <div key={index} className="border rounded-lg p-3 bg-gray-50">
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="font-medium text-sm">Kit #{index + 1}</span>
+                            <Badge variant="secondary" className="text-xs">{kit.shirtSize || 'N/A'}</Badge>
+                          </div>
+                          <div className="space-y-1 text-sm">
+                            <p>
+                              <span className="font-medium text-gray-600">Nome:</span><br />
+                              <span className="text-gray-900">{kit.name || kit.participantName || 'N/A'}</span>
+                            </p>
+                            <p>
+                              <span className="font-medium text-gray-600">CPF:</span><br />
+                              <span className="text-gray-900 font-mono">{(kit.cpf || kit.participantCpf) ? formatCPF(kit.cpf || kit.participantCpf) : 'N/A'}</span>
+                            </p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </CardContent>
                 </Card>
