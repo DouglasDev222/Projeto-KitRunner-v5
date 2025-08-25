@@ -1101,10 +1101,6 @@ router.post('/send-message', async (req: Request, res: Response) => {
       .from(kits)
       .where(eq(kits.orderId, orderId));
     
-    console.log('🔍 Debug - Order ID:', orderId);
-    console.log('🔍 Debug - Kits found:', orderKits.length);
-    console.log('🔍 Debug - Kits data:', JSON.stringify(orderKits, null, 2));
-    
     if (!order) {
       return res.status(404).json({
         success: false,
@@ -1145,11 +1141,9 @@ router.post('/send-message', async (req: Request, res: Response) => {
       // Preparar lista de kits formatada
       const kitsList = orderKits && orderKits.length > 0 
         ? orderKits.map((kit: any, index: number) => 
-            `${index + 1}. ${kit.name} - Tamanho: ${kit.shirtSize}`
+            `${index + 1}. ${kit.name}`
           ).join('\n')
         : `${order.order.kitQuantity} kit(s) solicitado(s)`;
-      
-      console.log('🔍 Debug - Final kitsList:', kitsList);
       
       // Placeholders do sistema antigo
       messageContent = messageContent.replace(/\{\{cliente\}\}/g, order.customer.name);

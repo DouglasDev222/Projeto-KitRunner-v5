@@ -384,7 +384,7 @@ Qualquer dúvida, estamos à disposição.`;
 
       // Format kits list from order kits
       const kitsList = fullOrder.kits ? fullOrder.kits.map((kit: any, index: number) => 
-        `${index + 1}. ${kit.name} - Tamanho: ${kit.shirtSize}`
+        `${index + 1}. ${kit.name}`
       ).join('\n') : `${kitQuantity} kit(s) para o evento`;
 
       // Format delivery date
