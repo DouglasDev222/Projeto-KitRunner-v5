@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Save, AlertTriangle, Package, Home, LogOut } from "lucide-react";
+import { User, Save, AlertTriangle, Package, Home, LogOut, Calendar } from "lucide-react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
@@ -452,18 +452,20 @@ export default function ProfileEdit() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
+              <a href="/eventos">
+                <img src="/logo.webp" alt="KitRunner" className="h-10 w-auto" />
+              </a>
             </div>
 
             {/* Navigation Links */}
             <div className="flex items-center space-x-8">
               <Button
                 variant="ghost"
-                onClick={() => setLocation("/")}
+                onClick={() => setLocation("/eventos")}
                 className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
               >
-                <Home className="w-4 h-4" />
-                <span>Início</span>
+                <Calendar className="w-4 h-4" />
+                <span>Eventos</span>
               </Button>
 
               <Button
@@ -476,15 +478,6 @@ export default function ProfileEdit() {
               >
                 <Package className="w-4 h-4" />
                 <span>Pedidos</span>
-              </Button>
-
-              <Button
-                variant="ghost"
-                onClick={() => setLocation("/eventos")}
-                className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
-              >
-                <Package className="w-4 h-4" />
-                <span>Eventos</span>
               </Button>
 
               <Button
