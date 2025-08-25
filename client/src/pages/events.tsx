@@ -20,9 +20,19 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { formatDate } from "@/lib/brazilian-formatter";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { Event } from "@shared/schema";
 import { useAuth } from "@/lib/auth-context";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis
+} from "@/components/ui/pagination";
+import { cn } from "@/lib/utils";
 
 type FilterType = "all" | "week" | "month";
 
@@ -105,7 +115,23 @@ export default function Events() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<FilterType>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
   const { isAuthenticated } = useAuth();
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Responsive page size: 10 for mobile, 12 for desktop
+  const pageSize = isMobile ? 10 : 12;
 
   const { data: events, isLoading } = useQuery<Event[]>({
     queryKey: ["/api/events"],
@@ -113,6 +139,11 @@ export default function Events() {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterType]);
 
   // Filter and sort events: search + date filter + upcoming events first
   const filteredAndSortedEvents = useMemo(() => {
@@ -183,6 +214,20 @@ export default function Events() {
       }
     });
   }, [events, searchTerm, filterType]);
+
+  // Pagination logic
+  const paginatedEvents = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return filteredAndSortedEvents.slice(startIndex, endIndex);
+  }, [filteredAndSortedEvents, currentPage, pageSize]);
+
+  const totalPages = Math.ceil(filteredAndSortedEvents.length / pageSize);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   if (isLoading) {
     return (
@@ -391,7 +436,7 @@ export default function Events() {
 
           {/* Mobile Events List */}
           <div className="space-y-3">
-            {filteredAndSortedEvents.map((event) => {
+            {paginatedEvents.map((event) => {
               const [year, month, day] = event.date.split("-");
               const eventDate = new Date(
                 parseInt(year),
@@ -462,14 +507,129 @@ export default function Events() {
             })}
           </div>
 
-          {/* Results count Mobile */}
-          {filteredAndSortedEvents.length > 0 && (
-            <div className="text-center mt-6 py-4">
-              <p className="text-gray-500 text-xs">
-                {filteredAndSortedEvents.length} evento
-                {filteredAndSortedEvents.length !== 1 ? "s" : ""} listado
-                {filteredAndSortedEvents.length !== 1 ? "s" : ""}
-              </p>
+          {/* Mobile Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-6 space-y-4">
+              <div className="text-xs text-muted-foreground text-center">
+                Página {currentPage} de {totalPages} ({filteredAndSortedEvents.length} eventos)
+              </div>
+              
+              <div className="flex justify-center">
+                <Pagination>
+                  <PaginationContent className="flex-wrap gap-1">
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        href="#" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentPage > 1) handlePageChange(currentPage - 1);
+                        }}
+                        className={cn(
+                          currentPage === 1 ? "pointer-events-none opacity-50" : "",
+                          "text-xs px-2 py-1"
+                        )}
+                      />
+                    </PaginationItem>
+                    
+                    {/* Smart page display for mobile */}
+                    {(() => {
+                      const maxPagesShown = 3;
+                      let startPage = Math.max(1, currentPage - Math.floor(maxPagesShown / 2));
+                      let endPage = Math.min(totalPages, startPage + maxPagesShown - 1);
+                      
+                      if (endPage - startPage + 1 < maxPagesShown) {
+                        startPage = Math.max(1, endPage - maxPagesShown + 1);
+                      }
+                      
+                      const pages = [];
+                      
+                      if (startPage > 1) {
+                        pages.push(
+                          <PaginationItem key={1}>
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handlePageChange(1);
+                              }}
+                              className="w-8 h-8 text-xs"
+                            >
+                              1
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                        
+                        if (startPage > 2) {
+                          pages.push(
+                            <PaginationItem key="ellipsis-start">
+                              <PaginationEllipsis className="w-8 h-8" />
+                            </PaginationItem>
+                          );
+                        }
+                      }
+                      
+                      for (let i = startPage; i <= endPage; i++) {
+                        pages.push(
+                          <PaginationItem key={i}>
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handlePageChange(i);
+                              }}
+                              isActive={currentPage === i}
+                              className="w-8 h-8 text-xs"
+                            >
+                              {i}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      }
+                      
+                      if (endPage < totalPages) {
+                        if (endPage < totalPages - 1) {
+                          pages.push(
+                            <PaginationItem key="ellipsis-end">
+                              <PaginationEllipsis className="w-8 h-8" />
+                            </PaginationItem>
+                          );
+                        }
+                        
+                        pages.push(
+                          <PaginationItem key={totalPages}>
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handlePageChange(totalPages);
+                              }}
+                              className="w-8 h-8 text-xs"
+                            >
+                              {totalPages}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      }
+                      
+                      return pages;
+                    })()}
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        href="#" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                        }}
+                        className={cn(
+                          currentPage === totalPages ? "pointer-events-none opacity-50" : "",
+                          "text-xs px-2 py-1"
+                        )}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
             </div>
           )}
         </main>
@@ -744,7 +904,7 @@ export default function Events() {
           {/* Desktop Events Grid - Expansivo */}
           {filteredAndSortedEvents.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8 pb-16">
-              {filteredAndSortedEvents.map((event) => {
+              {paginatedEvents.map((event) => {
                 const [year, month, day] = event.date.split("-");
                 const eventDate = new Date(
                   parseInt(year),
@@ -837,14 +997,129 @@ export default function Events() {
             </div>
           )}
 
-          {/* Results count Desktop */}
-          {filteredAndSortedEvents.length > 0 && (
-            <div className="text-center mt-12 py-8 bg-white rounded-2xl shadow-lg">
-              <p className="text-gray-500">
-                {filteredAndSortedEvents.length} evento
-                {filteredAndSortedEvents.length !== 1 ? "s" : ""} listado
-                {filteredAndSortedEvents.length !== 1 ? "s" : ""} • Mostrando resultados atualizados
-              </p>
+          {/* Desktop Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-12 space-y-6">
+              <div className="text-sm text-muted-foreground text-center">
+                Página {currentPage} de {totalPages} • {filteredAndSortedEvents.length} eventos encontrados
+              </div>
+              
+              <div className="flex justify-center">
+                <Pagination>
+                  <PaginationContent className="gap-2">
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        href="#" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentPage > 1) handlePageChange(currentPage - 1);
+                        }}
+                        className={cn(
+                          currentPage === 1 ? "pointer-events-none opacity-50" : "",
+                          "px-3 py-2"
+                        )}
+                      />
+                    </PaginationItem>
+                    
+                    {/* Smart page display for desktop */}
+                    {(() => {
+                      const maxPagesShown = 7;
+                      let startPage = Math.max(1, currentPage - Math.floor(maxPagesShown / 2));
+                      let endPage = Math.min(totalPages, startPage + maxPagesShown - 1);
+                      
+                      if (endPage - startPage + 1 < maxPagesShown) {
+                        startPage = Math.max(1, endPage - maxPagesShown + 1);
+                      }
+                      
+                      const pages = [];
+                      
+                      if (startPage > 1) {
+                        pages.push(
+                          <PaginationItem key={1}>
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handlePageChange(1);
+                              }}
+                              className="w-10 h-10"
+                            >
+                              1
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                        
+                        if (startPage > 2) {
+                          pages.push(
+                            <PaginationItem key="ellipsis-start">
+                              <PaginationEllipsis className="w-10 h-10" />
+                            </PaginationItem>
+                          );
+                        }
+                      }
+                      
+                      for (let i = startPage; i <= endPage; i++) {
+                        pages.push(
+                          <PaginationItem key={i}>
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handlePageChange(i);
+                              }}
+                              isActive={currentPage === i}
+                              className="w-10 h-10"
+                            >
+                              {i}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      }
+                      
+                      if (endPage < totalPages) {
+                        if (endPage < totalPages - 1) {
+                          pages.push(
+                            <PaginationItem key="ellipsis-end">
+                              <PaginationEllipsis className="w-10 h-10" />
+                            </PaginationItem>
+                          );
+                        }
+                        
+                        pages.push(
+                          <PaginationItem key={totalPages}>
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handlePageChange(totalPages);
+                              }}
+                              className="w-10 h-10"
+                            >
+                              {totalPages}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      }
+                      
+                      return pages;
+                    })()}
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        href="#" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                        }}
+                        className={cn(
+                          currentPage === totalPages ? "pointer-events-none opacity-50" : "",
+                          "px-3 py-2"
+                        )}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
             </div>
           )}
         </div>
