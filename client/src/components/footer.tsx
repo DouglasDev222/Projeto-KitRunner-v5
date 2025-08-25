@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Package, User, Calendar } from "lucide-react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/lib/auth-context";
 
 export function Footer() {
   const [location, setLocation] = useLocation();
+  const { isAuthenticated } = useAuth();
 
   // Função para verificar se uma rota está ativa
   const isRouteActive = (routes: string[]) => {
@@ -58,10 +60,17 @@ export function Footer() {
               ? "bg-white text-purple-600 border-purple-600" 
               : ""
           }`}
-          onClick={() => setLocation("/profile")}
+          onClick={() => {
+            if (isAuthenticated) {
+              setLocation("/profile");
+            } else {
+              sessionStorage.setItem("loginReturnPath", "/profile");
+              setLocation("/login");
+            }
+          }}
         >
           <User className="w-4 h-4" />
-          Perfil
+          {isAuthenticated ? "Perfil" : "Entrar"}
         </Button>
       </div>
     </div>
