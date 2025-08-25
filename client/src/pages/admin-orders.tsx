@@ -1047,6 +1047,24 @@ export default function AdminOrders() {
 
                 {/* Mobile Cards View */}
                 <div className="block lg:hidden space-y-4 mobile-card-container">
+                  {/* Select All Control for Mobile */}
+                  {orders?.length > 0 && (
+                    <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={selectedOrders.length === orders.length && orders.length > 0}
+                          onCheckedChange={handleSelectAll}
+                          aria-label="Selecionar todos os pedidos"
+                        />
+                        <span className="text-sm font-medium text-gray-700">
+                          Selecionar todos ({orders.length})
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {selectedOrders.length} selecionado{selectedOrders.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  )}
                   {Array.isArray(orders) && orders.map((order: any) => (
                     <Card key={order.id} className="relative mobile-card-content">
                       <CardContent className="p-0 mobile-card-content">
