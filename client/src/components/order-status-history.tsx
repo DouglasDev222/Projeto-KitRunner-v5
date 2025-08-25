@@ -149,7 +149,7 @@ export function OrderStatusHistory({ orderId, orderNumber, showTitle = true, isA
                     {format(new Date(entry.createdAt), 'dd/MM/yyyy HH:mm')}
                   </div>
                   
-                  {entry.reason && entry.reason.toLowerCase().includes('pagamento') && (
+                  {entry.reason && entry.reason.toLowerCase().includes('pagamento') && entry.newStatus !== 'cancelado' && (
                     <div className="text-sm text-green-600 font-medium">
                       Pagamento aprovado
                     </div>
