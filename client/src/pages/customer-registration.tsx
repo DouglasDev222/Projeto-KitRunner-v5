@@ -19,6 +19,7 @@ import { useAuth } from "@/lib/auth-context";
 import { PolicyAcceptance } from "@/components/policy-acceptance";
 import { useAcceptPolicy } from "@/hooks/use-policy";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Footer } from "@/components/footer";
 
 // Função para formatar data brasileira (DD/MM/AAAA)
 const formatBrazilianDate = (value: string): string => {
@@ -198,9 +199,9 @@ export default function CustomerRegistration() {
 
   if (isMobile) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen">
+      <div className="max-w-md mx-auto bg-white min-h-screen pb-20">
         <Header showBackButton onBack={getBackNavigation()} />
-        <div className="p-4">
+        <div className="p-4"></div>
         <div className="flex items-center mb-4">
           <UserPlus className="w-6 h-6 text-primary mr-2" />
           <h2 className="text-2xl font-bold text-neutral-800">Novo Cadastro</h2>
@@ -521,8 +522,9 @@ export default function CustomerRegistration() {
             </div>
           </form>
         </Form>
+        </div>
+        <Footer />
       </div>
-    </div>
     );
   }
 
