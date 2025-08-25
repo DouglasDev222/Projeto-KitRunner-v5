@@ -28,13 +28,21 @@ export function AdminLogin() {
       return;
     }
 
-    const result = await login(formData.username, formData.password);
-    
-    if (result.success) {
-      // Redirecionar para dashboard admin
-      setLocation('/admin');
-    } else {
-      setError(result.error || 'Erro ao fazer login');
+    try {
+      const result = await login(formData.username, formData.password);
+      console.log('Login result:', result); // Debug log
+      
+      if (result.success) {
+        // Redirecionar para dashboard admin
+        setLocation('/admin');
+      } else {
+        const errorMessage = result.error || 'Erro ao fazer login';
+        console.log('Setting error:', errorMessage); // Debug log
+        setError(errorMessage);
+      }
+    } catch (err) {
+      console.error('Unexpected error during login:', err);
+      setError('Erro inesperado. Tente novamente.');
     }
   };
 
@@ -71,6 +79,9 @@ export function AdminLogin() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
+              
+              {/* Debug - remover depois */}
+              {console.log('Current error state:', error)}
 
               <div className="space-y-2">
                 <Label htmlFor="username">Nome de usuário</Label>
