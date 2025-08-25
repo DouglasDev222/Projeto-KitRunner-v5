@@ -307,7 +307,7 @@ export function WhatsAppModal({ isOpen, onClose, order, isMobile = false }: What
             <SelectTrigger>
               <SelectValue placeholder="Escolha um template..." />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[300]">
               {templatesLoading ? (
                 <SelectItem value="loading" disabled>Carregando...</SelectItem>
               ) : (
@@ -483,7 +483,7 @@ export function WhatsAppModal({ isOpen, onClose, order, isMobile = false }: What
                     <SelectTrigger>
                       <SelectValue placeholder="Escolha um template..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[300]">
                       {templatesLoading ? (
                         <SelectItem value="loading" disabled>Carregando...</SelectItem>
                       ) : (
