@@ -12,16 +12,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -47,8 +37,6 @@ export function WhatsAppModal({ isOpen, onClose, order, isMobile = false }: What
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [customMessage, setCustomMessage] = useState("");
   const [previewContent, setPreviewContent] = useState("");
-  const [showQuickSendConfirm, setShowQuickSendConfirm] = useState(false);
-  const [pendingQuickSendTemplate, setPendingQuickSendTemplate] = useState<WhatsappTemplate | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -141,28 +129,6 @@ export function WhatsAppModal({ isOpen, onClose, order, isMobile = false }: What
     sendMessageMutation.mutate(data);
   };
 
-  const handleQuickSendClick = (template: WhatsappTemplate) => {
-    setPendingQuickSendTemplate(template);
-    setShowQuickSendConfirm(true);
-  };
-
-  const handleConfirmQuickSend = () => {
-    if (pendingQuickSendTemplate) {
-      const data = {
-        orderId: order.id,
-        templateId: pendingQuickSendTemplate.id
-      };
-      sendMessageMutation.mutate(data);
-    }
-    setShowQuickSendConfirm(false);
-    setPendingQuickSendTemplate(null);
-  };
-
-  const handleCancelQuickSend = () => {
-    setShowQuickSendConfirm(false);
-    setPendingQuickSendTemplate(null);
-  };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'sent':
@@ -233,7 +199,13 @@ export function WhatsAppModal({ isOpen, onClose, order, isMobile = false }: What
                     variant="outline"
                     size="sm"
                     className="text-xs justify-start h-10 px-3"
-                    onClick={() => handleQuickSendClick(template)}
+                    onClick={() => {
+                      const data = {
+                        orderId: order.id,
+                        templateId: template.id
+                      };
+                      sendMessageMutation.mutate(data);
+                    }}
                     disabled={sendMessageMutation.isPending}
                     data-testid={`button-quick-send-${template.id}`}
                   >
@@ -322,29 +294,6 @@ export function WhatsAppModal({ isOpen, onClose, order, isMobile = false }: What
             </div>
           )}
         </Button>
-
-        {/* Confirmation Modal for Quick Send - Mobile */}
-        <AlertDialog open={showQuickSendConfirm} onOpenChange={setShowQuickSendConfirm}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirmar Envio de Mensagem</AlertDialogTitle>
-              <AlertDialogDescription>
-                Tem certeza que deseja enviar a mensagem "{pendingQuickSendTemplate?.name}" para {order?.customer?.name}?
-                <br />
-                <br />
-                <strong>Telefone:</strong> {order?.customer?.phone}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={handleCancelQuickSend}>
-                Cancelar
-              </AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmQuickSend}>
-                Enviar Mensagem
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     );
   }
@@ -415,7 +364,13 @@ export function WhatsAppModal({ isOpen, onClose, order, isMobile = false }: What
                             variant="outline"
                             size="sm"
                             className="text-xs justify-start h-10 px-3"
-                            onClick={() => handleQuickSendClick(template)}
+                            onClick={() => {
+                              const data = {
+                                orderId: order.id,
+                                templateId: template.id
+                              };
+                              sendMessageMutation.mutate(data);
+                            }}
                             disabled={sendMessageMutation.isPending}
                             data-testid={`button-quick-send-${template.id}`}
                           >
@@ -559,29 +514,6 @@ export function WhatsAppModal({ isOpen, onClose, order, isMobile = false }: What
           </div>
         </div>
       </DialogContent>
-
-      {/* Confirmation Modal for Quick Send */}
-      <AlertDialog open={showQuickSendConfirm} onOpenChange={setShowQuickSendConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Envio de Mensagem</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja enviar a mensagem "{pendingQuickSendTemplate?.name}" para {order?.customer?.name}?
-              <br />
-              <br />
-              <strong>Telefone:</strong> {order?.customer?.phone}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelQuickSend}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmQuickSend}>
-              Enviar Mensagem
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Dialog>
   );
 }
