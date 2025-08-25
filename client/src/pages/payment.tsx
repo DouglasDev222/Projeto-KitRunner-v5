@@ -59,6 +59,25 @@ export default function Payment() {
   
   const acceptPolicyMutation = useAcceptPolicy();
 
+  // Helper function to format full address with truncation
+  const formatFullAddress = (address: Address | null, maxLength: number = 50): string => {
+    if (!address) return "Endereço não selecionado";
+    
+    const parts = [];
+    if (address.street) parts.push(address.street);
+    if (address.number) parts.push(`${address.number}`);
+    if (address.neighborhood) parts.push(address.neighborhood);
+    if (address.city) parts.push(address.city);
+    
+    const fullAddress = parts.join(', ');
+    
+    if (fullAddress.length <= maxLength) {
+      return fullAddress;
+    }
+    
+    return fullAddress.substring(0, maxLength - 3) + '...';
+  };
+
   // Clear payment error when payment method changes
   useEffect(() => {
     if (paymentError) {
@@ -576,8 +595,8 @@ export default function Payment() {
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-600">Endereço:</span>
-                <span className="font-medium text-neutral-800">
-                  {selectedAddress ? `${selectedAddress.neighborhood}, ${selectedAddress.city}` : "Endereço não selecionado"}
+                <span className="font-medium text-neutral-800 text-right max-w-[60%]">
+                  {formatFullAddress(selectedAddress, 40)}
                 </span>
               </div>
               
@@ -884,8 +903,8 @@ export default function Payment() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Endereço:</span>
-                      <span className="font-medium text-gray-800">
-                        {selectedAddress ? `${selectedAddress.neighborhood}, ${selectedAddress.city}` : "Não selecionado"}
+                      <span className="font-medium text-gray-800 text-right max-w-[60%]">
+                        {formatFullAddress(selectedAddress, 60)}
                       </span>
                     </div>
                   </div>
