@@ -1282,9 +1282,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all orders with filters and pagination
   app.get("/api/admin/orders", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
-      const { page = 1, limit = 10, ...filters } = req.query;
+      const { page = 1, limit = 10, pageSize, ...filters } = req.query;
       const pageNum = parseInt(page as string);
-      const limitNum = parseInt(limit as string);
+      // Accept both 'limit' and 'pageSize' parameters for compatibility
+      const limitNum = parseInt((pageSize || limit) as string);
 
       // Check if pagination is requested
       if (req.query.paginated === 'true') {
