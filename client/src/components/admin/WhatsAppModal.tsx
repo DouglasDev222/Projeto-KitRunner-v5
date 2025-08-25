@@ -157,7 +157,7 @@ export function WhatsAppModal({ isOpen, onClose, order, isMobile = false }: What
     }
   };
 
-  const handleQuickSendMouseDown = (template: WhatsappTemplate) => {
+  const handleQuickSendStart = (template: WhatsappTemplate) => {
     if (!order?.id) {
       toast({
         title: "Erro",
@@ -188,11 +188,11 @@ export function WhatsAppModal({ isOpen, onClose, order, isMobile = false }: What
         templateId: template.id
       };
       sendMessageMutation.mutate(data);
-      handleQuickSendMouseUp();
+      handleQuickSendEnd();
     }, 3000);
   };
 
-  const handleQuickSendMouseUp = () => {
+  const handleQuickSendEnd = () => {
     if (holdTimerRef.current) {
       clearTimeout(holdTimerRef.current);
       holdTimerRef.current = null;
@@ -258,18 +258,30 @@ export function WhatsAppModal({ isOpen, onClose, order, isMobile = false }: What
                     key={template.id}
                     variant="outline"
                     size="sm"
-                    className="text-xs justify-start h-10 px-3 relative overflow-hidden"
-                    onMouseDown={() => handleQuickSendMouseDown(template)}
-                    onMouseUp={handleQuickSendMouseUp}
-                    onMouseLeave={handleQuickSendMouseUp} // Also cancel on leave
+                    className="text-xs justify-start h-10 px-3 relative overflow-hidden select-none"
+                    style={{ userSelect: 'none' }}
+                    onMouseDown={() => handleQuickSendStart(template)}
+                    onMouseUp={handleQuickSendEnd}
+                    onMouseLeave={handleQuickSendEnd}
+                    onTouchStart={() => handleQuickSendStart(template)}
+                    onTouchEnd={handleQuickSendEnd}
+                    onTouchCancel={handleQuickSendEnd}
                     disabled={sendMessageMutation.isPending}
                     data-testid={`button-quick-send-${template.id}`}
                   >
-                    {sendMessageMutation.isPending && holdingButton === template.id && (
-                      <div className="absolute inset-0 bg-blue-500 opacity-50" style={{ width: `${holdProgress}%` }} />
+                    {holdingButton === template.id && (
+                      <div 
+                        className="absolute inset-0 bg-green-500 transition-all duration-100 ease-linear" 
+                        style={{ 
+                          width: `${holdProgress}%`,
+                          opacity: 0.3,
+                          left: 0,
+                          right: 'auto'
+                        }} 
+                      />
                     )}
-                    <MessageCircle className="h-3 w-3 mr-2 flex-shrink-0" />
-                    <span className="truncate">
+                    <MessageCircle className="h-3 w-3 mr-2 flex-shrink-0 relative z-10" />
+                    <span className="truncate relative z-10">
                       {sendMessageMutation.isPending && holdingButton === template.id ? "Enviando..." : template.name}
                     </span>
                   </Button>
@@ -422,18 +434,30 @@ export function WhatsAppModal({ isOpen, onClose, order, isMobile = false }: What
                             key={template.id}
                             variant="outline"
                             size="sm"
-                            className="text-xs justify-start h-10 px-3 relative overflow-hidden"
-                            onMouseDown={() => handleQuickSendMouseDown(template)}
-                            onMouseUp={handleQuickSendMouseUp}
-                            onMouseLeave={handleQuickSendMouseUp} // Also cancel on leave
+                            className="text-xs justify-start h-10 px-3 relative overflow-hidden select-none"
+                            style={{ userSelect: 'none' }}
+                            onMouseDown={() => handleQuickSendStart(template)}
+                            onMouseUp={handleQuickSendEnd}
+                            onMouseLeave={handleQuickSendEnd}
+                            onTouchStart={() => handleQuickSendStart(template)}
+                            onTouchEnd={handleQuickSendEnd}
+                            onTouchCancel={handleQuickSendEnd}
                             disabled={sendMessageMutation.isPending}
                             data-testid={`button-quick-send-${template.id}`}
                           >
-                            {sendMessageMutation.isPending && holdingButton === template.id && (
-                              <div className="absolute inset-0 bg-blue-500 opacity-50" style={{ width: `${holdProgress}%` }} />
+                            {holdingButton === template.id && (
+                              <div 
+                                className="absolute inset-0 bg-green-500 transition-all duration-100 ease-linear" 
+                                style={{ 
+                                  width: `${holdProgress}%`,
+                                  opacity: 0.3,
+                                  left: 0,
+                                  right: 'auto'
+                                }} 
+                              />
                             )}
-                            <MessageCircle className="h-3 w-3 mr-2 flex-shrink-0" />
-                            <span className="truncate">
+                            <MessageCircle className="h-3 w-3 mr-2 flex-shrink-0 relative z-10" />
+                            <span className="truncate relative z-10">
                               {sendMessageMutation.isPending && holdingButton === template.id ? "Enviando..." : template.name}
                             </span>
                           </Button>
