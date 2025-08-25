@@ -75,9 +75,9 @@ export function PolicyAcceptance({
         <div className="flex-1 min-w-0">
           <label 
             htmlFor={`policy-${type}`}
-            className="text-sm font-medium text-neutral-700 cursor-pointer flex flex-wrap items-center gap-2 leading-normal"
+            className="text-xs sm:text-sm font-medium text-neutral-700 cursor-pointer flex items-center gap-1 leading-tight whitespace-nowrap overflow-hidden"
           >
-            <span className="leading-tight">
+            <span className="truncate">
               {getAcceptanceText(type)}
               {required && <span className="text-red-500 ml-1">*</span>}
             </span>
@@ -86,7 +86,7 @@ export function PolicyAcceptance({
               variant="link"
               size="sm"
               onClick={() => setIsModalOpen(true)}
-              className="h-auto p-0 text-xs text-blue-600 hover:text-blue-800 underline inline-flex items-center"
+              className="h-auto p-0 text-xs text-blue-600 hover:text-blue-800 underline inline-flex items-center flex-shrink-0"
             >
               <ExternalLink className="w-3 h-3 mr-1" />
               Ler
