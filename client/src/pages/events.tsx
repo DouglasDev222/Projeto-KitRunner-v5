@@ -13,6 +13,9 @@ import {
   User,
   Zap,
   X,
+  CheckCircle,
+  Hourglass,
+  Ban,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -24,20 +27,45 @@ import { useAuth } from "@/lib/auth-context";
 type FilterType = "all" | "week" | "month";
 
 // Helper functions for event status logic
-const getEventStatusLabel = (event: Event, isPastEvent: boolean): string => {
+const getEventStatusLabel = (event: Event, isPastEvent: boolean): JSX.Element => {
   if (isPastEvent) {
-    return "✓ Finalizado";
+    return (
+      <span className="flex items-center gap-1">
+        <CheckCircle className="h-3 w-3" />
+        Finalizado
+      </span>
+    );
   }
 
   switch (event.status) {
     case 'ativo':
-      return "✓ Disponível";
+      return (
+        <span className="flex items-center gap-1">
+          <CheckCircle className="h-3 w-3" />
+          Disponível
+        </span>
+      );
     case 'inativo':
-      return "⏳ Em breve";
+      return (
+        <span className="flex items-center gap-1">
+          <Hourglass className="h-3 w-3" />
+          Em breve
+        </span>
+      );
     case 'fechado_pedidos':
-      return "🚫 Fechado para pedidos";
+      return (
+        <span className="flex items-center gap-1">
+          <Ban className="h-3 w-3" />
+          Fechado para pedidos
+        </span>
+      );
     default:
-      return "⏳ Em breve";
+      return (
+        <span className="flex items-center gap-1">
+          <Hourglass className="h-3 w-3" />
+          Em breve
+        </span>
+      );
   }
 };
 
@@ -63,7 +91,7 @@ const getEventStatusColor = (event: Event, isPastEvent: boolean): string => {
 
   switch (event.status) {
     case 'ativo':
-      return "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0";
+      return "bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0";
     case 'inativo':
       return "bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0";
     case 'fechado_pedidos':
@@ -389,9 +417,9 @@ export default function Events() {
                         isPastEvent
                           ? "bg-gradient-to-b from-gray-400 to-gray-500"
                           : event.status === 'ativo'
-                          ? "bg-gradient-to-b from-green-400 to-green-500"
+                          ? "bg-gradient-to-b from-purple-400 to-purple-500"
                           : event.status === 'inativo'
-                          ? "bg-gradient-to-b from-yellow-400 to-yellow-500"
+                          ? "bg-gradient-to-b from-blue-400 to-blue-500"
                           : event.status === 'fechado_pedidos'
                           ? "bg-gradient-to-b from-orange-400 to-orange-500"
                           : "bg-gradient-to-b from-gray-400 to-gray-500"
