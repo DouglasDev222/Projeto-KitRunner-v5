@@ -176,12 +176,12 @@ function App() {
       <AuthProvider>
         <AdminAuthProvider>
           <TooltipProvider>
-            <Toaster />
             <Router />
             <PWAInstallPrompt />
           </TooltipProvider>
         </AdminAuthProvider>
       </AuthProvider>
+      <Toaster />
     </QueryClientProvider>
   );
 }

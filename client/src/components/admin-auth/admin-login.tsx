@@ -7,10 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, Lock, User, AlertCircle } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
+import { useToast } from '@/hooks/use-toast';
 
 export function AdminLogin() {
   const [location, setLocation] = useLocation();
   const { login } = useAdminAuth();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -25,7 +27,11 @@ export function AdminLogin() {
     setError('');
 
     if (!formData.username.trim() || !formData.password.trim()) {
-      setError('Todos os campos são obrigatórios');
+      toast({
+        variant: "destructive",
+        title: "Erro de validação",
+        description: "Todos os campos são obrigatórios"
+      });
       return;
     }
 
@@ -34,15 +40,27 @@ export function AdminLogin() {
       const result = await login(formData.username, formData.password);
       
       if (result.success) {
+        toast({
+          title: "Login realizado com sucesso",
+          description: "Redirecionando para o painel administrativo..."
+        });
         // Redirecionar para dashboard admin
         setLocation('/admin');
       } else {
         const errorMessage = result.error || 'Erro ao fazer login';
-        setError(errorMessage);
+        toast({
+          variant: "destructive",
+          title: "Erro no login",
+          description: errorMessage
+        });
       }
     } catch (err) {
       console.error('Unexpected error during login:', err);
-      setError('Erro inesperado. Tente novamente.');
+      toast({
+        variant: "destructive",
+        title: "Erro inesperado",
+        description: "Erro inesperado. Tente novamente."
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -75,13 +93,6 @@ export function AdminLogin() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
               <div className="space-y-2">
                 <Label htmlFor="username">Nome de usuário</Label>
                 <div className="relative">
