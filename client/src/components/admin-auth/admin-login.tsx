@@ -162,7 +162,7 @@ export function AdminLogin() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
                 {isSubmitting ? 'Entrando...' : 'Entrar'}
               </Button>
