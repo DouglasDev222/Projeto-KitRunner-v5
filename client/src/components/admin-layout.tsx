@@ -108,7 +108,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           <LogOut className="w-4 h-4 mr-2" />
           Fazer Logout
         </Button>
-        <Link href="/">
+        <Link href="/eventos">
           <Button variant="ghost" className="w-full justify-start">
             <Home className="w-4 h-4 mr-2" />
             Voltar ao Site
