@@ -12,6 +12,7 @@ import {
   Clock,
   User,
   Zap,
+  X,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -212,8 +213,17 @@ export default function Events() {
                 placeholder="Buscar eventos..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-3 w-full bg-white/95 text-gray-900 border-0 rounded-xl shadow-sm focus:ring-2 focus:ring-white/30 placeholder:text-gray-500"
+                className="pl-10 pr-10 py-3 w-full bg-white/95 text-gray-900 border-0 rounded-xl shadow-sm focus:ring-2 focus:ring-white/30 placeholder:text-gray-500"
               />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
+                  aria-label="Limpar busca"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
         </div>
