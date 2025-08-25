@@ -3,7 +3,8 @@ import { Footer } from "@/components/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Package, Calendar, MapPin, User, CreditCard, Heart, Home, Plus, FileText, ArrowLeft } from "lucide-react"; 
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Package, Calendar, MapPin, User, CreditCard, Heart, Home, Plus, FileText, ArrowLeft, MessageCircle, AlertTriangle } from "lucide-react"; 
 import { Button } from "@/components/ui/button";
 import { useLocation, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +21,11 @@ export default function OrderDetails() {
   const [, setLocation] = useLocation();
   const { orderNumber } = useParams<{ orderNumber: string }>();
   const isMobile = useIsMobile();
+
+  // Function to handle WhatsApp redirect
+  const handleWhatsAppRedirect = () => {
+    window.open('https://wa.me/5583981302961', '_blank');
+  };
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["/api/orders/" + orderNumber],
@@ -195,6 +201,28 @@ export default function OrderDetails() {
             )}
           </CardContent>
         </Card>
+
+        {/* Important Notice for Confirmed Orders - Mobile */}
+        {order.status === "confirmado" && (
+          <Alert className="mb-4 border-orange-200 bg-orange-50">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800">
+              <div className="space-y-3">
+                <p className="font-semibold">📋 Documentação Necessária</p>
+                <p className="text-sm">
+                  Para liberar a retirada dos seus kits, envie o <strong>comprovante de inscrição oficial</strong> de cada atleta através do nosso WhatsApp.
+                </p>
+                <Button 
+                  onClick={() => window.open('https://wa.me/5583981302961', '_blank')}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center space-x-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Enviar Comprovante via WhatsApp</span>
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Delivery Address */}
         <Card className="mb-4">
@@ -493,6 +521,35 @@ export default function OrderDetails() {
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Important Notice for Confirmed Orders - Desktop */}
+                {order.status === "confirmado" && (
+                  <Card className="shadow-lg border-orange-200 bg-orange-50">
+                    <CardHeader>
+                      <CardTitle className="text-xl flex items-center text-orange-800">
+                        <AlertTriangle className="w-6 h-6 mr-3 text-orange-600" />
+                        Documentação Necessária
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <p className="text-orange-800">
+                          Para liberar a retirada dos seus kits, é necessário enviar o <strong>comprovante de inscrição oficial</strong> de cada atleta através do nosso WhatsApp.
+                        </p>
+                        <p className="text-sm text-orange-700">
+                          📋 Após o envio da documentação, entraremos em contato para agendar a entrega no endereço informado no pedido.
+                        </p>
+                        <Button 
+                          onClick={() => window.open('https://wa.me/5583981302961', '_blank')}
+                          className="bg-green-600 hover:bg-green-700 text-white flex items-center space-x-2"
+                        >
+                          <MessageCircle className="w-5 h-5" />
+                          <span>Enviar Comprovante via WhatsApp</span>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Delivery Address */}
                 <Card className="shadow-lg">
