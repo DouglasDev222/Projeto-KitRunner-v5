@@ -137,6 +137,8 @@ export default function AdminOrders() {
   const [mobileOrderDetailsOpen, setMobileOrderDetailsOpen] = useState(false);
   const [mobileWhatsAppOpen, setMobileWhatsAppOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [lastOrderCount, setLastOrderCount] = useState<number>(0);
+  const [hasNotificationPermission, setHasNotificationPermission] = useState<boolean>(false);
 
   // Detect mobile screen size
   useEffect(() => {
@@ -147,6 +149,19 @@ export default function AdminOrders() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Request notification permission
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        setHasNotificationPermission(true);
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+          setHasNotificationPermission(permission === 'granted');
+        });
+      }
+    }
   }, []);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -218,8 +233,37 @@ export default function AdminOrders() {
     }
   }, [emailConfirmationModal.isOpen, showOrderDialog]);
 
+  // Função para tocar som de notificação
+  const playNotificationSound = () => {
+    try {
+      // Criar um tom de notificação usando Web Audio API
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      // Tom agudo e agradável para notificação
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+
+      // Volume e duração
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (error) {
+      console.log('Não foi possível reproduzir som de notificação:', error);
+    }
+  };
+
   // Sistema novo: AdminRouteGuard já protege - não precisa de verificação
 
+  // Reatividade: Query com polling automático para detectar novos pedidos
   const { data: ordersData, isLoading } = useQuery({
     queryKey: ["/api/admin/orders", { 
       page: currentPage, 
@@ -227,7 +271,52 @@ export default function AdminOrders() {
       paginated: true,
       ...filters 
     }],
+    // Polling a cada 30 segundos para detectar novos pedidos
+    refetchInterval: 30000,
+    // Configurações de reatividade conforme SOLUCAO_REATIVIDADE_IMPLEMENTADA.md
+    staleTime: 0, // Sempre buscar dados frescos
+    refetchOnMount: true, // Revalida quando componente monta
+    refetchOnWindowFocus: true, // Revalida quando janela ganha foco
   });
+
+  // Detectar novos pedidos e exibir notificação com som
+  useEffect(() => {
+    if (ordersData && typeof ordersData === 'object' && 'total' in ordersData) {
+      const currentTotal = (ordersData as any).total;
+      
+      // Se já temos um total anterior e o atual é maior, há novos pedidos
+      if (lastOrderCount > 0 && currentTotal > lastOrderCount) {
+        const newOrdersCount = currentTotal - lastOrderCount;
+        
+        // Tocar som de notificação
+        playNotificationSound();
+        
+        // Exibir toast de notificação
+        toast({
+          title: "🆕 Novos pedidos recebidos!",
+          description: `${newOrdersCount} novo${newOrdersCount > 1 ? 's' : ''} pedido${newOrdersCount > 1 ? 's' : ''} chegou${newOrdersCount > 1 ? 'ram' : ''}`,
+          duration: 5000,
+        });
+
+        // Exibir notificação do navegador se permitido
+        if (hasNotificationPermission && typeof window !== 'undefined' && 'Notification' in window) {
+          new Notification('KitRunner - Novos Pedidos', {
+            body: `${newOrdersCount} novo${newOrdersCount > 1 ? 's' : ''} pedido${newOrdersCount > 1 ? 's' : ''} recebido${newOrdersCount > 1 ? 's' : ''}!`,
+            icon: '/favicon.ico',
+            tag: 'new-orders'
+          });
+        }
+
+        // Invalidar caches relacionados conforme padrão de reatividade
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      }
+      
+      // Atualizar contagem de pedidos
+      setLastOrderCount(currentTotal);
+    }
+  }, [ordersData, lastOrderCount, hasNotificationPermission, toast, queryClient]);
 
   const orders = (ordersData as any)?.orders || [];
   const totalPages = (ordersData as any)?.totalPages || 1;
@@ -263,9 +352,19 @@ export default function AdminOrders() {
       // Close modal first
       closeEmailConfirmationModal();
       
-      // Invalidate queries
+      // Reatividade: Invalidação abrangente conforme SOLUCAO_REATIVIDADE_IMPLEMENTADA.md
+      // 1. Invalidar cache específico da entidade
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders", variables.orderId] });
+      
+      // 2. Invalidar lista geral da entidade
       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      
+      // 3. Invalidar caches relacionados (ex: stats, dashboards)
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      
+      // 4. Se afeta outras entidades, invalidar também
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] }); // Pode afetar estatísticas do evento
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] }); // Pode afetar dados do cliente
       
       // Show toast
       toast({
@@ -312,9 +411,16 @@ export default function AdminOrders() {
       setBulkNewStatus("");
       setSendBulkEmails(false);
       
-      // Invalidate queries
+      // Reatividade: Invalidação abrangente conforme SOLUCAO_REATIVIDADE_IMPLEMENTADA.md
+      // 1. Invalidar lista geral da entidade
       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      
+      // 2. Invalidar caches relacionados (ex: stats, dashboards)
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      
+      // 3. Se afeta outras entidades, invalidar também
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] }); // Pode afetar estatísticas do evento
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] }); // Pode afetar dados do cliente
       
       // Show detailed success toast
       toast({
