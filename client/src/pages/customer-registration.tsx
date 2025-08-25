@@ -341,7 +341,7 @@ export default function CustomerRegistration() {
                 <div className="mb-3">
                   <h3 className="font-semibold text-lg text-neutral-800 flex items-center">
                     <MapPin className="w-5 h-5 mr-2" />
-                    Endereços
+                    Endereço
                   </h3>
                 </div>
                 
@@ -741,19 +741,7 @@ export default function CustomerRegistration() {
                     {/* Address Information - Simplified for desktop */}
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-xl text-gray-900">Endereços</h3>
-                        {fields.length < 2 && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={addAddress}
-                            className="flex items-center space-x-2"
-                          >
-                            <Plus className="w-4 h-4" />
-                            <span>Adicionar</span>
-                          </Button>
-                        )}
+                        <h3 className="font-semibold text-xl text-gray-900">Endereço</h3>
                       </div>
                       
                       {fields.map((field, index) => (
