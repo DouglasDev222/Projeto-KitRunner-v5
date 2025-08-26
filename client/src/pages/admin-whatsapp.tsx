@@ -518,9 +518,6 @@ export default function AdminWhatsApp() {
                           {connection?.message}
                         </p>
                       </div>
-                      <Button onClick={() => refetchConnection()}>
-                        Verificar Status
-                      </Button>
                     </div>
 
                     {connection?.qrCode && (
@@ -537,15 +534,64 @@ export default function AdminWhatsApp() {
                       </div>
                     )}
 
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                      <Button 
+                        onClick={() => refetchConnection()}
+                        disabled={connectionLoading}
+                        variant="outline"
+                      >
+                        {connectionLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                        📊 Verificar Status
+                      </Button>
+                      
+                      <Button 
+                        onClick={async () => {
+                          const adminToken = localStorage.getItem('adminToken');
+                          if (!adminToken) return;
+                          
+                          try {
+                            const response = await fetch("/api/admin/whatsapp/connect", {
+                              method: "POST",
+                              headers: { 
+                                "Authorization": `Bearer ${adminToken}`
+                              }
+                            });
+                            const data = await response.json();
+                            toast({
+                              title: data.success ? "Sucesso" : "Erro",
+                              description: data.message || "Conexão iniciada",
+                              variant: data.success ? "default" : "destructive"
+                            });
+                            // Atualizar status após conectar
+                            refetchConnection();
+                          } catch (error) {
+                            toast({
+                              title: "Erro",
+                              description: "Erro ao iniciar conexão",
+                              variant: "destructive"
+                            });
+                          }
+                        }}
+                        disabled={connection?.connected}
+                        variant={connection?.connected ? "secondary" : "default"}
+                      >
+                        🔗 Iniciar Conexão
+                      </Button>
+
                       <Button 
                         onClick={() => testConnectionMutation.mutate()}
                         disabled={testConnectionMutation.isPending}
                         variant="outline"
                       >
                         {testConnectionMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                        Testar Conexão
+                        🧪 Testar API
                       </Button>
+                    </div>
+
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p><strong>📊 Verificar Status:</strong> Consulta o status atual da conexão WhatsApp</p>
+                      <p><strong>🔗 Iniciar Conexão:</strong> Inicia nova conexão (se desconectado) e gera QR Code</p>
+                      <p><strong>🧪 Testar API:</strong> Testa se a API WhatsApp está funcionando</p>
                     </div>
                   </div>
                 )}

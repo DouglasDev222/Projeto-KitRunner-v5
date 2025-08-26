@@ -13,7 +13,7 @@ router.use(requireAdminAuth);
 
 /**
  * GET /api/admin/whatsapp/connection
- * Get WhatsApp connection status and QR code if needed
+ * Get current WhatsApp connection status only
  */
 router.get('/connection', async (req: Request, res: Response) => {
   try {
@@ -33,11 +33,10 @@ router.get('/connection', async (req: Request, res: Response) => {
           message: 'WhatsApp conectado com sucesso'
         });
       } else if (status === 'connecting') {
-        // Try to get QR code
+        // If connecting, also try to get QR code for display
         const qrResult = await whatsAppService.getQRCode();
         
         if (qrResult.success && qrResult.data?.qrcode) {
-          // Ensure the qrcode includes the data URI prefix if it doesn't already have it
           const qrCodeData = qrResult.data.qrcode.startsWith('data:') 
             ? qrResult.data.qrcode 
             : `data:image/png;base64,${qrResult.data.qrcode}`;
@@ -48,41 +47,17 @@ router.get('/connection', async (req: Request, res: Response) => {
             connectionStatus: 'connecting',
             qrCode: qrCodeData,
             qrCodeType: 'png',
-            message: 'Escaneie o QR Code para conectar o WhatsApp'
+            message: 'Conectando... Escaneie o QR Code se disponível'
           });
         } else {
           return res.json({
             success: true,
             connected: false,
             connectionStatus: 'connecting',
-            message: qrResult.message || 'Conectando ao WhatsApp...'
+            message: 'Conectando ao WhatsApp...'
           });
         }
       } else {
-        // Disconnected - try to initiate connection
-        const connectResult = await whatsAppService.connect();
-        
-        if (connectResult.success) {
-          // After connecting, try to get QR code
-          const qrResult = await whatsAppService.getQRCode();
-          
-          if (qrResult.success && qrResult.data?.qrcode) {
-            // Ensure the qrcode includes the data URI prefix if it doesn't already have it
-            const qrCodeData = qrResult.data.qrcode.startsWith('data:') 
-              ? qrResult.data.qrcode 
-              : `data:image/png;base64,${qrResult.data.qrcode}`;
-              
-            return res.json({
-              success: true,
-              connected: false,
-              connectionStatus: 'connecting',
-              qrCode: qrCodeData,
-              qrCodeType: 'png',
-              message: 'Escaneie o QR Code para conectar o WhatsApp'
-            });
-          }
-        }
-        
         return res.json({
           success: true,
           connected: false,
@@ -105,6 +80,70 @@ router.get('/connection', async (req: Request, res: Response) => {
       connected: false,
       error: 'Erro interno do servidor',
       message: 'Não foi possível conectar com a API do WhatsApp'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/whatsapp/connect
+ * Initiate WhatsApp connection and get QR code
+ */
+router.post('/connect', async (req: Request, res: Response) => {
+  try {
+    console.log('📱 Initiating WhatsApp connection and QR code generation...');
+    
+    // First check current status
+    const statusResult = await whatsAppService.getConnectionStatus();
+    
+    if (statusResult.success && statusResult.data?.status === 'connected') {
+      return res.json({
+        success: true,
+        connected: true,
+        message: 'WhatsApp já está conectado'
+      });
+    }
+    
+    // Initiate connection
+    const connectResult = await whatsAppService.connect();
+    
+    if (connectResult.success) {
+      // Try to get QR code after connecting
+      const qrResult = await whatsAppService.getQRCode();
+      
+      if (qrResult.success && qrResult.data?.qrcode) {
+        const qrCodeData = qrResult.data.qrcode.startsWith('data:') 
+          ? qrResult.data.qrcode 
+          : `data:image/png;base64,${qrResult.data.qrcode}`;
+          
+        return res.json({
+          success: true,
+          connected: false,
+          connectionStatus: 'connecting',
+          qrCode: qrCodeData,
+          qrCodeType: 'png',
+          message: 'Conexão iniciada. Escaneie o QR Code para conectar o WhatsApp'
+        });
+      } else {
+        return res.json({
+          success: true,
+          connected: false,
+          connectionStatus: 'connecting',
+          message: 'Conexão iniciada, aguarde o QR Code...'
+        });
+      }
+    } else {
+      return res.json({
+        success: false,
+        error: connectResult.error || 'Erro ao iniciar conexão',
+        message: 'Não foi possível iniciar a conexão WhatsApp'
+      });
+    }
+  } catch (error: any) {
+    console.error('❌ Error initiating WhatsApp connection:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor',
+      message: 'Não foi possível iniciar a conexão WhatsApp'
     });
   }
 });
