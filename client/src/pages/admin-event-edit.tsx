@@ -134,7 +134,7 @@ export default function AdminEventEdit() {
         donationAmount: data.donationAmount && data.donationAmount.trim() !== "" ? data.donationAmount : null,
         // Ensure description is null if empty
         donationDescription: data.donationDescription && data.donationDescription.trim() !== "" ? data.donationDescription : null,
-        description: data.description && data.description.trim() !== "" ? data.description : "Importante:\n\nPara utilizar nosso serviço, você precisa estar devidamente inscrito no evento através da página oficial da organização. Após a inscrição, basta solicitar a retirada conosco com seu número de inscrição e dados necessários.\n\nEste é um serviço independente, sem vínculo com a organização do evento. Nossa missão é facilitar sua experiência!",
+        description: data.description && data.description.trim() !== "" ? data.description : "**Importante:**\n\nPara utilizar nosso serviço, você precisa estar devidamente inscrito no evento através da página oficial da organização. Após a inscrição, basta solicitar a retirada conosco com seu número de inscrição e dados necessários.\n\n**Este é um serviço independente, sem vínculo com a organização do evento. Nossa missão é facilitar sua experiência!**",
       };
       
       const response = await apiRequest("PUT", `/api/admin/events/${id}`, finalData);
