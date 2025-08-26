@@ -9,8 +9,8 @@ interface MetaTagsProps {
 }
 
 export function MetaTags({ 
-  title = "KitRunner - Sistema de Pedidos de Kits Esportivos", 
-  description = "Sistema completo para pedidos de kits esportivos para eventos de corrida e maratona. Faça seu pedido online de forma rápida e segura.",
+  title = "KitRunner - Receba seu Kit em Casa", 
+  description = "Seu Kit de Corrida, Entregue com Agilidade e Praticidade!",
   image = "/logo.webp",
   url = window.location.href
 }: MetaTagsProps) {
