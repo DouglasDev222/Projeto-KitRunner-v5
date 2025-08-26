@@ -50,7 +50,7 @@ export default function AdminEventForm() {
       donationRequired: false,
       donationAmount: "",
       donationDescription: "",
-      description: "Importante:\n\nPara utilizar nosso serviço, você precisa estar devidamente inscrito no evento através da página oficial da organização. Após a inscrição, basta solicitar a retirada conosco com seu número de inscrição e dados necessários.\n\nEste é um serviço independente, sem vínculo com a organização do evento. Nossa missão é facilitar sua experiência!",
+      description: "**Importante:**\n\nPara utilizar nosso serviço, você precisa estar devidamente inscrito no evento através da página oficial da organização. Após a inscrição, basta solicitar a retirada conosco com seu número de inscrição e dados necessários.\n\n**Este é um serviço independente, sem vínculo com a organização do evento. Nossa missão é facilitar sua experiência!**",
       status: "ativo",
       stockEnabled: false,
       maxOrders: undefined,
