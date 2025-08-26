@@ -216,27 +216,25 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                               ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700 shadow-sm' 
                               : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                           }`}
-                          onClick={() => mobile && setSidebarOpen(false)}
+                          onClick={(e) => {
+                            if (hasChildren) {
+                              toggleMenu(item.label);
+                            }
+                            mobile && setSidebarOpen(false);
+                          }}
                         >
                           <Icon className={`${sidebarCollapsed ? 'w-5 h-5' : 'w-5 h-5 mr-3'} transition-all duration-300`} />
                           {(!sidebarCollapsed || mobile) && (
                             <>
                               <span className="flex-1 font-medium">{item.label}</span>
                               {hasChildren && (
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    toggleMenu(item.label);
-                                  }}
-                                  className="p-1 hover:bg-gray-200 rounded"
-                                >
+                                <div className="p-1">
                                   {isExpanded ? (
                                     <ChevronDown className="w-4 h-4" />
                                   ) : (
                                     <ChevronRight className="w-4 h-4" />
                                   )}
-                                </button>
+                                </div>
                               )}
                             </>
                           )}
