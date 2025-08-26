@@ -70,6 +70,13 @@ function Router() {
       <Route path="/admin" >
         {() => (
           <AdminRouteGuard>
+            <AdminOrders />
+          </AdminRouteGuard>
+        )}
+      </Route>
+      <Route path="/dashboard" >
+        {() => (
+          <AdminRouteGuard>
             <AdminDashboard />
           </AdminRouteGuard>
         )}
