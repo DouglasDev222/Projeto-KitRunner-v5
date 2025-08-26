@@ -73,80 +73,57 @@ interface StatsData {
 
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
-  const [timeFilter, setTimeFilter] = useState("month");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(undefined);
   const [showCustomPicker, setShowCustomPicker] = useState(false);
-
-  // Calcular datas baseadas no filtro
-  const getDateRange = () => {
+  
+  // Definir período padrão de 1 mês
+  const getDefaultDateRange = (): DateRange => {
     const now = new Date();
-    const endDate = now.toISOString().split('T')[0];
-    let startDate;
+    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return { from: monthAgo, to: now };
+  };
 
-    switch (timeFilter) {
-      case 'today':
-        startDate = endDate;
-        break;
-      case 'week':
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        startDate = weekAgo.toISOString().split('T')[0];
-        break;
-      case 'month':
-        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        startDate = monthAgo.toISOString().split('T')[0];
-        break;
-      case 'quarter':
-        const quarterAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-        startDate = quarterAgo.toISOString().split('T')[0];
-        break;
-      case 'year':
-        const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-        startDate = yearAgo.toISOString().split('T')[0];
-        break;
-      default:
-        const defaultMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        startDate = defaultMonthAgo.toISOString().split('T')[0];
-    }
+  const [customDateRange, setCustomDateRange] = useState<DateRange>(getDefaultDateRange());
 
+  const getDateRange = () => {
+    const startDate = customDateRange.from?.toISOString().split('T')[0] || '';
+    const endDate = customDateRange.to?.toISOString().split('T')[0] || '';
     return { startDate, endDate };
   };
 
   const { startDate, endDate } = getDateRange();
 
   const { data: stats = {}, isLoading: statsLoading } = useQuery<StatsData>({
-    queryKey: ["/api/admin/stats", { status: statusFilter, dateFilter: timeFilter, startDate, endDate }],
+    queryKey: ["/api/admin/stats", { status: "all", startDate, endDate }],
+    enabled: !!startDate && !!endDate,
   });
 
+  // Calcular período anterior para comparação
+  const getPreviousPeriod = () => {
+    if (!customDateRange.from || !customDateRange.to) return { startDate: '', endDate: '' };
+    
+    const currentFrom = customDateRange.from;
+    const currentTo = customDateRange.to;
+    const diffTime = currentTo.getTime() - currentFrom.getTime();
+    
+    const previousTo = new Date(currentFrom.getTime() - 1);
+    const previousFrom = new Date(previousTo.getTime() - diffTime);
+    
+    return {
+      startDate: previousFrom.toISOString().split('T')[0],
+      endDate: previousTo.toISOString().split('T')[0]
+    };
+  };
+
+  const previousPeriod = getPreviousPeriod();
+
   const { data: previousStats = {} } = useQuery<StatsData>({
-    queryKey: ["/api/admin/stats", { 
-      status: statusFilter, 
-      dateFilter: timeFilter === 'today' ? 'week' : 
-                  timeFilter === 'week' ? 'month' : 
-                  timeFilter === 'month' ? 'quarter' : 'year',
-      startDate: (() => {
-        const now = new Date();
-        switch (timeFilter) {
-          case 'today':
-            const weekAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-            return weekAgo.toISOString().split('T')[0];
-          case 'week':
-            const monthAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
-            return monthAgo.toISOString().split('T')[0];
-          case 'month':
-            const quarterAgo = new Date(now.getTime() - 120 * 24 * 60 * 60 * 1000);
-            return quarterAgo.toISOString().split('T')[0];
-          default:
-            const yearAgo = new Date(now.getTime() - 730 * 24 * 60 * 60 * 1000);
-            return yearAgo.toISOString().split('T')[0];
-        }
-      })(),
-      endDate: startDate
-    }],
+    queryKey: ["/api/admin/stats", { status: "all", startDate: previousPeriod.startDate, endDate: previousPeriod.endDate }],
+    enabled: !!previousPeriod.startDate && !!previousPeriod.endDate,
   });
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
-    queryKey: ["/api/admin/orders", { status: statusFilter, dateFilter: timeFilter, startDate, endDate }],
+    queryKey: ["/api/admin/orders", { status: "all", startDate, endDate }],
+    enabled: !!startDate && !!endDate,
   });
 
   const { data: events = [], isLoading: eventsLoading } = useQuery<Event[]>({
@@ -225,43 +202,15 @@ export default function AdminDashboard() {
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-500" />
-            <Select value={timeFilter} onValueChange={setTimeFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Período" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Hoje</SelectItem>
-                <SelectItem value="week">Última Semana</SelectItem>
-                <SelectItem value="month">Último Mês</SelectItem>
-                <SelectItem value="quarter">Último Trimestre</SelectItem>
-                <SelectItem value="year">Último Ano</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos Status</SelectItem>
-                <SelectItem value="confirmed">Confirmados</SelectItem>
-                <SelectItem value="awaiting_payment">Aguardando Pagamento</SelectItem>
-                <SelectItem value="in_transit">Em Trânsito</SelectItem>
-                <SelectItem value="delivered">Entregues</SelectItem>
-                <SelectItem value="cancelled">Cancelados</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           <Popover open={showCustomPicker} onOpenChange={setShowCustomPicker}>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" className="min-w-[200px] justify-start">
                 <CalendarIcon className="w-4 h-4 mr-2" />
-                Período Personalizado
+                {customDateRange.from && customDateRange.to ? (
+                  `${customDateRange.from.toLocaleDateString('pt-BR')} - ${customDateRange.to.toLocaleDateString('pt-BR')}`
+                ) : (
+                  'Selecionar Período'
+                )}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
@@ -269,9 +218,11 @@ export default function AdminDashboard() {
                 mode="range"
                 selected={customDateRange}
                 onSelect={(range) => {
-                  setCustomDateRange(range);
-                  if (range?.from && range?.to) {
-                    setShowCustomPicker(false);
+                  if (range) {
+                    setCustomDateRange(range);
+                    if (range?.from && range?.to) {
+                      setShowCustomPicker(false);
+                    }
                   }
                 }}
                 numberOfMonths={2}
