@@ -86,8 +86,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       icon: Gift, 
       label: "Promoções", 
       children: [
-        { icon: Gift, label: "Cupons", href: "/admin/coupons" },
-        { icon: CreditCard, label: "Desconto", href: "/admin/discounts" }
+        { icon: Gift, label: "Cupons", href: "/admin/coupons" }
       ]
     },
     { 
@@ -96,8 +95,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       children: [
         { icon: Smartphone, label: "WhatsApp", href: "/admin/whatsapp" },
         { icon: Mail, label: "Logs de Email", href: "/admin/email-logs" },
-        { icon: Shield, label: "Teste Email", href: "/admin/email-test" },
-        { icon: Bell, label: "Notificações", href: "/admin/notifications" }
+        { icon: Shield, label: "Teste Email", href: "/admin/email-test" }
       ]
     },
     { 
@@ -106,7 +104,6 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       children: [
         { icon: MapPin, label: "Zonas CEP", href: "/admin/cep-zones" },
         { icon: FileText, label: "Políticas", href: "/admin/policies" },
-        { icon: Database, label: "Sistema", href: "/admin/system" },
         { icon: UserCog, label: "Usuários", href: "/admin/users", superAdminOnly: true }
       ]
     }
@@ -164,7 +161,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             {(!sidebarCollapsed || mobile) && (
-              <h2 className="text-xl font-bold text-gray-800">Admin</h2>
+              <h2 className="text-xl font-bold text-gray-800">KitRunner</h2>
             )}
             {!mobile && (
               <Button
