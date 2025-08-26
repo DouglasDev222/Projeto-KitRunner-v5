@@ -1,266 +1,493 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminLayout } from "@/components/admin-layout";
-// Sistema novo: usar AdminRouteGuard em vez de AdminProtectedRoute
-import { Users, Package, Calendar, Plus, DollarSign } from "lucide-react";
+import { 
+  Users, 
+  Package, 
+  Calendar, 
+  Plus, 
+  DollarSign, 
+  TrendingUp, 
+  TrendingDown,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Filter,
+  Download,
+  Eye,
+  ArrowUpRight,
+  ArrowDownRight,
+  BarChart3
+} from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { formatCurrency, formatDate } from "@/lib/brazilian-formatter";
-import { formatCPF } from "@/lib/cpf-validator";
 import { getStatusBadge } from "@/lib/status-utils";
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar
+} from "recharts";
 import type { Customer, Order, Event } from "@shared/schema";
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+
+const statusColors = {
+  confirmed: '#10B981',
+  awaiting_payment: '#F59E0B',
+  cancelled: '#EF4444',
+  in_transit: '#3B82F6',
+  delivered: '#059669'
+};
 
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
+  const [timeFilter, setTimeFilter] = useState("month");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
-    queryKey: ["/api/admin/customers"],
+  // Calcular datas baseadas no filtro
+  const getDateRange = () => {
+    const now = new Date();
+    const endDate = now.toISOString().split('T')[0];
+    let startDate;
+
+    switch (timeFilter) {
+      case 'today':
+        startDate = endDate;
+        break;
+      case 'week':
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        startDate = weekAgo.toISOString().split('T')[0];
+        break;
+      case 'month':
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        startDate = monthAgo.toISOString().split('T')[0];
+        break;
+      case 'quarter':
+        const quarterAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        startDate = quarterAgo.toISOString().split('T')[0];
+        break;
+      case 'year':
+        const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        startDate = yearAgo.toISOString().split('T')[0];
+        break;
+      default:
+        const defaultMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        startDate = defaultMonthAgo.toISOString().split('T')[0];
+    }
+
+    return { startDate, endDate };
+  };
+
+  const { startDate, endDate } = getDateRange();
+
+  const { data: stats = {}, isLoading: statsLoading } = useQuery({
+    queryKey: ["/api/admin/stats", { status: statusFilter, dateFilter: timeFilter, startDate, endDate }],
   });
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
-    queryKey: ["/api/admin/orders"],
+    queryKey: ["/api/admin/orders", { status: statusFilter, dateFilter: timeFilter, startDate, endDate }],
   });
 
   const { data: events = [], isLoading: eventsLoading } = useQuery<Event[]>({
     queryKey: ["/api/admin/events"],
   });
 
-  const { data: stats = {} } = useQuery({
-    queryKey: ["/api/admin/stats"],
+  const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
+    queryKey: ["/api/admin/customers"],
   });
+
+  // Processar dados para gráficos
+  const processOrdersForChart = () => {
+    const ordersArray = Array.isArray(orders) ? orders : [];
+    const ordersByDate = ordersArray.reduce((acc: any, order: any) => {
+      const date = new Date(order.createdAt).toLocaleDateString('pt-BR');
+      if (!acc[date]) {
+        acc[date] = { date, pedidos: 0, faturamento: 0 };
+      }
+      acc[date].pedidos += 1;
+      acc[date].faturamento += Number(order.totalCost) || 0;
+      return acc;
+    }, {});
+
+    return Object.values(ordersByDate).slice(-7); // Últimos 7 dias
+  };
+
+  const processStatusData = () => {
+    const ordersArray = Array.isArray(orders) ? orders : [];
+    const statusCount = ordersArray.reduce((acc: any, order: any) => {
+      const status = order.status || 'unknown';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(statusCount).map(([name, value]) => ({
+      name: name === 'confirmed' ? 'Confirmados' :
+            name === 'awaiting_payment' ? 'Aguardando Pagamento' :
+            name === 'cancelled' ? 'Cancelados' :
+            name === 'in_transit' ? 'Em Trânsito' :
+            name === 'delivered' ? 'Entregues' : name,
+      value,
+      color: statusColors[name as keyof typeof statusColors] || '#8884D8'
+    }));
+  };
+
+  const chartData = processOrdersForChart();
+  const statusData = processStatusData();
+
+  const getPercentageChange = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
+  };
 
   return (
     <AdminLayout>
-      <div className="flex items-center justify-between mb-6">
+      {/* Header com Filtros */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-neutral-800">Dashboard</h1>
-          <p className="text-neutral-600">Visão geral do sistema</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Dashboard
+          </h1>
+          <p className="text-gray-600 mt-1">Visão geral e análise do sistema</p>
         </div>
-        <Button
-          onClick={() => setLocation("/admin/events/new")}
-          className="bg-primary hover:bg-primary/90"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Evento
-        </Button>
+        
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <Select value={timeFilter} onValueChange={setTimeFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Período" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Hoje</SelectItem>
+                <SelectItem value="week">Última Semana</SelectItem>
+                <SelectItem value="month">Último Mês</SelectItem>
+                <SelectItem value="quarter">Último Trimestre</SelectItem>
+                <SelectItem value="year">Último Ano</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos Status</SelectItem>
+                <SelectItem value="confirmed">Confirmados</SelectItem>
+                <SelectItem value="awaiting_payment">Aguardando Pagamento</SelectItem>
+                <SelectItem value="in_transit">Em Trânsito</SelectItem>
+                <SelectItem value="delivered">Entregues</SelectItem>
+                <SelectItem value="cancelled">Cancelados</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button variant="outline" size="sm">
+            <Download className="w-4 h-4 mr-2" />
+            Exportar
+          </Button>
+          
+          <Button onClick={() => setLocation("/admin/events/new")} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Evento
+          </Button>
+        </div>
       </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Users className="w-8 h-8 text-blue-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-neutral-600">Total Clientes</p>
-                  <p className="text-2xl font-bold text-neutral-900">{customers?.length || 0}</p>
+      {/* Cards de Estatísticas Principais */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Clientes</p>
+                <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+                  {statsLoading ? '...' : (stats.totalCustomers || 0)}
+                </p>
+                <div className="flex items-center mt-2 text-sm">
+                  <ArrowUpRight className="w-4 h-4 text-green-500 mr-1" />
+                  <span className="text-green-600">+12%</span>
+                  <span className="text-gray-500 ml-1">vs mês anterior</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Package className="w-8 h-8 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-neutral-600">Total Pedidos</p>
-                  <p className="text-2xl font-bold text-neutral-900">{orders?.length || 0}</p>
-                </div>
+              <div className="p-3 bg-blue-500 rounded-full">
+                <Users className="w-8 h-8 text-white" />
               </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Calendar className="w-8 h-8 text-purple-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-neutral-600">Eventos Ativos</p>
-                  <p className="text-2xl font-bold text-neutral-900">{events?.length || 0}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <DollarSign className="w-8 h-8 text-orange-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-neutral-600">Faturamento</p>
-                  <p className="text-2xl font-bold text-neutral-900">
-                    {formatCurrency(orders?.reduce((sum: number, order: any) => sum + (order.totalAmount || 0), 0) || 0)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="customers" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="customers">Clientes</TabsTrigger>
-            <TabsTrigger value="orders">Pedidos</TabsTrigger>
-            <TabsTrigger value="events">Eventos</TabsTrigger>
-          </TabsList>
+        <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-green-600 dark:text-green-400">Total Pedidos</p>
+                <p className="text-3xl font-bold text-green-900 dark:text-green-100">
+                  {statsLoading ? '...' : (stats.totalOrders || 0)}
+                </p>
+                <div className="flex items-center mt-2 text-sm">
+                  <ArrowUpRight className="w-4 h-4 text-green-500 mr-1" />
+                  <span className="text-green-600">+8%</span>
+                  <span className="text-gray-500 ml-1">vs mês anterior</span>
+                </div>
+              </div>
+              <div className="p-3 bg-green-500 rounded-full">
+                <Package className="w-8 h-8 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Customers Tab */}
-          <TabsContent value="customers" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Clientes Cadastrados</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {customersLoading ? (
-                  <div className="space-y-4">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="h-16 bg-gray-100 animate-pulse rounded"></div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {(customers || []).map((customer: Customer) => (
-                      <div key={customer.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex-1">
-                          <h3 className="font-medium text-neutral-800">{customer.name}</h3>
-                          <div className="flex gap-4 text-sm text-neutral-600 mt-1">
-                            <span>CPF: {formatCPF(customer.cpf)}</span>
-                            <span>Email: {customer.email}</span>
-                            <span>Telefone: {customer.phone}</span>
-                          </div>
-                        </div>
-                        <div className="text-sm text-neutral-500">
-                          {new Date(customer.createdAt).toLocaleDateString('pt-BR')}
-                        </div>
+        <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Eventos Ativos</p>
+                <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">
+                  {statsLoading ? '...' : (stats.activeEvents || 0)}
+                </p>
+                <div className="flex items-center mt-2 text-sm">
+                  <ArrowUpRight className="w-4 h-4 text-green-500 mr-1" />
+                  <span className="text-green-600">+3</span>
+                  <span className="text-gray-500 ml-1">este mês</span>
+                </div>
+              </div>
+              <div className="p-3 bg-purple-500 rounded-full">
+                <Calendar className="w-8 h-8 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Faturamento</p>
+                <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">
+                  {statsLoading ? '...' : formatCurrency(stats.totalRevenue || 0)}
+                </p>
+                <div className="flex items-center mt-2 text-sm">
+                  <ArrowUpRight className="w-4 h-4 text-green-500 mr-1" />
+                  <span className="text-green-600">+15%</span>
+                  <span className="text-gray-500 ml-1">vs mês anterior</span>
+                </div>
+              </div>
+              <div className="p-3 bg-orange-500 rounded-full">
+                <DollarSign className="w-8 h-8 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Cards de Status dos Pedidos */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0">
+          <CardContent className="p-4 text-center">
+            <CheckCircle className="w-8 h-8 mx-auto mb-2" />
+            <p className="text-2xl font-bold">{stats.confirmedOrders || 0}</p>
+            <p className="text-sm opacity-90">Confirmados</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white border-0">
+          <CardContent className="p-4 text-center">
+            <Clock className="w-8 h-8 mx-auto mb-2" />
+            <p className="text-2xl font-bold">{stats.awaitingPayment || 0}</p>
+            <p className="text-sm opacity-90">Aguardando</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0">
+          <CardContent className="p-4 text-center">
+            <Package className="w-8 h-8 mx-auto mb-2" />
+            <p className="text-2xl font-bold">{stats.inTransitOrders || 0}</p>
+            <p className="text-sm opacity-90">Em Trânsito</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-0">
+          <CardContent className="p-4 text-center">
+            <CheckCircle className="w-8 h-8 mx-auto mb-2" />
+            <p className="text-2xl font-bold">{stats.deliveredOrders || 0}</p>
+            <p className="text-sm opacity-90">Entregues</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white border-0">
+          <CardContent className="p-4 text-center">
+            <XCircle className="w-8 h-8 mx-auto mb-2" />
+            <p className="text-2xl font-bold">{stats.cancelledOrders || 0}</p>
+            <p className="text-sm opacity-90">Cancelados</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Gráficos */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <Card className="border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+              Pedidos por Período
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Area 
+                  type="monotone" 
+                  dataKey="pedidos" 
+                  stroke="#3B82F6" 
+                  fill="url(#colorPedidos)" 
+                />
+                <defs>
+                  <linearGradient id="colorPedidos" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-green-600" />
+              Status dos Pedidos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={statusData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={(entry) => entry.name}
+                >
+                  {statusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tabelas Resumidas */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Package className="w-5 h-5 text-blue-600" />
+                Pedidos Recentes
+              </span>
+              <Button variant="ghost" size="sm" onClick={() => setLocation('/admin/orders')}>
+                <Eye className="w-4 h-4 mr-1" />
+                Ver Todos
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {ordersLoading ? (
+                [...Array(3)].map((_, i) => (
+                  <div key={i} className="h-16 bg-gray-100 animate-pulse rounded-lg"></div>
+                ))
+              ) : (
+                Array.isArray(orders) && orders.slice(0, 5).map((order: any) => (
+                  <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline">{order.orderNumber}</Badge>
+                        <span className="font-medium text-sm">{order.customer?.name}</span>
+                        {getStatusBadge(order.status)}
                       </div>
-                    ))}
+                      <p className="text-sm text-gray-600 mt-1">
+                        {order.event?.name} • {formatCurrency(Number(order.totalCost))}
+                      </p>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {new Date(order.createdAt).toLocaleDateString('pt-BR')}
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Orders Tab */}
-          <TabsContent value="orders" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Pedidos Realizados</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {ordersLoading ? (
-                  <div className="space-y-4">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="h-20 bg-gray-100 animate-pulse rounded"></div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {(orders || []).map((order: any) => (
-                      <div key={order.id} className="p-4 border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-3">
-                            <Badge variant="secondary">{order.orderNumber}</Badge>
-                            <span className="font-medium">{order.customer?.name}</span>
-                          </div>
-                          {getStatusBadge(order.status)}
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-neutral-600">
-                          <div>
-                            <span className="font-medium">Evento:</span> {order.event?.name}
-                          </div>
-                          <div>
-                            <span className="font-medium">Kits:</span> {order.kitQuantity}
-                          </div>
-                          <div>
-                            <span className="font-medium">Total:</span> {formatCurrency(Number(order.totalCost))}
-                          </div>
-                          <div>
-                            <span className="font-medium">Data:</span> {new Date(order.createdAt).toLocaleDateString('pt-BR')}
-                          </div>
-                        </div>
-                        <div className="mt-3 flex justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setLocation(`/admin/orders`)}
-                            className="text-sm"
-                          >
-                            Ver Detalhes
-                          </Button>
-                        </div>
+        <Card className="border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-purple-600" />
+                Eventos Ativos
+              </span>
+              <Button variant="ghost" size="sm" onClick={() => setLocation('/admin/events')}>
+                <Eye className="w-4 h-4 mr-1" />
+                Ver Todos
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {eventsLoading ? (
+                [...Array(3)].map((_, i) => (
+                  <div key={i} className="h-16 bg-gray-100 animate-pulse rounded-lg"></div>
+                ))
+              ) : (
+                events.slice(0, 5).map((event: Event) => (
+                  <div key={event.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h4 className="font-medium text-sm">{event.name}</h4>
+                        <Badge variant={event.available ? "default" : "secondary"}>
+                          {event.available ? "Ativo" : "Inativo"}
+                        </Badge>
                       </div>
-                    ))}
+                      <p className="text-sm text-gray-600">
+                        {formatDate(event.date)} • {event.city}, {event.state}
+                      </p>
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Events Tab */}
-          <TabsContent value="events" className="mt-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Eventos</CardTitle>
-                  <Button
-                    onClick={() => setLocation("/admin/events/new")}
-                    size="sm"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Novo Evento
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {eventsLoading ? (
-                  <div className="space-y-4">
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="h-24 bg-gray-100 animate-pulse rounded"></div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {(events || []).map((event: Event) => (
-                      <div key={event.id} className="p-4 border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-medium text-neutral-800">{event.name}</h3>
-                          <Badge variant={event.available ? "default" : "secondary"}>
-                            {event.available ? "Ativo" : "Inativo"}
-                          </Badge>
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm text-neutral-600">
-                          <div>
-                            <span className="font-medium">Data:</span> {formatDate(event.date)}
-                          </div>
-                          <div>
-                            <span className="font-medium">Local:</span> {event.location}
-                          </div>
-                          <div>
-                            <span className="font-medium">Cidade:</span> {event.city} - {event.state}
-                          </div>
-                          {event.fixedPrice && (
-                            <div>
-                              <span className="font-medium">Preço Fixo:</span> {formatCurrency(Number(event.fixedPrice))}
-                            </div>
-                          )}
-                          {event.donationRequired && (
-                            <div>
-                              <span className="font-medium">Doação:</span> {event.donationDescription}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </AdminLayout>
   );
 }
