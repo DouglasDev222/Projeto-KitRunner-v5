@@ -32,6 +32,7 @@ const eventSchema = z.object({
   donationRequired: z.boolean().default(false),
   donationAmount: z.string().optional(),
   donationDescription: z.string().optional(),
+  description: z.string().default("Importante:\n\nPara utilizar nosso serviço, você precisa estar devidamente inscrito no evento através da página oficial da organização. Após a inscrição, basta solicitar a retirada conosco com seu número de inscrição e dados necessários.\n\nEste é um serviço independente, sem vínculo com a organização do evento. Nossa missão é facilitar sua experiência!"),
   available: z.boolean().default(true),
   status: z.enum(["ativo", "inativo", "fechado_pedidos"]).default("ativo"),
   stockEnabled: z.boolean().default(false),
@@ -84,6 +85,7 @@ export default function AdminEventEdit() {
       donationRequired: false,
       donationAmount: "",
       donationDescription: "",
+      description: "Importante:\n\nPara utilizar nosso serviço, você precisa estar devidamente inscrito no evento através da página oficial da organização. Após a inscrição, basta solicitar a retirada conosco com seu número de inscrição e dados necessários.\n\nEste é um serviço independente, sem vínculo com a organização do evento. Nossa missão é facilitar sua experiência!",
       available: true,
       status: "ativo",
       stockEnabled: false,
@@ -111,6 +113,7 @@ export default function AdminEventEdit() {
         donationRequired: event.donationRequired || false,
         donationAmount: event.donationAmount || "",
         donationDescription: event.donationDescription || "",
+        description: event.description || "Importante:\n\nPara utilizar nosso serviço, você precisa estar devidamente inscrito no evento através da página oficial da organização. Após a inscrição, basta solicitar a retirada conosco com seu número de inscrição e dados necessários.\n\nEste é um serviço independente, sem vínculo com a organização do evento. Nossa missão é facilitar sua experiência!",
         available: event.available,
         status: event.status || "ativo",
         stockEnabled: event.stockEnabled || false,
@@ -131,6 +134,7 @@ export default function AdminEventEdit() {
         donationAmount: data.donationAmount && data.donationAmount.trim() !== "" ? data.donationAmount : null,
         // Ensure description is null if empty
         donationDescription: data.donationDescription && data.donationDescription.trim() !== "" ? data.donationDescription : null,
+        description: data.description && data.description.trim() !== "" ? data.description : "Importante:\n\nPara utilizar nosso serviço, você precisa estar devidamente inscrito no evento através da página oficial da organização. Após a inscrição, basta solicitar a retirada conosco com seu número de inscrição e dados necessários.\n\nEste é um serviço independente, sem vínculo com a organização do evento. Nossa missão é facilitar sua experiência!",
       };
       
       const response = await apiRequest("PUT", `/api/admin/events/${id}`, finalData);
@@ -326,6 +330,27 @@ export default function AdminEventEdit() {
                       </FormControl>
                       <FormDescription>
                         CEP onde os kits serão retirados (somente números)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descrição do Evento</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Descrição que será exibida na página do evento..."
+                          className="min-h-[120px] text-blue-800"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Texto que será exibido na seção de informações importantes do evento. Use **texto** para negrito.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

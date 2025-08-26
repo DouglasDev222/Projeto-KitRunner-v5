@@ -16,6 +16,7 @@ export const events = pgTable("events", {
   donationRequired: boolean("donation_required").default(false), // Se requer doação
   donationAmount: decimal("donation_amount", { precision: 10, scale: 2 }), // Valor da doação se obrigatória
   donationDescription: text("donation_description"), // Ex: "1 kg de alimento"
+  description: text("description").default("Importante:\n\nPara utilizar nosso serviço, você precisa estar devidamente inscrito no evento através da página oficial da organização. Após a inscrição, basta solicitar a retirada conosco com seu número de inscrição e dados necessários.\n\nEste é um serviço independente, sem vínculo com a organização do evento. Nossa missão é facilitar sua experiência!"), // Descrição do evento
   
   // Novo sistema de status (substitui available)
   status: varchar("status", { length: 20 }).notNull().default("ativo"), // 'ativo', 'inativo', 'fechado_pedidos'
@@ -475,6 +476,11 @@ export const adminEventCreationSchema = z.object({
   donationRequired: z.boolean().default(false),
   donationAmount: z.string().optional(),
   donationDescription: z.string().optional(),
+  description: z.string().default("Importante:\n\nPara utilizar nosso serviço, você precisa estar devidamente inscrito no evento através da página oficial da organização. Após a inscrição, basta solicitar a retirada conosco com seu número de inscrição e dados necessários.\n\nEste é um serviço independente, sem vínculo com a organização do evento. Nossa missão é facilitar sua experiência!"),
+  status: z.enum(["ativo", "inativo", "fechado_pedidos"]).default("ativo"),
+  stockEnabled: z.boolean().default(false),
+  maxOrders: z.number().optional(),
+  currentOrders: z.number().default(0),
 }).refine((data) => {
   // If pricing type is "fixed", fixedPrice must be provided and be a valid number > 0
   if (data.pricingType === "fixed") {

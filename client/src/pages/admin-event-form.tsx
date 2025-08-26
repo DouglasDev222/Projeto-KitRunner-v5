@@ -50,6 +50,7 @@ export default function AdminEventForm() {
       donationRequired: false,
       donationAmount: "",
       donationDescription: "",
+      description: "Importante:\n\nPara utilizar nosso serviço, você precisa estar devidamente inscrito no evento através da página oficial da organização. Após a inscrição, basta solicitar a retirada conosco com seu número de inscrição e dados necessários.\n\nEste é um serviço independente, sem vínculo com a organização do evento. Nossa missão é facilitar sua experiência!",
       status: "ativo",
       stockEnabled: false,
       maxOrders: undefined,
@@ -239,6 +240,27 @@ export default function AdminEventForm() {
                         </FormControl>
                         <FormDescription>
                           CEP onde os kits serão retirados (somente números)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descrição do Evento</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Descrição que será exibida na página do evento..."
+                            className="min-h-[120px] text-blue-800"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Texto que será exibido na seção de informações importantes do evento. Use **texto** para negrito.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
