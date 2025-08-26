@@ -172,7 +172,31 @@ export default function AdminWhatsApp() {
     },
     onSuccess: (data) => {
       toast({
-        title: data.success ? "Sucesso" : "Erro",
+        title: data.success ? "Teste de Conexão" : "Erro",
+        description: data.message,
+        variant: data.success ? "default" : "destructive"
+      });
+    }
+  });
+
+  const pingAPIMutation = useMutation({
+    mutationFn: async () => {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        throw new Error('Token de administrador não encontrado');
+      }
+      
+      const response = await fetch("/api/admin/whatsapp/ping", { 
+        method: "GET",
+        headers: { 
+          "Authorization": `Bearer ${adminToken}`
+        }
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.success ? "API Funcionando" : "API com Problema",
         description: data.message,
         variant: data.success ? "default" : "destructive"
       });
@@ -536,7 +560,16 @@ export default function AdminWhatsApp() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                       <Button 
-                        onClick={() => refetchConnection()}
+                        onClick={async () => {
+                          await refetchConnection();
+                          // Mostrar notificação após verificar status
+                          const currentStatus = connection?.connected ? "conectado" : "desconectado";
+                          toast({
+                            title: "Status Verificado",
+                            description: `WhatsApp está ${currentStatus}`,
+                            variant: connection?.connected ? "default" : "destructive"
+                          });
+                        }}
                         disabled={connectionLoading}
                         variant="outline"
                       >
@@ -579,19 +612,19 @@ export default function AdminWhatsApp() {
                       </Button>
 
                       <Button 
-                        onClick={() => testConnectionMutation.mutate()}
-                        disabled={testConnectionMutation.isPending}
+                        onClick={() => pingAPIMutation.mutate()}
+                        disabled={pingAPIMutation.isPending}
                         variant="outline"
                       >
-                        {testConnectionMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                        {pingAPIMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                         🧪 Testar API
                       </Button>
                     </div>
 
                     <div className="text-xs text-muted-foreground space-y-1">
-                      <p><strong>📊 Verificar Status:</strong> Consulta o status atual da conexão WhatsApp</p>
+                      <p><strong>📊 Verificar Status:</strong> Atualiza o status atual da conexão WhatsApp</p>
                       <p><strong>🔗 Iniciar Conexão:</strong> Inicia nova conexão (se desconectado) e gera QR Code</p>
-                      <p><strong>🧪 Testar API:</strong> Testa se a API WhatsApp está funcionando</p>
+                      <p><strong>🧪 Testar API:</strong> Verifica se a API WhatsApp está respondendo</p>
                     </div>
                   </div>
                 )}

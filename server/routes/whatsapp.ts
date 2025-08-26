@@ -172,6 +172,30 @@ router.post('/test', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/admin/whatsapp/ping
+ * Simple API health check - just test if API is responding
+ */
+router.get('/ping', async (req: Request, res: Response) => {
+  try {
+    console.log('📱 Pinging WhatsApp API...');
+    
+    // Simple ping test - just check if API responds
+    const pingResult = await whatsAppService.pingAPI();
+    
+    res.json({
+      success: pingResult.success,
+      message: pingResult.success ? 'WhatsApp API está funcionando' : 'WhatsApp API não está respondendo'
+    });
+  } catch (error: any) {
+    console.error('❌ Error pinging WhatsApp API:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'WhatsApp API não está respondendo'
+    });
+  }
+});
+
+/**
  * GET /api/admin/whatsapp/template
  * Get active WhatsApp template
  */

@@ -514,6 +514,38 @@ Qualquer dúvida, estamos à disposição.`;
       return { success: false, message: error.message };
     }
   }
+
+  /**
+   * Simple ping to check if WhatsApp API is responding
+   */
+  async pingAPI(): Promise<{ success: boolean; message?: string }> {
+    try {
+      console.log('📱 Pinging WhatsApp API...');
+      
+      // Just try to reach the API base URL to see if it's responding
+      const response = await axios.get(
+        `${this.apiUrl}/api/status`,
+        {
+          headers: {
+            'Authorization': `Bearer ${this.apiToken}`
+          },
+          timeout: 10000
+        }
+      );
+
+      // If we get any response (even error), the API is working
+      return { 
+        success: true, 
+        message: 'WhatsApp API está funcionando' 
+      };
+    } catch (error: any) {
+      console.error('❌ WhatsApp API ping failed:', error.message);
+      return { 
+        success: false, 
+        message: 'WhatsApp API não está respondendo' 
+      };
+    }
+  }
 }
 
 export default WhatsAppService;
