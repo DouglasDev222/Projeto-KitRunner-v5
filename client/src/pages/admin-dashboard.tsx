@@ -240,15 +240,26 @@ export default function AdminDashboard() {
                 onSelect={(range) => {
                   if (range) {
                     setCustomDateRange(range);
-                    // Só fechar se ambas as datas estiverem selecionadas
-                    if (range.from && range.to) {
-                      setShowCustomPicker(false);
-                    }
+                    // Não fechar automaticamente - deixar o usuário escolher quando fechar
                   }
                 }}
                 numberOfMonths={2}
                 disabled={(date) => date > new Date()} // Não permitir datas futuras
               />
+              {customDateRange.from && customDateRange.to && (
+                <div className="p-3 border-t flex justify-between items-center">
+                  <span className="text-sm text-gray-600">
+                    {customDateRange.from.toLocaleDateString('pt-BR')} - {customDateRange.to.toLocaleDateString('pt-BR')}
+                  </span>
+                  <Button 
+                    size="sm" 
+                    onClick={() => setShowCustomPicker(false)}
+                    className="ml-2"
+                  >
+                    Aplicar
+                  </Button>
+                </div>
+              )}
             </PopoverContent>
           </Popover>
 
