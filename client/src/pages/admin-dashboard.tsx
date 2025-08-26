@@ -3,11 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import type { DateRange } from "react-day-picker";
+import { CalendarIcon } from "lucide-react";
 import { AdminLayout } from "@/components/admin-layout";
 import { 
   Users, 
   Package, 
-  Calendar, 
+  Calendar as CalendarIcon2, 
   Plus, 
   DollarSign, 
   TrendingUp, 
@@ -55,10 +59,24 @@ const statusColors = {
   delivered: '#059669'
 };
 
+interface StatsData {
+  totalCustomers?: number;
+  totalOrders?: number;
+  activeEvents?: number;
+  totalRevenue?: number;
+  confirmedOrders?: number;
+  awaitingPayment?: number;
+  cancelledOrders?: number;
+  inTransitOrders?: number;
+  deliveredOrders?: number;
+}
+
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
   const [timeFilter, setTimeFilter] = useState("month");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(undefined);
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
 
   // Calcular datas baseadas no filtro
   const getDateRange = () => {
@@ -96,8 +114,35 @@ export default function AdminDashboard() {
 
   const { startDate, endDate } = getDateRange();
 
-  const { data: stats = {}, isLoading: statsLoading } = useQuery({
+  const { data: stats = {}, isLoading: statsLoading } = useQuery<StatsData>({
     queryKey: ["/api/admin/stats", { status: statusFilter, dateFilter: timeFilter, startDate, endDate }],
+  });
+
+  const { data: previousStats = {} } = useQuery<StatsData>({
+    queryKey: ["/api/admin/stats", { 
+      status: statusFilter, 
+      dateFilter: timeFilter === 'today' ? 'week' : 
+                  timeFilter === 'week' ? 'month' : 
+                  timeFilter === 'month' ? 'quarter' : 'year',
+      startDate: (() => {
+        const now = new Date();
+        switch (timeFilter) {
+          case 'today':
+            const weekAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+            return weekAgo.toISOString().split('T')[0];
+          case 'week':
+            const monthAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+            return monthAgo.toISOString().split('T')[0];
+          case 'month':
+            const quarterAgo = new Date(now.getTime() - 120 * 24 * 60 * 60 * 1000);
+            return quarterAgo.toISOString().split('T')[0];
+          default:
+            const yearAgo = new Date(now.getTime() - 730 * 24 * 60 * 60 * 1000);
+            return yearAgo.toISOString().split('T')[0];
+        }
+      })(),
+      endDate: startDate
+    }],
   });
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
@@ -125,7 +170,9 @@ export default function AdminDashboard() {
       return acc;
     }, {});
 
-    return Object.values(ordersByDate).slice(-7); // Últimos 7 dias
+    return Object.values(ordersByDate)
+      .sort((a: any, b: any) => new Date(a.date.split('/').reverse().join('-')).getTime() - new Date(b.date.split('/').reverse().join('-')).getTime())
+      .slice(-7); // Últimos 7 dias ordenados corretamente
   };
 
   const processStatusData = () => {
@@ -153,6 +200,17 @@ export default function AdminDashboard() {
   const getPercentageChange = (current: number, previous: number) => {
     if (previous === 0) return current > 0 ? 100 : 0;
     return ((current - previous) / previous) * 100;
+  };
+
+  const formatPercentageChange = (current: number, previous: number) => {
+    const change = getPercentageChange(current, previous);
+    const isPositive = change >= 0;
+    return {
+      value: Math.abs(change).toFixed(1),
+      isPositive,
+      icon: isPositive ? ArrowUpRight : ArrowDownRight,
+      color: isPositive ? 'text-green-600' : 'text-red-600'
+    };
   };
 
   return (
@@ -199,7 +257,29 @@ export default function AdminDashboard() {
             </Select>
           </div>
 
-          <Button variant="outline" size="sm">
+          <Popover open={showCustomPicker} onOpenChange={setShowCustomPicker}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm">
+                <CalendarIcon className="w-4 h-4 mr-2" />
+                Período Personalizado
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="range"
+                selected={customDateRange}
+                onSelect={(range) => {
+                  setCustomDateRange(range);
+                  if (range?.from && range?.to) {
+                    setShowCustomPicker(false);
+                  }
+                }}
+                numberOfMonths={2}
+              />
+            </PopoverContent>
+          </Popover>
+
+          <Button variant="outline" size="sm" onClick={() => setLocation('/admin/reports')}>
             <Download className="w-4 h-4 mr-2" />
             Exportar
           </Button>
@@ -222,9 +302,17 @@ export default function AdminDashboard() {
                   {statsLoading ? '...' : (stats.totalCustomers || 0)}
                 </p>
                 <div className="flex items-center mt-2 text-sm">
-                  <ArrowUpRight className="w-4 h-4 text-green-500 mr-1" />
-                  <span className="text-green-600">+12%</span>
-                  <span className="text-gray-500 ml-1">vs mês anterior</span>
+                  {(() => {
+                    const change = formatPercentageChange(stats.totalCustomers || 0, previousStats.totalCustomers || 0);
+                    const Icon = change.icon;
+                    return (
+                      <>
+                        <Icon className={`w-4 h-4 mr-1 ${change.color}`} />
+                        <span className={change.color}>{change.isPositive ? '+' : '-'}{change.value}%</span>
+                        <span className="text-gray-500 ml-1">vs período anterior</span>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               <div className="p-3 bg-blue-500 rounded-full">
@@ -243,9 +331,17 @@ export default function AdminDashboard() {
                   {statsLoading ? '...' : (stats.totalOrders || 0)}
                 </p>
                 <div className="flex items-center mt-2 text-sm">
-                  <ArrowUpRight className="w-4 h-4 text-green-500 mr-1" />
-                  <span className="text-green-600">+8%</span>
-                  <span className="text-gray-500 ml-1">vs mês anterior</span>
+                  {(() => {
+                    const change = formatPercentageChange(stats.totalOrders || 0, previousStats.totalOrders || 0);
+                    const Icon = change.icon;
+                    return (
+                      <>
+                        <Icon className={`w-4 h-4 mr-1 ${change.color}`} />
+                        <span className={change.color}>{change.isPositive ? '+' : '-'}{change.value}%</span>
+                        <span className="text-gray-500 ml-1">vs período anterior</span>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               <div className="p-3 bg-green-500 rounded-full">
@@ -264,13 +360,21 @@ export default function AdminDashboard() {
                   {statsLoading ? '...' : (stats.activeEvents || 0)}
                 </p>
                 <div className="flex items-center mt-2 text-sm">
-                  <ArrowUpRight className="w-4 h-4 text-green-500 mr-1" />
-                  <span className="text-green-600">+3</span>
-                  <span className="text-gray-500 ml-1">este mês</span>
+                  {(() => {
+                    const change = formatPercentageChange(stats.activeEvents || 0, previousStats.activeEvents || 0);
+                    const Icon = change.icon;
+                    return (
+                      <>
+                        <Icon className={`w-4 h-4 mr-1 ${change.color}`} />
+                        <span className={change.color}>{change.isPositive ? '+' : '-'}{change.value}%</span>
+                        <span className="text-gray-500 ml-1">vs período anterior</span>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               <div className="p-3 bg-purple-500 rounded-full">
-                <Calendar className="w-8 h-8 text-white" />
+                <CalendarIcon2 className="w-8 h-8 text-white" />
               </div>
             </div>
           </CardContent>
@@ -285,9 +389,17 @@ export default function AdminDashboard() {
                   {statsLoading ? '...' : formatCurrency(stats.totalRevenue || 0)}
                 </p>
                 <div className="flex items-center mt-2 text-sm">
-                  <ArrowUpRight className="w-4 h-4 text-green-500 mr-1" />
-                  <span className="text-green-600">+15%</span>
-                  <span className="text-gray-500 ml-1">vs mês anterior</span>
+                  {(() => {
+                    const change = formatPercentageChange(stats.totalRevenue || 0, previousStats.totalRevenue || 0);
+                    const Icon = change.icon;
+                    return (
+                      <>
+                        <Icon className={`w-4 h-4 mr-1 ${change.color}`} />
+                        <span className={change.color}>{change.isPositive ? '+' : '-'}{change.value}%</span>
+                        <span className="text-gray-500 ml-1">vs período anterior</span>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               <div className="p-3 bg-orange-500 rounded-full">
