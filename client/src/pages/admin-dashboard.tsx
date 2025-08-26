@@ -134,10 +134,20 @@ export default function AdminDashboard() {
     queryKey: ["/api/admin/customers"],
   });
 
-  // Processar dados para gráficos
+  // Processar dados para gráficos com filtro de período
   const processOrdersForChart = () => {
     const ordersArray = Array.isArray(orders) ? orders : [];
-    const ordersByDate = ordersArray.reduce((acc: any, order: any) => {
+    
+    // Filtrar pedidos pelo período selecionado
+    const filteredOrders = ordersArray.filter((order: any) => {
+      const orderDate = new Date(order.createdAt);
+      const startDateObj = customDateRange.from || new Date(0);
+      const endDateObj = customDateRange.to || new Date();
+      
+      return orderDate >= startDateObj && orderDate <= endDateObj;
+    });
+    
+    const ordersByDate = filteredOrders.reduce((acc: any, order: any) => {
       const date = new Date(order.createdAt).toLocaleDateString('pt-BR');
       if (!acc[date]) {
         acc[date] = { date, pedidos: 0, faturamento: 0 };
@@ -149,12 +159,22 @@ export default function AdminDashboard() {
 
     return Object.values(ordersByDate)
       .sort((a: any, b: any) => new Date(a.date.split('/').reverse().join('-')).getTime() - new Date(b.date.split('/').reverse().join('-')).getTime())
-      .slice(-7); // Últimos 7 dias ordenados corretamente
+      .slice(-10); // Mostrar até 10 dias do período selecionado
   };
 
   const processStatusData = () => {
     const ordersArray = Array.isArray(orders) ? orders : [];
-    const statusCount = ordersArray.reduce((acc: any, order: any) => {
+    
+    // Filtrar pedidos pelo período selecionado
+    const filteredOrders = ordersArray.filter((order: any) => {
+      const orderDate = new Date(order.createdAt);
+      const startDateObj = customDateRange.from || new Date(0);
+      const endDateObj = customDateRange.to || new Date();
+      
+      return orderDate >= startDateObj && orderDate <= endDateObj;
+    });
+    
+    const statusCount = filteredOrders.reduce((acc: any, order: any) => {
       const status = order.status || 'unknown';
       acc[status] = (acc[status] || 0) + 1;
       return acc;
@@ -220,12 +240,14 @@ export default function AdminDashboard() {
                 onSelect={(range) => {
                   if (range) {
                     setCustomDateRange(range);
-                    if (range?.from && range?.to) {
+                    // Só fechar se ambas as datas estiverem selecionadas
+                    if (range.from && range.to) {
                       setShowCustomPicker(false);
                     }
                   }
                 }}
                 numberOfMonths={2}
+                disabled={(date) => date > new Date()} // Não permitir datas futuras
               />
             </PopoverContent>
           </Popover>
@@ -515,7 +537,7 @@ export default function AdminDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-purple-600" />
+                <CalendarIcon className="w-5 h-5 text-purple-600" />
                 Eventos Ativos
               </span>
               <Button variant="ghost" size="sm" onClick={() => setLocation('/admin/events')}>
