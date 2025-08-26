@@ -7,6 +7,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { AdminAuthProvider } from "@/contexts/admin-auth-context";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { AdminRouteGuard } from "@/components/admin-auth/admin-route-guard";
+import { MetaTags } from "@/components/meta-tags";
 import Events from "@/pages/events";
 import EventDetails from "@/pages/event-details";
 import CustomerIdentification from "@/pages/customer-identification";
@@ -176,6 +177,7 @@ function App() {
       <AuthProvider>
         <AdminAuthProvider>
           <TooltipProvider>
+            <MetaTags />
             <Router />
             <PWAInstallPrompt />
           </TooltipProvider>
