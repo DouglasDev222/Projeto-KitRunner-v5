@@ -29,6 +29,18 @@ Este documento detalha o plano para expandir o sistema de relatórios atual, tra
 - **Extra info (Optional)**: `Pedido - {orderNumber sem KR25-}` (Ex: "Pedido - 1074")
 - **Add more columns if needed**: `{complement}` (complemento do endereço)
 
+**Filtros Específicos do Relatório Circuit**:
+- **Evento**: Seleção obrigatória do evento
+- **Zona CEP Específica**: Filtro opcional por zona CEP (para gerar rotas separadas por zona)
+- **Status dos Pedidos**: Confirmados, Em Trânsito (padrão)
+- **Período**: Filtro opcional por data de criação/confirmação
+
+**Benefícios do Filtro por Zona CEP**:
+- Gerar rotas otimizadas por região
+- Facilitar divisão de entregas por equipe/veículo
+- Melhor planejamento logístico por zona geográfica
+- Relatórios separados para cada zona de entrega
+
 ### 2. RELATÓRIO GERAL DE PEDIDOS POR EVENTO
 **Finalidade**: Análise completa de pedidos de um evento
 **Formatos**: Excel, PDF, CSV
@@ -38,7 +50,7 @@ Este documento detalha o plano para expandir o sistema de relatórios atual, tra
 - **Endereço Completo** (em colunas separadas):
   - Rua, Número, Complemento, Bairro, Cidade, Estado, CEP
 - **Zona CEP**: Nome da zona (das zonas ativas)
-- **Kits**: Array JSON formatado ou colunas separadas por kit
+- **Kits**: Array JSON formatado ou colunas separadas por kit (Maximo 5 colunas que o permitido por pedido)
 - **Pagamento**: Método, Status, Data de Confirmação
 - **Custos**: Entrega, Kits Extras, Doação, Desconto, Total
 - **Cupom**: Código usado (se houver)
@@ -177,7 +189,7 @@ GET    /api/admin/reports/deliveries
 ## ESPECIFICAÇÕES TÉCNICAS DETALHADAS
 
 ### 1. RELATÓRIO DE ENDEREÇOS PARA CIRCUIT
-**Query SQL Base**:
+**Query SQL Base (com filtro de Zona CEP)**:
 ```sql
 SELECT DISTINCT
   CONCAT(a.street, ', ', a.number) as address_line_1,
@@ -191,9 +203,22 @@ FROM orders o
 JOIN customers c ON o.customer_id = c.id
 JOIN addresses a ON o.address_id = a.id
 JOIN events e ON o.event_id = e.id
-WHERE o.event_id = ? AND o.status IN ('confirmado', 'em_transito')
-ORDER BY a.neighborhood, a.street, a.number;
+LEFT JOIN cep_zones cz ON (
+  a.zip_code BETWEEN 
+    SUBSTRING(JSON_UNQUOTE(JSON_EXTRACT(cz.cep_ranges, '$[*].start')), 1, 5) AND 
+    SUBSTRING(JSON_UNQUOTE(JSON_EXTRACT(cz.cep_ranges, '$[*].end')), 1, 5)
+  AND cz.active = true
+)
+WHERE o.event_id = ? 
+  AND o.status IN ('confirmado', 'em_transito')
+  AND (? IS NULL OR cz.id = ?) -- Filtro opcional por zona CEP específica
+ORDER BY cz.priority ASC, a.neighborhood, a.street, a.number;
 ```
+
+**Parâmetros da Query**:
+- `eventId`: ID do evento (obrigatório)
+- `zoneId`: ID da zona CEP (opcional - NULL para todas as zonas)
+- `zoneId` (duplicado): Para o filtro condicional
 
 **Formato Excel Circuit**:
 - Headers exatos conforme especificação Circuit
@@ -201,6 +226,7 @@ ORDER BY a.neighborhood, a.street, a.number;
 - Address Line 2: sempre vazio
 - Extra info: "Pedido - 1074" (sem o prefixo KR25-)
 - Complemento na última coluna
+- Nome do arquivo: "circuit-{evento}-{zona}.xlsx" (se zona específica)
 
 ### 2. SISTEMA DE ZONAS CEP PARA RELATÓRIOS
 **Função de Busca Otimizada**:
