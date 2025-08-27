@@ -1,0 +1,328 @@
+# PLANO COMPLETO: Sistema de Relatórios Avançado - KitRunner
+
+## VISÃO GERAL
+Este documento detalha o plano para expandir o sistema de relatórios atual, transformando-o em uma solução completa com múltiplos tipos de relatórios, configurações flexíveis e suporte a diferentes formatos de exportação.
+
+## SISTEMA ATUAL (BASE)
+- ✅ Relatório de Kits por Evento (Excel) 
+- ✅ Interface básica em `/admin/reports`
+- ✅ Gerador Excel com ExcelJS
+- ✅ Sistema de zonas CEP implementado
+
+## NOVOS RELATÓRIOS A IMPLEMENTAR
+
+### 1. RELATÓRIO DE ENDEREÇOS PARA CIRCUIT 
+**Finalidade**: Otimizar rotas de entrega para o sistema Circuit
+**Formato**: Excel (.xlsx) personalizado para importação
+**Colunas Principais**:
+- Nome do Cliente
+- Endereço Completo (separado em colunas)
+- CEP
+- Zona CEP (nome da zona onde o endereço está incluso)
+- Telefone
+- Observações/Complemento
+- Número do Pedido (referência)
+- Prioridade de Entrega (baseada em status)
+
+### 2. RELATÓRIO GERAL DE PEDIDOS POR EVENTO
+**Finalidade**: Análise completa de pedidos de um evento
+**Formatos**: Excel, PDF, CSV
+**Colunas Detalhadas**:
+- **Informações do Pedido**: Número, Data, Status, Valor Total
+- **Cliente**: Nome, CPF, Email, Telefone
+- **Endereço Completo** (em colunas separadas):
+  - Rua, Número, Complemento, Bairro, Cidade, Estado, CEP
+- **Zona CEP**: Nome da zona (das zonas ativas)
+- **Kits**: Array JSON formatado ou colunas separadas por kit
+- **Pagamento**: Método, Status, Data de Confirmação
+- **Custos**: Entrega, Kits Extras, Doação, Desconto, Total
+- **Cupom**: Código usado (se houver)
+
+**Filtros Disponíveis**:
+- Status: Todos, Confirmados, Aguardando Pagamento, Cancelados, etc.
+- Período: Data de criação, Data de confirmação
+- Zona CEP específica
+- Método de pagamento
+
+### 3. RELATÓRIOS DE FATURAMENTO
+**3.1 Faturamento por Período**
+- Diário, Semanal, Mensal, Anual
+- Gráficos e tabelas
+- Comparativos com períodos anteriores
+
+**3.2 Faturamento por Evento**
+- Receita total por evento
+- Breakdown por tipo de cobrança (entrega, kits extras, doações)
+- Análise de cupons utilizados
+- Taxa de conversão (pedidos confirmados vs cancelados)
+
+### 4. RELATÓRIO DE VENDAS E PERFORMANCE
+- Top eventos por receita
+- Top zonas CEP por volume
+- Performance de cupons de desconto
+- Análise sazonal de vendas
+- Taxa de cancelamento por evento/período
+
+### 5. RELATÓRIO DE CLIENTES
+- Clientes mais ativos
+- Análise geográfica (por cidade/bairro)
+- Histórico de pedidos por cliente
+- Segmentação por valor gasto
+
+### 6. RELATÓRIO DE ENTREGAS E LOGÍSTICA
+- Status de entregas por zona CEP
+- Tempo médio de entrega
+- Análise de custos de entrega
+- Performance por transportadora/método
+
+## ARQUITETURA TÉCNICA
+
+### Frontend (`client/src/pages/admin-reports.tsx`)
+**Interface Redesenhada**:
+```typescript
+interface ReportConfig {
+  type: 'kits' | 'addresses' | 'orders' | 'billing' | 'sales' | 'customers' | 'deliveries';
+  format: 'excel' | 'pdf' | 'csv';
+  filters: {
+    eventId?: number;
+    dateRange?: { start: string; end: string };
+    status?: string[];
+    zipCodeZone?: number;
+    // ... outros filtros
+  };
+  preview: boolean;
+}
+```
+
+**Componentes Novos**:
+- `ReportSelector`: Seleção de tipo de relatório
+- `FilterPanel`: Painel de filtros dinâmicos por tipo
+- `ReportPreview`: Preview dos dados antes de gerar
+- `FormatSelector`: Escolha de formato de exportação
+- `ScheduleReports`: Agendamento de relatórios recorrentes
+
+### Backend (`server/report-generator.ts`)
+**Estrutura Expandida**:
+```typescript
+// Tipos de relatório
+export type ReportType = 'kits' | 'addresses' | 'orders' | 'billing' | 'sales' | 'customers' | 'deliveries';
+
+// Interface unificada
+export interface ReportGenerator {
+  generateKitsReport(eventId: number): Promise<Buffer>;
+  generateAddressesReport(eventId: number): Promise<Buffer>;
+  generateOrdersReport(filters: OrdersReportFilters): Promise<Buffer>;
+  generateBillingReport(filters: BillingReportFilters): Promise<Buffer>;
+  // ... outros geradores
+}
+
+// Filtros específicos por tipo
+export interface OrdersReportFilters {
+  eventId?: number;
+  status?: string[];
+  dateRange?: { start: Date; end: Date };
+  includeZipCodeZone: boolean;
+  includeKitsArray: boolean;
+  includePaymentDetails: boolean;
+}
+```
+
+### Rotas API (`server/routes.ts`)
+**Novos Endpoints**:
+```typescript
+// Relatórios configuráveis
+GET    /api/admin/reports/config/:type     // Opções de configuração por tipo
+POST   /api/admin/reports/generate         // Geração com configuração personalizada
+GET    /api/admin/reports/preview/:type    // Preview dos dados
+GET    /api/admin/reports/templates        // Templates disponíveis
+
+// Relatórios específicos
+GET    /api/admin/reports/addresses/:eventId
+GET    /api/admin/reports/orders
+GET    /api/admin/reports/billing
+GET    /api/admin/reports/sales
+GET    /api/admin/reports/customers
+GET    /api/admin/reports/deliveries
+```
+
+## IMPLEMENTAÇÃO POR FASES
+
+### FASE 1: Infraestrutura Base
+- [ ] Redesenhar interface de relatórios
+- [ ] Criar sistema de filtros dinâmicos
+- [ ] Implementar preview de relatórios
+- [ ] Sistema de templates de relatório
+
+### FASE 2: Relatórios Essenciais
+- [ ] Relatório de endereços para Circuit
+- [ ] Relatório geral de pedidos por evento
+- [ ] Implementar múltiplos formatos (Excel, PDF, CSV)
+
+### FASE 3: Relatórios Analíticos
+- [ ] Sistema de faturamento completo
+- [ ] Relatórios de vendas e performance
+- [ ] Relatórios de clientes
+
+### FASE 4: Recursos Avançados
+- [ ] Relatórios de logística
+- [ ] Sistema de agendamento
+- [ ] Cache de relatórios pesados
+- [ ] Exportação em lote
+
+## ESPECIFICAÇÕES TÉCNICAS DETALHADAS
+
+### 1. RELATÓRIO DE ENDEREÇOS PARA CIRCUIT
+**Query SQL Base**:
+```sql
+SELECT DISTINCT
+  c.name as customer_name,
+  a.street,
+  a.number,
+  a.complement,
+  a.neighborhood,
+  a.city,
+  a.state,
+  a.zip_code,
+  cz.name as zone_name,
+  c.phone,
+  o.order_number,
+  o.status,
+  COUNT(k.id) as kit_count
+FROM orders o
+JOIN customers c ON o.customer_id = c.id
+JOIN addresses a ON o.address_id = a.id
+JOIN events e ON o.event_id = e.id
+LEFT JOIN cep_zones cz ON (
+  -- Lógica para encontrar zona CEP ativa com maior prioridade
+)
+JOIN kits k ON k.order_id = o.id
+WHERE o.event_id = ? AND o.status IN ('confirmado', 'em_transito')
+GROUP BY o.id, c.id, a.id, cz.id
+ORDER BY cz.priority ASC, a.neighborhood, a.street;
+```
+
+**Formato Excel Circuit**:
+- Header customizado com info do evento
+- Colunas otimizadas para importação
+- Agrupamento visual por zona CEP
+- Cor-coding por status de entrega
+
+### 2. SISTEMA DE ZONAS CEP PARA RELATÓRIOS
+**Função de Busca Otimizada**:
+```typescript
+export async function getZoneByCep(zipCode: string): Promise<CepZone | null> {
+  const zones = await db.select().from(cepZones).where(eq(cepZones.active, true));
+  return findCepZoneFromList(zipCode, zones);
+}
+
+export async function enrichOrdersWithZones(orders: OrderData[]): Promise<OrderWithZone[]> {
+  const enrichedOrders = [];
+  for (const order of orders) {
+    const zone = await getZoneByCep(order.zipCode);
+    enrichedOrders.push({
+      ...order,
+      zoneName: zone?.name || 'Zona não encontrada',
+      zonePrice: zone?.price || null
+    });
+  }
+  return enrichedOrders;
+}
+```
+
+### 3. SISTEMA DE MÚLTIPLOS FORMATOS
+
+**Gerador PDF** (usando PDFKit):
+```typescript
+export async function generatePDFReport(data: any[], config: ReportConfig): Promise<Buffer> {
+  const doc = new PDFDocument();
+  const buffers: Buffer[] = [];
+  
+  doc.on('data', buffers.push.bind(buffers));
+  
+  // Header com logo e info
+  // Tabela de dados
+  // Footer com totais
+  
+  doc.end();
+  return Buffer.concat(buffers);
+}
+```
+
+**Gerador CSV**:
+```typescript
+export function generateCSVReport(data: any[], columns: string[]): string {
+  const header = columns.join(',');
+  const rows = data.map(row => 
+    columns.map(col => `"${row[col] || ''}"`).join(',')
+  );
+  return [header, ...rows].join('\n');
+}
+```
+
+## CONSIDERAÇÕES DE PERFORMANCE
+
+### Cache de Dados
+- Cache Redis para relatórios complexos (faturamento)
+- Invalidação automática quando dados mudam
+- Background jobs para relatórios pesados
+
+### Otimizações de Query
+- Índices otimizados para queries de relatório
+- Paginação para dados grandes
+- Queries agregadas para estatísticas
+
+### Processamento Assíncrono
+```typescript
+// Para relatórios muito grandes
+export async function generateLargeReport(config: ReportConfig): Promise<string> {
+  const jobId = `report_${Date.now()}`;
+  
+  // Enfileirar job
+  await reportQueue.add('generate-report', { jobId, config });
+  
+  return jobId; // Cliente consulta status depois
+}
+```
+
+## SEGURANÇA E PERMISSÕES
+
+### Controle de Acesso
+- Apenas admins podem gerar relatórios
+- Log de acesso a relatórios sensíveis
+- Rate limiting para evitar abuso
+
+### Proteção de Dados
+- Sanitização de dados exportados
+- Anonimização opcional para relatórios de teste
+- Criptografia para relatórios em cache
+
+## CRONOGRAMA ESTIMADO
+
+**Fase 1**: 1 semana
+**Fase 2**: 2 semanas  
+**Fase 3**: 2 semanas
+**Fase 4**: 1 semana
+
+**Total**: 6 semanas
+
+## TECNOLOGIAS UTILIZADAS
+
+- **ExcelJS**: Para relatórios Excel avançados
+- **PDFKit**: Para geração de PDFs
+- **Papa Parse**: Para CSVs complexos
+- **Chart.js**: Para gráficos em relatórios
+- **Redis**: Para cache (se necessário)
+- **Bull Queue**: Para processamento assíncrono (se necessário)
+
+## VALIDAÇÃO ANTES DA IMPLEMENTAÇÃO
+
+**Checklist de Aprovação**:
+- [ ] Estrutura dos relatórios está adequada?
+- [ ] Formatos de exportação atendem às necessidades?
+- [ ] Sistema de filtros é suficientemente flexível?
+- [ ] Performance estimada é aceitável?
+- [ ] Cronograma é realista?
+
+---
+
+**Este plano está pronto para aprovação. Após confirmação, iniciará a implementação seguindo as fases definidas.**
