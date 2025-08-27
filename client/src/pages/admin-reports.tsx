@@ -13,10 +13,32 @@ export default function AdminReports() {
   const { toast } = useToast();
 
   const handleReportGeneration = async () => {
-    if (!selectedReportType || !filters.eventId) {
+    if (!selectedReportType) {
       toast({
         title: "Erro",
-        description: "Selecione um tipo de relatório e um evento",
+        description: "Selecione um tipo de relatório",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate based on report type
+    const requiresEvent = ['kits', 'circuit', 'orders'].includes(selectedReportType);
+    const requiresDateRange = ['billing', 'sales'].includes(selectedReportType);
+    
+    if (requiresEvent && !filters.eventId) {
+      toast({
+        title: "Erro",
+        description: "Selecione um evento para este tipo de relatório",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (requiresDateRange && (!filters.dateRange?.start || !filters.dateRange?.end)) {
+      toast({
+        title: "Erro",
+        description: "Selecione o período de análise (data inicial e final)",
         variant: "destructive"
       });
       return;
@@ -47,6 +69,33 @@ export default function AdminReports() {
           if (filters.status?.length) params.append('status', filters.status.join(','));
           if (filters.format) params.append('format', filters.format);
           endpoint += `?${params.toString()}`;
+          break;
+        case 'billing':
+          endpoint = `/api/admin/reports/billing`;
+          const billingParams = new URLSearchParams();
+          if (filters.period) billingParams.append('period', filters.period);
+          if (filters.dateRange?.start) billingParams.append('startDate', filters.dateRange.start);
+          if (filters.dateRange?.end) billingParams.append('endDate', filters.dateRange.end);
+          if (filters.eventId) billingParams.append('eventId', filters.eventId.toString());
+          if (filters.format) billingParams.append('format', filters.format);
+          endpoint += `?${billingParams.toString()}`;
+          break;
+        case 'sales':
+          endpoint = `/api/admin/reports/sales`;
+          const salesParams = new URLSearchParams();
+          if (filters.dateRange?.start) salesParams.append('startDate', filters.dateRange.start);
+          if (filters.dateRange?.end) salesParams.append('endDate', filters.dateRange.end);
+          if (filters.format) salesParams.append('format', filters.format);
+          endpoint += `?${salesParams.toString()}`;
+          break;
+        case 'customers':
+          endpoint = `/api/admin/reports/customers`;
+          const customersParams = new URLSearchParams();
+          if (filters.sortBy) customersParams.append('sortBy', filters.sortBy);
+          if (filters.city) customersParams.append('city', filters.city);
+          if (filters.state) customersParams.append('state', filters.state);
+          if (filters.format) customersParams.append('format', filters.format);
+          endpoint += `?${customersParams.toString()}`;
           break;
         default:
           throw new Error(`Relatório ${selectedReportType} ainda não implementado`);

@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 import { db } from './db';
 import { orders, customers, events, kits, addresses, cepZones } from '@shared/schema';
-import { eq, inArray, and, or } from 'drizzle-orm';
+import { eq, inArray, and, or, gte, lte } from 'drizzle-orm';
 
 export interface KitReportData {
   orderNumber: string;
@@ -584,6 +584,573 @@ async function generateOrdersPDF(reportData: OrderReportData[], eventName: strin
     });
     
     doc.moveDown(0.5);
+  });
+
+  doc.end();
+  
+  return new Promise((resolve) => {
+    doc.on('end', () => {
+      resolve(Buffer.concat(buffers));
+    });
+  });
+}
+
+// =======================
+// FASE 3: RELATÓRIOS ANALÍTICOS
+// =======================
+
+// Billing Report Interfaces
+interface BillingReportData {
+  period: string;
+  totalRevenue: number;
+  totalOrders: number;
+  averageOrderValue: number;
+  deliveryRevenue: number;
+  extrasRevenue: number;
+  donationsRevenue: number;
+  couponsUsed: number;
+  couponsDiscount: number;
+  conversionRate: number;
+}
+
+interface SalesReportData {
+  eventName: string;
+  eventId: number;
+  totalRevenue: number;
+  totalOrders: number;
+  averageOrderValue: number;
+  conversionRate: number;
+  topZones: { zoneName: string; orderCount: number; revenue: number }[];
+  couponsStats: { code: string; usageCount: number; totalDiscount: number }[];
+}
+
+interface CustomersReportData {
+  customerId: number;
+  customerName: string;
+  email: string;
+  city: string;
+  state: string;
+  totalOrders: number;
+  totalSpent: number;
+  lastOrderDate: string;
+  avgOrderValue: number;
+}
+
+// 3.1 - Billing Reports
+export async function generateBillingReport(
+  options: {
+    period: 'daily' | 'weekly' | 'monthly' | 'yearly';
+    startDate: Date;
+    endDate: Date;
+    eventId?: number;
+    format?: 'excel' | 'pdf' | 'csv';
+  }
+): Promise<Buffer> {
+  const { period, startDate, endDate, eventId, format = 'excel' } = options;
+
+  // Build base query with date filtering
+  let ordersQuery = db
+    .select({
+      orderId: orders.id,
+      orderNumber: orders.orderNumber,
+      status: orders.status,
+      totalCost: orders.totalCost,
+      deliveryCost: orders.deliveryCost,
+      donationAmount: orders.donationAmount,
+      couponCode: orders.couponCode,
+      createdAt: orders.createdAt,
+      eventName: events.name,
+    })
+    .from(orders)
+    .innerJoin(events, eq(orders.eventId, events.id))
+    .where(
+      and(
+        gte(orders.createdAt, startDate),
+        lte(orders.createdAt, endDate),
+        eventId ? eq(orders.eventId, eventId) : undefined
+      )
+    );
+
+  const ordersData = await ordersQuery;
+
+  // Group data by period
+  const billingData: BillingReportData[] = [];
+  const groupedData = new Map<string, typeof ordersData>();
+
+  ordersData.forEach(order => {
+    let periodKey: string;
+    const orderDate = new Date(order.createdAt);
+
+    switch (period) {
+      case 'daily':
+        periodKey = orderDate.toISOString().split('T')[0];
+        break;
+      case 'weekly':
+        const weekStart = new Date(orderDate);
+        weekStart.setDate(orderDate.getDate() - orderDate.getDay());
+        periodKey = weekStart.toISOString().split('T')[0];
+        break;
+      case 'monthly':
+        periodKey = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, '0')}`;
+        break;
+      case 'yearly':
+        periodKey = String(orderDate.getFullYear());
+        break;
+    }
+
+    if (!groupedData.has(periodKey)) {
+      groupedData.set(periodKey, []);
+    }
+    groupedData.get(periodKey)!.push(order);
+  });
+
+  // Calculate metrics for each period
+  groupedData.forEach((periodOrders, periodKey) => {
+    const confirmedOrders = periodOrders.filter(o => o.status === 'confirmado');
+    const totalOrders = periodOrders.length;
+    const totalRevenue = confirmedOrders.reduce((sum, order) => sum + parseFloat(order.totalCost.toString()), 0);
+    const deliveryRevenue = confirmedOrders.reduce((sum, order) => sum + parseFloat(order.deliveryCost?.toString() || '0'), 0);
+    const extrasRevenue = 0; // Campo não existe no schema atual
+    const donationsRevenue = confirmedOrders.reduce((sum, order) => sum + parseFloat(order.donationAmount?.toString() || '0'), 0);
+    const couponsUsed = confirmedOrders.filter(o => o.couponCode).length;
+    const couponsDiscount = 0; // Campo não existe no schema atual
+    const conversionRate = totalOrders > 0 ? (confirmedOrders.length / totalOrders) * 100 : 0;
+
+    billingData.push({
+      period: periodKey,
+      totalRevenue,
+      totalOrders: confirmedOrders.length,
+      averageOrderValue: confirmedOrders.length > 0 ? totalRevenue / confirmedOrders.length : 0,
+      deliveryRevenue,
+      extrasRevenue,
+      donationsRevenue,
+      couponsUsed,
+      couponsDiscount,
+      conversionRate
+    });
+  });
+
+  // Sort by period
+  billingData.sort((a, b) => a.period.localeCompare(b.period));
+
+  if (format === 'excel') {
+    return await generateBillingExcel(billingData, period, startDate, endDate);
+  } else if (format === 'csv') {
+    return generateBillingCSV(billingData);
+  } else {
+    return await generateBillingPDF(billingData, period, startDate, endDate);
+  }
+}
+
+// 3.2 - Sales and Performance Reports
+export async function generateSalesReport(
+  options: {
+    startDate: Date;
+    endDate: Date;
+    format?: 'excel' | 'pdf' | 'csv';
+  }
+): Promise<Buffer> {
+  const { startDate, endDate, format = 'excel' } = options;
+
+  // Get all events with their sales data
+  const salesData = await db
+    .select({
+      eventId: events.id,
+      eventName: events.name,
+      orderId: orders.id,
+      orderStatus: orders.status,
+      totalCost: orders.totalCost,
+      couponCode: orders.couponCode,
+      customerZipCode: addresses.zipCode,
+    })
+    .from(events)
+    .leftJoin(orders, eq(events.id, orders.eventId))
+    .leftJoin(addresses, eq(orders.addressId, addresses.id))
+    .where(
+      and(
+        eq(events.available, true),
+        orders.createdAt ? gte(orders.createdAt, startDate) : undefined,
+        orders.createdAt ? lte(orders.createdAt, endDate) : undefined
+      )
+    );
+
+  // Get active CEP zones for zone analysis
+  const activeCepZones = await db.select().from(cepZones).where(eq(cepZones.active, true));
+
+  // Group by events
+  const eventSalesMap = new Map<number, SalesReportData>();
+
+  salesData.forEach(row => {
+    if (!eventSalesMap.has(row.eventId)) {
+      eventSalesMap.set(row.eventId, {
+        eventId: row.eventId,
+        eventName: row.eventName,
+        totalRevenue: 0,
+        totalOrders: 0,
+        averageOrderValue: 0,
+        conversionRate: 0,
+        topZones: [],
+        couponsStats: []
+      });
+    }
+
+    const eventData = eventSalesMap.get(row.eventId)!;
+    
+    if (row.orderId && row.orderStatus === 'confirmado') {
+      eventData.totalRevenue += parseFloat(row.totalCost?.toString() || '0');
+      eventData.totalOrders += 1;
+    }
+  });
+
+  // Calculate averages and finalize data
+  const finalSalesData: SalesReportData[] = Array.from(eventSalesMap.values())
+    .map(event => ({
+      ...event,
+      averageOrderValue: event.totalOrders > 0 ? event.totalRevenue / event.totalOrders : 0
+    }))
+    .sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+  if (format === 'excel') {
+    return await generateSalesExcel(finalSalesData, startDate, endDate);
+  } else if (format === 'csv') {
+    return generateSalesCSV(finalSalesData);
+  } else {
+    return await generateSalesPDF(finalSalesData, startDate, endDate);
+  }
+}
+
+// 3.3 - Customers Reports
+export async function generateCustomersReport(
+  options: {
+    sortBy?: 'orders' | 'revenue' | 'recent';
+    city?: string;
+    state?: string;
+    format?: 'excel' | 'pdf' | 'csv';
+  } = {}
+): Promise<Buffer> {
+  const { sortBy = 'revenue', city, state, format = 'excel' } = options;
+
+  // Get customers with their order statistics
+  const customersData = await db
+    .select({
+      customerId: customers.id,
+      customerName: customers.name,
+      email: customers.email,
+      customerCity: addresses.city,
+      customerState: addresses.state,
+      orderId: orders.id,
+      orderStatus: orders.status,
+      totalCost: orders.totalCost,
+      orderDate: orders.createdAt
+    })
+    .from(customers)
+    .leftJoin(addresses, eq(customers.id, addresses.customerId))
+    .leftJoin(orders, eq(customers.id, orders.customerId))
+    .where(
+      and(
+        addresses.isDefault ? eq(addresses.isDefault, true) : undefined,
+        city ? eq(addresses.city, city) : undefined,
+        state ? eq(addresses.state, state) : undefined
+      )
+    );
+
+  // Group by customers
+  const customerStatsMap = new Map<number, CustomersReportData>();
+
+  customersData.forEach(row => {
+    if (!customerStatsMap.has(row.customerId)) {
+      customerStatsMap.set(row.customerId, {
+        customerId: row.customerId,
+        customerName: row.customerName,
+        email: row.email,
+        city: row.customerCity || '',
+        state: row.customerState || '',
+        totalOrders: 0,
+        totalSpent: 0,
+        lastOrderDate: '',
+        avgOrderValue: 0
+      });
+    }
+
+    const customerData = customerStatsMap.get(row.customerId)!;
+    
+    if (row.orderId && row.orderStatus === 'confirmado') {
+      customerData.totalOrders += 1;
+      customerData.totalSpent += parseFloat(row.totalCost?.toString() || '0');
+      
+      const orderDate = row.orderDate?.toISOString().split('T')[0] || '';
+      if (!customerData.lastOrderDate || orderDate > customerData.lastOrderDate) {
+        customerData.lastOrderDate = orderDate;
+      }
+    }
+  });
+
+  // Calculate averages and sort
+  let finalCustomersData: CustomersReportData[] = Array.from(customerStatsMap.values())
+    .map(customer => ({
+      ...customer,
+      avgOrderValue: customer.totalOrders > 0 ? customer.totalSpent / customer.totalOrders : 0
+    }));
+
+  // Apply sorting
+  switch (sortBy) {
+    case 'orders':
+      finalCustomersData.sort((a, b) => b.totalOrders - a.totalOrders);
+      break;
+    case 'recent':
+      finalCustomersData.sort((a, b) => b.lastOrderDate.localeCompare(a.lastOrderDate));
+      break;
+    default: // revenue
+      finalCustomersData.sort((a, b) => b.totalSpent - a.totalSpent);
+  }
+
+  if (format === 'excel') {
+    return await generateCustomersExcel(finalCustomersData, sortBy);
+  } else if (format === 'csv') {
+    return generateCustomersCSV(finalCustomersData);
+  } else {
+    return await generateCustomersPDF(finalCustomersData, sortBy);
+  }
+}
+
+// Excel Generators for Phase 3
+async function generateBillingExcel(data: BillingReportData[], period: string, startDate: Date, endDate: Date): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Relatório de Faturamento');
+
+  // Headers
+  const headers = [
+    'Período', 'Receita Total', 'Pedidos', 'Ticket Médio', 
+    'Receita Entrega', 'Receita Extras', 'Doações', 
+    'Cupons Usados', 'Desconto Cupons', 'Taxa Conversão (%)'
+  ];
+
+  const headerRow = worksheet.addRow(headers);
+  headerRow.font = { bold: true };
+  headerRow.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF4CAF50' }
+  };
+
+  // Data rows
+  data.forEach(item => {
+    worksheet.addRow([
+      item.period,
+      `R$ ${item.totalRevenue.toFixed(2)}`,
+      item.totalOrders,
+      `R$ ${item.averageOrderValue.toFixed(2)}`,
+      `R$ ${item.deliveryRevenue.toFixed(2)}`,
+      `R$ ${item.extrasRevenue.toFixed(2)}`,
+      `R$ ${item.donationsRevenue.toFixed(2)}`,
+      item.couponsUsed,
+      `R$ ${item.couponsDiscount.toFixed(2)}`,
+      `${item.conversionRate.toFixed(1)}%`
+    ]);
+  });
+
+  // Auto-fit columns
+  worksheet.columns.forEach(column => {
+    column.width = 15;
+  });
+
+  return Buffer.from(await workbook.xlsx.writeBuffer());
+}
+
+async function generateSalesExcel(data: SalesReportData[], startDate: Date, endDate: Date): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Relatório de Vendas');
+
+  const headers = ['Evento', 'Receita Total', 'Pedidos', 'Ticket Médio'];
+  const headerRow = worksheet.addRow(headers);
+  headerRow.font = { bold: true };
+  headerRow.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF2196F3' }
+  };
+
+  data.forEach(item => {
+    worksheet.addRow([
+      item.eventName,
+      `R$ ${item.totalRevenue.toFixed(2)}`,
+      item.totalOrders,
+      `R$ ${item.averageOrderValue.toFixed(2)}`
+    ]);
+  });
+
+  worksheet.columns.forEach(column => {
+    column.width = 20;
+  });
+
+  return Buffer.from(await workbook.xlsx.writeBuffer());
+}
+
+async function generateCustomersExcel(data: CustomersReportData[], sortBy: string): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Relatório de Clientes');
+
+  const headers = ['Cliente', 'Email', 'Cidade', 'Estado', 'Total Pedidos', 'Total Gasto', 'Último Pedido', 'Ticket Médio'];
+  const headerRow = worksheet.addRow(headers);
+  headerRow.font = { bold: true };
+  headerRow.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFFF9800' }
+  };
+
+  data.forEach(item => {
+    worksheet.addRow([
+      item.customerName,
+      item.email,
+      item.city,
+      item.state,
+      item.totalOrders,
+      `R$ ${item.totalSpent.toFixed(2)}`,
+      item.lastOrderDate || 'N/A',
+      `R$ ${item.avgOrderValue.toFixed(2)}`
+    ]);
+  });
+
+  worksheet.columns.forEach(column => {
+    column.width = 18;
+  });
+
+  return Buffer.from(await workbook.xlsx.writeBuffer());
+}
+
+// CSV Generators for Phase 3
+function generateBillingCSV(data: BillingReportData[]): Buffer {
+  const headers = ['Período', 'Receita Total', 'Pedidos', 'Ticket Médio', 'Receita Entrega', 'Receita Extras', 'Doações', 'Cupons Usados', 'Desconto Cupons', 'Taxa Conversão (%)'];
+  let csv = headers.join(',') + '\n';
+  
+  data.forEach(item => {
+    csv += [
+      `"${item.period}"`,
+      `"R$ ${item.totalRevenue.toFixed(2)}"`,
+      item.totalOrders,
+      `"R$ ${item.averageOrderValue.toFixed(2)}"`,
+      `"R$ ${item.deliveryRevenue.toFixed(2)}"`,
+      `"R$ ${item.extrasRevenue.toFixed(2)}"`,
+      `"R$ ${item.donationsRevenue.toFixed(2)}"`,
+      item.couponsUsed,
+      `"R$ ${item.couponsDiscount.toFixed(2)}"`,
+      `"${item.conversionRate.toFixed(1)}%"`
+    ].join(',') + '\n';
+  });
+
+  return Buffer.from(csv, 'utf-8');
+}
+
+function generateSalesCSV(data: SalesReportData[]): Buffer {
+  const headers = ['Evento', 'Receita Total', 'Pedidos', 'Ticket Médio'];
+  let csv = headers.join(',') + '\n';
+  
+  data.forEach(item => {
+    csv += [
+      `"${item.eventName}"`,
+      `"R$ ${item.totalRevenue.toFixed(2)}"`,
+      item.totalOrders,
+      `"R$ ${item.averageOrderValue.toFixed(2)}"`
+    ].join(',') + '\n';
+  });
+
+  return Buffer.from(csv, 'utf-8');
+}
+
+function generateCustomersCSV(data: CustomersReportData[]): Buffer {
+  const headers = ['Cliente', 'Email', 'Cidade', 'Estado', 'Total Pedidos', 'Total Gasto', 'Último Pedido', 'Ticket Médio'];
+  let csv = headers.join(',') + '\n';
+  
+  data.forEach(item => {
+    csv += [
+      `"${item.customerName}"`,
+      `"${item.email}"`,
+      `"${item.city}"`,
+      `"${item.state}"`,
+      item.totalOrders,
+      `"R$ ${item.totalSpent.toFixed(2)}"`,
+      `"${item.lastOrderDate || 'N/A'}"`,
+      `"R$ ${item.avgOrderValue.toFixed(2)}"`
+    ].join(',') + '\n';
+  });
+
+  return Buffer.from(csv, 'utf-8');
+}
+
+// PDF Generators for Phase 3  
+async function generateBillingPDF(data: BillingReportData[], period: string, startDate: Date, endDate: Date): Promise<Buffer> {
+  const PDFDocument = require('pdfkit');
+  const doc = new PDFDocument();
+  const buffers: Buffer[] = [];
+
+  doc.on('data', buffers.push.bind(buffers));
+  doc.on('end', () => {});
+
+  doc.fontSize(20).text('Relatório de Faturamento', { align: 'center' });
+  doc.fontSize(12).text(`Período: ${period} | ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`);
+  doc.moveDown();
+
+  // Summary
+  const totalRevenue = data.reduce((sum, item) => sum + item.totalRevenue, 0);
+  const totalOrders = data.reduce((sum, item) => sum + item.totalOrders, 0);
+  doc.text(`Receita Total: R$ ${totalRevenue.toFixed(2)}`);
+  doc.text(`Total de Pedidos: ${totalOrders}`);
+  doc.moveDown();
+
+  // Data table would go here (simplified for brevity)
+  data.forEach(item => {
+    doc.text(`${item.period}: R$ ${item.totalRevenue.toFixed(2)} (${item.totalOrders} pedidos)`);
+  });
+
+  doc.end();
+  
+  return new Promise((resolve) => {
+    doc.on('end', () => {
+      resolve(Buffer.concat(buffers));
+    });
+  });
+}
+
+async function generateSalesPDF(data: SalesReportData[], startDate: Date, endDate: Date): Promise<Buffer> {
+  const PDFDocument = require('pdfkit');
+  const doc = new PDFDocument();
+  const buffers: Buffer[] = [];
+
+  doc.on('data', buffers.push.bind(buffers));
+  doc.on('end', () => {});
+
+  doc.fontSize(20).text('Relatório de Vendas', { align: 'center' });
+  doc.fontSize(12).text(`Período: ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`);
+  doc.moveDown();
+
+  data.forEach(item => {
+    doc.text(`${item.eventName}: R$ ${item.totalRevenue.toFixed(2)} (${item.totalOrders} pedidos)`);
+  });
+
+  doc.end();
+  
+  return new Promise((resolve) => {
+    doc.on('end', () => {
+      resolve(Buffer.concat(buffers));
+    });
+  });
+}
+
+async function generateCustomersPDF(data: CustomersReportData[], sortBy: string): Promise<Buffer> {
+  const PDFDocument = require('pdfkit');
+  const doc = new PDFDocument();
+  const buffers: Buffer[] = [];
+
+  doc.on('data', buffers.push.bind(buffers));
+  doc.on('end', () => {});
+
+  doc.fontSize(20).text('Relatório de Clientes', { align: 'center' });
+  doc.fontSize(12).text(`Ordenado por: ${sortBy}`);
+  doc.moveDown();
+
+  data.slice(0, 20).forEach(item => { // Top 20 customers
+    doc.text(`${item.customerName} (${item.city}/${item.state}): ${item.totalOrders} pedidos - R$ ${item.totalSpent.toFixed(2)}`);
   });
 
   doc.end();

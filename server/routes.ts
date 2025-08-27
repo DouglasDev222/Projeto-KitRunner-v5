@@ -1880,6 +1880,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // FASE 3: Analytical Reports
+  
+  // Generate Billing report
+  app.get("/api/admin/reports/billing", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const period = req.query.period as 'daily' | 'weekly' | 'monthly' | 'yearly' || 'monthly';
+      const startDate = new Date(req.query.startDate as string);
+      const endDate = new Date(req.query.endDate as string);
+      const eventId = req.query.eventId ? parseInt(req.query.eventId as string) : undefined;
+      const format = req.query.format as 'excel' | 'csv' | 'pdf' || 'excel';
+
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(400).json({ message: "Datas inválidas" });
+      }
+
+      const { generateBillingReport } = await import('./report-generator');
+      const reportBuffer = await generateBillingReport({
+        period,
+        startDate,
+        endDate,
+        eventId,
+        format
+      });
+
+      const currentDate = new Date().toISOString().split('T')[0];
+      const extension = format === 'pdf' ? 'pdf' : format === 'csv' ? 'csv' : 'xlsx';
+      const contentType = format === 'pdf' ? 'application/pdf' : 
+                         format === 'csv' ? 'text/csv' : 
+                         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="relatorio-faturamento-${period}-${currentDate}.${extension}"`);
+      res.send(reportBuffer);
+    } catch (error: any) {
+      console.error('Error generating billing report:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Generate Sales report
+  app.get("/api/admin/reports/sales", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const startDate = new Date(req.query.startDate as string);
+      const endDate = new Date(req.query.endDate as string);
+      const format = req.query.format as 'excel' | 'csv' | 'pdf' || 'excel';
+
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(400).json({ message: "Datas inválidas" });
+      }
+
+      const { generateSalesReport } = await import('./report-generator');
+      const reportBuffer = await generateSalesReport({
+        startDate,
+        endDate,
+        format
+      });
+
+      const currentDate = new Date().toISOString().split('T')[0];
+      const extension = format === 'pdf' ? 'pdf' : format === 'csv' ? 'csv' : 'xlsx';
+      const contentType = format === 'pdf' ? 'application/pdf' : 
+                         format === 'csv' ? 'text/csv' : 
+                         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="relatorio-vendas-${currentDate}.${extension}"`);
+      res.send(reportBuffer);
+    } catch (error: any) {
+      console.error('Error generating sales report:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Generate Customers report
+  app.get("/api/admin/reports/customers", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const sortBy = req.query.sortBy as 'orders' | 'revenue' | 'recent' || 'revenue';
+      const city = req.query.city as string;
+      const state = req.query.state as string;
+      const format = req.query.format as 'excel' | 'csv' | 'pdf' || 'excel';
+
+      const { generateCustomersReport } = await import('./report-generator');
+      const reportBuffer = await generateCustomersReport({
+        sortBy,
+        city,
+        state,
+        format
+      });
+
+      const currentDate = new Date().toISOString().split('T')[0];
+      const extension = format === 'pdf' ? 'pdf' : format === 'csv' ? 'csv' : 'xlsx';
+      const contentType = format === 'pdf' ? 'application/pdf' : 
+                         format === 'csv' ? 'text/csv' : 
+                         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="relatorio-clientes-${sortBy}-${currentDate}.${extension}"`);
+      res.send(reportBuffer);
+    } catch (error: any) {
+      console.error('Error generating customers report:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Generate Orders report for event
   app.get("/api/admin/reports/orders", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {

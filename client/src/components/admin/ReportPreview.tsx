@@ -37,11 +37,11 @@ const getPreviewColumns = (reportType: ReportType) => {
     case 'orders':
       return ['Nº Pedido', 'Cliente', 'Status', 'Valor Total', 'Zona CEP'];
     case 'billing':
-      return ['Período', 'Receita', 'Pedidos', 'Taxa Conversão'];
+      return ['Período', 'Receita Total', 'Pedidos', 'Ticket Médio', 'Taxa Conversão'];
     case 'customers':
-      return ['Nome', 'Email', 'Cidade', 'Total Pedidos', 'Valor Gasto'];
+      return ['Nome', 'Email', 'Cidade', 'Estado', 'Total Pedidos', 'Valor Gasto'];
     case 'sales':
-      return ['Evento', 'Vendas', 'Receita', 'Cupons Usados'];
+      return ['Evento', 'Receita Total', 'Pedidos', 'Ticket Médio'];
     default:
       return [];
   }
@@ -103,7 +103,11 @@ export default function ReportPreview({ reportType, filters, onGenerate, isGener
 
   const columns = getPreviewColumns(reportType);
   const canGenerate = filters.eventId && !isGenerating;
-  const canPreview = filters.eventId && ['kits', 'circuit', 'orders'].includes(reportType);
+  const canPreview = (
+    (filters.eventId && ['kits', 'circuit', 'orders'].includes(reportType)) ||
+    (['billing', 'sales'].includes(reportType) && filters.dateRange?.start && filters.dateRange?.end) ||
+    (reportType === 'customers')
+  );
 
   const renderSummary = () => {
     if (!previewData?.summary) return null;

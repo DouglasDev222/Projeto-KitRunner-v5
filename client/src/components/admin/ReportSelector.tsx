@@ -48,26 +48,26 @@ const reportOptions: ReportOption[] = [
   {
     id: 'billing',
     name: 'Relatório de Faturamento',
-    description: 'Análise financeira por período e evento',
+    description: 'Análise financeira por período com breakdown de receitas',
     icon: BarChart3,
-    status: 'coming_soon',
-    formats: ['Excel', 'PDF']
+    status: 'available',
+    formats: ['Excel', 'PDF', 'CSV']
   },
   {
     id: 'customers',
     name: 'Relatório de Clientes',
-    description: 'Análise de clientes e segmentação geográfica',
+    description: 'Análise de clientes com segmentação por localização e gastos',
     icon: Users,
-    status: 'coming_soon',
-    formats: ['Excel', 'CSV']
+    status: 'available',
+    formats: ['Excel', 'PDF', 'CSV']
   },
   {
     id: 'sales',
     name: 'Relatório de Vendas',
-    description: 'Performance de vendas e análise de cupons',
+    description: 'Performance de vendas por evento com ranking de eventos',
     icon: TrendingUp,
-    status: 'coming_soon',
-    formats: ['Excel', 'PDF']
+    status: 'available',
+    formats: ['Excel', 'PDF', 'CSV']
   }
 ];
 

@@ -30,6 +30,11 @@ export interface ReportFilters {
   status?: string[];
   dateRange?: { start: string; end: string };
   format?: 'excel' | 'pdf' | 'csv';
+  // FASE 3: New filters for analytical reports
+  period?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  sortBy?: 'orders' | 'revenue' | 'recent';
+  city?: string;
+  state?: string;
 }
 
 interface FilterPanelProps {
@@ -51,9 +56,9 @@ const formatOptions = {
   kits: ['excel'],
   circuit: ['excel'],
   orders: ['excel', 'pdf', 'csv'],
-  billing: ['excel', 'pdf'],
-  customers: ['excel', 'csv'],
-  sales: ['excel', 'pdf']
+  billing: ['excel', 'pdf', 'csv'],
+  customers: ['excel', 'pdf', 'csv'],
+  sales: ['excel', 'pdf', 'csv']
 };
 
 export default function FilterPanel({ reportType, filters, onFiltersChange, className }: FilterPanelProps) {
@@ -164,6 +169,10 @@ export default function FilterPanel({ reportType, filters, onFiltersChange, clas
   const showZoneFilters = reportType === 'circuit' || reportType === 'orders';
   const showStatusFilters = reportType === 'orders' || reportType === 'kits';
   const showFormatSelector = availableFormats.length > 1;
+  const showDateRange = ['billing', 'sales'].includes(reportType);
+  const showPeriodSelector = reportType === 'billing';
+  const showSortBySelector = reportType === 'customers';
+  const showLocationFilters = reportType === 'customers';
 
   return (
     <Card className={className}>
@@ -281,6 +290,113 @@ export default function FilterPanel({ reportType, filters, onFiltersChange, clas
                   </label>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Date Range Selection for Analytical Reports */}
+        {showDateRange && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Período de Análise</label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-muted-foreground">Data Inicial</label>
+                <input
+                  type="date"
+                  className="w-full px-3 py-2 border rounded-md"
+                  value={filters.dateRange?.start || ''}
+                  onChange={(e) => onFiltersChange({
+                    ...filters,
+                    dateRange: {
+                      start: e.target.value,
+                      end: filters.dateRange?.end || ''
+                    }
+                  })}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Data Final</label>
+                <input
+                  type="date"
+                  className="w-full px-3 py-2 border rounded-md"
+                  value={filters.dateRange?.end || ''}
+                  onChange={(e) => onFiltersChange({
+                    ...filters,
+                    dateRange: {
+                      start: filters.dateRange?.start || '',
+                      end: e.target.value
+                    }
+                  })}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Period Selection for Billing Reports */}
+        {showPeriodSelector && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Agrupamento</label>
+            <Select 
+              value={filters.period || 'monthly'} 
+              onValueChange={(value) => onFiltersChange({ ...filters, period: value as any })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Diário</SelectItem>
+                <SelectItem value="weekly">Semanal</SelectItem>
+                <SelectItem value="monthly">Mensal</SelectItem>
+                <SelectItem value="yearly">Anual</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Sort By Selection for Customer Reports */}
+        {showSortBySelector && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Ordenar Por</label>
+            <Select 
+              value={filters.sortBy || 'revenue'} 
+              onValueChange={(value) => onFiltersChange({ ...filters, sortBy: value as any })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="revenue">Maior Gasto</SelectItem>
+                <SelectItem value="orders">Mais Pedidos</SelectItem>
+                <SelectItem value="recent">Mais Recente</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Location Filters for Customer Reports */}
+        {showLocationFilters && (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Cidade</label>
+              <input
+                type="text"
+                placeholder="Filtrar por cidade..."
+                className="w-full px-3 py-2 border rounded-md"
+                value={filters.city || ''}
+                onChange={(e) => onFiltersChange({ ...filters, city: e.target.value || undefined })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Estado</label>
+              <input
+                type="text"
+                placeholder="Ex: PB"
+                className="w-full px-3 py-2 border rounded-md"
+                value={filters.state || ''}
+                maxLength={2}
+                onChange={(e) => onFiltersChange({ ...filters, state: e.target.value.toUpperCase() || undefined })}
+              />
             </div>
           </div>
         )}
