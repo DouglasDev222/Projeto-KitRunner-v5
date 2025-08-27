@@ -97,12 +97,6 @@ Este documento detalha o plano para expandir o sistema de relatórios atual, tra
 - Histórico de pedidos por cliente
 - Segmentação por valor gasto
 
-### 6. RELATÓRIO DE ENTREGAS E LOGÍSTICA
-- Status de entregas por zona CEP
-- Tempo médio de entrega
-- Análise de custos de entrega
-- Performance por transportadora/método
-
 ## ARQUITETURA TÉCNICA
 
 ### Frontend (`client/src/pages/admin-reports.tsx`)
