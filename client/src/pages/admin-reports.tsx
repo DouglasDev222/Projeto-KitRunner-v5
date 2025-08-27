@@ -5,6 +5,7 @@ import { FileSpreadsheet } from "lucide-react";
 import ReportSelector, { ReportType } from "@/components/admin/ReportSelector";
 import FilterPanel, { ReportFilters } from "@/components/admin/FilterPanel";
 import ReportPreview from "@/components/admin/ReportPreview";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function AdminReports() {
   const [selectedReportType, setSelectedReportType] = useState<ReportType | null>(null);
@@ -101,11 +102,10 @@ export default function AdminReports() {
           throw new Error(`Relatório ${selectedReportType} ainda não implementado`);
       }
 
-      const response = await fetch(endpoint);
+      // Make authenticated API request
+      const response = await apiRequest('GET', endpoint);
       
-      if (!response.ok) {
-        throw new Error(`Erro ao gerar relatório: ${response.statusText}`);
-      }
+      // apiRequest already handles error checking
 
       // Handle file download
       const blob = await response.blob();
