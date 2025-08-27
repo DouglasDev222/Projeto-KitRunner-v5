@@ -13,16 +13,21 @@ Este documento detalha o plano para expandir o sistema de relatórios atual, tra
 
 ### 1. RELATÓRIO DE ENDEREÇOS PARA CIRCUIT 
 **Finalidade**: Otimizar rotas de entrega para o sistema Circuit
-**Formato**: Excel (.xlsx) personalizado para importação
-**Colunas Principais**:
-- Nome do Cliente
-- Endereço Completo (separado em colunas)
-- CEP
-- Zona CEP (nome da zona onde o endereço está incluso)
-- Telefone
-- Observações/Complemento
-- Número do Pedido (referência)
-- Prioridade de Entrega (baseada em status)
+**Formato**: Excel (.xlsx) personalizado para importação no Circuit
+**Formato Específico Requerido pelo Circuit**:
+
+| Address Line 1 | Address Line 2 | City | State | Postal Code | Extra info (Optional) | Add more columns if needed |
+|---|---|---|---|---|---|---|
+| {Nome da Rua}, {Número} |  | {Cidade} | {Estado} | {CEP} | Pedido - {Numero do Pedido (só números após o "-")} | {Complemento} |
+
+**Mapeamento dos Dados**:
+- **Address Line 1**: `{street}, {number}` (Ex: "Rua das Flores, 123")
+- **Address Line 2**: (sempre vazio)
+- **City**: `{city}` 
+- **State**: `{state}`
+- **Postal Code**: `{zipCode}` (formato: 12345-678)
+- **Extra info (Optional)**: `Pedido - {orderNumber sem KR25-}` (Ex: "Pedido - 1074")
+- **Add more columns if needed**: `{complement}` (complemento do endereço)
 
 ### 2. RELATÓRIO GERAL DE PEDIDOS POR EVENTO
 **Finalidade**: Análise completa de pedidos de um evento
@@ -175,37 +180,27 @@ GET    /api/admin/reports/deliveries
 **Query SQL Base**:
 ```sql
 SELECT DISTINCT
-  c.name as customer_name,
-  a.street,
-  a.number,
-  a.complement,
-  a.neighborhood,
+  CONCAT(a.street, ', ', a.number) as address_line_1,
+  '' as address_line_2,
   a.city,
   a.state,
-  a.zip_code,
-  cz.name as zone_name,
-  c.phone,
-  o.order_number,
-  o.status,
-  COUNT(k.id) as kit_count
+  a.zip_code as postal_code,
+  CONCAT('Pedido - ', SUBSTRING(o.order_number, POSITION('-' IN o.order_number) + 1)) as extra_info,
+  COALESCE(a.complement, '') as add_more_columns
 FROM orders o
 JOIN customers c ON o.customer_id = c.id
 JOIN addresses a ON o.address_id = a.id
 JOIN events e ON o.event_id = e.id
-LEFT JOIN cep_zones cz ON (
-  -- Lógica para encontrar zona CEP ativa com maior prioridade
-)
-JOIN kits k ON k.order_id = o.id
 WHERE o.event_id = ? AND o.status IN ('confirmado', 'em_transito')
-GROUP BY o.id, c.id, a.id, cz.id
-ORDER BY cz.priority ASC, a.neighborhood, a.street;
+ORDER BY a.neighborhood, a.street, a.number;
 ```
 
 **Formato Excel Circuit**:
-- Header customizado com info do evento
-- Colunas otimizadas para importação
-- Agrupamento visual por zona CEP
-- Cor-coding por status de entrega
+- Headers exatos conforme especificação Circuit
+- Address Line 1: "Rua das Flores, 123"
+- Address Line 2: sempre vazio
+- Extra info: "Pedido - 1074" (sem o prefixo KR25-)
+- Complemento na última coluna
 
 ### 2. SISTEMA DE ZONAS CEP PARA RELATÓRIOS
 **Função de Busca Otimizada**:
