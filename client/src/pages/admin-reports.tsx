@@ -54,12 +54,21 @@ export default function AdminReports() {
       switch (selectedReportType) {
         case 'kits':
           endpoint = `/api/admin/reports/kits/${filters.eventId}`;
+          const kitsParams = new URLSearchParams();
+          if (filters.status?.length) kitsParams.append('status', filters.status.join(','));
+          if (filters.format) kitsParams.append('format', filters.format);
+          if (kitsParams.toString()) {
+            endpoint += `?${kitsParams.toString()}`;
+          }
           break;
         case 'circuit':
           endpoint = `/api/admin/reports/circuit/${filters.eventId}`;
-          if (filters.selectedZoneIds && filters.selectedZoneIds.length > 0) {
-            const zoneIds = filters.selectedZoneIds.join(',');
-            endpoint += `?zones=${zoneIds}`;
+          const circuitParams = new URLSearchParams();
+          if (filters.selectedZoneIds?.length) circuitParams.append('zones', filters.selectedZoneIds.join(','));
+          if (filters.status?.length) circuitParams.append('status', filters.status.join(','));
+          if (filters.format) circuitParams.append('format', filters.format);
+          if (circuitParams.toString()) {
+            endpoint += `?${circuitParams.toString()}`;
           }
           break;
         case 'orders':

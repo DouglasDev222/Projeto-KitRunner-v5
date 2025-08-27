@@ -3695,7 +3695,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       switch (reportType) {
         case 'kits':
           if (eventId) {
-            const kitsData = await storage.getKitsDataForPreview(parseInt(eventId as string));
+            const statusArray = status ? (status as string).split(',') : undefined;
+            const kitsData = await storage.getKitsDataForPreview(parseInt(eventId as string), statusArray);
             previewData = {
               totalRecords: kitsData.totalCount,
               sampleData: kitsData.sample.map((kit: any) => ({

@@ -35,7 +35,7 @@ import {
   insertEmailLogSchema
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, count, sum, desc, ne, sql, like, or, asc } from "drizzle-orm";
+import { eq, and, count, sum, desc, ne, sql, like, or, asc, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // Events
@@ -2080,10 +2080,16 @@ class MockStorage implements IStorage {
   }
 
   // Report Preview Methods - Return sample data with real counts
-  async getKitsDataForPreview(eventId: number, limit: number = 5): Promise<{totalCount: number, sample: any[]}> {
+  async getKitsDataForPreview(eventId: number, statusFilter?: string[], limit: number = 5): Promise<{totalCount: number, sample: any[]}> {
+    let whereConditions = [eq(orders.eventId, eventId)];
+    
+    if (statusFilter && statusFilter.length > 0) {
+      whereConditions.push(inArray(orders.status, statusFilter));
+    }
+
     const totalCount = await db.select({ count: sql<number>`count(*)` })
       .from(orders)
-      .where(eq(orders.eventId, eventId));
+      .where(and(...whereConditions));
 
     const sample = await db.select({
       orderNumber: orders.orderNumber,
@@ -2095,7 +2101,7 @@ class MockStorage implements IStorage {
     .from(orders)
     .innerJoin(customers, eq(orders.customerId, customers.id))
     .innerJoin(kits, eq(kits.orderId, orders.id))
-    .where(eq(orders.eventId, eventId))
+    .where(and(...whereConditions))
     .limit(limit);
 
     return {
