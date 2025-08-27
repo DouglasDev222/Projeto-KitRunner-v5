@@ -2078,6 +2078,99 @@ class MockStorage implements IStorage {
     
     return result || undefined;
   }
+
+  // Report Preview Methods - Return sample data with real counts
+  async getKitsDataForPreview(eventId: number, limit: number = 5): Promise<{totalCount: number, sample: any[]}> {
+    const totalCount = await db.select({ count: sql<number>`count(*)` })
+      .from(orders)
+      .where(eq(orders.eventId, eventId));
+
+    const sample = await db.select({
+      orderNumber: orders.orderNumber,
+      name: orders.name,
+      cpf: customers.cpf,
+      shirtSize: orders.shirtSize,
+      customerName: customers.name
+    })
+    .from(orders)
+    .innerJoin(customers, eq(orders.customerId, customers.id))
+    .where(eq(orders.eventId, eventId))
+    .limit(limit);
+
+    return {
+      totalCount: totalCount[0]?.count || 0,
+      sample
+    };
+  }
+
+  async getCircuitDataForPreview(eventId: number, zoneIds?: number[], limit: number = 5): Promise<{totalCount: number, sample: any[]}> {
+    let query = db.select({
+      orderNumber: orders.orderNumber,
+      street: orders.street,
+      number: orders.number,
+      city: orders.city,
+      state: orders.state,
+      zipCode: orders.zipCode
+    })
+    .from(orders)
+    .where(eq(orders.eventId, eventId));
+
+    // Apply zone filtering if provided
+    if (zoneIds && zoneIds.length > 0) {
+      // Note: This would need CEP zone checking logic
+      console.log('Zone filtering not yet implemented for preview');
+    }
+
+    const sample = await query.limit(limit);
+    
+    const totalCountResult = await db.select({ count: sql<number>`count(*)` })
+      .from(orders)
+      .where(eq(orders.eventId, eventId));
+
+    return {
+      totalCount: totalCountResult[0]?.count || 0,
+      sample
+    };
+  }
+
+  async getOrdersDataForPreview(eventId: number, statusFilter?: string[], zoneIds?: number[], limit: number = 5): Promise<{totalCount: number, sample: any[], totalRevenue: number, zonesSummary: any[]}> {
+    let whereConditions = [eq(orders.eventId, eventId)];
+
+    if (statusFilter && statusFilter.length > 0) {
+      whereConditions.push(sql`${orders.status} = ANY(${statusFilter})`);
+    }
+
+    const sample = await db.select({
+      orderNumber: orders.orderNumber,
+      customerName: customers.name,
+      status: orders.status,
+      totalCost: orders.totalCost,
+      zoneName: sql<string>`'Zona não implementada'` // Placeholder for zone name
+    })
+    .from(orders)
+    .innerJoin(customers, eq(orders.customerId, customers.id))
+    .where(and(...whereConditions))
+    .limit(limit);
+
+    const totalCountResult = await db.select({ count: sql<number>`count(*)` })
+      .from(orders)
+      .where(and(...whereConditions));
+
+    const revenueResult = await db.select({ 
+      revenue: sql<number>`COALESCE(SUM(CAST(${orders.totalCost} AS DECIMAL)), 0)` 
+    })
+    .from(orders)
+    .where(and(...whereConditions));
+
+    return {
+      totalCount: totalCountResult[0]?.count || 0,
+      sample,
+      totalRevenue: revenueResult[0]?.revenue || 0,
+      zonesSummary: [
+        { name: 'Todas as Zonas', count: totalCountResult[0]?.count || 0 }
+      ]
+    };
+  }
 }
 
 // Export the storage implementation

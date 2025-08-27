@@ -3670,6 +3670,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Report Preview Endpoints - Return sample data with real stats
+  app.get("/api/admin/reports/preview/:type", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const reportType = req.params.type;
+      const { eventId, selectedZoneIds, status, format } = req.query;
+
+      console.log(`📊 Preview request for ${reportType} with filters:`, req.query);
+
+      let previewData: any = {
+        totalRecords: 0,
+        sampleData: [],
+        summary: {}
+      };
+
+      switch (reportType) {
+        case 'kits':
+          if (eventId) {
+            const kitsData = await storage.getKitsDataForPreview(parseInt(eventId as string));
+            previewData = {
+              totalRecords: kitsData.totalCount,
+              sampleData: kitsData.sample.map((kit: any) => ({
+                'Nº Pedido': kit.orderNumber,
+                'Nome Atleta': kit.name,
+                'CPF': `***.***.***-${kit.cpf.slice(-2)}`,
+                'Camisa': kit.shirtSize,
+                'Cliente': kit.customerName
+              }))
+            };
+          }
+          break;
+
+        case 'circuit':
+          if (eventId) {
+            const circuitData = await storage.getCircuitDataForPreview(parseInt(eventId as string), selectedZoneIds ? JSON.parse(selectedZoneIds as string) : undefined);
+            previewData = {
+              totalRecords: circuitData.totalCount,
+              sampleData: circuitData.sample.map((addr: any) => ({
+                'Address Line 1': `${addr.street}, ${addr.number}`,
+                'City': addr.city,
+                'State': addr.state,
+                'Postal Code': addr.zipCode,
+                'Extra Info': `Pedido - ${addr.orderNumber.split('-')[1]}`
+              }))
+            };
+          }
+          break;
+
+        case 'orders':
+          if (eventId) {
+            const ordersData = await storage.getOrdersDataForPreview(parseInt(eventId as string), status ? (status as string).split(',') : undefined, selectedZoneIds ? JSON.parse(selectedZoneIds as string) : undefined);
+            previewData = {
+              totalRecords: ordersData.totalCount,
+              sampleData: ordersData.sample.map((order: any) => ({
+                'Nº Pedido': order.orderNumber,
+                'Cliente': order.customerName,
+                'Status': order.status,
+                'Valor Total': `R$ ${order.totalCost}`,
+                'Zona CEP': order.zoneName || 'Zona não encontrada'
+              })),
+              summary: {
+                totalRevenue: ordersData.totalRevenue,
+                totalOrders: ordersData.totalCount,
+                zones: ordersData.zonesSummary
+              }
+            };
+          }
+          break;
+
+        default:
+          // For analytical reports without specific event requirement
+          previewData = {
+            totalRecords: 0,
+            sampleData: [],
+            summary: {
+              message: `Preview de ${reportType} não implementado ainda`
+            }
+          };
+      }
+
+      res.json(previewData);
+    } catch (error) {
+      console.error('Error generating preview:', error);
+      res.status(500).json({ message: "Erro ao gerar preview do relatório" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

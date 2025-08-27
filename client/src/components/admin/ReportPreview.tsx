@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -94,10 +95,26 @@ const getMockPreviewData = (reportType: ReportType, filters: ReportFilters): Pre
 export default function ReportPreview({ reportType, filters, onGenerate, isGenerating, className }: ReportPreviewProps) {
   const [showPreview, setShowPreview] = useState(false);
 
-  // In real implementation, this would be conditional based on showPreview
-  const { data: previewData, isLoading: previewLoading } = useQuery({
+  // Fetch real preview data from API
+  const { data: previewData, isLoading: previewLoading } = useQuery<PreviewData>({
     queryKey: ['report-preview', reportType, filters],
-    queryFn: () => getMockPreviewData(reportType, filters),
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filters.eventId) params.append('eventId', filters.eventId.toString());
+      if (filters.selectedZoneIds && filters.selectedZoneIds.length > 0) {
+        params.append('selectedZoneIds', JSON.stringify(filters.selectedZoneIds));
+      }
+      if (filters.status && filters.status.length > 0) {
+        params.append('status', filters.status.join(','));
+      }
+      if (filters.format) params.append('format', filters.format);
+
+      const response = await apiRequest('GET', `/api/admin/reports/preview/${reportType}?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Erro ao carregar preview do relatório');
+      }
+      return response.json();
+    },
     enabled: showPreview && !!filters.eventId, // Only fetch when preview is requested and event is selected
   });
 

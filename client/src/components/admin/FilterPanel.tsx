@@ -70,10 +70,12 @@ export default function FilterPanel({ reportType, filters, onFiltersChange, clas
   });
 
   // Get CEP zones for circuit and orders reports
-  const { data: cepZones = [], isLoading: zonesLoading } = useQuery<CepZone[]>({
+  const { data: cepZonesResponse, isLoading: zonesLoading } = useQuery<{success: boolean, zones: CepZone[]}>({
     queryKey: ['/api/admin/cep-zones'],
     enabled: reportType === 'circuit' || reportType === 'orders'
   });
+  
+  const cepZones = cepZonesResponse?.zones || [];
 
   const selectedEvent = events.find(event => event.id === filters.eventId);
   const availableFormats = formatOptions[reportType] || [];
@@ -248,19 +250,23 @@ export default function FilterPanel({ reportType, filters, onFiltersChange, clas
               <div className="space-y-2 pl-6 border-l-2 border-muted">
                 {zonesLoading ? (
                   <div className="text-sm text-muted-foreground">Carregando zonas...</div>
-                ) : cepZones.filter(zone => zone.active).map((zone) => (
-                  <div key={zone.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`zone-${zone.id}`}
-                      checked={filters.selectedZoneIds?.includes(zone.id) || false}
-                      onCheckedChange={(checked) => handleZoneSelection(zone.id, checked as boolean)}
-                      data-testid={`checkbox-zone-${zone.id}`}
-                    />
-                    <label htmlFor={`zone-${zone.id}`} className="text-sm">
-                      {zone.name}
-                    </label>
-                  </div>
-                ))}
+                ) : Array.isArray(cepZones) && cepZones.length > 0 ? (
+                  cepZones.filter(zone => zone.active).map((zone) => (
+                    <div key={zone.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`zone-${zone.id}`}
+                        checked={filters.selectedZoneIds?.includes(zone.id) || false}
+                        onCheckedChange={(checked) => handleZoneSelection(zone.id, checked as boolean)}
+                        data-testid={`checkbox-zone-${zone.id}`}
+                      />
+                      <label htmlFor={`zone-${zone.id}`} className="text-sm">
+                        {zone.name}
+                      </label>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-sm text-muted-foreground">Nenhuma zona ativa encontrada</div>
+                )}
               </div>
             )}
           </div>
