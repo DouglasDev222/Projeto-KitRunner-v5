@@ -24,9 +24,14 @@ import {
 } from './email-types';
 
 // Configure Resend (primary) and SendGrid (fallback)
-const resend = new Resend(process.env.RESEND_API_KEY);
 const RESEND_ENABLED = !!process.env.RESEND_API_KEY;
 const SENDGRID_ENABLED = !!process.env.SENDGRID_API_KEY;
+
+// Only initialize Resend if API key is present
+let resend: any = null;
+if (RESEND_ENABLED) {
+  resend = new Resend(process.env.RESEND_API_KEY);
+}
 
 if (RESEND_ENABLED) {
   console.log('📧 Resend configured successfully (primary provider)');
