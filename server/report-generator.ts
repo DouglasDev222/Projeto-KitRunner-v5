@@ -205,20 +205,24 @@ export async function generateCircuitReport(eventId: number, zoneIds?: number[])
 
   const eventOrders = await ordersQuery;
 
-  // Filter by zones if provided
+  // Filter by zones if provided - FIXED: Now respects priority and active status
   let filteredOrders = eventOrders;
   if (zoneIds && zoneIds.length > 0) {
-    // Get zone definitions
-    const zones = await db.select().from(cepZones).where(inArray(cepZones.id, zoneIds));
+    // Get ALL zone definitions to properly calculate priorities
+    const allZones = await db.select().from(cepZones);
+    const requestedZones = await db.select().from(cepZones).where(inArray(cepZones.id, zoneIds));
+    
+    // Import the correct function for CEP zone calculation
+    const { findCepZoneFromList } = await import('./cep-zones-calculator');
     
     filteredOrders = eventOrders.filter(order => {
-      return zones.some(zone => {
-        const ranges = JSON.parse(zone.cepRanges) as { start: string; end: string }[];
-        return ranges.some(range => {
-          const orderCep = order.zipCode.replace(/\D/g, '');
-          return orderCep >= range.start && orderCep <= range.end;
-        });
-      });
+      // Find which zone this CEP actually belongs to (respecting priority and active status)
+      const actualZone = findCepZoneFromList(order.zipCode, allZones);
+      
+      // Only include order if it belongs to one of the requested zones AND that zone was actually assigned
+      if (!actualZone) return false;
+      
+      return requestedZones.some(requestedZone => requestedZone.id === actualZone.id);
     });
   }
 
@@ -353,8 +357,11 @@ export async function generateOrdersReport(
 
   const eventOrders = await ordersQuery;
 
-  // Get all zones for filtering and reporting
-  const allZones = await db.select().from(cepZones).where(eq(cepZones.active, true));
+  // Get all zones for filtering and reporting - FIXED: Now using correct priority logic
+  const allZones = await db.select().from(cepZones);
+
+  // Import the correct function for CEP zone calculation
+  const { findCepZoneFromList } = await import('./cep-zones-calculator');
 
   // Process orders with zone information
   const reportData: OrderReportData[] = [];
@@ -363,14 +370,10 @@ export async function generateOrdersReport(
     // Get kits for this order
     const orderKits = await db.select().from(kits).where(eq(kits.orderId, order.orderId));
     
-    // Find CEP zone
-    const orderCep = order.zipCode.replace(/\D/g, '');
-    const matchingZone = allZones.find(zone => {
-      const ranges = JSON.parse(zone.cepRanges) as { start: string; end: string }[];
-      return ranges.some(range => orderCep >= range.start && orderCep <= range.end);
-    });
+    // Find CEP zone using correct priority and active status logic
+    const matchingZone = findCepZoneFromList(order.zipCode, allZones);
 
-    // Apply zone filter if provided
+    // Apply zone filter if provided - FIXED: Now respects actual zone assignment based on priority
     if (zoneIds && zoneIds.length > 0) {
       if (!matchingZone || !zoneIds.includes(matchingZone.id)) {
         continue;

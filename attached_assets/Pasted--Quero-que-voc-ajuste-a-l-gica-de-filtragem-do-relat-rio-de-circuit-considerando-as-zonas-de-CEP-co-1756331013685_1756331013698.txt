@@ -1,0 +1,51 @@
+"Quero que você ajuste a lógica de filtragem do relatório de circuit considerando as zonas de CEP com prioridades. Hoje o filtro não respeita corretamente a hierarquia de prioridades.
+
+📌 Regras que devem ser implementadas:
+
+Cada zona de CEP tem uma prioridade (1 = mais alta, até N = mais baixa).
+
+Um mesmo CEP pode se encaixar em várias zonas (sobreposição).
+
+Apenas zonas ativas (active = true) devem ser consideradas na checagem.
+
+Zonas com active = false devem ser completamente ignoradas.
+
+A checagem deve sempre começar pela prioridade 1 e seguir até a última.
+
+Assim, o CEP deve ser atribuído à primeira zona ativa de prioridade em que ele se encaixar.
+
+Se o usuário filtrar por uma prioridade específica, o relatório deve mostrar apenas os CEPs realmente atribuídos a essa prioridade.
+
+Exemplo: se um CEP pertence à prioridade 2 e 4, e o usuário filtra pela prioridade 4 → esse CEP não deve aparecer, pois já foi capturado pela prioridade 2.
+
+A última prioridade (ex: 4) é um intervalo amplo de fallback, usada apenas quando o CEP não se encaixa em nenhuma das zonas anteriores.
+
+📌 Objetivo do ajuste:
+
+Garantir que cada CEP apareça somente na prioridade correta e ativa (a primeira em que ele se encaixar).
+
+Corrigir o filtro do relatório para que não retorne CEPs de prioridades diferentes da escolhida.
+
+Ignorar totalmente zonas inativas (active = false).
+
+Além do relatório de circuit, existem outros relatórios que:
+
+Possuem filtro por zona;
+
+Exibem a zona do CEP no próprio resultado.
+
+Preciso que você:
+
+Cheque se a lógica de zonas está implementada corretamente nesses relatórios também.
+
+A lógica deve seguir as mesmas regras já definidas:
+
+Considerar apenas zonas ativas (active = true);
+
+Um CEP deve ser atribuído somente à primeira zona ativa de prioridade em que se encaixar (1 → N);
+
+Zonas inativas (active = false) devem ser ignoradas;
+
+O filtro por prioridade deve exibir apenas os CEPs atribuídos a essa prioridade, sem incluir CEPs de prioridades diferentes.
+
+Caso algum relatório não esteja respeitando essa regra, ajustar para que todos os relatórios fiquem consistentes."
