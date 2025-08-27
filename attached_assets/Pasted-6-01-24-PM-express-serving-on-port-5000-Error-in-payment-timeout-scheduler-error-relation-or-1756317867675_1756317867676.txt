@@ -1,0 +1,79 @@
+6:01:24 PM [express] serving on port 5000
+⏰ Error in payment timeout scheduler: error: relation "orders" does not exist
+    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async <anonymous> (/home/runner/workspace/node_modules/src/node-postgres/session.ts:104:19)
+    at async DatabaseStorage.getAllOrders (/home/runner/workspace/server/storage.ts:572:20)
+    at async PaymentTimeoutScheduler.checkExpiredOrders (/home/runner/workspace/server/payment-timeout-scheduler.ts:56:25) {
+  length: 106,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '985',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+Browserslist: browsers data (caniuse-lite) is 10 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+Token verification error: error: relation "admin_sessions" does not exist
+    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async <anonymous> (/home/runner/workspace/node_modules/src/node-postgres/session.ts:104:19)
+    at async AdminAuthService.verifyToken (/home/runner/workspace/server/auth/admin-auth.ts:120:25)
+    at async requireAdminAuth (/home/runner/workspace/server/middleware/auth.ts:94:19) {
+  length: 114,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '105',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+🔒 SECURITY: Invalid admin token for /verify from IP: 10.81.10.147
+6:01:58 PM [express] GET /api/admin/auth/verify 401 in 780ms :: {"error":"Token de administrador inv…
+Login error: error: relation "admin_users" does not exist
+    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async <anonymous> (/home/runner/workspace/node_modules/src/node-postgres/session.ts:104:19)
+    at async AdminAuthService.login (/home/runner/workspace/server/auth/admin-auth.ts:22:22)
+    at async <anonymous> (/home/runner/workspace/server/routes/admin-auth.ts:20:20) {
+  length: 111,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '170',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+6:02:14 PM [express] POST /api/admin/auth/login 401 in 747ms :: {"success":false,"error":"Erro inter…
