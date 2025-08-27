@@ -172,6 +172,11 @@ export interface IStorage {
   getActiveWhatsappTemplate(): Promise<WhatsappSettings | null>;
   createWhatsappTemplate(template: InsertWhatsappSettings): Promise<WhatsappSettings>;
   updateWhatsappTemplate(id: number, template: Partial<InsertWhatsappSettings>): Promise<WhatsappSettings | undefined>;
+  
+  // Report Preview Methods
+  getKitsDataForPreview(eventId: number, statusFilter?: string[], limit?: number): Promise<{totalCount: number, sample: any[]}>;
+  getCircuitDataForPreview(eventId: number, zoneIds?: number[], limit?: number): Promise<{totalCount: number, sample: any[]}>;
+  getOrdersDataForPreview(eventId: number, statusFilter?: string[], zoneIds?: number[], limit?: number): Promise<{totalCount: number, sample: any[], totalRevenue: number, zonesSummary: any[]}>;
 
 }
 
