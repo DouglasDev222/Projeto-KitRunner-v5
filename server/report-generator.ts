@@ -325,9 +325,30 @@ export async function generateOrdersReport(
     .innerJoin(addresses, eq(orders.addressId, addresses.id))
     .where(eq(orders.eventId, eventId));
 
-  // Apply status filter
+  // Apply status filter - rebuild query if needed
   if (status && status.length > 0) {
-    ordersQuery = ordersQuery.where(inArray(orders.status, status));
+    ordersQuery = db
+      .select({
+        orderId: orders.id,
+        orderNumber: orders.orderNumber,
+        orderStatus: orders.status,
+        totalCost: orders.totalCost,
+        paymentMethod: orders.paymentMethod,
+        createdAt: orders.createdAt,
+        customerName: customers.name,
+        customerCpf: customers.cpf,
+        street: addresses.street,
+        number: addresses.number,
+        complement: addresses.complement,
+        neighborhood: addresses.neighborhood,
+        city: addresses.city,
+        state: addresses.state,
+        zipCode: addresses.zipCode,
+      })
+      .from(orders)
+      .innerJoin(customers, eq(orders.customerId, customers.id))
+      .innerJoin(addresses, eq(orders.addressId, addresses.id))
+      .where(and(eq(orders.eventId, eventId), inArray(orders.status, status)));
   }
 
   const eventOrders = await ordersQuery;
@@ -380,15 +401,17 @@ export async function generateOrdersReport(
   reportData.sort((a, b) => a.orderNumber.localeCompare(b.orderNumber));
 
   if (format === 'excel') {
-    return generateOrdersExcel(reportData, event.name);
+    return await generateOrdersExcel(reportData, event.name);
   } else if (format === 'csv') {
     return generateOrdersCSV(reportData);
+  } else if (format === 'pdf') {
+    return await generateOrdersPDF(reportData, event.name);
   } else {
-    throw new Error('PDF format not implemented yet');
+    throw new Error(`Formato ${format} não suportado`);
   }
 }
 
-function generateOrdersExcel(reportData: OrderReportData[], eventName: string): Buffer {
+async function generateOrdersExcel(reportData: OrderReportData[], eventName: string): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Relatório de Pedidos');
 
@@ -457,7 +480,7 @@ function generateOrdersExcel(reportData: OrderReportData[], eventName: string): 
     });
   });
 
-  return Buffer.from(workbook.xlsx.writeBuffer());
+  return Buffer.from(await workbook.xlsx.writeBuffer());
 }
 
 function generateOrdersCSV(reportData: OrderReportData[]): Buffer {
@@ -502,4 +525,72 @@ export async function getEventsForReports() {
     date: events.date,
     city: events.city,
   }).from(events).where(eq(events.available, true));
+}
+
+// PDF Generator for Orders Report
+async function generateOrdersPDF(reportData: OrderReportData[], eventName: string): Promise<Buffer> {
+  const PDFDocument = require('pdfkit');
+  const doc = new PDFDocument();
+  const buffers: Buffer[] = [];
+
+  doc.on('data', buffers.push.bind(buffers));
+  doc.on('end', () => {});
+
+  // Header
+  doc.fontSize(20).text(`Relatório de Pedidos - ${eventName}`, {
+    align: 'center'
+  });
+  doc.moveDown();
+
+  // Summary info
+  doc.fontSize(12).text(`Total de Pedidos: ${reportData.length}`);
+  const totalValue = reportData.reduce((sum, order) => sum + order.totalValue, 0);
+  doc.text(`Valor Total: R$ ${totalValue.toFixed(2)}`);
+  doc.moveDown();
+
+  // Table headers
+  const startY = doc.y;
+  const colWidths = [60, 100, 80, 60, 80]; // Column widths
+  const headers = ['Pedido', 'Cliente', 'Status', 'Valor', 'Zona CEP'];
+  
+  let x = 50;
+  headers.forEach((header, i) => {
+    doc.text(header, x, startY, { width: colWidths[i] });
+    x += colWidths[i];
+  });
+  
+  doc.moveDown();
+
+  // Table data
+  reportData.forEach((order, index) => {
+    if (doc.y > 700) { // New page if needed
+      doc.addPage();
+    }
+    
+    const y = doc.y;
+    x = 50;
+    
+    const rowData = [
+      order.orderNumber,
+      order.customerName.substring(0, 15) + (order.customerName.length > 15 ? '...' : ''),
+      order.status,
+      `R$ ${order.totalValue.toFixed(2)}`,
+      order.cepZone || 'N/A'
+    ];
+    
+    rowData.forEach((data, i) => {
+      doc.fontSize(8).text(data, x, y, { width: colWidths[i] });
+      x += colWidths[i];
+    });
+    
+    doc.moveDown(0.5);
+  });
+
+  doc.end();
+  
+  return new Promise((resolve) => {
+    doc.on('end', () => {
+      resolve(Buffer.concat(buffers));
+    });
+  });
 }

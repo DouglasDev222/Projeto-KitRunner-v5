@@ -1868,6 +1868,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get events list for reports
+  app.get("/api/admin/reports/events", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { getEventsForReports } = await import('./report-generator');
+      const events = await getEventsForReports();
+      res.json(events);
+    } catch (error: any) {
+      console.error('Error fetching events for reports:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Generate Orders report for event
   app.get("/api/admin/reports/orders", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {

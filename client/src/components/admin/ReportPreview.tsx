@@ -49,7 +49,7 @@ const getPreviewColumns = (reportType: ReportType) => {
 
 const getMockPreviewData = (reportType: ReportType, filters: ReportFilters): PreviewData => {
   // This is mock data for preview - in real implementation, this would call API
-  const baseData = {
+  const baseData: PreviewData = {
     totalRecords: Math.floor(Math.random() * 200) + 50,
     sampleData: [],
     summary: {}
@@ -58,23 +58,23 @@ const getMockPreviewData = (reportType: ReportType, filters: ReportFilters): Pre
   switch (reportType) {
     case 'kits':
       baseData.sampleData = [
-        { pedido: 'KR25-1001', atleta: 'João Silva', cpf: '***.***.***-**', camisa: 'M', cliente: 'João Silva' },
-        { pedido: 'KR25-1002', atleta: 'Maria Santos', cpf: '***.***.***-**', camisa: 'P', cliente: 'Pedro Santos' },
-        { pedido: 'KR25-1003', atleta: 'Carlos Lima', cpf: '***.***.***-**', camisa: 'G', cliente: 'Carlos Lima' }
+        { 'Nº Pedido': 'KR25-1001', 'Nome Atleta': 'João Silva', 'CPF': '***.***.***-**', 'Camisa': 'M', 'Cliente': 'João Silva' },
+        { 'Nº Pedido': 'KR25-1002', 'Nome Atleta': 'Maria Santos', 'CPF': '***.***.***-**', 'Camisa': 'P', 'Cliente': 'Pedro Santos' },
+        { 'Nº Pedido': 'KR25-1003', 'Nome Atleta': 'Carlos Lima', 'CPF': '***.***.***-**', 'Camisa': 'G', 'Cliente': 'Carlos Lima' }
       ];
       break;
     case 'circuit':
       baseData.sampleData = [
-        { address1: 'Rua das Flores, 123', city: 'João Pessoa', state: 'PB', postal: '58000-000', extra: 'Pedido - 1001' },
-        { address1: 'Av. Brasil, 456', city: 'João Pessoa', state: 'PB', postal: '58010-000', extra: 'Pedido - 1002' },
-        { address1: 'Rua do Sol, 789', city: 'Campina Grande', state: 'PB', postal: '58400-000', extra: 'Pedido - 1003' }
+        { 'Address Line 1': 'Rua das Flores, 123', 'City': 'João Pessoa', 'State': 'PB', 'Postal Code': '58000-000', 'Extra Info': 'Pedido - 1001' },
+        { 'Address Line 1': 'Av. Brasil, 456', 'City': 'João Pessoa', 'State': 'PB', 'Postal Code': '58010-000', 'Extra Info': 'Pedido - 1002' },
+        { 'Address Line 1': 'Rua do Sol, 789', 'City': 'Campina Grande', 'State': 'PB', 'Postal Code': '58400-000', 'Extra Info': 'Pedido - 1003' }
       ];
       break;
     case 'orders':
       baseData.sampleData = [
-        { pedido: 'KR25-1001', cliente: 'João Silva', status: 'Confirmado', valor: 'R$ 35,00', zona: 'Centro' },
-        { pedido: 'KR25-1002', cliente: 'Maria Santos', status: 'Em Trânsito', valor: 'R$ 42,00', zona: 'Zona Sul' },
-        { pedido: 'KR25-1003', cliente: 'Carlos Lima', status: 'Entregue', valor: 'R$ 28,00', zona: 'Zona Norte' }
+        { 'Nº Pedido': 'KR25-1001', 'Cliente': 'João Silva', 'Status': 'Confirmado', 'Valor Total': 'R$ 35,00', 'Zona CEP': 'Centro' },
+        { 'Nº Pedido': 'KR25-1002', 'Cliente': 'Maria Santos', 'Status': 'Em Trânsito', 'Valor Total': 'R$ 42,00', 'Zona CEP': 'Zona Sul' },
+        { 'Nº Pedido': 'KR25-1003', 'Cliente': 'Carlos Lima', 'Status': 'Entregue', 'Valor Total': 'R$ 28,00', 'Zona CEP': 'Zona Norte' }
       ];
       baseData.summary = {
         totalRevenue: 1250.50,
