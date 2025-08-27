@@ -1820,8 +1820,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "ID do evento inválido" });
       }
 
+      // Parse status filter from query params
+      const statusFilter = req.query.status as string;
+      const statusArray = statusFilter ? statusFilter.split(',') : undefined;
+      
       const { generateKitsReport } = await import('./report-generator');
-      const excelBuffer = await generateKitsReport(eventId);
+      const excelBuffer = await generateKitsReport(eventId, statusArray);
 
       // Get event name for filename
       const event = await storage.getEvent(eventId);
@@ -1849,9 +1853,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Parse zone IDs from query params
       const zones = req.query.zones as string;
       const zoneIds = zones ? zones.split(',').map(id => parseInt(id)).filter(id => !isNaN(id)) : undefined;
+      
+      // Parse status filter from query params
+      const statusFilter = req.query.status as string;
+      const statusArray = statusFilter ? statusFilter.split(',') : undefined;
 
       const { generateCircuitReport } = await import('./report-generator');
-      const excelBuffer = await generateCircuitReport(eventId, zoneIds);
+      const excelBuffer = await generateCircuitReport(eventId, zoneIds, statusArray);
 
       // Get event name for filename
       const event = await storage.getEvent(eventId);

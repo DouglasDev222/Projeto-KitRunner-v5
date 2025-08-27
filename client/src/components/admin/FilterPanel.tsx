@@ -169,7 +169,7 @@ export default function FilterPanel({ reportType, filters, onFiltersChange, clas
   };
 
   const showZoneFilters = reportType === 'circuit' || reportType === 'orders';
-  const showStatusFilters = reportType === 'orders' || reportType === 'kits';
+  const showStatusFilters = reportType === 'orders' || reportType === 'kits' || reportType === 'circuit';
   const showFormatSelector = availableFormats.length > 1;
   const showDateRange = ['billing', 'sales'].includes(reportType);
   const showPeriodSelector = reportType === 'billing';

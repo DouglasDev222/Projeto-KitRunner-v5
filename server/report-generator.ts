@@ -34,7 +34,7 @@ export interface OrderReportData {
   paymentMethod?: string;
 }
 
-export async function generateKitsReport(eventId: number): Promise<Buffer> {
+export async function generateKitsReport(eventId: number, status?: string[]): Promise<Buffer> {
   // Get event details
   const [event] = await db.select().from(events).where(eq(events.id, eventId));
   
@@ -42,7 +42,7 @@ export async function generateKitsReport(eventId: number): Promise<Buffer> {
     throw new Error('Evento não encontrado');
   }
 
-  // Get all orders for this event with related data
+  // Get all orders for this event with related data - FIXED: Now filters by status
   const eventOrders = await db
     .select({
       orderId: orders.id,
@@ -61,7 +61,11 @@ export async function generateKitsReport(eventId: number): Promise<Buffer> {
     .from(orders)
     .innerJoin(customers, eq(orders.customerId, customers.id))
     .innerJoin(addresses, eq(orders.addressId, addresses.id))
-    .where(eq(orders.eventId, eventId));
+    .where(
+      status && status.length > 0
+        ? and(eq(orders.eventId, eventId), inArray(orders.status, status))
+        : eq(orders.eventId, eventId)
+    );
 
   // Get all kits for these orders
   const reportData: KitReportData[] = [];
@@ -179,14 +183,14 @@ function formatCPF(cpf: string): string {
 }
 
 // Circuit Report Generator
-export async function generateCircuitReport(eventId: number, zoneIds?: number[]): Promise<Buffer> {
+export async function generateCircuitReport(eventId: number, zoneIds?: number[], status?: string[]): Promise<Buffer> {
   const [event] = await db.select().from(events).where(eq(events.id, eventId));
   
   if (!event) {
     throw new Error('Evento não encontrado');
   }
 
-  // Build query with zone filtering if provided
+  // Build query with status filtering if provided
   let ordersQuery = db
     .select({
       orderId: orders.id,
@@ -201,7 +205,11 @@ export async function generateCircuitReport(eventId: number, zoneIds?: number[])
     })
     .from(orders)
     .innerJoin(addresses, eq(orders.addressId, addresses.id))
-    .where(eq(orders.eventId, eventId));
+    .where(
+      status && status.length > 0
+        ? and(eq(orders.eventId, eventId), inArray(orders.status, status))
+        : eq(orders.eventId, eventId)
+    );
 
   const eventOrders = await ordersQuery;
 
