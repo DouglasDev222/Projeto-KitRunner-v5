@@ -31,15 +31,26 @@ Este documento detalha o plano para expandir o sistema de relatórios atual, tra
 
 **Filtros Específicos do Relatório Circuit**:
 - **Evento**: Seleção obrigatória do evento
-- **Zona CEP Específica**: Filtro opcional por zona CEP (para gerar rotas separadas por zona)
+- **Zonas CEP**: Filtro flexível por zona(s) CEP com múltiplas opções:
+  - **Todas as Zonas**: Inclui todos os endereços (padrão)
+  - **Zona Única**: Ex: Somente Zona 1
+  - **Zonas Múltiplas**: Ex: Zonas 1 e 2, ou Zonas 2, 4, 5
+  - **Seleção Personalizada**: Interface com checkboxes para escolher zonas específicas
 - **Status dos Pedidos**: Confirmados, Em Trânsito (padrão)
 - **Período**: Filtro opcional por data de criação/confirmação
 
-**Benefícios do Filtro por Zona CEP**:
-- Gerar rotas otimizadas por região
-- Facilitar divisão de entregas por equipe/veículo
-- Melhor planejamento logístico por zona geográfica
-- Relatórios separados para cada zona de entrega
+**Exemplos de Uso do Filtro de Zonas**:
+- **Rota Única**: "Zona 1" → Gera relatório apenas da Zona Centro
+- **Rotas Combinadas**: "Zonas 1, 2" → Combina Centro e Bairro Sul em um relatório
+- **Rotas Específicas**: "Zonas 2, 4, 5" → Múltiplas zonas para uma equipe específica
+- **Todas as Zonas**: Sem filtro → Relatório completo do evento
+
+**Benefícios do Filtro Múltiplo por Zona CEP**:
+- **Flexibilidade Total**: Combinar zonas conforme necessidade operacional
+- **Otimização de Rotas**: Agrupar zonas geograficamente próximas
+- **Divisão por Equipes**: Relatórios específicos para cada equipe de entrega
+- **Planejamento Logístico**: Rotas personalizadas por veículo/capacidade
+- **Controle Granular**: Desde zona única até múltiplas combinações
 
 ### 2. RELATÓRIO GERAL DE PEDIDOS POR EVENTO
 **Finalidade**: Análise completa de pedidos de um evento
@@ -189,7 +200,7 @@ GET    /api/admin/reports/deliveries
 ## ESPECIFICAÇÕES TÉCNICAS DETALHADAS
 
 ### 1. RELATÓRIO DE ENDEREÇOS PARA CIRCUIT
-**Query SQL Base (com filtro de Zona CEP)**:
+**Query SQL Base (com filtro múltiplas Zonas CEP)**:
 ```sql
 SELECT DISTINCT
   CONCAT(a.street, ', ', a.number) as address_line_1,
@@ -198,7 +209,9 @@ SELECT DISTINCT
   a.state,
   a.zip_code as postal_code,
   CONCAT('Pedido - ', SUBSTRING(o.order_number, POSITION('-' IN o.order_number) + 1)) as extra_info,
-  COALESCE(a.complement, '') as add_more_columns
+  COALESCE(a.complement, '') as add_more_columns,
+  cz.name as zone_name,
+  cz.priority as zone_priority
 FROM orders o
 JOIN customers c ON o.customer_id = c.id
 JOIN addresses a ON o.address_id = a.id
@@ -211,14 +224,33 @@ LEFT JOIN cep_zones cz ON (
 )
 WHERE o.event_id = ? 
   AND o.status IN ('confirmado', 'em_transito')
-  AND (? IS NULL OR cz.id = ?) -- Filtro opcional por zona CEP específica
+  AND (
+    ? IS NULL OR -- Todas as zonas
+    cz.id IN (?) -- Array de IDs das zonas selecionadas (Ex: [1,2] ou [2,4,5])
+  )
 ORDER BY cz.priority ASC, a.neighborhood, a.street, a.number;
 ```
 
 **Parâmetros da Query**:
 - `eventId`: ID do evento (obrigatório)
-- `zoneId`: ID da zona CEP (opcional - NULL para todas as zonas)
-- `zoneId` (duplicado): Para o filtro condicional
+- `includeAllZones`: Boolean - NULL/true para todas as zonas
+- `selectedZoneIds`: Array de IDs das zonas CEP (Ex: [1,2] ou [2,4,5])
+
+**Interface TypeScript**:
+```typescript
+interface CircuitReportFilters {
+  eventId: number;
+  selectedZoneIds?: number[]; // [1,2] ou [2,4,5] ou null (todas)
+  status?: string[];
+  dateRange?: { start: Date; end: Date };
+}
+
+// Exemplos de uso:
+const filters1: CircuitReportFilters = { eventId: 1, selectedZoneIds: [1] }; // Zona 1
+const filters2: CircuitReportFilters = { eventId: 1, selectedZoneIds: [1,2] }; // Zonas 1 e 2  
+const filters3: CircuitReportFilters = { eventId: 1, selectedZoneIds: [2,4,5] }; // Zonas 2,4,5
+const filters4: CircuitReportFilters = { eventId: 1 }; // Todas as zonas
+```
 
 **Formato Excel Circuit**:
 - Headers exatos conforme especificação Circuit
@@ -226,7 +258,21 @@ ORDER BY cz.priority ASC, a.neighborhood, a.street, a.number;
 - Address Line 2: sempre vazio
 - Extra info: "Pedido - 1074" (sem o prefixo KR25-)
 - Complemento na última coluna
-- Nome do arquivo: "circuit-{evento}-{zona}.xlsx" (se zona específica)
+
+**Nomenclatura dos Arquivos**:
+- Todas as zonas: `circuit-{evento}-todas-zonas.xlsx`
+- Zona única: `circuit-{evento}-zona-{id}.xlsx` (Ex: `circuit-corrida-zona-1.xlsx`)
+- Múltiplas zonas: `circuit-{evento}-zonas-{ids}.xlsx` (Ex: `circuit-corrida-zonas-1-2.xlsx`)
+
+**Interface de Usuário**:
+- Dropdown para seleção do evento
+- Checkboxes para seleção de zonas CEP:
+  - ☑️ Todas as Zonas (padrão)
+  - ☐ Zona 1 - Centro
+  - ☐ Zona 2 - Bairro Sul  
+  - ☐ Zona 3 - Zona Norte
+- Preview das zonas selecionadas
+- Contador de endereços por zona
 
 ### 2. SISTEMA DE ZONAS CEP PARA RELATÓRIOS
 **Função de Busca Otimizada**:
