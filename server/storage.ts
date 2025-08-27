@@ -2087,13 +2087,14 @@ class MockStorage implements IStorage {
 
     const sample = await db.select({
       orderNumber: orders.orderNumber,
-      name: orders.name,
-      cpf: customers.cpf,
-      shirtSize: orders.shirtSize,
+      name: kits.name,
+      cpf: kits.cpf,
+      shirtSize: kits.shirtSize,
       customerName: customers.name
     })
     .from(orders)
     .innerJoin(customers, eq(orders.customerId, customers.id))
+    .innerJoin(kits, eq(kits.orderId, orders.id))
     .where(eq(orders.eventId, eventId))
     .limit(limit);
 
@@ -2106,13 +2107,14 @@ class MockStorage implements IStorage {
   async getCircuitDataForPreview(eventId: number, zoneIds?: number[], limit: number = 5): Promise<{totalCount: number, sample: any[]}> {
     let query = db.select({
       orderNumber: orders.orderNumber,
-      street: orders.street,
-      number: orders.number,
-      city: orders.city,
-      state: orders.state,
-      zipCode: orders.zipCode
+      street: addresses.street,
+      number: addresses.number,
+      city: addresses.city,
+      state: addresses.state,
+      zipCode: addresses.zipCode
     })
     .from(orders)
+    .innerJoin(addresses, eq(orders.addressId, addresses.id))
     .where(eq(orders.eventId, eventId));
 
     // Apply zone filtering if provided
