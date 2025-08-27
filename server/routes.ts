@@ -1837,6 +1837,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate Circuit addresses report for event
+  app.get("/api/admin/reports/circuit/:eventId", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const eventId = parseInt(req.params.eventId);
+
+      if (isNaN(eventId)) {
+        return res.status(400).json({ message: "ID do evento inválido" });
+      }
+
+      // Parse zone IDs from query params
+      const zones = req.query.zones as string;
+      const zoneIds = zones ? zones.split(',').map(id => parseInt(id)).filter(id => !isNaN(id)) : undefined;
+
+      const { generateCircuitReport } = await import('./report-generator');
+      const excelBuffer = await generateCircuitReport(eventId, zoneIds);
+
+      // Get event name for filename
+      const event = await storage.getEvent(eventId);
+      const eventName = event?.name.replace(/[^a-zA-Z0-9]/g, '-') || 'evento';
+      const currentDate = new Date().toISOString().split('T')[0];
+      const zonesSuffix = zoneIds && zoneIds.length > 0 ? `-zonas-${zoneIds.join('-')}` : '';
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="relatorio-circuit-${eventName}${zonesSuffix}-${currentDate}.xlsx"`);
+      res.send(excelBuffer);
+    } catch (error: any) {
+      console.error('Error generating circuit report:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Generate Orders report for event
+  app.get("/api/admin/reports/orders", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const eventId = parseInt(req.query.eventId as string);
+
+      if (isNaN(eventId)) {
+        return res.status(400).json({ message: "ID do evento inválido" });
+      }
+
+      // Parse filters from query params
+      const zones = req.query.zones as string;
+      const status = req.query.status as string;
+      const format = req.query.format as string || 'excel';
+
+      const zoneIds = zones ? zones.split(',').map(id => parseInt(id)).filter(id => !isNaN(id)) : undefined;
+      const statusArray = status ? status.split(',') : undefined;
+
+      if (!['excel', 'csv', 'pdf'].includes(format)) {
+        return res.status(400).json({ message: "Formato inválido. Use: excel, csv ou pdf" });
+      }
+
+      const { generateOrdersReport } = await import('./report-generator');
+      const reportBuffer = await generateOrdersReport(eventId, {
+        zoneIds,
+        status: statusArray,
+        format: format as 'excel' | 'csv' | 'pdf'
+      });
+
+      // Get event name for filename
+      const event = await storage.getEvent(eventId);
+      const eventName = event?.name.replace(/[^a-zA-Z0-9]/g, '-') || 'evento';
+      const currentDate = new Date().toISOString().split('T')[0];
+
+      // Set appropriate content type based on format
+      let contentType: string;
+      let extension: string;
+      
+      switch (format) {
+        case 'csv':
+          contentType = 'text/csv';
+          extension = 'csv';
+          break;
+        case 'pdf':
+          contentType = 'application/pdf';
+          extension = 'pdf';
+          break;
+        default:
+          contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+          extension = 'xlsx';
+      }
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="relatorio-pedidos-${eventName}-${currentDate}.${extension}"`);
+      res.send(reportBuffer);
+    } catch (error: any) {
+      console.error('Error generating orders report:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ========================================
   // MERCADO PAGO PAYMENT ROUTES
   // ========================================
