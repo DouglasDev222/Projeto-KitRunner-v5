@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -95,6 +96,7 @@ const paymentMethodLabels: { [key: string]: string } = {
 
 export default function AdminOrders() {
   // Sistema novo: AdminRouteGuard já protege
+  const [, setLocation] = useLocation();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
@@ -752,29 +754,16 @@ export default function AdminOrders() {
             <h1 className="text-2xl sm:text-3xl font-bold text-neutral-800 truncate">Gerenciamento de Pedidos</h1>
             <p className="text-sm sm:text-base text-neutral-600">Visualize, gerencie e acompanhe todos os pedidos</p>
           </div>
-          <div className="hidden sm:flex flex-wrap gap-2 justify-end flex-shrink-0">
-            {(events as any) && Array.isArray((events as any)) && (events as any).length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-1 sm:gap-2 px-2 sm:px-3 flex-shrink-0">
-                    <Download className="h-4 w-4" />
-                    <span className="hidden sm:inline">Etiquetas por Evento</span>
-                    <span className="sm:hidden text-xs">Etiquetas</span>
-                    <ChevronDown className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  {(events as any).map((event: any) => (
-                    <DropdownMenuItem
-                      key={event.id}
-                      onClick={() => handleGenerateEventLabels(event.id, event.name)}
-                    >
-                      {event.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+          <div className="flex flex-wrap gap-2 justify-end flex-shrink-0">
+            <Button 
+              variant="outline" 
+              className="gap-1 sm:gap-2 px-2 sm:px-3 flex-shrink-0"
+              onClick={() => setLocation('/admin/reports')}
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Gerar Etiquetas</span>
+              <span className="sm:hidden text-xs">Etiquetas</span>
+            </Button>
           </div>
         </div>
 

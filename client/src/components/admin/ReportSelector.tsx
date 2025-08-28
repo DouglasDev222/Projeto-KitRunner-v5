@@ -23,6 +23,14 @@ interface ReportSelectorProps {
 
 const reportOptions: ReportOption[] = [
   {
+    id: 'labels',
+    name: 'Etiquetas de Entrega',
+    description: 'Geração de etiquetas para todos os pedidos de um evento com filtros de status',
+    icon: Download,
+    status: 'available',
+    formats: ['PDF']
+  },
+  {
     id: 'kits',
     name: 'Relatório de Kits',
     description: 'Lista completa dos kits por evento com informações dos atletas',
@@ -69,14 +77,6 @@ const reportOptions: ReportOption[] = [
     icon: TrendingUp,
     status: 'available',
     formats: ['Excel', 'PDF', 'CSV']
-  },
-  {
-    id: 'labels',
-    name: 'Etiquetas de Entrega',
-    description: 'Geração de etiquetas para todos os pedidos de um evento com filtros de status',
-    icon: Download,
-    status: 'available',
-    formats: ['PDF']
   }
 ];
 

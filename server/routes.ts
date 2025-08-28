@@ -1630,7 +1630,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter by status if provided
       if (status && typeof status === 'string') {
         const statusArray = status.split(',').map(s => s.trim());
+        const totalOrdersBeforeFilter = orders.length;
         orders = orders.filter(order => statusArray.includes(order.status));
+        
+        // Log for debugging
+        console.log(`🏷️ Filtering orders by status: [${statusArray.join(', ')}]`);
+        console.log(`🏷️ Orders before filter: ${totalOrdersBeforeFilter}`);
+        console.log(`🏷️ Orders after filter: ${orders.length}`);
+        console.log(`🏷️ Orders statuses found: ${orders.map(o => o.status).join(', ')}`);
       }
 
       // Get full details for each order
