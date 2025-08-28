@@ -326,9 +326,6 @@ export default function AdminOrders() {
     queryKey: ["/api/admin/events"],
   });
 
-  const { data: eventsForReports } = useQuery({
-    queryKey: ["/api/admin/reports/events"],
-  });
 
   const { data: orderStats } = useQuery({
     queryKey: ["/api/admin/stats", filters],
@@ -743,35 +740,6 @@ export default function AdminOrders() {
     }
   };
 
-  const handleGenerateKitsReport = async (eventId: number, eventName: string) => {
-    try {
-      const response = await apiRequest('GET', `/api/admin/reports/kits/${eventId}`);
-      if (!response.ok) {
-        throw new Error('Erro ao gerar relatório');
-      }
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = response.headers.get('Content-Disposition')?.split('filename=')[1]?.replace(/"/g, '') || `relatorio-kits-${eventName.replace(/[^a-zA-Z0-9]/g, '-')}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      
-      toast({
-        title: "Relatório de kits gerado com sucesso",
-        description: `Relatório do evento ${eventName} foi baixado`,
-      });
-    } catch (error) {
-      toast({
-        title: "Erro ao gerar relatório",
-        description: "Não foi possível gerar o relatório de kits",
-        variant: "destructive",
-      });
-    }
-  };
 
   // Sistema novo: AdminRouteGuard já protege - não precisa de verificação
 
@@ -800,28 +768,6 @@ export default function AdminOrders() {
                     <DropdownMenuItem
                       key={event.id}
                       onClick={() => handleGenerateEventLabels(event.id, event.name)}
-                    >
-                      {event.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            {(eventsForReports as any) && Array.isArray((eventsForReports as any)) && (eventsForReports as any).length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-1 sm:gap-2 px-2 sm:px-3 flex-shrink-0">
-                    <FileSpreadsheet className="h-4 w-4" />
-                    <span className="hidden sm:inline">Relatório de Kits</span>
-                    <span className="sm:hidden text-xs">Relatório</span>
-                    <ChevronDown className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  {(eventsForReports as any).map((event: any) => (
-                    <DropdownMenuItem
-                      key={event.id}
-                      onClick={() => handleGenerateKitsReport(event.id, event.name)}
                     >
                       {event.name}
                     </DropdownMenuItem>

@@ -1619,10 +1619,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/events/:eventId/labels", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const eventId = parseInt(req.params.eventId);
-      const orders = await storage.getOrdersByEventId(eventId);
+      const { status } = req.query;
+      
+      let orders = await storage.getOrdersByEventId(eventId);
 
       if (!orders || orders.length === 0) {
         return res.status(404).json({ message: "Nenhum pedido encontrado para este evento" });
+      }
+
+      // Filter by status if provided
+      if (status && typeof status === 'string') {
+        const statusArray = status.split(',').map(s => s.trim());
+        orders = orders.filter(order => statusArray.includes(order.status));
       }
 
       // Get full details for each order

@@ -2,9 +2,9 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileSpreadsheet, MapPin, BarChart3, Users, Package, TrendingUp } from "lucide-react";
+import { FileSpreadsheet, MapPin, BarChart3, Users, Package, TrendingUp, Download } from "lucide-react";
 
-export type ReportType = 'kits' | 'circuit' | 'orders' | 'billing' | 'customers' | 'sales';
+export type ReportType = 'kits' | 'circuit' | 'orders' | 'billing' | 'customers' | 'sales' | 'labels';
 
 interface ReportOption {
   id: ReportType;
@@ -69,6 +69,14 @@ const reportOptions: ReportOption[] = [
     icon: TrendingUp,
     status: 'available',
     formats: ['Excel', 'PDF', 'CSV']
+  },
+  {
+    id: 'labels',
+    name: 'Etiquetas de Entrega',
+    description: 'Geração de etiquetas para todos os pedidos de um evento com filtros de status',
+    icon: Download,
+    status: 'available',
+    formats: ['PDF']
   }
 ];
 

@@ -24,7 +24,7 @@ export default function AdminReports() {
     }
 
     // Validate based on report type
-    const requiresEvent = ['kits', 'circuit', 'orders'].includes(selectedReportType);
+    const requiresEvent = ['kits', 'circuit', 'orders', 'labels'].includes(selectedReportType);
     const requiresDateRange = ['billing', 'sales'].includes(selectedReportType);
     
     if (requiresEvent && !filters.eventId) {
@@ -106,6 +106,14 @@ export default function AdminReports() {
           if (filters.state) customersParams.append('state', filters.state);
           if (filters.format) customersParams.append('format', filters.format);
           endpoint += `?${customersParams.toString()}`;
+          break;
+        case 'labels':
+          endpoint = `/api/admin/events/${filters.eventId}/labels`;
+          const labelsParams = new URLSearchParams();
+          if (filters.status?.length) labelsParams.append('status', filters.status.join(','));
+          if (labelsParams.toString()) {
+            endpoint += `?${labelsParams.toString()}`;
+          }
           break;
         default:
           throw new Error(`Relatório ${selectedReportType} ainda não implementado`);
