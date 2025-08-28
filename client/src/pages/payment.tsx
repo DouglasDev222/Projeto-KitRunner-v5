@@ -127,6 +127,8 @@ export default function Payment() {
       if (addressData) {
         const parsedAddress = JSON.parse(addressData);
         console.log('🏠 Loading address from session:', parsedAddress);
+        console.log('🏠 Address zipCode field:', parsedAddress.zipCode, 'Type:', typeof parsedAddress.zipCode);
+        console.log('🏠 Available fields:', Object.keys(parsedAddress));
         setSelectedAddress(parsedAddress);
       }
       
