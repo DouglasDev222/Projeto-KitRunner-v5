@@ -36,7 +36,8 @@ const adminCouponSchema = insertCouponSchema.extend({
  */
 router.post('/coupons/validate', async (req, res) => {
   try {
-    console.log('🎫 Coupon validation request:', req.body);
+    const { code, eventId, totalAmount, customerZipCode } = req.body;
+    console.log('🎫 Coupon validation request:', { code, eventId, totalAmount, customerZipCode });
     const validatedData = couponValidationSchema.parse(req.body);
     
     const validation = await CouponService.validateCoupon(validatedData);
