@@ -53,7 +53,7 @@ const statusOptions = [
 ];
 
 const formatOptions = {
-  kits: ['excel'],
+  kits: ['excel', 'pdf', 'csv'],
   circuit: ['excel'],
   orders: ['excel', 'pdf', 'csv'],
   billing: ['excel', 'pdf', 'csv'],
