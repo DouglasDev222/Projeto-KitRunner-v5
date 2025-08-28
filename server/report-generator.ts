@@ -205,16 +205,18 @@ async function generateKitsPDF(reportData: KitReportData[], eventName: string): 
   });
   doc.moveDown();
   
-  // Add a line separator
-  doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke();
+  // Add a line separator - centralizada
+  const lineY = doc.y;
+  const lineStartX = (595.28 - 500) / 2;
+  doc.moveTo(lineStartX, lineY).lineTo(lineStartX + 500, lineY).stroke();
   doc.moveDown();
 
   // Table headers - including new "Nº CHIP" column
   const startY = doc.y;
-  const colWidths = [85, 160, 100, 50, 60]; // Column widths for: Nº Pedido, Nome do Atleta, CPF, Camisa, Nº CHIP
+  const colWidths = [85, 180, 110, 50, 60]; // Column widths for: Nº Pedido, Nome do Atleta, CPF, Camisa, Nº CHIP
   const headers = ['Nº Pedido', 'Nome do Atleta', 'CPF', 'Camisa', 'Nº CHIP'];
   const tableWidth = colWidths.reduce((sum, width) => sum + width, 0);
-  const tableStartX = 40;
+  const tableStartX = (595.28 - tableWidth) / 2; // Centralizar tabela na página
   
   // Draw header background
   doc.rect(tableStartX, startY - 5, tableWidth, 25).fillAndStroke('#4472C4', 'black');
@@ -243,14 +245,17 @@ async function generateKitsPDF(reportData: KitReportData[], eventName: string): 
         align: 'center'
       });
       doc.moveDown();
-      doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke();
+      const newLineY = doc.y;
+      const newLineStartX = (595.28 - 500) / 2;
+      doc.moveTo(newLineStartX, newLineY).lineTo(newLineStartX + 500, newLineY).stroke();
       doc.moveDown();
       
-      // Redraw headers on new page
+      // Redraw headers on new page - recalcular tableStartX para centralizar
       const newStartY = doc.y;
-      doc.rect(tableStartX, newStartY - 5, tableWidth, 25).fillAndStroke('#4472C4', 'black');
+      const newTableStartX = (595.28 - tableWidth) / 2;
+      doc.rect(newTableStartX, newStartY - 5, tableWidth, 25).fillAndStroke('#4472C4', 'black');
       
-      let newX = tableStartX;
+      let newX = newTableStartX;
       doc.fontSize(11).fillColor('white').font('Helvetica-Bold');
       headers.forEach((header, i) => {
         doc.text(header, newX + 3, newStartY + 3, { width: colWidths[i] - 6, align: 'center' });
@@ -283,10 +288,10 @@ async function generateKitsPDF(reportData: KitReportData[], eventName: string): 
     // Right border
     doc.moveTo(borderX, y - 2).lineTo(borderX, y + rowHeight - 2).stroke();
     
-    // Prepare row data
+    // Prepare row data - não abreviar nomes, eles cabem na coluna maior
     const rowData = [
       kit.orderNumber,
-      kit.athleteName.length > 22 ? kit.athleteName.substring(0, 19) + '...' : kit.athleteName,
+      kit.athleteName, // Remover limitação artificial de caracteres
       kit.cpf,
       kit.shirtSize,
       '' // Empty Nº CHIP column
@@ -297,13 +302,13 @@ async function generateKitsPDF(reportData: KitReportData[], eventName: string): 
     doc.fontSize(9).fillColor('black');
     
     rowData.forEach((data, i) => {
-      if (i === 2) { // CPF column - make it bold
-        doc.font('Helvetica-Bold');
+      if (i === 2) { // CPF column - make it bold and larger
+        doc.font('Helvetica-Bold').fontSize(10);
       } else {
-        doc.font('Helvetica');
+        doc.font('Helvetica').fontSize(9);
       }
       
-      const textAlign = i === 0 || i === 3 || i === 4 ? 'center' : 'left'; // Center align for order number, shirt size, and chip number
+      const textAlign = i === 0 || i === 2 || i === 3 || i === 4 ? 'center' : 'left'; // Center align for order number, CPF, shirt size, and chip number
       doc.text(data || '', x + 3, y + 3, { 
         width: colWidths[i] - 6, 
         align: textAlign,
@@ -318,6 +323,22 @@ async function generateKitsPDF(reportData: KitReportData[], eventName: string): 
   // Draw final bottom border
   const finalY = doc.y;
   doc.moveTo(tableStartX, finalY - 2).lineTo(tableStartX + tableWidth, finalY - 2).stroke();
+
+  // Add page numbers to all pages
+  const pageCount = (doc as any)._pageBuffer.length + 1;
+  for (let i = 0; i < pageCount; i++) {
+    if (i > 0) {
+      (doc as any).switchToPage(i);
+    }
+    
+    // Add page number at bottom center
+    const pageNumber = i + 1;
+    doc.fontSize(8).fillColor('#666666').font('Helvetica');
+    doc.text(`Página ${pageNumber} de ${pageCount}`, 0, 820, {
+      width: 595.28,
+      align: 'center'
+    });
+  }
 
   doc.end();
   
