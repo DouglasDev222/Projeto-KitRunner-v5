@@ -17,7 +17,7 @@ export default function AdminReports() {
   useEffect(() => {
     if (selectedReportType === 'labels') {
       setFilters(prev => ({ ...prev, format: 'pdf' }));
-    } else if (selectedReportType && filters.format === 'pdf' && selectedReportType !== 'labels') {
+    } else if (selectedReportType && filters.format === 'pdf') {
       setFilters(prev => ({ ...prev, format: 'excel' }));
     }
   }, [selectedReportType]);

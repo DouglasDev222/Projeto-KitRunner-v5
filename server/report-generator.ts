@@ -34,7 +34,7 @@ export interface OrderReportData {
   paymentMethod?: string;
 }
 
-export async function generateKitsReport(eventId: number, status?: string[]): Promise<Buffer> {
+export async function generateKitsReport(eventId: number, status?: string[], format: 'excel' | 'pdf' | 'csv' = 'excel'): Promise<Buffer> {
   // Get event details
   const [event] = await db.select().from(events).where(eq(events.id, eventId));
   
@@ -95,6 +95,14 @@ export async function generateKitsReport(eventId: number, status?: string[]): Pr
   // Sort by order number
   reportData.sort((a, b) => a.orderNumber.localeCompare(b.orderNumber));
 
+  // Generate based on format
+  if (format === 'pdf') {
+    return await generateKitsPDF(reportData, event.name);
+  } else if (format === 'csv') {
+    return generateKitsCSV(reportData);
+  }
+
+  // Default: Excel format
   // Create Excel workbook
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Relatório de Kits');
@@ -180,6 +188,117 @@ export async function generateKitsReport(eventId: number, status?: string[]): Pr
 function formatCPF(cpf: string): string {
   // Format CPF as XXX.XXX.XXX-XX
   return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+}
+
+// Generate Kits PDF with user-specified format
+async function generateKitsPDF(reportData: KitReportData[], eventName: string): Promise<Buffer> {
+  const PDFDocument = require('pdfkit');
+  const doc = new PDFDocument({ size: 'A4', margin: 50 });
+  const buffers: Buffer[] = [];
+
+  doc.on('data', buffers.push.bind(buffers));
+  doc.on('end', () => {});
+
+  // Header with logo space and title
+  doc.fontSize(20).text(`Retirada de Kit ${eventName}`, {
+    align: 'center'
+  });
+  doc.moveDown();
+  
+  // Add a line separator
+  doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+  doc.moveDown();
+
+  // Table headers - simplified columns as requested
+  const startY = doc.y;
+  const colWidths = [100, 200, 120, 70]; // Column widths for: Nº Pedido, Nome do Atleta, CPF, Camisa
+  const headers = ['Nº Pedido', 'Nome do Atleta', 'CPF', 'Camisa'];
+  
+  let x = 50;
+  doc.fontSize(12).fillColor('black');
+  headers.forEach((header, i) => {
+    doc.text(header, x, startY, { width: colWidths[i], align: 'left' });
+    x += colWidths[i];
+  });
+  
+  // Draw header line
+  doc.moveTo(50, startY + 20).lineTo(540, startY + 20).stroke();
+  doc.moveDown(1.5);
+
+  // Table data
+  reportData.forEach((kit, index) => {
+    if (doc.y > 720) { // New page if needed (leave margin for page end)
+      doc.addPage();
+      doc.fontSize(20).text(`Retirada de Kit ${eventName}`, {
+        align: 'center'
+      });
+      doc.moveDown();
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+      doc.moveDown();
+      
+      // Redraw headers on new page
+      const newStartY = doc.y;
+      let newX = 50;
+      doc.fontSize(12).fillColor('black');
+      headers.forEach((header, i) => {
+        doc.text(header, newX, newStartY, { width: colWidths[i], align: 'left' });
+        newX += colWidths[i];
+      });
+      doc.moveTo(50, newStartY + 20).lineTo(540, newStartY + 20).stroke();
+      doc.moveDown(1.5);
+    }
+    
+    const y = doc.y;
+    x = 50;
+    
+    const rowData = [
+      kit.orderNumber,
+      kit.athleteName.length > 25 ? kit.athleteName.substring(0, 22) + '...' : kit.athleteName,
+      kit.cpf,
+      kit.shirtSize
+    ];
+    
+    doc.fontSize(10).fillColor('black');
+    rowData.forEach((data, i) => {
+      doc.text(data || '', x, y, { width: colWidths[i], align: 'left' });
+      x += colWidths[i];
+    });
+    
+    // Add a subtle line between rows for better readability
+    if (index % 2 === 0) {
+      doc.rect(50, y - 2, 490, 14).fillAndStroke('#f8f9fa', '#f8f9fa');
+      doc.fillColor('black');
+    }
+    
+    doc.moveDown(0.7);
+  });
+
+  doc.end();
+  
+  return new Promise((resolve) => {
+    doc.on('end', () => {
+      resolve(Buffer.concat(buffers));
+    });
+  });
+}
+
+// Generate Kits CSV
+function generateKitsCSV(reportData: KitReportData[]): Buffer {
+  const headers = ['Nº Pedido', 'Nome do Atleta', 'CPF', 'Camisa'];
+
+  let csv = headers.join(',') + '\n';
+  
+  reportData.forEach(kit => {
+    const row = [
+      `"${kit.orderNumber}"`,
+      `"${kit.athleteName}"`,
+      `"${kit.cpf}"`,
+      `"${kit.shirtSize}"`
+    ];
+    csv += row.join(',') + '\n';
+  });
+
+  return Buffer.from(csv, 'utf-8');
 }
 
 // Circuit Report Generator

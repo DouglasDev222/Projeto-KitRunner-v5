@@ -1835,21 +1835,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "ID do evento inválido" });
       }
 
-      // Parse status filter from query params
+      // Parse status filter and format from query params
       const statusFilter = req.query.status as string;
       const statusArray = statusFilter ? statusFilter.split(',') : undefined;
+      const format = (req.query.format as 'excel' | 'pdf' | 'csv') || 'excel';
       
       const { generateKitsReport } = await import('./report-generator');
-      const excelBuffer = await generateKitsReport(eventId, statusArray);
+      const buffer = await generateKitsReport(eventId, statusArray, format);
 
       // Get event name for filename
       const event = await storage.getEvent(eventId);
       const eventName = event?.name.replace(/[^a-zA-Z0-9]/g, '-') || 'evento';
       const currentDate = new Date().toISOString().split('T')[0];
 
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename="relatorio-kits-${eventName}-${currentDate}.xlsx"`);
-      res.send(excelBuffer);
+      // Set headers based on format
+      if (format === 'pdf') {
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="relatorio-kits-${eventName}-${currentDate}.pdf"`);
+      } else if (format === 'csv') {
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="relatorio-kits-${eventName}-${currentDate}.csv"`);
+      } else {
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="relatorio-kits-${eventName}-${currentDate}.xlsx"`);
+      }
+      
+      res.send(buffer);
     } catch (error: any) {
       console.error('Error generating kits report:', error);
       res.status(500).json({ error: error.message });
