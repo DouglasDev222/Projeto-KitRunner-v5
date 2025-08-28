@@ -663,7 +663,7 @@ export default function Payment() {
         </Card>
 
         {/* Debug CEP */}
-        {selectedAddress && console.log('🔍 Selected address CEP for coupon:', selectedAddress.zipCode, 'Full address:', selectedAddress)}
+        {selectedAddress && console.log('🔍 Selected address CEP for coupon:', selectedAddress.zipCode, 'Cleaned CEP:', selectedAddress.zipCode?.replace(/\D/g, ''), 'Full address:', selectedAddress)}
         
         {/* Coupon Input */}
         <Card className="mb-6">
@@ -671,7 +671,7 @@ export default function Payment() {
             <CouponInput
               eventId={parseInt(id!)}
               totalAmount={basePricing.totalCost}
-              customerZipCode={selectedAddress?.zipCode}
+              customerZipCode={selectedAddress?.zipCode?.replace(/\D/g, '') || undefined}
               onCouponApplied={handleCouponApplied}
               onCouponRemoved={handleCouponRemoved}
               appliedCoupon={appliedCoupon}
