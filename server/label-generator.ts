@@ -1,3 +1,4 @@
+
 import PDFDocument from 'pdfkit';
 import path from 'path';
 import fs from 'fs';
@@ -39,6 +40,35 @@ function formatCurrency(value: string | number): string {
   }).format(numValue);
 }
 
+function addLogoToDocument(doc: PDFDocument, x: number, y: number, height: number): void {
+  // Primeiro tenta a nova logo
+  const newLogoPath = path.join(process.cwd(), 'attached_assets', 'logo-kitrunner-new.png');
+  
+  try {
+    if (fs.existsSync(newLogoPath)) {
+      doc.image(newLogoPath, x, y, { height });
+      return;
+    }
+  } catch (error) {
+    console.log('Nova logo não encontrada, tentando fallback');
+  }
+
+  // Fallback para logo antiga
+  const fallbackLogoPath = path.join(process.cwd(), 'attached_assets', 'logo_1753468396785.png');
+  try {
+    if (fs.existsSync(fallbackLogoPath)) {
+      doc.image(fallbackLogoPath, x, y, { height });
+      return;
+    }
+  } catch (error) {
+    console.log('Logo de fallback não encontrada');
+  }
+
+  // Se nenhuma logo for encontrada, adiciona texto
+  doc.fillColor('white').fontSize(20).font('Helvetica-Bold');
+  doc.text('KITRUNNER', x, y + 15);
+}
+
 export async function generateDeliveryLabel(order: OrderWithDetails): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
@@ -58,40 +88,24 @@ export async function generateDeliveryLabel(order: OrderWithDetails): Promise<Bu
 
     let currentY = margin;
 
-    // Header with background color
+    // Header com background roxo
     doc.rect(margin, currentY, contentWidth, 80)
        .fillAndStroke('#6366f1', '#4f46e5')
        .fill();
 
-    // Try to add new logo
-    const logoPath = path.join(process.cwd(), 'attached_assets', 'logo-kitrunner-new.png');
-    try {
-      if (fs.existsSync(logoPath)) {
-        doc.image(logoPath, margin + 20, currentY + 15, { height: 50 });
-      }
-    } catch (error) {
-      console.log('New logo not found, trying fallback');
-      // Fallback to old logo if new one doesn't exist
-      const fallbackLogoPath = path.join(process.cwd(), 'attached_assets', 'logo_1753468396785.png');
-      try {
-        if (fs.existsSync(fallbackLogoPath)) {
-          doc.image(fallbackLogoPath, margin + 20, currentY + 15, { height: 50 });
-        }
-      } catch (fallbackError) {
-        console.log('No logo found');
-      }
-    }
+    // Adicionar logo
+    addLogoToDocument(doc, margin + 20, currentY + 15, 50);
 
-    // Order number in top right with proper margin
+    // Número do pedido no canto direito com margem adequada
     doc.fontSize(16).font('Helvetica-Bold').fillColor('white');
-    doc.text(`#${order.orderNumber}`, pageWidth - 220, currentY + 25, {
-      width: 170,
+    doc.text(`#${order.orderNumber}`, pageWidth - 250, currentY + 25, {
+      width: 200,
       align: 'right'
     });
 
-    currentY += 100;
+    currentY += 100; // Espaçamento após header
 
-    // Order Information Section with modern card style
+    // Seção Informações do Pedido
     doc.fillColor('#f8fafc');
     doc.rect(margin, currentY, contentWidth, 100)
        .fillAndStroke('#f8fafc', '#e2e8f0');
@@ -100,7 +114,7 @@ export async function generateDeliveryLabel(order: OrderWithDetails): Promise<Bu
     doc.fontSize(14).font('Helvetica-Bold');
     doc.text('INFORMAÇÕES DO PEDIDO', margin + 20, currentY + 20);
 
-    // Create two columns with proper spacing
+    // Colunas de informações
     const leftColumn = margin + 25;
     const rightColumn = margin + (contentWidth / 2) + 15;
 
@@ -117,9 +131,9 @@ export async function generateDeliveryLabel(order: OrderWithDetails): Promise<Bu
     doc.fillColor('#64748b').font('Helvetica-Bold').text('Valor Total:', rightColumn, currentY + 65);
     doc.fillColor('#1e293b').font('Helvetica').text(formatCurrency(order.totalCost), rightColumn + 65, currentY + 65);
 
-    currentY += 120;
+    currentY += 130; // Margem aumentada após seção
 
-    // Recipient Information Section with modern card style
+    // Seção Dados do Destinatário
     doc.fillColor('#fefefe');
     doc.rect(margin, currentY, contentWidth, 150)
        .fillAndStroke('#fefefe', '#e2e8f0');
@@ -128,12 +142,11 @@ export async function generateDeliveryLabel(order: OrderWithDetails): Promise<Bu
     doc.fontSize(14).font('Helvetica-Bold');
     doc.text('DADOS DO DESTINATÁRIO', margin + 20, currentY + 20);
 
-    // Two columns layout with proper spacing
-    const recipientStartY = currentY + 45;
+    const recipientStartY = currentY + 50; // Margem aumentada
     const recipientLeftColumn = margin + 25;
     const recipientRightColumn = margin + (contentWidth / 2) + 15;
 
-    // Left column - Personal info
+    // Coluna esquerda - Dados pessoais
     doc.fontSize(10).fillColor('#64748b');
     doc.font('Helvetica-Bold').text('Nome Completo:', recipientLeftColumn, recipientStartY);
     doc.fillColor('#1e293b').font('Helvetica').text(order.customer.name, recipientLeftColumn, recipientStartY + 15, { width: 200 });
@@ -144,7 +157,7 @@ export async function generateDeliveryLabel(order: OrderWithDetails): Promise<Bu
     doc.fillColor('#64748b').font('Helvetica-Bold').text('Telefone:', recipientLeftColumn, recipientStartY + 80);
     doc.fillColor('#1e293b').font('Helvetica').text(formatPhone(order.customer.phone), recipientLeftColumn, recipientStartY + 95);
 
-    // Right column - Address
+    // Coluna direita - Endereço
     doc.fillColor('#64748b').font('Helvetica-Bold').text('Endereço de Entrega:', recipientRightColumn, recipientStartY);
     const address = order.address;
     const fullAddress = `${address.street}, ${address.number}${address.complement ? ' - ' + address.complement : ''}
@@ -153,10 +166,10 @@ ${address.city} - ${address.state}
 CEP: ${address.zipCode}`;
     doc.fillColor('#1e293b').font('Helvetica').text(fullAddress, recipientRightColumn, recipientStartY + 15, { width: 230 });
 
-    currentY += 200; // Aumentada margem para mais espaçamento
+    currentY += 180; // Margem aumentada após seção
 
-    // Order Items Section with modern card style
-    const itemSectionHeight = 80 + (order.kits.length * 15);
+    // Seção Itens do Pedido
+    const itemSectionHeight = 100 + (order.kits.length * 15);
     doc.fillColor('#f8fafc');
     doc.rect(margin, currentY, contentWidth, itemSectionHeight)
        .fillAndStroke('#f8fafc', '#e2e8f0');
@@ -165,26 +178,26 @@ CEP: ${address.zipCode}`;
     doc.fontSize(14).font('Helvetica-Bold');
     doc.text('ITENS DO PEDIDO', margin + 20, currentY + 20);
 
-    // Items table header
+    // Cabeçalho da tabela
     doc.fillColor('#6366f1');
-    doc.rect(margin + 20, currentY + 45, contentWidth - 40, 22)
+    doc.rect(margin + 20, currentY + 50, contentWidth - 40, 22) // Margem aumentada
        .fillAndStroke('#6366f1', '#4f46e5');
 
     doc.fillColor('white');
     doc.fontSize(10).font('Helvetica-Bold');
-    doc.text('Produto', margin + 30, currentY + 52);
-    doc.text('Quantidade', pageWidth - 130, currentY + 52);
+    doc.text('Produto', margin + 30, currentY + 57);
+    doc.text('Quantidade', pageWidth - 130, currentY + 57);
 
-    let itemY = currentY + 75;
+    let itemY = currentY + 80;
 
-    // Main product row
+    // Linha principal do produto
     doc.fillColor('#1e293b');
     doc.fontSize(10).font('Helvetica');
     doc.text(order.event.name, margin + 30, itemY, { width: 380 });
     doc.text(`${order.kitQuantity} kit(s)`, pageWidth - 130, itemY);
     itemY += 18;
 
-    // Kit details with better formatting
+    // Detalhes dos kits
     if (order.kits.length > 0) {
       doc.fontSize(9).fillColor('#64748b');
       order.kits.forEach((kit, index) => {
@@ -194,11 +207,11 @@ CEP: ${address.zipCode}`;
       });
     }
 
-    currentY += itemSectionHeight + 50; // Aumentada margem para mais espaçamento
+    currentY += itemSectionHeight + 30; // Margem aumentada após seção
 
-    // Signature Section with modern card style
+    // Seção Confirmação de Recebimento
     doc.fillColor('#fefefe');
-    doc.rect(margin, currentY, contentWidth, 160)
+    doc.rect(margin, currentY, contentWidth, 180) // Altura aumentada para acomodar campos do terceiro autorizado
        .fillAndStroke('#fefefe', '#e2e8f0');
 
     doc.fillColor('#1e293b');
@@ -207,22 +220,22 @@ CEP: ${address.zipCode}`;
 
     doc.fontSize(10).fillColor('#64748b').font('Helvetica');
     doc.text('Declaro que recebi os itens acima relacionados em perfeito estado e conforme especificado.',
-      margin + 20, currentY + 45, { width: contentWidth - 40 });
+      margin + 20, currentY + 50, { width: contentWidth - 40 }); // Margem aumentada
 
-    // Signature fields with modern styling
-    const sigY = currentY + 75;
+    // Campos de assinatura
+    const sigY = currentY + 80; // Margem aumentada
     const sig1X = margin + 25;
     const sig2X = margin + (contentWidth / 2) + 15;
     const sigWidth = (contentWidth / 2) - 40;
 
-    // Main signature box
+    // Assinatura do destinatário
     doc.fillColor('#f8fafc');
     doc.rect(sig1X, sigY, sigWidth, 35)
        .fillAndStroke('#f8fafc', '#cbd5e1');
     doc.fillColor('#64748b').fontSize(9).font('Helvetica-Bold');
     doc.text('Assinatura do Destinatário', sig1X + 8, sigY + 8);
 
-    // Third party signature box
+    // Terceiro autorizado
     doc.fillColor('#f8fafc');
     doc.rect(sig2X, sigY, sigWidth, 35)
        .fillAndStroke('#f8fafc', '#cbd5e1');
@@ -231,40 +244,40 @@ CEP: ${address.zipCode}`;
     doc.fontSize(8).font('Helvetica');
     doc.text('(nome completo e documento)', sig2X + 8, sigY + 22);
 
-    // CPF and Date fields
+    // Campos CPF e Data
     const fieldsY = sigY + 50;
     const fieldWidth = (sigWidth / 2) - 5;
 
-    // Left section fields
+    // Campos do destinatário (esquerda)
     const field1X = sig1X;
     const field2X = sig1X + fieldWidth + 10;
 
-    // Right section fields
+    // Campos do terceiro autorizado (direita)
     const field3X = sig2X;
     const field4X = sig2X + fieldWidth + 10;
 
-    // CPF field (left)
+    // CPF destinatário
     doc.fillColor('#f8fafc');
     doc.rect(field1X, fieldsY, fieldWidth, 20)
        .fillAndStroke('#f8fafc', '#cbd5e1');
     doc.fillColor('#64748b').fontSize(8).font('Helvetica-Bold');
     doc.text('CPF', field1X + 5, fieldsY + 6);
 
-    // Date field (left)
+    // Data destinatário
     doc.fillColor('#f8fafc');
     doc.rect(field2X, fieldsY, fieldWidth, 20)
        .fillAndStroke('#f8fafc', '#cbd5e1');
     doc.fillColor('#64748b').fontSize(8).font('Helvetica-Bold');
     doc.text('Data', field2X + 5, fieldsY + 6);
 
-    // Third party CPF field (right)
+    // CPF terceiro autorizado
     doc.fillColor('#f8fafc');
     doc.rect(field3X, fieldsY, fieldWidth, 20)
        .fillAndStroke('#f8fafc', '#cbd5e1');
     doc.fillColor('#64748b').fontSize(8).font('Helvetica-Bold');
     doc.text('CPF', field3X + 5, fieldsY + 6);
 
-    // Third party Date field (right)
+    // Data terceiro autorizado
     doc.fillColor('#f8fafc');
     doc.rect(field4X, fieldsY, fieldWidth, 20)
        .fillAndStroke('#f8fafc', '#cbd5e1');
@@ -308,44 +321,24 @@ export async function generateMultipleLabels(orders: OrderWithDetails[]): Promis
 
       let currentY = margin;
 
-      // Header with background color
+      // Header com background roxo
       doc.rect(margin, currentY, contentWidth, 80)
          .fillAndStroke('#6366f1', '#4f46e5')
          .fill();
 
-      // Try to add new logo
-      const logoPath = path.join(process.cwd(), 'attached_assets', 'logo-kitrunner-new.png');
-      try {
-        if (fs.existsSync(logoPath)) {
-          doc.image(logoPath, margin + 20, currentY + 15, { height: 50 });
-        }
-      } catch (error) {
-        console.log('New logo not found, trying fallback');
-        // Fallback to old logo if new one doesn't exist
-        const fallbackLogoPath = path.join(process.cwd(), 'attached_assets', 'logo_1753468396785.png');
-        try {
-          if (fs.existsSync(fallbackLogoPath)) {
-            doc.image(fallbackLogoPath, margin + 20, currentY + 15, { height: 50 });
-          }
-        } catch (fallbackError) {
-          console.log('No logo found');
-        }
-      }
+      // Adicionar logo
+      addLogoToDocument(doc, margin + 20, currentY + 15, 50);
 
-      // Order number in top right with proper margin
+      // Número do pedido no canto direito com margem adequada
       doc.fontSize(16).font('Helvetica-Bold').fillColor('white');
-      doc.text(`#${order.orderNumber}`, pageWidth - 220, currentY + 25, {
-        width: 170,
+      doc.text(`#${order.orderNumber}`, pageWidth - 250, currentY + 25, {
+        width: 200,
         align: 'right'
       });
 
-      currentY += 100;
+      currentY += 100; // Espaçamento após header
 
-      // Create two columns with proper spacing
-      const leftColumn = margin + 25;
-      const rightColumn = margin + (contentWidth / 2) + 15;
-
-      // Order Information Section with modern card style
+      // Seção Informações do Pedido
       doc.fillColor('#f8fafc');
       doc.rect(margin, currentY, contentWidth, 100)
          .fillAndStroke('#f8fafc', '#e2e8f0');
@@ -353,6 +346,9 @@ export async function generateMultipleLabels(orders: OrderWithDetails[]): Promis
       doc.fillColor('#1e293b');
       doc.fontSize(14).font('Helvetica-Bold');
       doc.text('INFORMAÇÕES DO PEDIDO', margin + 20, currentY + 20);
+
+      const leftColumn = margin + 25;
+      const rightColumn = margin + (contentWidth / 2) + 15;
 
       doc.fontSize(10).fillColor('#64748b');
       doc.font('Helvetica-Bold').text('Data do Pedido:', leftColumn, currentY + 45);
@@ -367,9 +363,9 @@ export async function generateMultipleLabels(orders: OrderWithDetails[]): Promis
       doc.fillColor('#64748b').font('Helvetica-Bold').text('Valor Total:', rightColumn, currentY + 65);
       doc.fillColor('#1e293b').font('Helvetica').text(formatCurrency(order.totalCost), rightColumn + 65, currentY + 65);
 
-      currentY += 120;
+      currentY += 130; // Margem aumentada após seção
 
-      // Recipient Information Section with modern card style
+      // Seção Dados do Destinatário
       doc.fillColor('#fefefe');
       doc.rect(margin, currentY, contentWidth, 150)
          .fillAndStroke('#fefefe', '#e2e8f0');
@@ -378,12 +374,11 @@ export async function generateMultipleLabels(orders: OrderWithDetails[]): Promis
       doc.fontSize(14).font('Helvetica-Bold');
       doc.text('DADOS DO DESTINATÁRIO', margin + 20, currentY + 20);
 
-      // Two columns layout with proper spacing
-      const recipientStartY = currentY + 45;
+      const recipientStartY = currentY + 50; // Margem aumentada
       const recipientLeftColumn = margin + 25;
       const recipientRightColumn = margin + (contentWidth / 2) + 15;
 
-      // Left column - Personal info
+      // Coluna esquerda - Dados pessoais
       doc.fontSize(10).fillColor('#64748b');
       doc.font('Helvetica-Bold').text('Nome Completo:', recipientLeftColumn, recipientStartY);
       doc.fillColor('#1e293b').font('Helvetica').text(order.customer.name, recipientLeftColumn, recipientStartY + 15, { width: 200 });
@@ -394,7 +389,7 @@ export async function generateMultipleLabels(orders: OrderWithDetails[]): Promis
       doc.fillColor('#64748b').font('Helvetica-Bold').text('Telefone:', recipientLeftColumn, recipientStartY + 80);
       doc.fillColor('#1e293b').font('Helvetica').text(formatPhone(order.customer.phone), recipientLeftColumn, recipientStartY + 95);
 
-      // Right column - Address
+      // Coluna direita - Endereço
       doc.fillColor('#64748b').font('Helvetica-Bold').text('Endereço de Entrega:', recipientRightColumn, recipientStartY);
       const address = order.address;
       const fullAddress = `${address.street}, ${address.number}${address.complement ? ' - ' + address.complement : ''}
@@ -403,10 +398,10 @@ ${address.city} - ${address.state}
 CEP: ${address.zipCode}`;
       doc.fillColor('#1e293b').font('Helvetica').text(fullAddress, recipientRightColumn, recipientStartY + 15, { width: 230 });
 
-      currentY += 200; // Aumentada margem para mais espaçamento
+      currentY += 180; // Margem aumentada após seção
 
-      // Order Items Section with modern card style
-      const itemSectionHeight = 80 + (order.kits.length * 15);
+      // Seção Itens do Pedido
+      const itemSectionHeight = 100 + (order.kits.length * 15);
       doc.fillColor('#f8fafc');
       doc.rect(margin, currentY, contentWidth, itemSectionHeight)
          .fillAndStroke('#f8fafc', '#e2e8f0');
@@ -415,26 +410,26 @@ CEP: ${address.zipCode}`;
       doc.fontSize(14).font('Helvetica-Bold');
       doc.text('ITENS DO PEDIDO', margin + 20, currentY + 20);
 
-      // Items table header
+      // Cabeçalho da tabela
       doc.fillColor('#6366f1');
-      doc.rect(margin + 20, currentY + 45, contentWidth - 40, 22)
+      doc.rect(margin + 20, currentY + 50, contentWidth - 40, 22) // Margem aumentada
          .fillAndStroke('#6366f1', '#4f46e5');
 
       doc.fillColor('white');
       doc.fontSize(10).font('Helvetica-Bold');
-      doc.text('Produto', margin + 30, currentY + 52);
-      doc.text('Quantidade', pageWidth - 130, currentY + 52);
+      doc.text('Produto', margin + 30, currentY + 57);
+      doc.text('Quantidade', pageWidth - 130, currentY + 57);
 
-      let itemY = currentY + 75;
+      let itemY = currentY + 80;
 
-      // Main product row
+      // Linha principal do produto
       doc.fillColor('#1e293b');
       doc.fontSize(10).font('Helvetica');
       doc.text(order.event.name, margin + 30, itemY, { width: 380 });
       doc.text(`${order.kitQuantity} kit(s)`, pageWidth - 130, itemY);
       itemY += 18;
 
-      // Kit details with better formatting
+      // Detalhes dos kits
       if (order.kits.length > 0) {
         doc.fontSize(9).fillColor('#64748b');
         order.kits.forEach((kit, kitIndex) => {
@@ -444,11 +439,11 @@ CEP: ${address.zipCode}`;
         });
       }
 
-      currentY += itemSectionHeight + 50; // Aumentada margem para mais espaçamento
+      currentY += itemSectionHeight + 30; // Margem aumentada após seção
 
-      // Signature Section with modern card style
+      // Seção Confirmação de Recebimento (agora com campos completos também)
       doc.fillColor('#fefefe');
-      doc.rect(margin, currentY, contentWidth, 140)
+      doc.rect(margin, currentY, contentWidth, 180) // Altura aumentada para campos completos
          .fillAndStroke('#fefefe', '#e2e8f0');
 
       doc.fillColor('#1e293b');
@@ -457,26 +452,69 @@ CEP: ${address.zipCode}`;
 
       doc.fontSize(10).fillColor('#64748b').font('Helvetica');
       doc.text('Declaro que recebi os itens acima relacionados em perfeito estado e conforme especificado.',
-        margin + 20, currentY + 45, { width: contentWidth - 40 });
+        margin + 20, currentY + 50, { width: contentWidth - 40 }); // Margem aumentada
 
-      // Signature fields with modern styling
-      const sigY = currentY + 75;
+      // Campos de assinatura (igual ao template individual)
+      const sigY = currentY + 80; // Margem aumentada
       const sig1X = margin + 25;
       const sig2X = margin + (contentWidth / 2) + 15;
       const sigWidth = (contentWidth / 2) - 40;
 
-      // Signature boxes
+      // Assinatura do destinatário
       doc.fillColor('#f8fafc');
       doc.rect(sig1X, sigY, sigWidth, 35)
          .fillAndStroke('#f8fafc', '#cbd5e1');
       doc.fillColor('#64748b').fontSize(9).font('Helvetica-Bold');
       doc.text('Assinatura do Destinatário', sig1X + 8, sigY + 8);
 
+      // Terceiro autorizado
       doc.fillColor('#f8fafc');
       doc.rect(sig2X, sigY, sigWidth, 35)
          .fillAndStroke('#f8fafc', '#cbd5e1');
       doc.fillColor('#64748b').fontSize(9).font('Helvetica-Bold');
-      doc.text('Data', sig2X + 8, sigY + 15);
+      doc.text('Terceiro Autorizado', sig2X + 8, sigY + 8);
+      doc.fontSize(8).font('Helvetica');
+      doc.text('(nome completo e documento)', sig2X + 8, sigY + 22);
+
+      // Campos CPF e Data
+      const fieldsY = sigY + 50;
+      const fieldWidth = (sigWidth / 2) - 5;
+
+      // Campos do destinatário (esquerda)
+      const field1X = sig1X;
+      const field2X = sig1X + fieldWidth + 10;
+
+      // Campos do terceiro autorizado (direita)
+      const field3X = sig2X;
+      const field4X = sig2X + fieldWidth + 10;
+
+      // CPF destinatário
+      doc.fillColor('#f8fafc');
+      doc.rect(field1X, fieldsY, fieldWidth, 20)
+         .fillAndStroke('#f8fafc', '#cbd5e1');
+      doc.fillColor('#64748b').fontSize(8).font('Helvetica-Bold');
+      doc.text('CPF', field1X + 5, fieldsY + 6);
+
+      // Data destinatário
+      doc.fillColor('#f8fafc');
+      doc.rect(field2X, fieldsY, fieldWidth, 20)
+         .fillAndStroke('#f8fafc', '#cbd5e1');
+      doc.fillColor('#64748b').fontSize(8).font('Helvetica-Bold');
+      doc.text('Data', field2X + 5, fieldsY + 6);
+
+      // CPF terceiro autorizado
+      doc.fillColor('#f8fafc');
+      doc.rect(field3X, fieldsY, fieldWidth, 20)
+         .fillAndStroke('#f8fafc', '#cbd5e1');
+      doc.fillColor('#64748b').fontSize(8).font('Helvetica-Bold');
+      doc.text('CPF', field3X + 5, fieldsY + 6);
+
+      // Data terceiro autorizado
+      doc.fillColor('#f8fafc');
+      doc.rect(field4X, fieldsY, fieldWidth, 20)
+         .fillAndStroke('#f8fafc', '#cbd5e1');
+      doc.fillColor('#64748b').fontSize(8).font('Helvetica-Bold');
+      doc.text('Data', field4X + 5, fieldsY + 6);
 
       // Footer
       const footerY = pageHeight - 50;
