@@ -1,0 +1,22 @@
+Atualmente temos um sistema de cupom que funciona muito bem. ele tem como criar cupom para um só evento. quero adicionar também a possibilidade de fazer o cupon funcionar só em uma zona de cep. ao chegar no checkout tem o cep do cliente no pedido. podemos fazer essa verificação. caso o cupon tenha ativado para zonas especificas. terias um cackbox nas configurações do cupon com as zonas de cep para selecionar. lembrando da logica de prioridade de zona de cep. caso o cep se encaixe na zona 1 ele não pode se encaixar na zona 4. pois isso pode acontecer caso a zona 4 seja um intervalo grande
+Ajuste no Sistema de Cupom com Zonas de CEP
+Atualmente o sistema de cupom permite criar cupons vinculados a um único evento.
+Quero adicionar também a possibilidade de um cupom funcionar apenas em zonas de CEP específicas.
+📌 Regras e Requisitos:
+Na tela de configuração do cupom, deve existir um checkbox / seletor de zonas de CEP.
+O administrador pode marcar uma ou mais zonas ativas (active = true) para restringir o cupom.
+Se nenhuma zona for marcada, o cupom funciona normalmente (sem restrição de CEP).
+O sistema deve verificar em qual zona ativa de prioridade o CEP se encaixa.
+A lógica de prioridade funciona assim:
+Cada CEP pode se encaixar em mais de uma zona (sobreposição).
+A checagem começa sempre pela prioridade mais alta (1 → N).
+O CEP é atribuído somente à primeira zona ativa em que ele se encaixar.
+Exemplo: se um CEP pertence à prioridade 2 e 4, ele é considerado da prioridade 2, nunca da 4.
+Portanto, se o cupom estiver configurado para a zona 4, esse CEP não deve validar o cupom, pois já se encaixou na prioridade 2.
+Caso o cupom tenha zonas configuradas e o CEP do cliente não pertença a nenhuma delas, o cupom deve ser inválido.
+Zonas inativas (active = false) nunca podem ser selecionadas no cupom nem consideradas na validação.
+📌 Objetivo do ajuste:
+Permitir que cupons sejam restritos por zonas de CEP ativas.
+Garantir que a lógica de prioridade seja respeitada (sempre a primeira zona ativa encontrada).
+
+Evitar que cupons de zonas amplas (ex: prioridade 4) se sobreponham a cupons de zonas mais específicas (ex: prioridade 1 ou 2).
