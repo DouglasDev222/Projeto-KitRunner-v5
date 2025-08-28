@@ -132,14 +132,14 @@ export async function generateKitsReport(eventId: number, status?: string[]): Pr
 
   // Add data rows with visual grouping by order number
   let currentOrderNumber = '';
-  let orderGroupColor = 'FFF8F8FF'; // Light color for first group
+  let orderGroupColor = 'FFFFE0A0'; // Light yellow for first group
   
   reportData.forEach((item, index) => {
     // Check if this is a new order group
     if (item.orderNumber !== currentOrderNumber) {
       currentOrderNumber = item.orderNumber;
-      // Alternate group colors to visually separate orders
-      orderGroupColor = orderGroupColor === 'FFF8F8FF' ? 'FFF0F8FF' : 'FFF8F8FF';
+      // Alternate group colors to visually separate orders with more contrast
+      orderGroupColor = orderGroupColor === 'FFFFE0A0' ? 'FFB0E0FF' : 'FFFFE0A0'; // Yellow/Light Blue alternating
     }
 
     const row = worksheet.addRow([
