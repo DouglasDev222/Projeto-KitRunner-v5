@@ -660,6 +660,9 @@ export default function Payment() {
           </CardContent>
         </Card>
 
+        {/* Debug CEP */}
+        {console.log('🔍 Selected address CEP for coupon:', selectedAddress?.zipCode)}
+        
         {/* Coupon Input */}
         <Card className="mb-6">
           <CardContent className="p-4">

@@ -46,8 +46,9 @@ export function CouponInput({
 
   // Query para validação do cupom
   const { isLoading, data, error } = useQuery({
-    queryKey: ['validate-coupon', couponCode, eventId, totalAmount],
+    queryKey: ['validate-coupon', couponCode, eventId, totalAmount, customerZipCode],
     queryFn: async (): Promise<CouponValidationResponse> => {
+      console.log('🎫 Validating coupon with CEP:', customerZipCode);
       const response = await fetch('/api/coupons/validate', {
         method: 'POST',
         headers: {
