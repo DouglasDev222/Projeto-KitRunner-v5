@@ -93,7 +93,7 @@ export async function generateDeliveryLabel(order: OrderWithDetails): Promise<Bu
        .fill();
 
     // Adicionar logo
-    addLogoToDocument(doc, margin + 20, currentY + 15, 50);
+    addLogoToDocument(doc, margin + 20, currentY + 20, 35);
 
     // Número do pedido no canto direito com margem adequada
     doc.fontSize(16).font('Helvetica-Bold').fillColor('white');
@@ -134,7 +134,7 @@ export async function generateDeliveryLabel(order: OrderWithDetails): Promise<Bu
 
     // Seção Dados do Destinatário
     doc.fillColor('#fefefe');
-    doc.rect(margin, currentY, contentWidth, 150)
+    doc.rect(margin, currentY, contentWidth, 160)
        .fillAndStroke('#fefefe', '#e2e8f0');
 
     doc.fillColor('#1e293b');
@@ -192,7 +192,7 @@ CEP: ${address.zipCode}`;
     // Linha principal do produto
     doc.fillColor('#1e293b');
     doc.fontSize(10).font('Helvetica');
-    doc.text(order.event.name, margin + 30, itemY, { width: 380 });
+    doc.text(`${order.event.name}`, margin + 30, itemY, { width: 380 });
     doc.text(`${order.kitQuantity} kit(s)`, pageWidth - 130, itemY);
     itemY += 18;
 
@@ -326,7 +326,7 @@ export async function generateMultipleLabels(orders: OrderWithDetails[]): Promis
          .fill();
 
       // Adicionar logo
-      addLogoToDocument(doc, margin + 20, currentY + 15, 50);
+      addLogoToDocument(doc, margin + 20, currentY + 20, 35);
 
       // Número do pedido no canto direito com margem adequada
       doc.fontSize(16).font('Helvetica-Bold').fillColor('white');
@@ -366,7 +366,7 @@ export async function generateMultipleLabels(orders: OrderWithDetails[]): Promis
 
       // Seção Dados do Destinatário
       doc.fillColor('#fefefe');
-      doc.rect(margin, currentY, contentWidth, 150)
+      doc.rect(margin, currentY, contentWidth, 165)
          .fillAndStroke('#fefefe', '#e2e8f0');
 
       doc.fillColor('#1e293b');
@@ -424,7 +424,7 @@ CEP: ${address.zipCode}`;
       // Linha principal do produto
       doc.fillColor('#1e293b');
       doc.fontSize(10).font('Helvetica');
-      doc.text(order.event.name, margin + 30, itemY, { width: 380 });
+      doc.text(`${order.event.name}`, margin + 30, itemY, { width: 380 });
       doc.text(`${order.kitQuantity} kit(s)`, pageWidth - 130, itemY);
       itemY += 18;
 
