@@ -163,7 +163,11 @@ export default function FilterPanel({ reportType, filters, onFiltersChange, clas
     }
 
     if (filters.format) {
-      descriptions.push(`Formato: ${filters.format.toUpperCase()}`);
+      const formatDisplayName = filters.format === 'pdf' ? 'PDF' : 
+                               filters.format === 'excel' ? 'EXCEL' : 
+                               filters.format === 'csv' ? 'CSV' : 
+                               filters.format.toUpperCase();
+      descriptions.push(`Formato: ${formatDisplayName}`);
     }
 
     return descriptions;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useToast } from "@/hooks/use-toast";
 import { FileSpreadsheet } from "lucide-react";
@@ -12,6 +12,15 @@ export default function AdminReports() {
   const [filters, setFilters] = useState<ReportFilters>({ format: 'excel' });
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
+
+  // Update format when report type changes
+  useEffect(() => {
+    if (selectedReportType === 'labels') {
+      setFilters(prev => ({ ...prev, format: 'pdf' }));
+    } else if (selectedReportType && filters.format === 'pdf' && selectedReportType !== 'labels') {
+      setFilters(prev => ({ ...prev, format: 'excel' }));
+    }
+  }, [selectedReportType]);
 
   const handleReportGeneration = async () => {
     if (!selectedReportType) {
