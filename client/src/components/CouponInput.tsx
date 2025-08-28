@@ -25,7 +25,8 @@ interface CouponValidationResponse {
 interface CouponInputProps {
   eventId: number;
   totalAmount: number;
-  customerZipCode?: string; // CEP do cliente para validação
+  customerZipCode?: string; // CEP do cliente para validação (fallback)
+  addressId?: number; // ID do endereço do cliente (preferido)
   onCouponApplied: (coupon: CouponData, discount: number, finalAmount: number) => void;
   onCouponRemoved: () => void;
   appliedCoupon?: CouponData | null;
@@ -35,6 +36,7 @@ export function CouponInput({
   eventId, 
   totalAmount, 
   customerZipCode,
+  addressId,
   onCouponApplied, 
   onCouponRemoved,
   appliedCoupon 
@@ -46,7 +48,7 @@ export function CouponInput({
 
   // Query para validação do cupom
   const { isLoading, data, error } = useQuery({
-    queryKey: ['validate-coupon', couponCode, eventId, totalAmount, customerZipCode],
+    queryKey: ['validate-coupon', couponCode, eventId, totalAmount, customerZipCode, addressId],
     queryFn: async (): Promise<CouponValidationResponse> => {
       console.log('🎫 Validating coupon with CEP:', customerZipCode, 'Type:', typeof customerZipCode);
       const response = await fetch('/api/coupons/validate', {
@@ -58,7 +60,8 @@ export function CouponInput({
           code: couponCode,
           eventId,
           totalAmount,
-          customerZipCode
+          customerZipCode,
+          addressId
         }),
       });
       return response.json();

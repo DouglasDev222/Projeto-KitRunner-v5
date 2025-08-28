@@ -17,7 +17,8 @@ const couponValidationSchema = z.object({
   code: z.string().min(1, "Código do cupom é obrigatório"),
   eventId: z.number().min(1, "ID do evento é obrigatório"),
   totalAmount: z.number().min(0, "Valor total deve ser positivo"),
-  customerZipCode: z.string().optional() // CEP do cliente para validação de zona
+  customerZipCode: z.string().optional(), // CEP do cliente para validação de zona (fallback)
+  addressId: z.number().optional() // ID do endereço do cliente (preferido)
 });
 
 // Schema para criação/atualização de cupom (admin)
@@ -36,11 +37,33 @@ const adminCouponSchema = insertCouponSchema.extend({
  */
 router.post('/coupons/validate', async (req, res) => {
   try {
-    const { code, eventId, totalAmount, customerZipCode } = req.body;
-    console.log('🎫 Coupon validation request:', { code, eventId, totalAmount, customerZipCode });
+    const { code, eventId, totalAmount, customerZipCode, addressId } = req.body;
+    console.log('🎫 Coupon validation request:', { code, eventId, totalAmount, customerZipCode, addressId });
+    
     const validatedData = couponValidationSchema.parse(req.body);
     
-    const validation = await CouponService.validateCoupon(validatedData);
+    // Se addressId foi fornecido, buscar o CEP do endereço
+    let finalCustomerZipCode = customerZipCode;
+    if (addressId && !customerZipCode) {
+      try {
+        const { storage } = await import('../storage');
+        const address = await storage.getAddress(addressId);
+        if (address) {
+          finalCustomerZipCode = address.zipCode;
+          console.log('🎫 CEP encontrado via addressId:', { addressId, zipCode: finalCustomerZipCode });
+        }
+      } catch (error) {
+        console.error('🎫 Erro ao buscar endereço:', error);
+      }
+    }
+    
+    // Atualizar dados validados com CEP encontrado
+    const updatedValidatedData = {
+      ...validatedData,
+      customerZipCode: finalCustomerZipCode
+    };
+    
+    const validation = await CouponService.validateCoupon(updatedValidatedData);
     console.log('🎫 Coupon validation result:', validation);
     
     res.json(validation);

@@ -674,6 +674,7 @@ export default function Payment() {
               eventId={parseInt(id!)}
               totalAmount={basePricing.totalCost}
               customerZipCode={selectedAddress?.zipCode?.replace(/\D/g, '') || undefined}
+              addressId={selectedAddress?.id}
               onCouponApplied={handleCouponApplied}
               onCouponRemoved={handleCouponRemoved}
               appliedCoupon={appliedCoupon}
