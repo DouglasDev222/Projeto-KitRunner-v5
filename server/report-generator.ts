@@ -193,7 +193,7 @@ function formatCPF(cpf: string): string {
 // Generate Kits PDF with user-specified format
 async function generateKitsPDF(reportData: KitReportData[], eventName: string): Promise<Buffer> {
   const PDFDocument = (await import('pdfkit')).default;
-  const doc = new PDFDocument({ size: 'A4', margin: 50 });
+  const doc = new PDFDocument({ size: 'A4', margin: 40 });
   const buffers: Buffer[] = [];
 
   doc.on('data', buffers.push.bind(buffers));
@@ -206,72 +206,118 @@ async function generateKitsPDF(reportData: KitReportData[], eventName: string): 
   doc.moveDown();
   
   // Add a line separator
-  doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+  doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke();
   doc.moveDown();
 
-  // Table headers - simplified columns as requested
+  // Table headers - including new "Nº CHIP" column
   const startY = doc.y;
-  const colWidths = [100, 200, 120, 70]; // Column widths for: Nº Pedido, Nome do Atleta, CPF, Camisa
-  const headers = ['Nº Pedido', 'Nome do Atleta', 'CPF', 'Camisa'];
+  const colWidths = [85, 160, 100, 50, 60]; // Column widths for: Nº Pedido, Nome do Atleta, CPF, Camisa, Nº CHIP
+  const headers = ['Nº Pedido', 'Nome do Atleta', 'CPF', 'Camisa', 'Nº CHIP'];
+  const tableWidth = colWidths.reduce((sum, width) => sum + width, 0);
+  const tableStartX = 40;
   
-  let x = 50;
-  doc.fontSize(12).fillColor('black');
+  // Draw header background
+  doc.rect(tableStartX, startY - 5, tableWidth, 25).fillAndStroke('#4472C4', 'black');
+  
+  let x = tableStartX;
+  doc.fontSize(11).fillColor('white').font('Helvetica-Bold');
   headers.forEach((header, i) => {
-    doc.text(header, x, startY, { width: colWidths[i], align: 'left' });
+    doc.text(header, x + 3, startY + 3, { width: colWidths[i] - 6, align: 'center' });
     x += colWidths[i];
   });
   
-  // Draw header line
-  doc.moveTo(50, startY + 20).lineTo(540, startY + 20).stroke();
-  doc.moveDown(1.5);
+  // Reset font and color for data
+  doc.font('Helvetica').fillColor('black');
+  doc.moveDown(1.8);
 
+  // Track current order for grouping
+  let currentOrderNumber = '';
+  let isLightGroup = true; // Start with light group
+  
   // Table data
   reportData.forEach((kit, index) => {
-    if (doc.y > 720) { // New page if needed (leave margin for page end)
+    // Check if we need a new page
+    if (doc.y > 720) {
       doc.addPage();
       doc.fontSize(20).text(`Retirada de Kit ${eventName}`, {
         align: 'center'
       });
       doc.moveDown();
-      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+      doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke();
       doc.moveDown();
       
       // Redraw headers on new page
       const newStartY = doc.y;
-      let newX = 50;
-      doc.fontSize(12).fillColor('black');
+      doc.rect(tableStartX, newStartY - 5, tableWidth, 25).fillAndStroke('#4472C4', 'black');
+      
+      let newX = tableStartX;
+      doc.fontSize(11).fillColor('white').font('Helvetica-Bold');
       headers.forEach((header, i) => {
-        doc.text(header, newX, newStartY, { width: colWidths[i], align: 'left' });
+        doc.text(header, newX + 3, newStartY + 3, { width: colWidths[i] - 6, align: 'center' });
         newX += colWidths[i];
       });
-      doc.moveTo(50, newStartY + 20).lineTo(540, newStartY + 20).stroke();
-      doc.moveDown(1.5);
+      
+      doc.font('Helvetica').fillColor('black');
+      doc.moveDown(1.8);
+    }
+    
+    // Check if this is a new order group (for color alternation)
+    if (kit.orderNumber !== currentOrderNumber) {
+      currentOrderNumber = kit.orderNumber;
+      isLightGroup = !isLightGroup; // Alternate colors
     }
     
     const y = doc.y;
-    x = 50;
+    const rowHeight = 18;
     
+    // Draw row background with alternating colors for different orders
+    const bgColor = isLightGroup ? '#FFF8DC' : '#E6F3FF'; // Light yellow vs Light blue
+    doc.rect(tableStartX, y - 2, tableWidth, rowHeight).fillAndStroke(bgColor, 'black');
+    
+    // Draw vertical borders for each column
+    let borderX = tableStartX;
+    colWidths.forEach((width) => {
+      doc.moveTo(borderX, y - 2).lineTo(borderX, y + rowHeight - 2).stroke();
+      borderX += width;
+    });
+    // Right border
+    doc.moveTo(borderX, y - 2).lineTo(borderX, y + rowHeight - 2).stroke();
+    
+    // Prepare row data
     const rowData = [
       kit.orderNumber,
-      kit.athleteName.length > 25 ? kit.athleteName.substring(0, 22) + '...' : kit.athleteName,
+      kit.athleteName.length > 22 ? kit.athleteName.substring(0, 19) + '...' : kit.athleteName,
       kit.cpf,
-      kit.shirtSize
+      kit.shirtSize,
+      '' // Empty Nº CHIP column
     ];
     
-    doc.fontSize(10).fillColor('black');
+    // Fill cells with data
+    x = tableStartX;
+    doc.fontSize(9).fillColor('black');
+    
     rowData.forEach((data, i) => {
-      doc.text(data || '', x, y, { width: colWidths[i], align: 'left' });
+      if (i === 2) { // CPF column - make it bold
+        doc.font('Helvetica-Bold');
+      } else {
+        doc.font('Helvetica');
+      }
+      
+      const textAlign = i === 0 || i === 3 || i === 4 ? 'center' : 'left'; // Center align for order number, shirt size, and chip number
+      doc.text(data || '', x + 3, y + 3, { 
+        width: colWidths[i] - 6, 
+        align: textAlign,
+        lineBreak: false
+      });
       x += colWidths[i];
     });
     
-    // Add a subtle line between rows for better readability
-    if (index % 2 === 0) {
-      doc.rect(50, y - 2, 490, 14).fillAndStroke('#f8f9fa', '#f8f9fa');
-      doc.fillColor('black');
-    }
-    
-    doc.moveDown(0.7);
+    doc.moveDown(1.2);
   });
+  
+  // Draw final bottom border
+  const finalY = doc.y;
+  doc.moveTo(tableStartX, finalY - 2).lineTo(tableStartX + tableWidth, finalY - 2).stroke();
 
   doc.end();
   
