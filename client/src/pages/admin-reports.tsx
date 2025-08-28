@@ -5,12 +5,14 @@ import { FileSpreadsheet } from "lucide-react";
 import ReportSelector, { ReportType } from "@/components/admin/ReportSelector";
 import FilterPanel, { ReportFilters } from "@/components/admin/FilterPanel";
 import ReportPreview from "@/components/admin/ReportPreview";
+import { LoadingModal } from "@/components/ui/loading-modal";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function AdminReports() {
   const [selectedReportType, setSelectedReportType] = useState<ReportType | null>(null);
   const [filters, setFilters] = useState<ReportFilters>({ format: 'excel' });
   const [isGenerating, setIsGenerating] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
   const { toast } = useToast();
 
   // Update format when report type changes
@@ -55,6 +57,7 @@ export default function AdminReports() {
     }
 
     setIsGenerating(true);
+    setLoadingMessage(getLoadingMessage(selectedReportType));
     
     try {
       let endpoint = '';
@@ -168,6 +171,28 @@ export default function AdminReports() {
       });
     } finally {
       setIsGenerating(false);
+      setLoadingMessage("");
+    }
+  };
+
+  const getLoadingMessage = (reportType: ReportType | null): string => {
+    switch (reportType) {
+      case 'kits':
+        return 'Processando informações dos kits e atletas...';
+      case 'circuit':
+        return 'Analisando distribuição geográfica e zonas de CEP...';
+      case 'orders':
+        return 'Compilando histórico de pedidos...';
+      case 'billing':
+        return 'Calculando métricas de faturamento...';
+      case 'customers':
+        return 'Organizando dados dos clientes...';
+      case 'sales':
+        return 'Processando dados de vendas...';
+      case 'labels':
+        return 'Gerando etiquetas de entrega...';
+      default:
+        return 'Processando relatório...';
     }
   };
 
@@ -234,6 +259,13 @@ export default function AdminReports() {
             )}
           </div>
         </div>
+
+        {/* Loading Modal */}
+        <LoadingModal 
+          isOpen={isGenerating}
+          title="Gerando Relatório"
+          message={loadingMessage}
+        />
       </div>
     </AdminLayout>
   );

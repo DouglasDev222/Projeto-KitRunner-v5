@@ -275,12 +275,21 @@ export default function ReportPreview({ reportType, filters, onGenerate, isGener
           
           <Button
             onClick={onGenerate}
-            disabled={!canGenerate}
+            disabled={!canGenerate || isGenerating}
             className="flex-1"
             data-testid="button-generate-report"
           >
-            <Download className="mr-2 h-4 w-4" />
-            {isGenerating ? 'Gerando...' : 'Gerar Relatório'}
+            {isGenerating ? (
+              <>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-white" />
+                Gerando...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Gerar Relatório
+              </>
+            )}
           </Button>
         </div>
 
