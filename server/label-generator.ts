@@ -63,26 +63,28 @@ export async function generateDeliveryLabel(order: OrderWithDetails): Promise<Bu
        .fillAndStroke('#6366f1', '#4f46e5')
        .fill();
 
-    // Try to add logo
-    const logoPath = path.join(process.cwd(), 'attached_assets', 'logo_1753468396785.png');
+    // Try to add new logo
+    const logoPath = path.join(process.cwd(), 'attached_assets', 'logo-kitrunner-new.png');
     try {
       if (fs.existsSync(logoPath)) {
         doc.image(logoPath, margin + 20, currentY + 15, { height: 50 });
       }
     } catch (error) {
-      console.log('Logo not found, using text fallback');
+      console.log('New logo not found, trying fallback');
+      // Fallback to old logo if new one doesn't exist
+      const fallbackLogoPath = path.join(process.cwd(), 'attached_assets', 'logo_1753468396785.png');
+      try {
+        if (fs.existsSync(fallbackLogoPath)) {
+          doc.image(fallbackLogoPath, margin + 20, currentY + 15, { height: 50 });
+        }
+      } catch (fallbackError) {
+        console.log('No logo found');
+      }
     }
-
-    // Header text
-    doc.fillColor('white');
-    doc.fontSize(24).font('Helvetica-Bold');
-    doc.text('KITRUNNER', margin + 120, currentY + 15);
-    doc.fontSize(14).font('Helvetica');
-    doc.text('ETIQUETA DE ENTREGA', margin + 120, currentY + 45);
     
-    // Order number in top right
-    doc.fontSize(16).font('Helvetica-Bold');
-    doc.text(`#${order.orderNumber}`, pageWidth - 200, currentY + 25, { 
+    // Order number in top right with proper margin
+    doc.fontSize(16).font('Helvetica-Bold').fillColor('white');
+    doc.text(`#${order.orderNumber}`, pageWidth - 220, currentY + 25, { 
       width: 170, 
       align: 'right' 
     });
@@ -151,7 +153,7 @@ ${address.city} - ${address.state}
 CEP: ${address.zipCode}`;
     doc.fillColor('#1e293b').font('Helvetica').text(fullAddress, recipientRightColumn, recipientStartY + 15, { width: 230 });
     
-    currentY += 170;
+    currentY += 190; // Aumentada margem de 170 para 190
 
     // Order Items Section with modern card style
     const itemSectionHeight = 80 + (order.kits.length * 15);
@@ -192,7 +194,7 @@ CEP: ${address.zipCode}`;
       });
     }
     
-    currentY += itemSectionHeight + 20;
+    currentY += itemSectionHeight + 40; // Aumentada margem de 20 para 40
 
     // Signature Section with modern card style
     doc.fillColor('#fefefe');
@@ -311,26 +313,28 @@ export async function generateMultipleLabels(orders: OrderWithDetails[]): Promis
          .fillAndStroke('#6366f1', '#4f46e5')
          .fill();
 
-      // Try to add logo
-      const logoPath = path.join(process.cwd(), 'attached_assets', 'logo_1753468396785.png');
+      // Try to add new logo
+      const logoPath = path.join(process.cwd(), 'attached_assets', 'logo-kitrunner-new.png');
       try {
         if (fs.existsSync(logoPath)) {
           doc.image(logoPath, margin + 20, currentY + 15, { height: 50 });
         }
       } catch (error) {
-        console.log('Logo not found, using text fallback');
+        console.log('New logo not found, trying fallback');
+        // Fallback to old logo if new one doesn't exist
+        const fallbackLogoPath = path.join(process.cwd(), 'attached_assets', 'logo_1753468396785.png');
+        try {
+          if (fs.existsSync(fallbackLogoPath)) {
+            doc.image(fallbackLogoPath, margin + 20, currentY + 15, { height: 50 });
+          }
+        } catch (fallbackError) {
+          console.log('No logo found');
+        }
       }
-
-      // Header text
-      doc.fillColor('white');
-      doc.fontSize(24).font('Helvetica-Bold');
-      doc.text('KITRUNNER', margin + 120, currentY + 15);
-      doc.fontSize(14).font('Helvetica');
-      doc.text('ETIQUETA DE ENTREGA', margin + 120, currentY + 45);
       
-      // Order number in top right
-      doc.fontSize(16).font('Helvetica-Bold');
-      doc.text(`#${order.orderNumber}`, pageWidth - 200, currentY + 25, { 
+      // Order number in top right with proper margin
+      doc.fontSize(16).font('Helvetica-Bold').fillColor('white');
+      doc.text(`#${order.orderNumber}`, pageWidth - 220, currentY + 25, { 
         width: 170, 
         align: 'right' 
       });
@@ -399,7 +403,7 @@ ${address.city} - ${address.state}
 CEP: ${address.zipCode}`;
       doc.fillColor('#1e293b').font('Helvetica').text(fullAddress, recipientRightColumn, recipientStartY + 15, { width: 230 });
       
-      currentY += 170;
+      currentY += 190; // Aumentada margem de 170 para 190
 
       // Order Items Section with modern card style
       const itemSectionHeight = 80 + (order.kits.length * 15);
@@ -440,7 +444,7 @@ CEP: ${address.zipCode}`;
         });
       }
       
-      currentY += itemSectionHeight + 20;
+      currentY += itemSectionHeight + 40; // Aumentada margem de 20 para 40
 
       // Signature Section with modern card style
       doc.fillColor('#fefefe');
