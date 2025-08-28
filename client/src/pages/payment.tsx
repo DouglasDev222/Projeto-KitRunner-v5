@@ -665,7 +665,7 @@ export default function Payment() {
         </Card>
 
         {/* Debug CEP */}
-        {selectedAddress && console.log('🔍 Selected address CEP for coupon:', selectedAddress.zipCode, 'Cleaned CEP:', selectedAddress.zipCode?.replace(/\D/g, ''), 'Full address:', selectedAddress)}
+        {selectedAddress && console.log('🔍 Selected address for coupon - ID:', selectedAddress.id, 'CEP:', selectedAddress.zipCode)}
         
         {/* Coupon Input */}
         <Card className="mb-6">

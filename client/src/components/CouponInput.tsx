@@ -50,7 +50,7 @@ export function CouponInput({
   const { isLoading, data, error } = useQuery({
     queryKey: ['validate-coupon', couponCode, eventId, totalAmount, customerZipCode, addressId],
     queryFn: async (): Promise<CouponValidationResponse> => {
-      console.log('🎫 Validating coupon with CEP:', customerZipCode, 'Type:', typeof customerZipCode);
+      console.log('🎫 Validating coupon with addressId:', addressId, 'CEP:', customerZipCode);
       const response = await fetch('/api/coupons/validate', {
         method: 'POST',
         headers: {
@@ -66,7 +66,7 @@ export function CouponInput({
       });
       return response.json();
     },
-    enabled: shouldValidate && couponCode.length > 0 && !appliedCoupon,
+    enabled: shouldValidate && couponCode.length > 0 && !appliedCoupon && (addressId || customerZipCode),
     retry: false
   });
 

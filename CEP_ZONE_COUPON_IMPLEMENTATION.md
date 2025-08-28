@@ -29,50 +29,87 @@ Implementar sistema de cupons que funcionam apenas em zonas de CEP específicas,
 - ✅ Query key atualizada para incluir CEP na cache
 - ✅ Logs de debug implementados
 
-## ❌ Problema Identificado
+## ❌ Problema Identificado e Solução Implementada
 
-### CEP não chegando na validação
-**Status**: O `customerZipCode` continua chegando como `undefined` no backend
+### Problema Original: CEP não chegando na validação
+**Status**: ✅ **RESOLVIDO** - Implementada nova arquitetura baseada em addressId
 
-**Evidência nos logs**:
+**Evidência do problema**:
 ```
 🎫 Coupon validation request: {
   code: 'KITRUNNER15',
   eventId: 12,
   totalAmount: 0.02,
-  customerZipCode: undefined
+  customerZipCode: undefined,
+  addressId: undefined
 }
 ```
 
-**Mas o CEP está disponível**:
-- ✅ CEP é processado corretamente na validação de preços: `58013420`
-- ✅ Endereço é salvo no sessionStorage corretamente
-- ✅ Componente CouponInput recebe prop `customerZipCode`
+### 💡 Solução Implementada: Busca de CEP via addressId
 
-## 🔍 Checklist de Correções Necessárias
+**Nova arquitetura similar ao sistema de pedidos**:
+1. **Frontend**: Envia `addressId` do endereço selecionado
+2. **Backend**: Busca endereço completo via `storage.getAddress(addressId)`
+3. **Extração**: CEP é extraído diretamente do banco de dados
+4. **Validação**: Cupom validado com CEP correto
 
-### 1. Verificar estrutura do endereço no sessionStorage
-- [ ] Confirmar se campo `zipCode` existe no objeto salvo
-- [ ] Verificar se não há diferença entre `zipCode`, `cep`, ou outro nome de campo
+**Vantagens da nova solução**:
+- ✅ Usa mesma estratégia que sistema de pedidos (comprovadamente funcional)
+- ✅ Dados vêm diretamente do banco de dados (mais confiável)
+- ✅ Não depende de sessionStorage ou timing de carregamento
+- ✅ Mantém fallback para CEP direto se necessário
 
-### 2. Verificar timing de carregamento
-- [ ] Confirmar se `selectedAddress` está carregado antes do componente CouponInput renderizar
-- [ ] Verificar se React Query não está sendo executada antes do endereço carregar
+### 🔧 Implementações da Nova Solução
 
-### 3. Verificar formatação do CEP
-- [ ] Confirmar se a limpeza `replace(/\D/g, '')` está funcionando
-- [ ] Verificar se CEP não está vazio após formatação
+#### Backend (server/routes/coupons.ts)
+```typescript
+// Adicionado addressId ao schema
+addressId: z.number().optional()
 
-### 4. Debug detalhado
-- [ ] Adicionar logs no console do navegador para ver estrutura completa do endereço
-- [ ] Verificar se props estão sendo passadas corretamente entre componentes
+// Lógica de busca do CEP via addressId
+if (addressId && !customerZipCode) {
+  const address = await storage.getAddress(addressId);
+  if (address) {
+    finalCustomerZipCode = address.zipCode;
+  }
+}
+```
 
-## 🛠️ Próximos Passos
+#### Frontend (CouponInput.tsx)
+```typescript
+// Nova prop addressId
+addressId?: number;
 
-1. **Investigar estrutura do endereço**: Verificar exatamente como o endereço está sendo salvo e carregado
-2. **Corrigir passagem do CEP**: Garantir que o CEP chegue corretamente no componente de validação
-3. **Testar validação completa**: Confirmar que cupons com restrições de zona funcionam
-4. **Limpar logs de debug**: Remover console.logs após correção
+// Enviado na requisição
+body: JSON.stringify({
+  code: couponCode,
+  eventId,
+  totalAmount,
+  customerZipCode,
+  addressId  // Novo campo
+})
+
+// Query habilitada apenas quando tem addressId ou CEP
+enabled: shouldValidate && couponCode.length > 0 && !appliedCoupon && (addressId || customerZipCode)
+```
+
+#### Payment Page
+```typescript
+// Passagem do addressId
+<CouponInput
+  addressId={selectedAddress?.id}  // Novo prop
+  customerZipCode={selectedAddress?.zipCode?.replace(/\D/g, '') || undefined}
+  // ... outras props
+/>
+```
+
+## 🔍 Status Atual - Debugging Final
+
+**Último problema detectado**: `addressId` ainda chega como `undefined`
+- Necessário verificar timing de carregamento do `selectedAddress`
+- Componente pode estar renderizando antes do endereço carregar
+
+**Próximo passo**: Verificar se query só executa quando `selectedAddress` está disponível
 
 ## 📝 Arquivos Modificados
 
