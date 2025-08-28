@@ -1,11 +1,13 @@
 import { db } from "./db";
-import { coupons } from "@shared/schema";
+import { coupons, cepZones } from "@shared/schema";
 import { eq, and, or, isNull, sql } from "drizzle-orm";
+import { findCepZoneFromList, isValidCep, cleanCep } from "./cep-zones-calculator";
 
 export interface CouponValidationRequest {
   code: string;
   eventId: number;
   totalAmount: number;
+  customerZipCode?: string; // CEP do cliente para validação de zona
 }
 
 export interface CouponValidationResponse {
@@ -28,7 +30,7 @@ export class CouponService {
    * Valida um cupom e calcula o desconto
    */
   static async validateCoupon(request: CouponValidationRequest): Promise<CouponValidationResponse> {
-    const { code, eventId, totalAmount } = request;
+    const { code, eventId, totalAmount, customerZipCode } = request;
     
     try {
       // Buscar cupom pelo código (case-insensitive)
@@ -86,6 +88,47 @@ export class CouponService {
           return {
             valid: false,
             message: "Cupom não é válido para este evento"
+          };
+        }
+      }
+
+      // Verificar se é válido para a zona de CEP (se cepZoneIds não for null)
+      if (couponData.cepZoneIds && couponData.cepZoneIds.length > 0) {
+        if (!customerZipCode) {
+          return {
+            valid: false,
+            message: "CEP necessário para validar este cupom"
+          };
+        }
+
+        if (!isValidCep(customerZipCode)) {
+          return {
+            valid: false,
+            message: "CEP inválido"
+          };
+        }
+
+        // Buscar todas as zonas ativas
+        const allZones = await db
+          .select()
+          .from(cepZones)
+          .where(eq(cepZones.active, true));
+
+        // Encontrar qual zona ativa o CEP pertence (respeitando prioridade)
+        const customerZone = findCepZoneFromList(customerZipCode, allZones);
+        
+        if (!customerZone) {
+          return {
+            valid: false,
+            message: "CEP não atendido por nenhuma zona de entrega"
+          };
+        }
+
+        // Verificar se a zona do cliente está nas zonas permitidas pelo cupom
+        if (!couponData.cepZoneIds.includes(customerZone.id)) {
+          return {
+            valid: false,
+            message: "Cupom não é válido para sua região"
           };
         }
       }

@@ -21,6 +21,7 @@ interface Coupon {
   description?: string;
   maxDiscount?: string;
   productIds?: number[];
+  cepZoneIds?: number[];
   validFrom: string;
   validUntil: string;
   usageLimit?: number;
@@ -32,6 +33,14 @@ interface Coupon {
 interface Event {
   id: number;
   name: string;
+}
+
+interface CepZone {
+  id: number;
+  name: string;
+  description?: string;
+  active: boolean;
+  priority: number;
 }
 
 interface CouponModalProps {
@@ -52,7 +61,8 @@ export function CouponModal({ isOpen, onClose, coupon, isEditing }: CouponModalP
     validUntil: '',
     usageLimit: '',
     active: true,
-    selectedEvents: [] as number[]
+    selectedEvents: [] as number[],
+    selectedCepZones: [] as number[]
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +72,18 @@ export function CouponModal({ isOpen, onClose, coupon, isEditing }: CouponModalP
     queryKey: ['/api/events'],
     enabled: isOpen
   });
+
+  // Get CEP zones for zone selection
+  const { data: cepZonesData } = useQuery({
+    queryKey: ['/api/admin/cep-zones'],
+    enabled: isOpen,
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/admin/cep-zones');
+      return response.json();
+    }
+  });
+
+  const cepZones = (cepZonesData?.zones || []).filter((zone: CepZone) => zone.active);
 
   useEffect(() => {
     if (coupon && isEditing) {
@@ -75,7 +97,8 @@ export function CouponModal({ isOpen, onClose, coupon, isEditing }: CouponModalP
         validUntil: format(new Date(coupon.validUntil), 'yyyy-MM-dd'),
         usageLimit: coupon.usageLimit?.toString() || '',
         active: coupon.active,
-        selectedEvents: coupon.productIds || []
+        selectedEvents: coupon.productIds || [],
+        selectedCepZones: coupon.cepZoneIds || []
       });
     } else {
       setFormData({
@@ -88,7 +111,8 @@ export function CouponModal({ isOpen, onClose, coupon, isEditing }: CouponModalP
         validUntil: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
         usageLimit: '',
         active: true,
-        selectedEvents: []
+        selectedEvents: [],
+        selectedCepZones: []
       });
     }
     setError(null);
@@ -106,6 +130,7 @@ export function CouponModal({ isOpen, onClose, coupon, isEditing }: CouponModalP
         description: data.description || null,
         maxDiscount: data.maxDiscount || null,
         productIds: data.selectedEvents.length > 0 ? data.selectedEvents : null,
+        cepZoneIds: data.selectedCepZones.length > 0 ? data.selectedCepZones : null,
         validFrom: data.validFrom,
         validUntil: data.validUntil,
         usageLimit: data.usageLimit ? parseInt(data.usageLimit) : null,
@@ -172,6 +197,15 @@ export function CouponModal({ isOpen, onClose, coupon, isEditing }: CouponModalP
       selectedEvents: checked 
         ? [...prev.selectedEvents, eventId]
         : prev.selectedEvents.filter(id => id !== eventId)
+    }));
+  };
+
+  const handleCepZoneToggle = (zoneId: number, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedCepZones: checked 
+        ? [...prev.selectedCepZones, zoneId]
+        : prev.selectedCepZones.filter(id => id !== zoneId)
     }));
   };
 
@@ -316,6 +350,36 @@ export function CouponModal({ isOpen, onClose, coupon, isEditing }: CouponModalP
                     />
                     <Label htmlFor={`event-${event.id}`} className="text-sm">
                       {event.name}
+                    </Label>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {cepZones && cepZones.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Zonas de CEP Específicas</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Deixe todos desmarcados para cupom válido em todas as zonas
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-2 max-h-32 overflow-y-auto">
+                {cepZones.map((zone: CepZone) => (
+                  <div key={zone.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`zone-${zone.id}`}
+                      checked={formData.selectedCepZones.includes(zone.id)}
+                      onCheckedChange={(checked) => handleCepZoneToggle(zone.id, checked as boolean)}
+                    />
+                    <Label htmlFor={`zone-${zone.id}`} className="text-sm">
+                      {zone.name}
+                      {zone.description && (
+                        <span className="text-xs text-muted-foreground ml-2">
+                          ({zone.description})
+                        </span>
+                      )}
                     </Label>
                   </div>
                 ))}

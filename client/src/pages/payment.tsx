@@ -666,6 +666,7 @@ export default function Payment() {
             <CouponInput
               eventId={parseInt(id!)}
               totalAmount={basePricing.totalCost}
+              customerZipCode={selectedAddress?.zipCode}
               onCouponApplied={handleCouponApplied}
               onCouponRemoved={handleCouponRemoved}
               appliedCoupon={appliedCoupon}

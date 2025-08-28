@@ -112,6 +112,7 @@ export const coupons = pgTable("coupons", {
   description: text("description"), // Descrição do cupom
   maxDiscount: decimal("max_discount", { precision: 10, scale: 2 }), // Para cupons percentuais
   productIds: integer("product_ids").array(), // Array de IDs de eventos elegíveis (null = todos)
+  cepZoneIds: integer("cep_zone_ids").array(), // Array de IDs de zonas de CEP (null = todas as zonas)
   validFrom: timestamp("valid_from").notNull(),
   validUntil: timestamp("valid_until").notNull(),
   usageLimit: integer("usage_limit"), // null = ilimitado

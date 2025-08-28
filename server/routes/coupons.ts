@@ -16,7 +16,8 @@ function parseLocalDate(dateString: string, endOfDay = false): Date {
 const couponValidationSchema = z.object({
   code: z.string().min(1, "Código do cupom é obrigatório"),
   eventId: z.number().min(1, "ID do evento é obrigatório"),
-  totalAmount: z.number().min(0, "Valor total deve ser positivo")
+  totalAmount: z.number().min(0, "Valor total deve ser positivo"),
+  customerZipCode: z.string().optional() // CEP do cliente para validação de zona
 });
 
 // Schema para criação/atualização de cupom (admin)
@@ -92,7 +93,8 @@ router.post('/admin/coupons', requireAdmin, async (req, res) => {
       validFrom: parseLocalDate(validatedData.validFrom),
       validUntil: parseLocalDate(validatedData.validUntil, true),
       usageLimit: validatedData.usageLimit || null,
-      productIds: validatedData.productIds || null
+      productIds: validatedData.productIds || null,
+      cepZoneIds: validatedData.cepZoneIds || null
     };
     
     const newCoupon = await CouponService.createCoupon(couponData);

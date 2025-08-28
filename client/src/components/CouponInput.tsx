@@ -25,6 +25,7 @@ interface CouponValidationResponse {
 interface CouponInputProps {
   eventId: number;
   totalAmount: number;
+  customerZipCode?: string; // CEP do cliente para validação
   onCouponApplied: (coupon: CouponData, discount: number, finalAmount: number) => void;
   onCouponRemoved: () => void;
   appliedCoupon?: CouponData | null;
@@ -33,6 +34,7 @@ interface CouponInputProps {
 export function CouponInput({ 
   eventId, 
   totalAmount, 
+  customerZipCode,
   onCouponApplied, 
   onCouponRemoved,
   appliedCoupon 
@@ -54,7 +56,8 @@ export function CouponInput({
         body: JSON.stringify({
           code: couponCode,
           eventId,
-          totalAmount
+          totalAmount,
+          customerZipCode
         }),
       });
       return response.json();

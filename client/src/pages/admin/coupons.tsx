@@ -20,6 +20,7 @@ interface Coupon {
   description?: string;
   maxDiscount?: string;
   productIds?: number[];
+  cepZoneIds?: number[];
   validFrom: string;
   validUntil: string;
   usageLimit?: number;
@@ -186,6 +187,12 @@ export default function AdminCoupons() {
                       {coupon.productIds && coupon.productIds.length > 0 && (
                         <div>
                           <span className="text-muted-foreground">Eventos específicos</span>
+                        </div>
+                      )}
+                      
+                      {coupon.cepZoneIds && coupon.cepZoneIds.length > 0 && (
+                        <div>
+                          <span className="text-muted-foreground">Zonas de CEP específicas</span>
                         </div>
                       )}
                     </div>
