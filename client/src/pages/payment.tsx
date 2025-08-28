@@ -125,7 +125,9 @@ export default function Payment() {
         setKitData(JSON.parse(kitInfo));
       }
       if (addressData) {
-        setSelectedAddress(JSON.parse(addressData));
+        const parsedAddress = JSON.parse(addressData);
+        console.log('🏠 Loading address from session:', parsedAddress);
+        setSelectedAddress(parsedAddress);
       }
       
       if (!customerData || !kitInfo || !addressData) {
@@ -661,7 +663,7 @@ export default function Payment() {
         </Card>
 
         {/* Debug CEP */}
-        {console.log('🔍 Selected address CEP for coupon:', selectedAddress?.zipCode)}
+        {selectedAddress && console.log('🔍 Selected address CEP for coupon:', selectedAddress.zipCode, 'Full address:', selectedAddress)}
         
         {/* Coupon Input */}
         <Card className="mb-6">
