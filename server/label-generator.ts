@@ -165,7 +165,7 @@ ${address.city} - ${address.state}
 CEP: ${address.zipCode}`;
     doc.fillColor('#1e293b').font('Helvetica').text(fullAddress, recipientRightColumn, recipientStartY + 15, { width: 230 });
 
-    currentY += 190; // Margem aumentada após seção
+    currentY += 180; // Margem após seção
 
     // Seção Itens do Pedido
     const itemSectionHeight = 100 + (order.kits.length * 15);
@@ -397,7 +397,7 @@ ${address.city} - ${address.state}
 CEP: ${address.zipCode}`;
       doc.fillColor('#1e293b').font('Helvetica').text(fullAddress, recipientRightColumn, recipientStartY + 15, { width: 230 });
 
-      currentY += 190; // Margem aumentada após seção
+      currentY += 180; // Margem após seção
 
       // Seção Itens do Pedido
       const itemSectionHeight = 100 + (order.kits.length * 15);
