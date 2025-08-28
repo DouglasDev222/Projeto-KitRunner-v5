@@ -1,4 +1,3 @@
-
 import PDFDocument from 'pdfkit';
 import path from 'path';
 import fs from 'fs';
@@ -43,7 +42,7 @@ function formatCurrency(value: string | number): string {
 function addLogoToDocument(doc: PDFDocument, x: number, y: number, height: number): void {
   // Primeiro tenta a nova logo
   const newLogoPath = path.join(process.cwd(), 'attached_assets', 'logo-kitrunner-new.png');
-  
+
   try {
     if (fs.existsSync(newLogoPath)) {
       doc.image(newLogoPath, x, y, { height });
@@ -166,7 +165,7 @@ ${address.city} - ${address.state}
 CEP: ${address.zipCode}`;
     doc.fillColor('#1e293b').font('Helvetica').text(fullAddress, recipientRightColumn, recipientStartY + 15, { width: 230 });
 
-    currentY += 180; // Margem aumentada após seção
+    currentY += 190; // Margem aumentada após seção
 
     // Seção Itens do Pedido
     const itemSectionHeight = 100 + (order.kits.length * 15);
@@ -398,7 +397,7 @@ ${address.city} - ${address.state}
 CEP: ${address.zipCode}`;
       doc.fillColor('#1e293b').font('Helvetica').text(fullAddress, recipientRightColumn, recipientStartY + 15, { width: 230 });
 
-      currentY += 180; // Margem aumentada após seção
+      currentY += 190; // Margem aumentada após seção
 
       // Seção Itens do Pedido
       const itemSectionHeight = 100 + (order.kits.length * 15);
@@ -454,7 +453,7 @@ CEP: ${address.zipCode}`;
       doc.text('Declaro que recebi os itens acima relacionados em perfeito estado e conforme especificado.',
         margin + 20, currentY + 50, { width: contentWidth - 40 }); // Margem aumentada
 
-      // Campos de assinatura (igual ao template individual)
+      // Campos de assinatura
       const sigY = currentY + 80; // Margem aumentada
       const sig1X = margin + 25;
       const sig2X = margin + (contentWidth / 2) + 15;
