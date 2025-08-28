@@ -200,7 +200,7 @@ async function generateKitsPDF(reportData: KitReportData[], eventName: string): 
   doc.on('end', () => {});
 
   // Header with logo space and title
-  doc.fontSize(20).text(`Retirada de Kit ${eventName}`, {
+  doc.fontSize(20).text(`${eventName}`, {
     align: 'center'
   });
   doc.moveDown();
@@ -241,7 +241,7 @@ async function generateKitsPDF(reportData: KitReportData[], eventName: string): 
     // Check if we need a new page
     if (doc.y > 720) {
       doc.addPage();
-      doc.fontSize(20).text(`Retirada de Kit ${eventName}`, {
+      doc.fontSize(20).text(`${eventName}`, {
         align: 'center'
       });
       doc.moveDown();
@@ -323,31 +323,6 @@ async function generateKitsPDF(reportData: KitReportData[], eventName: string): 
   // Draw final bottom border
   const finalY = doc.y;
   doc.moveTo(tableStartX, finalY - 2).lineTo(tableStartX + tableWidth, finalY - 2).stroke();
-
-  // Add page numbers to all pages
-  const pageCount = (doc as any)._pageBuffer.length + 1;
-  
-  // Add page number to current page first
-  doc.fontSize(8).fillColor('#666666').font('Helvetica');
-  doc.text(`Página ${pageCount} de ${pageCount}`, 0, 820, {
-    width: 595.28,
-    align: 'center'
-  });
-  
-  // Add page numbers to previous pages if they exist
-  for (let i = 0; i < pageCount - 1; i++) {
-    try {
-      (doc as any).switchToPage(i);
-      const pageNumber = i + 1;
-      doc.fontSize(8).fillColor('#666666').font('Helvetica');
-      doc.text(`Página ${pageNumber} de ${pageCount}`, 0, 820, {
-        width: 595.28,
-        align: 'center'
-      });
-    } catch (error) {
-      console.warn(`Warning: Could not switch to page ${i}:`, error);
-    }
-  }
 
   doc.end();
   
