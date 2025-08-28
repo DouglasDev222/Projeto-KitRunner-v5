@@ -102,7 +102,7 @@ export async function generateDeliveryLabel(order: OrderWithDetails): Promise<Bu
       align: 'right'
     });
 
-    currentY += 100; // Espaçamento após header
+    currentY += 90; // Espaçamento após header
 
     // Seção Informações do Pedido
     doc.fillColor('#f8fafc');
@@ -130,7 +130,7 @@ export async function generateDeliveryLabel(order: OrderWithDetails): Promise<Bu
     doc.fillColor('#64748b').font('Helvetica-Bold').text('Valor Total:', rightColumn, currentY + 65);
     doc.fillColor('#1e293b').font('Helvetica').text(formatCurrency(order.totalCost), rightColumn + 65, currentY + 65);
 
-    currentY += 130; // Margem aumentada após seção
+    currentY += 115; // Margem após seção
 
     // Seção Dados do Destinatário
     doc.fillColor('#fefefe');
@@ -206,7 +206,7 @@ CEP: ${address.zipCode}`;
       });
     }
 
-    currentY += itemSectionHeight + 30; // Margem aumentada após seção
+    currentY += itemSectionHeight + 20; // Margem após seção
 
     // Seção Confirmação de Recebimento
     doc.fillColor('#fefefe');
@@ -335,7 +335,7 @@ export async function generateMultipleLabels(orders: OrderWithDetails[]): Promis
         align: 'right'
       });
 
-      currentY += 100; // Espaçamento após header
+      currentY += 90; // Espaçamento após header
 
       // Seção Informações do Pedido
       doc.fillColor('#f8fafc');
@@ -362,7 +362,7 @@ export async function generateMultipleLabels(orders: OrderWithDetails[]): Promis
       doc.fillColor('#64748b').font('Helvetica-Bold').text('Valor Total:', rightColumn, currentY + 65);
       doc.fillColor('#1e293b').font('Helvetica').text(formatCurrency(order.totalCost), rightColumn + 65, currentY + 65);
 
-      currentY += 130; // Margem aumentada após seção
+      currentY += 115; // Margem após seção
 
       // Seção Dados do Destinatário
       doc.fillColor('#fefefe');
@@ -438,7 +438,7 @@ CEP: ${address.zipCode}`;
         });
       }
 
-      currentY += itemSectionHeight + 30; // Margem aumentada após seção
+      currentY += itemSectionHeight + 20; // Margem após seção
 
       // Seção Confirmação de Recebimento (agora com campos completos também)
       doc.fillColor('#fefefe');
