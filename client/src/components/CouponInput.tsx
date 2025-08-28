@@ -66,7 +66,7 @@ export function CouponInput({
       });
       return response.json();
     },
-    enabled: shouldValidate && couponCode.length > 0 && !appliedCoupon && (addressId || customerZipCode),
+    enabled: shouldValidate && couponCode.length > 0 && !appliedCoupon && (addressId !== undefined || customerZipCode !== undefined),
     retry: false
   });
 

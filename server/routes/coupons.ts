@@ -44,17 +44,25 @@ router.post('/coupons/validate', async (req, res) => {
     
     // Se addressId foi fornecido, buscar o CEP do endereço
     let finalCustomerZipCode = customerZipCode;
-    if (addressId && !customerZipCode) {
+    if (addressId) {
       try {
         const { storage } = await import('../storage');
+        console.log('🎫 Buscando endereço para addressId:', addressId);
         const address = await storage.getAddress(addressId);
         if (address) {
-          finalCustomerZipCode = address.zipCode;
+          finalCustomerZipCode = address.zipCode.replace(/\D/g, '');
           console.log('🎫 CEP encontrado via addressId:', { addressId, zipCode: finalCustomerZipCode });
+        } else {
+          console.log('🎫 Endereço não encontrado para addressId:', addressId);
         }
       } catch (error) {
         console.error('🎫 Erro ao buscar endereço:', error);
       }
+    } else if (customerZipCode) {
+      finalCustomerZipCode = customerZipCode.replace(/\D/g, '');
+      console.log('🎫 Usando CEP fornecido diretamente:', finalCustomerZipCode);
+    } else {
+      console.log('🎫 Nenhum CEP ou addressId fornecido');
     }
     
     // Atualizar dados validados com CEP encontrado

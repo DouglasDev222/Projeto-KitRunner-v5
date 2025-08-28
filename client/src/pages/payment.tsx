@@ -51,30 +51,30 @@ export default function Payment() {
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [policyAccepted, setPolicyAccepted] = useState(false);
   const [pixData, setPixData] = useState<any>(null);
-  
+
   // SECURITY FIX: State for server-calculated pricing
   const [securePricing, setSecurePricing] = useState<any>(null);
   const [pricingLoading, setPricingLoading] = useState(true);
   const [pricingError, setPricingError] = useState<string | null>(null);
-  
+
   const acceptPolicyMutation = useAcceptPolicy();
 
   // Helper function to format full address with truncation
   const formatFullAddress = (address: Address | null, maxLength: number = 50): string => {
     if (!address) return "Endereço não selecionado";
-    
+
     const parts = [];
     if (address.street) parts.push(address.street);
     if (address.number) parts.push(`${address.number}`);
     if (address.neighborhood) parts.push(address.neighborhood);
     if (address.city) parts.push(address.city);
-    
+
     const fullAddress = parts.join(', ');
-    
+
     if (fullAddress.length <= maxLength) {
       return fullAddress;
     }
-    
+
     return fullAddress.substring(0, maxLength - 3) + '...';
   };
 
@@ -102,7 +102,7 @@ export default function Payment() {
       console.error('Error recording policy acceptance:', policyError);
     }
   };
-  
+
   // Coupon state
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponDiscount, setCouponDiscount] = useState(0);
@@ -117,7 +117,7 @@ export default function Payment() {
       const customerData = sessionStorage.getItem("customerData");
       const kitInfo = sessionStorage.getItem("kitData");
       const addressData = sessionStorage.getItem("selectedAddress");
-      
+
       if (customerData) {
         setCustomer(JSON.parse(customerData));
       }
@@ -131,7 +131,7 @@ export default function Payment() {
         console.log('🏠 Available fields:', Object.keys(parsedAddress));
         setSelectedAddress(parsedAddress);
       }
-      
+
       if (!customerData || !kitInfo || !addressData) {
         // Redirect to login if customer data is missing, or back to address if just missing kit/address data
         if (!customerData) {
@@ -153,36 +153,36 @@ export default function Payment() {
   useEffect(() => {
     const loadSecurePricing = async () => {
       if (!selectedAddress || !event || !kitData) return;
-      
+
       // Don't interrupt ongoing PIX payment process
       if (isProcessing && paymentMethod === 'pix') {
         console.log('🔒 Skipping pricing validation during PIX generation to avoid UI interruption');
         return;
       }
-      
+
       setPricingLoading(true);
       setPricingError(null);
-      
+
       try {
         console.log('🔒 SECURITY FIX: Loading pricing from server instead of sessionStorage');
-        
+
         const response = await apiRequest("POST", "/api/calculate-delivery-secure", {
           eventId: parseInt(id!),
           addressId: selectedAddress.id,
           kitQuantity: kitData.kitQuantity
         });
-        
+
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Erro ao calcular preços');
         }
-        
+
         const pricingData = await response.json();
         // ✅ SECURITY: Server-calculated pricing loaded successfully
-        
+
         setSecurePricing(pricingData);
         setPricingError(null);
-        
+
       } catch (error: any) {
         console.error('❌ SECURITY ERROR: Failed to load secure pricing:', error);
         setPricingError(error.message || 'Erro ao carregar preços');
@@ -191,7 +191,7 @@ export default function Payment() {
         setPricingLoading(false);
       }
     };
-    
+
     loadSecurePricing();
   }, [selectedAddress, event, kitData, id, isProcessing, paymentMethod]);
 
@@ -206,7 +206,7 @@ export default function Payment() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/events"] }); // May affect event stats
-      
+
       // Only auto-complete for non-PIX payments
       // PIX payments will handle completion via handlePaymentSuccess when actually approved
       if (paymentMethod !== 'pix') {
@@ -232,14 +232,14 @@ export default function Payment() {
     setPaymentCompleted(true);
     setPaymentError(null);
     setOrderNumber(paymentResult.orderNumber);
-    
+
     // Store payment result data
     const confirmationData = {
       order: { orderNumber: paymentResult.orderNumber },
       payment: paymentResult
     };
     sessionStorage.setItem("orderConfirmation", JSON.stringify(confirmationData));
-    
+
     // Redirect to confirmation page after payment success
     setTimeout(() => {
       setLocation(`/order/${paymentResult.orderNumber}/confirmation`);
@@ -476,9 +476,9 @@ export default function Payment() {
     discountAmount: 0,
     fixedPrice: event?.fixedPrice ? Number(event.fixedPrice) : null
   };
-  
+
   const pricingBreakdown = formatPricingBreakdown(basePricing, event, kitData.kitQuantity);
-  
+
   // Apply coupon discount to pricing
   const pricing = {
     ...basePricing,
@@ -492,7 +492,7 @@ export default function Payment() {
     if (!selectedAddress) {
       throw new Error("Endereço não selecionado");
     }
-    
+
     return {
       eventId: parseInt(id!),
       customerId: customer.id,
@@ -560,7 +560,7 @@ export default function Payment() {
         <div className="p-4">
           {/* Mobile Progress Indicator */}
           <div className="flex items-center justify-center mb-6">
-            <div className="flex items-center space-x-2 text-xs">
+            <div className="flex items-center text-xs">
               <div className="flex items-center">
                 <div className="w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center text-xs">✓</div>
                 <span className="ml-1 text-neutral-600">Endereço</span>
@@ -577,13 +577,13 @@ export default function Payment() {
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center mb-2">
             <CreditCard className="w-6 h-6 text-purple-600 mr-3" />
             <h2 className="text-2xl font-bold text-neutral-800">Pagamento</h2>
           </div>
           <p className="text-neutral-600 mb-6">Finalize seu pedido escolhendo a forma de pagamento</p>
-        
+
         {/* Order Summary */}
         <Card className="mb-6">
           <CardContent className="p-4">
@@ -603,11 +603,11 @@ export default function Payment() {
                   {formatFullAddress(selectedAddress, 40)}
                 </span>
               </div>
-              
+
               {/* Pricing Breakdown */}
               <div className="border-t pt-3 mt-3">
                 <h4 className="font-medium text-neutral-800 mb-2">Detalhamento</h4>
-                
+
                 {event?.fixedPrice ? (
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center">
@@ -619,7 +619,7 @@ export default function Payment() {
                 ) : (
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-neutral-600">
-                      {securePricing?.pricingType === 'cep_zones' 
+                      {securePricing?.pricingType === 'cep_zones'
                         ? `Entrega (${securePricing.zoneName || 'Zona CEP'})`
                         : `Entrega (estimativa)`
                       }
@@ -627,14 +627,14 @@ export default function Payment() {
                     <span className="font-medium text-neutral-800">{formatCurrency(pricing.deliveryCost)}</span>
                   </div>
                 )}
-                
+
                 {pricing.extraKitsCost > 0 && (
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-neutral-600">{kitData.kitQuantity - 1} kit{kitData.kitQuantity > 2 ? 's' : ''} adicional{kitData.kitQuantity > 2 ? 'is' : ''}</span>
                     <span className="font-medium text-neutral-800">{formatCurrency(pricing.extraKitsCost)}</span>
                   </div>
                 )}
-                
+
                 {pricing.donationAmount > 0 && (
                   <div className="flex justify-between items-center mb-1">
                     <div className="flex items-center">
@@ -644,7 +644,7 @@ export default function Payment() {
                     <span className="font-medium text-neutral-800">{formatCurrency(pricing.donationAmount)}</span>
                   </div>
                 )}
-                
+
                 {/* Coupon discount */}
                 {couponDiscount > 0 && (
                   <div className="flex justify-between items-center mb-1 text-green-600">
@@ -652,7 +652,7 @@ export default function Payment() {
                     <span className="font-medium text-green-600">-{formatCurrency(couponDiscount)}</span>
                   </div>
                 )}
-                
+
                 <div className="border-t pt-2 mt-3">
                   <div className="flex justify-between items-center">
                     <span className="font-semibold text-lg text-neutral-800">Total</span>
@@ -666,7 +666,7 @@ export default function Payment() {
 
         {/* Debug CEP */}
         {selectedAddress && console.log('🔍 Selected address for coupon - ID:', selectedAddress.id, 'CEP:', selectedAddress.zipCode)}
-        
+
         {/* Coupon Input */}
         <Card className="mb-6">
           <CardContent className="p-4">
@@ -702,13 +702,13 @@ export default function Payment() {
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Payment Methods Selection - Hidden when PIX code is generated */}
         {(!paymentMethod || paymentMethod === 'credit' || (paymentMethod === 'pix' && !pixData)) && (
           <Card className="mb-6">
             <CardContent className="p-4">
               <h3 className="font-semibold text-lg text-neutral-800 mb-4">Forma de Pagamento</h3>
-              
+
               <div className="[&_[role=radio]]:h-4 [&_[role=radio]]:w-4 [&_[role=radio]]:min-h-[1rem] [&_[role=radio]]:min-w-[1rem] [&_[role=radio]]:max-h-[1rem] [&_[role=radio]]:max-w-[1rem] [&_[role=radio]]:flex-shrink-0 [&_[role=radio]]:rounded-sm">
                 <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "credit" | "pix")}>
                   <div className="space-y-3"></div>
@@ -722,7 +722,7 @@ export default function Payment() {
                       </div>
                     </Label>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-neutral-50">
                     <RadioGroupItem value="pix" id="pix" />
                     <Label htmlFor="pix" className="flex items-center gap-3 cursor-pointer w-full">
@@ -767,7 +767,7 @@ export default function Payment() {
             <h3 className="font-semibold text-lg text-neutral-800 mb-4">
               {paymentMethod === 'pix' ? 'Pagamento PIX' : 'Pagamento com Cartão'}
             </h3>
-            
+
             {/* Payment Error - Moved here to be closer to payment section */}
             {paymentError && (
               <Alert className="mb-4 border-red-200 bg-red-50">
@@ -776,7 +776,7 @@ export default function Payment() {
                 </AlertDescription>
               </Alert>
             )}
-            
+
             {paymentMethod === 'credit' && (
               <CardPayment
                 amount={pricing.totalCost}
@@ -786,7 +786,7 @@ export default function Payment() {
                   if (!policyAccepted) {
                     throw new Error("É necessário aceitar a política de pedidos para prosseguir");
                   }
-                  
+
                   return new Promise((resolve, reject) => {
                     createOrderMutation.mutate(orderData, {
                       onSuccess: async (data) => {
@@ -810,7 +810,7 @@ export default function Payment() {
                 policyAccepted={policyAccepted}
               />
             )}
-            
+
             {paymentMethod === 'pix' && (
               <PIXPayment
                 amount={pricing.totalCost}
@@ -820,7 +820,7 @@ export default function Payment() {
                   if (!policyAccepted) {
                     throw new Error("É necessário aceitar a política de pedidos para prosseguir");
                   }
-                  
+
                   return new Promise((resolve, reject) => {
                     createOrderMutation.mutate(orderData, {
                       onSuccess: async (data) => {
@@ -877,7 +877,7 @@ export default function Payment() {
                   <h3 className="text-xl font-semibold text-gray-900">Pagamento</h3>
                 </div>
                 <p className="text-gray-600 mb-6">Finalize seu pedido</p>
-                
+
                 {/* Progress Indicator */}
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center text-sm">
@@ -921,7 +921,7 @@ export default function Payment() {
                   {/* Pricing Breakdown */}
                   <div className="border-t pt-3 mt-3">
                     <h4 className="font-semibold text-gray-900 mb-2">Detalhamento</h4>
-                    
+
                     {event?.fixedPrice ? (
                       <div className="flex justify-between items-center mb-2">
                         <div className="flex items-center">
@@ -933,7 +933,7 @@ export default function Payment() {
                     ) : (
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-gray-600">
-                          {securePricing?.pricingType === 'cep_zones' 
+                          {securePricing?.pricingType === 'cep_zones'
                             ? `Entrega (${securePricing.zoneName})`
                             : `Entrega`
                           }
@@ -941,14 +941,14 @@ export default function Payment() {
                         <span className="font-medium text-gray-800">{formatCurrency(pricing.deliveryCost)}</span>
                       </div>
                     )}
-                    
+
                     {pricing.extraKitsCost > 0 && (
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-gray-600">{kitData.kitQuantity - 1} kit{kitData.kitQuantity > 2 ? 's' : ''} adicional{kitData.kitQuantity > 2 ? 'is' : ''}</span>
                         <span className="font-medium text-gray-800">{formatCurrency(pricing.extraKitsCost)}</span>
                       </div>
                     )}
-                    
+
                     {pricing.donationAmount > 0 && (
                       <div className="flex justify-between items-center mb-1">
                         <div className="flex items-center">
@@ -958,7 +958,7 @@ export default function Payment() {
                         <span className="font-medium text-gray-800">{formatCurrency(pricing.donationAmount)}</span>
                       </div>
                     )}
-                    
+
                     {/* Coupon discount */}
                     {couponDiscount > 0 && (
                       <div className="flex justify-between items-center mb-1 text-green-600">
@@ -966,7 +966,7 @@ export default function Payment() {
                         <span className="font-medium text-green-600">-{formatCurrency(couponDiscount)}</span>
                       </div>
                     )}
-                    
+
                     <div className="border-t pt-3">
                       <div className="flex justify-between items-center">
                         <span className="font-semibold text-gray-900">Total</span>
@@ -998,6 +998,8 @@ export default function Payment() {
                   <CouponInput
                     eventId={parseInt(id!)}
                     totalAmount={basePricing.totalCost}
+                    customerZipCode={selectedAddress?.zipCode?.replace(/\D/g, '') || undefined}
+                    addressId={selectedAddress?.id}
                     onCouponApplied={handleCouponApplied}
                     onCouponRemoved={handleCouponRemoved}
                     appliedCoupon={appliedCoupon}
@@ -1027,7 +1029,7 @@ export default function Payment() {
                 {(!paymentMethod || paymentMethod === 'credit' || (paymentMethod === 'pix' && !pixData)) && (
                   <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Forma de Pagamento</h3>
-                    
+
                     <div className="[&_[role=radio]]:h-4 [&_[role=radio]]:w-4 [&_[role=radio]]:min-h-[1rem] [&_[role=radio]]:min-w-[1rem] [&_[role=radio]]:max-h-[1rem] [&_[role=radio]]:max-w-[1rem] [&_[role=radio]]:flex-shrink-0 [&_[role=radio]]:rounded-sm">
                       <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "credit" | "pix")}>
                         <div className="space-y-3">
@@ -1041,7 +1043,7 @@ export default function Payment() {
                               </div>
                             </Label>
                           </div>
-                          
+
                           <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50">
                             <RadioGroupItem value="pix" id="pix" />
                             <Label htmlFor="pix" className="flex items-center gap-3 cursor-pointer w-full">
@@ -1075,7 +1077,7 @@ export default function Payment() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
                     {paymentMethod === 'pix' ? 'Pagamento PIX' : 'Pagamento com Cartão'}
                   </h3>
-                  
+
                   {/* Payment Error */}
                   {paymentError && (
                     <Alert className="mb-4 border-red-200 bg-red-50">
@@ -1084,7 +1086,7 @@ export default function Payment() {
                       </AlertDescription>
                     </Alert>
                   )}
-                  
+
                   {paymentMethod === 'credit' && (
                     <CardPayment
                       amount={pricing.totalCost}
@@ -1094,7 +1096,7 @@ export default function Payment() {
                         if (!policyAccepted) {
                           throw new Error("É necessário aceitar a política de pedidos para prosseguir");
                         }
-                        
+
                         return new Promise((resolve, reject) => {
                           createOrderMutation.mutate(orderData, {
                             onSuccess: async (data) => {
@@ -1118,7 +1120,7 @@ export default function Payment() {
                       policyAccepted={policyAccepted}
                     />
                   )}
-                  
+
                   {paymentMethod === 'pix' && (
                     <PIXPayment
                       amount={pricing.totalCost}
@@ -1128,7 +1130,7 @@ export default function Payment() {
                         if (!policyAccepted) {
                           throw new Error("É necessário aceitar a política de pedidos para prosseguir");
                         }
-                        
+
                         return new Promise((resolve, reject) => {
                           createOrderMutation.mutate(orderData, {
                             onSuccess: async (data) => {

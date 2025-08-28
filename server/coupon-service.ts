@@ -33,6 +33,8 @@ export class CouponService {
     const { code, eventId, totalAmount, customerZipCode } = request;
     
     try {
+      console.log('🎫 Validando cupom:', { code, eventId, totalAmount, customerZipCode });
+      
       // Buscar cupom pelo código (case-insensitive)
       const coupon = await db
         .select()
@@ -41,6 +43,7 @@ export class CouponService {
         .limit(1);
 
       if (coupon.length === 0) {
+        console.log('🎫 Cupom não encontrado:', code);
         return {
           valid: false,
           message: "Cupom não encontrado"
