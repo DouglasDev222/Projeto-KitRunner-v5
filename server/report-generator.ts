@@ -192,7 +192,7 @@ function formatCPF(cpf: string): string {
 
 // Generate Kits PDF with user-specified format
 async function generateKitsPDF(reportData: KitReportData[], eventName: string): Promise<Buffer> {
-  const PDFDocument = require('pdfkit');
+  const PDFDocument = (await import('pdfkit')).default;
   const doc = new PDFDocument({ size: 'A4', margin: 50 });
   const buffers: Buffer[] = [];
 
@@ -659,7 +659,7 @@ export async function getEventsForReports() {
 
 // PDF Generator for Orders Report
 async function generateOrdersPDF(reportData: OrderReportData[], eventName: string): Promise<Buffer> {
-  const PDFDocument = require('pdfkit');
+  const PDFDocument = (await import('pdfkit')).default;
   const doc = new PDFDocument();
   const buffers: Buffer[] = [];
 
