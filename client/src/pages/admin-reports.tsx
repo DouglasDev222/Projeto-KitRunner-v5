@@ -160,18 +160,18 @@ export default function AdminReports() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-8 max-w-7xl mx-auto">
         {/* Header */}
-        <div>
+        <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Relatórios Avançados</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-lg">
             Sistema completo de relatórios para gestão de eventos e análise de dados
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-8 lg:grid-cols-12">
           {/* Left Column - Report Selection */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-4 xl:col-span-3">
             <ReportSelector
               selectedType={selectedReportType}
               onTypeChange={setSelectedReportType}
@@ -180,7 +180,7 @@ export default function AdminReports() {
           </div>
 
           {/* Right Column - Filters and Preview */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-8 xl:col-span-9 space-y-6">
             {selectedReportType && (
               <>
                 <FilterPanel

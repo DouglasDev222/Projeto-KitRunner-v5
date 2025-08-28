@@ -1,3 +1,4 @@
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,32 +24,32 @@ interface ReportSelectorProps {
 const reportOptions: ReportOption[] = [
   {
     id: 'kits',
-    name: 'Relatório de Kits por Evento',
-    description: 'Planilha para organizar a retirada dos kits no dia do evento',
-    icon: FileSpreadsheet,
+    name: 'Relatório de Kits',
+    description: 'Lista completa dos kits por evento com informações dos atletas',
+    icon: Package,
     status: 'available',
-    formats: ['Excel']
+    formats: ['Excel', 'PDF', 'CSV']
   },
   {
     id: 'circuit',
-    name: 'Endereços para Circuit',
-    description: 'Relatório otimizado para importação no sistema Circuit de rotas',
+    name: 'Relatório de Circuito',
+    description: 'Análise de endereços e distribuição geográfica por zona CEP',
     icon: MapPin,
     status: 'available',
-    formats: ['Excel']
+    formats: ['Excel', 'PDF', 'CSV']
   },
   {
     id: 'orders',
-    name: 'Relatório Geral de Pedidos',
-    description: 'Análise completa dos pedidos por evento com zonas CEP',
-    icon: Package,
+    name: 'Relatório de Pedidos',
+    description: 'Histórico completo de pedidos com filtros avançados',
+    icon: FileSpreadsheet,
     status: 'available',
     formats: ['Excel', 'PDF', 'CSV']
   },
   {
     id: 'billing',
     name: 'Relatório de Faturamento',
-    description: 'Análise financeira por período com breakdown de receitas',
+    description: 'Análise de receita e performance financeira por período',
     icon: BarChart3,
     status: 'available',
     formats: ['Excel', 'PDF', 'CSV']
@@ -56,7 +57,7 @@ const reportOptions: ReportOption[] = [
   {
     id: 'customers',
     name: 'Relatório de Clientes',
-    description: 'Análise de clientes com segmentação por localização e gastos',
+    description: 'Base de clientes com ranking e segmentação avançada',
     icon: Users,
     status: 'available',
     formats: ['Excel', 'PDF', 'CSV']
@@ -64,7 +65,7 @@ const reportOptions: ReportOption[] = [
   {
     id: 'sales',
     name: 'Relatório de Vendas',
-    description: 'Performance de vendas por evento com ranking de eventos',
+    description: 'Performance de vendas e métricas de conversão',
     icon: TrendingUp,
     status: 'available',
     formats: ['Excel', 'PDF', 'CSV']
@@ -78,92 +79,111 @@ export default function ReportSelector({ selectedType, onTypeChange, className }
   const selectedReport = reportOptions.find(report => report.id === selectedType);
 
   return (
-    <div className={`space-y-4 ${className}`}>
-      <div>
-        <label className="text-sm font-medium mb-2 block">Tipo de Relatório</label>
-        <Select 
-          value={selectedType || ''} 
-          onValueChange={(value) => onTypeChange(value as ReportType)}
-        >
-          <SelectTrigger data-testid="select-report-type">
-            <SelectValue placeholder="Escolha o tipo de relatório..." />
-          </SelectTrigger>
-          <SelectContent>
-            {availableReports.map((report) => {
-              const Icon = report.icon;
-              return (
-                <SelectItem key={report.id} value={report.id}>
-                  <div className="flex items-center space-x-2">
-                    <Icon className="h-4 w-4" />
-                    <div className="flex flex-col">
-                      <span className="font-medium">{report.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {report.formats.join(', ')}
-                      </span>
-                    </div>
+    <div className={`space-y-6 ${className}`}>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Seleção de Relatório</CardTitle>
+          <CardDescription>
+            Escolha o tipo de relatório que deseja gerar
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Tipo de Relatório
+            </label>
+            <Select 
+              value={selectedType || ''} 
+              onValueChange={(value) => onTypeChange(value as ReportType)}
+            >
+              <SelectTrigger 
+                className="w-full h-12"
+                data-testid="select-report-type"
+              >
+                <SelectValue placeholder="Escolha o tipo de relatório..." />
+              </SelectTrigger>
+              <SelectContent className="max-h-80">
+                {availableReports.map((report) => {
+                  const Icon = report.icon;
+                  return (
+                    <SelectItem 
+                      key={report.id} 
+                      value={report.id}
+                      className="py-3 cursor-pointer"
+                    >
+                      <div className="flex items-center space-x-3 w-full">
+                        <div className="flex-shrink-0">
+                          <Icon className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">
+                            {report.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {report.formats.join(' • ')}
+                          </div>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {selectedReport && (
+            <div className="mt-4 p-4 bg-muted/30 rounded-lg border">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0 mt-1">
+                  <selectedReport.icon className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-sm mb-1">
+                    {selectedReport.name}
+                  </h4>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {selectedReport.description}
+                  </p>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {selectedReport.formats.map((format) => (
+                      <Badge key={format} variant="secondary" className="text-xs px-2 py-0.5">
+                        {format}
+                      </Badge>
+                    ))}
                   </div>
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Selected Report Details */}
-      {selectedReport && (
-        <Card className="border-primary/20" data-testid="selected-report-details">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <selectedReport.icon className="h-5 w-5 text-primary" />
-                <CardTitle className="text-lg">{selectedReport.name}</CardTitle>
+                </div>
               </div>
-              <Badge variant="secondary">Disponível</Badge>
             </div>
-            <CardDescription>
-              {selectedReport.description}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <span>Formatos disponíveis:</span>
-              {selectedReport.formats.map((format, index) => (
-                <Badge key={format} variant="outline" className="text-xs">
-                  {format}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
 
-      {/* Coming Soon Reports */}
-      {comingSoonReports.length > 0 && (
-        <Card className="opacity-60">
-          <CardHeader>
-            <CardTitle className="text-base text-muted-foreground">Em Breve</CardTitle>
-            <CardDescription>
-              Novos relatórios que serão adicionados
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2">
+          {comingSoonReports.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <h4 className="text-sm font-medium text-muted-foreground">
+                Em Breve
+              </h4>
               {comingSoonReports.map((report) => {
                 const Icon = report.icon;
                 return (
-                  <div key={report.id} className="flex items-center space-x-2 text-sm">
+                  <div
+                    key={report.id}
+                    className="flex items-center space-x-3 p-3 rounded-lg border border-dashed border-muted-foreground/25 bg-muted/10"
+                  >
                     <Icon className="h-4 w-4 text-muted-foreground" />
-                    <span>{report.name}</span>
-                    <Badge variant="outline" className="text-xs ml-auto">
-                      Em breve
-                    </Badge>
+                    <div className="flex-1">
+                      <span className="text-sm text-muted-foreground">
+                        {report.name}
+                      </span>
+                      <Badge variant="outline" className="ml-2 text-xs">
+                        Em Breve
+                      </Badge>
+                    </div>
                   </div>
                 );
               })}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

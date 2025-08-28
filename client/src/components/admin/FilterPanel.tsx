@@ -341,20 +341,22 @@ export default function FilterPanel({ reportType, filters, onFiltersChange, clas
 
         {/* Period Selection for Billing Reports */}
         {showPeriodSelector && (
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Agrupamento</label>
+          <div className="space-y-3">
+            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Agrupamento
+            </label>
             <Select 
               value={filters.period || 'monthly'} 
               onValueChange={(value) => onFiltersChange({ ...filters, period: value as any })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full h-10">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="daily">Diário</SelectItem>
-                <SelectItem value="weekly">Semanal</SelectItem>
-                <SelectItem value="monthly">Mensal</SelectItem>
-                <SelectItem value="yearly">Anual</SelectItem>
+                <SelectItem value="daily" className="py-2">Diário</SelectItem>
+                <SelectItem value="weekly" className="py-2">Semanal</SelectItem>
+                <SelectItem value="monthly" className="py-2">Mensal</SelectItem>
+                <SelectItem value="yearly" className="py-2">Anual</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -362,19 +364,21 @@ export default function FilterPanel({ reportType, filters, onFiltersChange, clas
 
         {/* Sort By Selection for Customer Reports */}
         {showSortBySelector && (
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Ordenar Por</label>
+          <div className="space-y-3">
+            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Ordenar Por
+            </label>
             <Select 
               value={filters.sortBy || 'revenue'} 
               onValueChange={(value) => onFiltersChange({ ...filters, sortBy: value as any })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full h-10">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="revenue">Maior Gasto</SelectItem>
-                <SelectItem value="orders">Mais Pedidos</SelectItem>
-                <SelectItem value="recent">Mais Recente</SelectItem>
+                <SelectItem value="revenue" className="py-2">Maior Gasto</SelectItem>
+                <SelectItem value="orders" className="py-2">Mais Pedidos</SelectItem>
+                <SelectItem value="recent" className="py-2">Mais Recente</SelectItem>
               </SelectContent>
             </Select>
           </div>
