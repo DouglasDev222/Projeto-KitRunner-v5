@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Package, Calendar, MapPin, User, CreditCard, Heart, Home, Plus, FileText, ArrowLeft, MessageCircle, AlertTriangle } from "lucide-react"; 
+import { Package, Calendar, MapPin, User, CreditCard, Heart, Plus, FileText, ArrowLeft, MessageCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation, useParams } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -23,7 +23,7 @@ export default function OrderDetails() {
   const { orderNumber } = useParams<{ orderNumber: string }>();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
-  
+
   // Estados para reatividade
   const [lastOrderStatus, setLastOrderStatus] = useState<string>('');
 
@@ -38,7 +38,7 @@ export default function OrderDetails() {
     enabled: !!orderNumber,
     // Configurações de reatividade para detectar mudanças de status
     staleTime: 0, // Sempre buscar dados frescos
-    refetchOnMount: true, // Revalida quando componente monta  
+    refetchOnMount: true, // Revalida quando componente monta
     refetchOnWindowFocus: true, // Revalida quando janela ganha foco
     // Polling mais agressivo para pagamentos PIX aguardando confirmação
     refetchInterval: (query) => {
@@ -253,7 +253,7 @@ export default function OrderDetails() {
                 <p className="text-sm">
                   Para liberar a retirada dos seus kits, envie o <strong>comprovante de inscrição oficial</strong> de cada atleta através do nosso WhatsApp.
                 </p>
-                <Button 
+                <Button
                   onClick={() => window.open('https://wa.me/5583981302961', '_blank')}
                   className="w-full h-11 bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2 text-sm font-medium"
                 >
@@ -286,11 +286,6 @@ export default function OrderDetails() {
               <p className="text-sm text-neutral-600">
                 CEP: {order.address?.zipCode}
               </p>
-              {order.cepZoneName && (
-                <p className="text-sm text-neutral-600">
-                  <span className="font-medium">Zona de Entrega:</span> <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-mono">{order.cepZoneName}</span>
-                </p>
-              )}
             </div>
           </CardContent>
         </Card>
@@ -312,7 +307,7 @@ export default function OrderDetails() {
                   <span className="text-neutral-800">{formatCurrency(parseFloat(order.deliveryCost))}</span>
                 </div>
               )}
-              
+
               {/* Show fixed price if exists */}
               {order.event?.fixedPrice && (
                 <div className="flex justify-between items-center">
@@ -320,14 +315,14 @@ export default function OrderDetails() {
                   <span className="text-neutral-800">{formatCurrency(parseFloat(order.event.fixedPrice))}</span>
                 </div>
               )}
-              
+
               {parseFloat(order.extraKitsCost) > 0 && (
                 <div className="flex justify-between items-center">
                   <span className="text-neutral-600">Kits adicionais:</span>
                   <span className="text-neutral-800">{formatCurrency(parseFloat(order.extraKitsCost))}</span>
                 </div>
               )}
-              
+
               {parseFloat(order.donationAmount) > 0 && (
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
@@ -337,7 +332,7 @@ export default function OrderDetails() {
                   <span className="text-neutral-800">{formatCurrency(parseFloat(order.donationAmount))}</span>
                 </div>
               )}
-              
+
               {parseFloat(order.discountAmount) > 0 && (
                 <>
                   <div className="flex justify-between items-center">
@@ -352,7 +347,7 @@ export default function OrderDetails() {
                   )}
                 </>
               )}
-              
+
               <Separator />
               <div className="flex justify-between items-center">
                 <span className="font-semibold text-neutral-800">Total Pago:</span>
@@ -364,13 +359,19 @@ export default function OrderDetails() {
                 <span className="text-neutral-600">Forma de pagamento:</span>
                 <Badge variant="outline">{order.paymentMethod}</Badge>
               </div>
+              {order.cepZoneName && (
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-600">Entrega ([Zona de Cep]):</span>
+                  <span className="font-medium bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-mono">{order.cepZoneName}</span>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
 
         {/* Pending Payment Section - Show only for orders awaiting payment */}
         {order.status === "aguardando_pagamento" && (
-          <PendingPayment 
+          <PendingPayment
             order={order}
             onPaymentSuccess={() => {
               // Invalidate queries to refresh order data
@@ -576,7 +577,7 @@ export default function OrderDetails() {
                         <p className="text-sm text-orange-700">
                           📋 Após o envio da documentação, entraremos em contato para agendar a entrega no endereço informado no pedido.
                         </p>
-                        <Button 
+                        <Button
                           onClick={() => window.open('https://wa.me/5583981302961', '_blank')}
                           className="bg-green-600 hover:bg-green-700 text-white flex items-center space-x-2"
                         >
@@ -604,9 +605,6 @@ export default function OrderDetails() {
                           {order.address?.complement && `, ${order.address.complement}`}</p>
                         <p>{order.address?.neighborhood}, {order.address?.city} - {order.address?.state}</p>
                         <p>CEP: {order.address?.zipCode}</p>
-                        {order.cepZoneName && (
-                          <p><span className="font-medium">Zona de Entrega:</span> <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-mono">{order.cepZoneName}</span></p>
-                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -629,7 +627,7 @@ export default function OrderDetails() {
                           <span className="font-medium text-gray-900">{formatCurrency(parseFloat(order.deliveryCost))}</span>
                         </div>
                       )}
-                      
+
                       {/* Show fixed price if exists */}
                       {order.event?.fixedPrice && (
                         <div className="flex justify-between items-center py-2">
@@ -637,14 +635,14 @@ export default function OrderDetails() {
                           <span className="font-medium text-gray-900">{formatCurrency(parseFloat(order.event.fixedPrice))}</span>
                         </div>
                       )}
-                      
+
                       {parseFloat(order.extraKitsCost) > 0 && (
                         <div className="flex justify-between items-center py-2">
                           <span className="text-gray-600">Kits adicionais:</span>
                           <span className="font-medium text-gray-900">{formatCurrency(parseFloat(order.extraKitsCost))}</span>
                         </div>
                       )}
-                      
+
                       {parseFloat(order.donationAmount) > 0 && (
                         <div className="flex justify-between items-center py-2">
                           <div className="flex items-center">
@@ -654,7 +652,7 @@ export default function OrderDetails() {
                           <span className="font-medium text-gray-900">{formatCurrency(parseFloat(order.donationAmount))}</span>
                         </div>
                       )}
-                      
+
                       {parseFloat(order.discountAmount) > 0 && (
                         <>
                           <div className="flex justify-between items-center py-2">
@@ -669,7 +667,7 @@ export default function OrderDetails() {
                           )}
                         </>
                       )}
-                      
+
                       <Separator />
                       <div className="flex justify-between items-center py-3 bg-purple-50 px-4 rounded-lg">
                         <span className="text-xl font-bold text-gray-900">Total Pago:</span>
@@ -689,7 +687,7 @@ export default function OrderDetails() {
                 {order.status === "aguardando_pagamento" && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-yellow-800 mb-4">Pagamento Pendente</h3>
-                    <PendingPayment 
+                    <PendingPayment
                       order={order}
                       onPaymentSuccess={() => {
                         window.location.reload();
