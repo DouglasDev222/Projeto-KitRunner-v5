@@ -29,6 +29,18 @@ export function Footer() {
         <Button
           variant="outline"
           className={`flex-1 flex items-center gap-2 ${
+            isRouteActive(['/eventos']) 
+              ? "bg-white text-purple-600 border-purple-600" 
+              : ""
+          }`}
+          onClick={() => setLocation("/eventos")}
+        >
+          <Calendar className="w-4 h-4" />
+          Eventos
+        </Button>
+        <Button
+          variant="outline"
+          className={`flex-1 flex items-center gap-2 ${
             isRouteActive(['/my-orders']) 
               ? "bg-white text-purple-600 border-purple-600" 
               : ""
@@ -40,18 +52,6 @@ export function Footer() {
         >
           <Package className="w-4 h-4" />
           Pedidos
-        </Button>
-        <Button
-          variant="outline"
-          className={`flex-1 flex items-center gap-2 ${
-            isRouteActive(['/eventos']) 
-              ? "bg-white text-purple-600 border-purple-600" 
-              : ""
-          }`}
-          onClick={() => setLocation("/eventos")}
-        >
-          <Calendar className="w-4 h-4" />
-          Eventos
         </Button>
         <Button
           variant="outline"
