@@ -57,37 +57,122 @@ export function CardPayment({
 
   // Initialize MercadoPago
   useEffect(() => {
+    let retryCount = 0;
+    const maxRetries = 3;
+    
     const initializeMercadoPago = async () => {
       try {
-        // Get public key from backend
-        const response = await fetch('/api/mercadopago/public-key');
-        const { publicKey } = await response.json();
+        console.log('🔧 Initializing MercadoPago SDK...');
+        
+        // Get public key from backend with retry logic
+        let response;
+        let publicKey;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            console.log(`🔑 Fetching public key (attempt ${attempt}/${maxRetries})...`);
+            response = await fetch('/api/mercadopago/public-key', {
+              method: 'GET',
+              headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+              }
+            });
+            
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            publicKey = data.publicKey;
+            
+            if (publicKey) {
+              console.log('✅ Public key fetched successfully');
+              break;
+            } else {
+              throw new Error('Public key not found in response');
+            }
+          } catch (fetchError) {
+            console.warn(`⚠️ Attempt ${attempt} failed:`, fetchError);
+            if (attempt === maxRetries) {
+              throw fetchError;
+            }
+            // Wait before retry (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+          }
+        }
 
         if (!publicKey) {
-          onError('Chave pública do Mercado Pago não encontrada');
-          return;
+          throw new Error('Chave pública do Mercado Pago não encontrada após todas as tentativas');
         }
 
-        // Load MercadoPago SDK
+        // Load MercadoPago SDK with improved error handling
         if (!window.MercadoPago) {
+          console.log('🔧 Loading MercadoPago SDK script...');
+          
           const script = document.createElement('script');
           script.src = 'https://sdk.mercadopago.com/js/v2';
-          script.onload = () => {
-            const mercadoPago = new window.MercadoPago(publicKey);
-            setMp(mercadoPago);
-            setIsFormReady(true);
-          };
-          script.onerror = () => {
-            onError('Erro ao carregar SDK do Mercado Pago');
-          };
+          script.type = 'text/javascript';
+          script.async = true;
+          script.crossOrigin = 'anonymous';
+          
+          const loadPromise = new Promise((resolve, reject) => {
+            script.onload = () => {
+              console.log('✅ MercadoPago SDK loaded successfully');
+              resolve(true);
+            };
+            
+            script.onerror = (error) => {
+              console.error('❌ MercadoPago SDK load error:', error);
+              reject(new Error('Falha ao carregar SDK do Mercado Pago'));
+            };
+            
+            // Timeout after 30 seconds
+            setTimeout(() => {
+              reject(new Error('Timeout ao carregar SDK do Mercado Pago'));
+            }, 30000);
+          });
+          
           document.head.appendChild(script);
+          await loadPromise;
         } else {
-          const mercadoPago = new window.MercadoPago(publicKey);
-          setMp(mercadoPago);
-          setIsFormReady(true);
+          console.log('✅ MercadoPago SDK already loaded');
         }
-      } catch (error) {
-        onError('Erro ao inicializar Mercado Pago');
+
+        // Initialize MercadoPago instance
+        if (!window.MercadoPago) {
+          throw new Error('MercadoPago SDK não foi carregado corretamente');
+        }
+
+        console.log('🔧 Creating MercadoPago instance...');
+        const mercadoPago = new window.MercadoPago(publicKey);
+        
+        // Validate instance
+        if (!mercadoPago) {
+          throw new Error('Falha ao criar instância do MercadoPago');
+        }
+
+        setMp(mercadoPago);
+        setIsFormReady(true);
+        console.log('✅ MercadoPago initialized successfully');
+
+      } catch (error: any) {
+        console.error('❌ MercadoPago initialization error:', error);
+        
+        // More specific error messages
+        let errorMessage = 'Erro ao inicializar Mercado Pago';
+        
+        if (error.message?.includes('Timeout')) {
+          errorMessage = 'Timeout ao carregar Mercado Pago. Verifique sua conexão com a internet.';
+        } else if (error.message?.includes('Falha ao carregar SDK')) {
+          errorMessage = 'Erro ao carregar SDK do Mercado Pago. Tente recarregar a página.';
+        } else if (error.message?.includes('não encontrada')) {
+          errorMessage = 'Configuração do Mercado Pago não encontrada. Contate o suporte.';
+        } else if (error.message?.includes('HTTP')) {
+          errorMessage = 'Erro de comunicação com o servidor. Tente novamente.';
+        }
+        
+        onError(errorMessage);
       }
     };
 
