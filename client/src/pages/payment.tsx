@@ -1306,14 +1306,6 @@ function FreeOrderConfirmation({
           <CheckCircle className="h-4 w-4" />
           E-mail de confirmação será enviado para {customer.email}
         </p>
-        <p className="flex items-center gap-2">
-          <CheckCircle className="h-4 w-4" />
-          Mensagem WhatsApp será enviada para {customer.phone}
-        </p>
-        <p className="flex items-center gap-2">
-          <CheckCircle className="h-4 w-4" />
-          Kit será processado automaticamente
-        </p>
       </div>
 
       {paymentError && (
@@ -1339,7 +1331,7 @@ function FreeOrderConfirmation({
         ) : (
           <div className="flex items-center gap-2">
             <Gift className="h-4 w-4" />
-            Confirmar Pedido Gratuito
+            Confirmar Pedido
           </div>
         )}
       </Button>
