@@ -40,6 +40,7 @@ import AdminPolicies from "@/pages/admin/policies";
 import AdminWhatsApp from "@/pages/admin-whatsapp";
 import Landing from "@/pages/landing";
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
+import { isReplitPreview, clearCachesForPreview, addPreviewModeIndicator } from "@/lib/replit-preview-utils";
 
 function Router() {
   return (
