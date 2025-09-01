@@ -57,126 +57,146 @@ export function CardPayment({
 
   // Initialize MercadoPago
   useEffect(() => {
-    let retryCount = 0;
-    const maxRetries = 3;
+    let isMounted = true;
+    let retryTimeout: NodeJS.Timeout;
     
     const initializeMercadoPago = async () => {
       try {
-        console.log('🔧 Initializing MercadoPago SDK...');
+        console.log('🔧 CardPayment: Starting MercadoPago initialization...');
         
-        // Get public key from backend with retry logic
-        let response;
-        let publicKey;
+        // Check if component is still mounted
+        if (!isMounted) {
+          console.log('🔧 CardPayment: Component unmounted, stopping initialization');
+          return;
+        }
         
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          try {
-            console.log(`🔑 Fetching public key (attempt ${attempt}/${maxRetries})...`);
-            response = await fetch('/api/mercadopago/public-key', {
-              method: 'GET',
-              headers: {
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
-              }
-            });
-            
-            if (!response.ok) {
-              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            publicKey = data.publicKey;
-            
-            if (publicKey) {
-              console.log('✅ Public key fetched successfully');
-              break;
-            } else {
-              throw new Error('Public key not found in response');
-            }
-          } catch (fetchError) {
-            console.warn(`⚠️ Attempt ${attempt} failed:`, fetchError);
-            if (attempt === maxRetries) {
-              throw fetchError;
-            }
-            // Wait before retry (exponential backoff)
-            await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+        // Step 1: Get public key from backend
+        console.log('🔑 CardPayment: Fetching public key...');
+        const response = await fetch('/api/mercadopago/public-key', {
+          method: 'GET',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
           }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-
-        if (!publicKey) {
-          throw new Error('Chave pública do Mercado Pago não encontrada após todas as tentativas');
+        
+        const data = await response.json();
+        console.log('🔑 CardPayment: Public key response received:', { hasKey: !!data.publicKey });
+        
+        if (!data.publicKey) {
+          throw new Error('Public key not found in response');
         }
-
-        // Load MercadoPago SDK with improved error handling
+        
+        if (!isMounted) return;
+        
+        // Step 2: Load MercadoPago SDK if not already loaded
         if (!window.MercadoPago) {
-          console.log('🔧 Loading MercadoPago SDK script...');
+          console.log('🔧 CardPayment: Loading MercadoPago SDK...');
           
-          const script = document.createElement('script');
-          script.src = 'https://sdk.mercadopago.com/js/v2';
-          script.type = 'text/javascript';
-          script.async = true;
-          script.crossOrigin = 'anonymous';
-          
-          const loadPromise = new Promise((resolve, reject) => {
+          await new Promise<void>((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://sdk.mercadopago.com/js/v2';
+            script.type = 'text/javascript';
+            script.async = true;
+            script.crossOrigin = 'anonymous';
+            
             script.onload = () => {
-              console.log('✅ MercadoPago SDK loaded successfully');
-              resolve(true);
+              console.log('✅ CardPayment: MercadoPago SDK loaded successfully');
+              // Wait a bit for the SDK to be fully available
+              setTimeout(() => resolve(), 500);
             };
             
             script.onerror = (error) => {
-              console.error('❌ MercadoPago SDK load error:', error);
-              reject(new Error('Falha ao carregar SDK do Mercado Pago'));
+              console.error('❌ CardPayment: SDK load error:', error);
+              reject(new Error('Failed to load MercadoPago SDK'));
             };
             
-            // Timeout after 30 seconds
-            setTimeout(() => {
-              reject(new Error('Timeout ao carregar SDK do Mercado Pago'));
-            }, 30000);
+            const timeoutId = setTimeout(() => {
+              console.error('❌ CardPayment: SDK load timeout');
+              reject(new Error('Timeout loading MercadoPago SDK'));
+            }, 15000);
+            
+            script.onload = () => {
+              clearTimeout(timeoutId);
+              console.log('✅ CardPayment: MercadoPago SDK loaded successfully');
+              setTimeout(() => resolve(), 500);
+            };
+            
+            console.log('🔧 CardPayment: Appending SDK script to head...');
+            document.head.appendChild(script);
           });
-          
-          document.head.appendChild(script);
-          await loadPromise;
         } else {
-          console.log('✅ MercadoPago SDK already loaded');
+          console.log('✅ CardPayment: MercadoPago SDK already available');
         }
-
-        // Initialize MercadoPago instance
-        if (!window.MercadoPago) {
-          throw new Error('MercadoPago SDK não foi carregado corretamente');
-        }
-
-        console.log('🔧 Creating MercadoPago instance...');
-        const mercadoPago = new window.MercadoPago(publicKey);
         
-        // Validate instance
-        if (!mercadoPago) {
-          throw new Error('Falha ao criar instância do MercadoPago');
+        if (!isMounted) return;
+        
+        // Step 3: Verify SDK is available
+        if (typeof window.MercadoPago !== 'function') {
+          throw new Error('MercadoPago SDK not properly loaded');
         }
-
+        
+        // Step 4: Create MercadoPago instance
+        console.log('🔧 CardPayment: Creating MercadoPago instance...');
+        const mercadoPago = new window.MercadoPago(data.publicKey);
+        
+        // Step 5: Validate instance
+        if (!mercadoPago || typeof mercadoPago.createCardToken !== 'function') {
+          throw new Error('MercadoPago instance invalid or missing methods');
+        }
+        
+        if (!isMounted) return;
+        
         setMp(mercadoPago);
         setIsFormReady(true);
-        console.log('✅ MercadoPago initialized successfully');
+        console.log('✅ CardPayment: MercadoPago initialized successfully');
 
       } catch (error: any) {
-        console.error('❌ MercadoPago initialization error:', error);
+        console.error('❌ CardPayment: Initialization error:', error);
         
-        // More specific error messages
-        let errorMessage = 'Erro ao inicializar Mercado Pago';
+        if (!isMounted) return;
         
-        if (error.message?.includes('Timeout')) {
-          errorMessage = 'Timeout ao carregar Mercado Pago. Verifique sua conexão com a internet.';
-        } else if (error.message?.includes('Falha ao carregar SDK')) {
-          errorMessage = 'Erro ao carregar SDK do Mercado Pago. Tente recarregar a página.';
-        } else if (error.message?.includes('não encontrada')) {
-          errorMessage = 'Configuração do Mercado Pago não encontrada. Contate o suporte.';
+        // Specific error handling
+        let errorMessage = 'Erro ao carregar formulário de pagamento';
+        
+        if (error.message?.includes('Timeout') || error.message?.includes('timeout')) {
+          errorMessage = 'Tempo limite esgotado. Verifique sua conexão e tente novamente.';
+        } else if (error.message?.includes('Failed to load') || error.message?.includes('SDK')) {
+          errorMessage = 'Erro ao carregar sistema de pagamento. Recarregue a página.';
         } else if (error.message?.includes('HTTP')) {
-          errorMessage = 'Erro de comunicação com o servidor. Tente novamente.';
+          errorMessage = 'Erro de comunicação. Tente novamente em alguns segundos.';
+        } else if (error.message?.includes('Public key')) {
+          errorMessage = 'Configuração de pagamento indisponível. Contate o suporte.';
         }
         
-        onError(errorMessage);
+        // Retry logic for network errors
+        if (error.message?.includes('HTTP') || error.message?.includes('fetch')) {
+          console.log('🔄 CardPayment: Network error detected, retrying in 3 seconds...');
+          retryTimeout = setTimeout(() => {
+            if (isMounted) {
+              console.log('🔄 CardPayment: Retrying initialization...');
+              initializeMercadoPago();
+            }
+          }, 3000);
+        } else {
+          onError(errorMessage);
+        }
       }
     };
 
     initializeMercadoPago();
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+      }
+    };
   }, [onError]);
 
   const processCardPaymentMutation = useMutation({
@@ -469,7 +489,13 @@ export function CardPayment({
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Carregando formulário de pagamento...
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                Carregando formulário de pagamento...
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                Se o carregamento demorar, recarregue a página
+              </div>
             </AlertDescription>
           </Alert>
         )}
