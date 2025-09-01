@@ -778,6 +778,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`⚠️ Failed to send free order confirmation email to ${orderWithDetails.customer.email}`);
             }
 
+            // 🎁 FREE ORDER: Send admin notifications immediately (since no webhook will trigger)
+            try {
+              console.log(`📧 Sending admin notifications for free order ${order.orderNumber}...`);
+              const adminEmailData = EmailDataMapper.mapToAdminOrderConfirmation(
+                orderWithDetails,
+                `${req.protocol}://${req.get('host')}/admin/orders/${order.id}`
+              );
+              
+              await emailService.sendAdminOrderConfirmations(adminEmailData, orderWithDetails.id);
+              console.log(`✅ Admin notifications sent for free order ${order.orderNumber}`);
+            } catch (adminEmailError) {
+              console.error('❌ Error sending admin notifications for free order:', adminEmailError);
+            }
+
             // Send WhatsApp notification if available
             try {
               const { WhatsAppService } = await import('./whatsapp-service');
