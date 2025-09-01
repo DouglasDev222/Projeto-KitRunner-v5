@@ -286,11 +286,7 @@ export default function OrderDetails() {
               <p className="text-sm text-neutral-600">
                 CEP: {order.address?.zipCode}
               </p>
-              {order.cepZoneName && (
-                <p className="text-sm text-neutral-600">
-                  <span className="font-medium">Zona de Entrega:</span> <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-mono">{order.cepZoneName}</span>
-                </p>
-              )}
+              
             </div>
           </CardContent>
         </Card>
@@ -308,7 +304,12 @@ export default function OrderDetails() {
               {/* Show delivery cost if exists (variable pricing) */}
               {parseFloat(order.deliveryCost) > 0 && (
                 <div className="flex justify-between items-center">
-                  <span className="text-neutral-600">Entrega (baseada na distância):</span>
+                  <span className="text-neutral-600">
+                    {order.cepZoneName 
+                      ? `Entrega (${order.cepZoneName}):`
+                      : 'Entrega (baseada na distância):'
+                    }
+                  </span>
                   <span className="text-neutral-800">{formatCurrency(parseFloat(order.deliveryCost))}</span>
                 </div>
               )}
@@ -604,9 +605,7 @@ export default function OrderDetails() {
                           {order.address?.complement && `, ${order.address.complement}`}</p>
                         <p>{order.address?.neighborhood}, {order.address?.city} - {order.address?.state}</p>
                         <p>CEP: {order.address?.zipCode}</p>
-                        {order.cepZoneName && (
-                          <p><span className="font-medium">Zona de Entrega:</span> <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-mono">{order.cepZoneName}</span></p>
-                        )}
+                        
                       </div>
                     </div>
                   </CardContent>
@@ -625,7 +624,12 @@ export default function OrderDetails() {
                       {/* Show delivery cost if exists (variable pricing) */}
                       {parseFloat(order.deliveryCost) > 0 && (
                         <div className="flex justify-between items-center py-2">
-                          <span className="text-gray-600">Entrega (baseada na distância):</span>
+                          <span className="text-gray-600">
+                            {order.cepZoneName 
+                              ? `Entrega (${order.cepZoneName}):`
+                              : 'Entrega (baseada na distância):'
+                            }
+                          </span>
                           <span className="font-medium text-gray-900">{formatCurrency(parseFloat(order.deliveryCost))}</span>
                         </div>
                       )}
