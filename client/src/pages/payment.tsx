@@ -266,17 +266,6 @@ export default function Payment() {
     setCouponDiscount(0);
   };
 
-  // Detect free orders - when total cost after coupon discount equals 0
-  useEffect(() => {
-    if (pricing && appliedCoupon) {
-      const finalTotal = pricing.totalCost - couponDiscount;
-      const isOrderFree = finalTotal === 0;
-      setIsFreeOrder(isOrderFree);
-      console.log('🎁 Free order detection:', { finalTotal, isOrderFree, appliedCoupon: appliedCoupon.code });
-    } else {
-      setIsFreeOrder(false);
-    }
-  }, [pricing, couponDiscount, appliedCoupon]);
 
   // Handler for free order confirmation
   const handleFreeOrderConfirmation = async () => {
@@ -557,6 +546,18 @@ export default function Payment() {
     discountAmount: couponDiscount,
     totalCost: Math.max(0, basePricing.totalCost - couponDiscount)
   };
+
+  // Detect free orders - when total cost after coupon discount equals 0
+  useEffect(() => {
+    if (pricing && appliedCoupon) {
+      const finalTotal = pricing.totalCost;
+      const isOrderFree = finalTotal === 0;
+      setIsFreeOrder(isOrderFree);
+      console.log('🎁 Free order detection:', { finalTotal, isOrderFree, appliedCoupon: appliedCoupon.code });
+    } else {
+      setIsFreeOrder(false);
+    }
+  }, [pricing.totalCost, appliedCoupon]);
 
   // Create order data function to be used by payment components
   // 🔒 SECURITY: Remove pricing values from frontend - server will calculate all prices
