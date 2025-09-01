@@ -398,15 +398,6 @@ export default function OrderDetails() {
               <div className="flex items-center space-x-8">
                 <Button
                   variant="ghost"
-                  onClick={() => setLocation("/")}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors"
-                >
-                  <Home className="w-4 h-4" />
-                  <span>Início</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
                   onClick={() => setLocation("/my-orders")}
                   className="flex items-center space-x-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-lg font-medium"
                 >
