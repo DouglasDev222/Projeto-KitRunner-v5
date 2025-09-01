@@ -198,6 +198,18 @@ export default function Payment() {
     loadSecurePricing();
   }, [selectedAddress, event, kitData, id, isProcessing, paymentMethod]);
 
+  // Detect free orders - when total cost after coupon discount equals 0
+  useEffect(() => {
+    if (securePricing?.pricing && appliedCoupon) {
+      const finalTotal = Math.max(0, securePricing.pricing.totalCost - couponDiscount);
+      const isOrderFree = finalTotal === 0;
+      setIsFreeOrder(isOrderFree);
+      console.log('🎁 Free order detection:', { finalTotal, isOrderFree, appliedCoupon: appliedCoupon.code });
+    } else {
+      setIsFreeOrder(false);
+    }
+  }, [securePricing?.pricing?.totalCost, couponDiscount, appliedCoupon]);
+
   const createOrderMutation = useMutation({
     mutationFn: async (orderData: OrderCreation) => {
       const response = await apiRequest("POST", "/api/orders", orderData);
@@ -546,18 +558,6 @@ export default function Payment() {
     discountAmount: couponDiscount,
     totalCost: Math.max(0, basePricing.totalCost - couponDiscount)
   };
-
-  // Detect free orders - when total cost after coupon discount equals 0
-  useEffect(() => {
-    if (pricing && appliedCoupon) {
-      const finalTotal = pricing.totalCost;
-      const isOrderFree = finalTotal === 0;
-      setIsFreeOrder(isOrderFree);
-      console.log('🎁 Free order detection:', { finalTotal, isOrderFree, appliedCoupon: appliedCoupon.code });
-    } else {
-      setIsFreeOrder(false);
-    }
-  }, [pricing.totalCost, appliedCoupon]);
 
   // Create order data function to be used by payment components
   // 🔒 SECURITY: Remove pricing values from frontend - server will calculate all prices
