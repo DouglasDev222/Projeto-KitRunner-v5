@@ -286,6 +286,11 @@ export default function OrderDetails() {
               <p className="text-sm text-neutral-600">
                 CEP: {order.address?.zipCode}
               </p>
+              {order.cepZoneName && (
+                <p className="text-sm text-neutral-600">
+                  <span className="font-medium">Zona de Entrega:</span> <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-mono">{order.cepZoneName}</span>
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -599,6 +604,9 @@ export default function OrderDetails() {
                           {order.address?.complement && `, ${order.address.complement}`}</p>
                         <p>{order.address?.neighborhood}, {order.address?.city} - {order.address?.state}</p>
                         <p>CEP: {order.address?.zipCode}</p>
+                        {order.cepZoneName && (
+                          <p><span className="font-medium">Zona de Entrega:</span> <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-mono">{order.cepZoneName}</span></p>
+                        )}
                       </div>
                     </div>
                   </CardContent>

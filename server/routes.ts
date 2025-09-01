@@ -546,7 +546,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Enhanced validation: CEP zones pricing security check
+      // Enhanced validation: CEP zones pricing security check and get zone name
+      let cepZoneName = null;
       if (selectedEvent.pricingType === 'cep_zones') {
         const customerAddress = await storage.getAddress(orderData.addressId);
         if (!customerAddress) {
@@ -554,17 +555,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Endereço não encontrado" });
         }
 
-        // Validate CEP zone pricing
-        const { calculateCepZonePrice } = await import('./cep-zones-calculator');
-        const validatedPrice = await calculateCepZonePrice(customerAddress.zipCode, orderData.eventId);
+        // Validate CEP zone pricing and get zone info
+        const { calculateCepZoneInfo } = await import('./cep-zones-calculator');
+        const zoneInfo = await calculateCepZoneInfo(customerAddress.zipCode, orderData.eventId);
         
-        if (validatedPrice === null) {
+        if (zoneInfo === null) {
           console.error(`🚨 SECURITY: Order creation blocked - CEP ${customerAddress.zipCode} not found in zones for event ${orderData.eventId}`);
           return res.status(400).json({ 
             message: "CEP não atendido nas zonas de entrega disponíveis para este evento",
             code: "CEP_ZONE_NOT_FOUND"
           });
         }
+
+        // Store zone name for order creation
+        cepZoneName = zoneInfo.zoneName;
+        const validatedPrice = zoneInfo.price;
 
         // Validate provided delivery cost matches calculated price
         if (orderData.deliveryCost && Math.abs(Number(orderData.deliveryCost) - validatedPrice) > 0.01) {
@@ -575,7 +580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        console.log(`✅ CEP zone validation passed for ${customerAddress.zipCode} - Price: R$ ${validatedPrice}`);
+        console.log(`✅ CEP zone validation passed for ${customerAddress.zipCode} - Zone: ${cepZoneName} - Price: R$ ${validatedPrice}`);
       }
 
       let totalCost = 0;
@@ -698,6 +703,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentMethod: finalPaymentMethod,
         status: orderStatus,
         donationAmount: finalDonationAmount.toString(),
+        cepZoneName: cepZoneName, // Add CEP zone name for tracking
         idempotencyKey: orderData.idempotencyKey,
       });
 

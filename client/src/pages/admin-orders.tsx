@@ -1639,6 +1639,9 @@ export default function AdminOrders() {
                       <p><span className="font-medium">Bairro:</span> {selectedOrder.address?.neighborhood || 'N/A'}</p>
                       <p><span className="font-medium">Cidade:</span> {selectedOrder.address?.city ? `${selectedOrder.address.city}, ${selectedOrder.address?.state}` : 'N/A'}</p>
                       <p><span className="font-medium">CEP:</span> {selectedOrder.address?.zipCode ? selectedOrder.address.zipCode.replace(/(\d{5})(\d{3})/, '$1-$2') : 'N/A'}</p>
+                      {selectedOrder.cepZoneName && (
+                        <p><span className="font-medium">Zona de Entrega:</span> <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-mono">{selectedOrder.cepZoneName}</span></p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1909,6 +1912,9 @@ export default function AdminOrders() {
                       <p>{selectedOrder.address.neighborhood}</p>
                       <p>{selectedOrder.address.city} - {selectedOrder.address.state}</p>
                       <p>CEP: {selectedOrder.address.zipCode}</p>
+                      {selectedOrder.cepZoneName && (
+                        <p><span className="font-medium text-gray-600">Zona de Entrega:</span> <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-mono">{selectedOrder.cepZoneName}</span></p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

@@ -73,6 +73,7 @@ export const orders = pgTable("orders", {
   paymentMethod: text("payment_method").notNull(),
   status: text("status").notNull().default("confirmado"), // "confirmado", "aguardando_pagamento", "cancelado", "kits_sendo_retirados", "em_transito", "entregue"
   donationAmount: decimal("donation_amount", { precision: 10, scale: 2 }).notNull().default("0"), // Valor da doação
+  cepZoneName: text("cep_zone_name"), // Nome da zona de CEP utilizada na hora do pedido
   idempotencyKey: text("idempotency_key").unique(), // Chave para evitar duplicação
   // PIX payment tracking fields
   paymentId: text("payment_id"), // MercadoPago payment ID
