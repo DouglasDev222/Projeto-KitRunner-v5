@@ -51,6 +51,15 @@ export function CouponInput({
     queryKey: ['validate-coupon', couponCode, eventId, totalAmount, customerZipCode, addressId],
     queryFn: async (): Promise<CouponValidationResponse> => {
       console.log('🎫 Validating coupon with addressId:', addressId, 'CEP:', customerZipCode);
+      
+      // Obter customerId da sessão
+      let customerId: number | undefined;
+      const customerData = sessionStorage.getItem("customerData");
+      if (customerData) {
+        const customer = JSON.parse(customerData);
+        customerId = customer.id;
+      }
+      
       const response = await fetch('/api/coupons/validate', {
         method: 'POST',
         headers: {
@@ -61,7 +70,8 @@ export function CouponInput({
           eventId,
           totalAmount,
           customerZipCode,
-          addressId
+          addressId,
+          customerId
         }),
       });
       return response.json();

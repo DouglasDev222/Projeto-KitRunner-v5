@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { coupons, cepZones } from "@shared/schema";
+import { coupons, cepZones, couponUsages } from "@shared/schema";
 import { eq, and, or, isNull, sql } from "drizzle-orm";
 import { findCepZoneFromList, isValidCep, cleanCep } from "./cep-zones-calculator";
 
@@ -7,6 +7,7 @@ export interface CouponValidationRequest {
   code: string;
   eventId: number;
   totalAmount: number;
+  customerId?: number; // ID do cliente para validação de limite por cliente
   customerZipCode?: string; // CEP do cliente para validação de zona
 }
 
@@ -27,10 +28,47 @@ export interface CouponValidationResponse {
 export class CouponService {
   
   /**
+   * Verifica quantas vezes um cliente usou um cupom específico
+   */
+  static async getCustomerCouponUsageCount(couponId: number, customerId: number): Promise<number> {
+    try {
+      const result = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(couponUsages)
+        .where(and(
+          eq(couponUsages.couponId, couponId),
+          eq(couponUsages.customerId, customerId)
+        ));
+      
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error("Erro ao contar uso do cupom por cliente:", error);
+      return 0;
+    }
+  }
+
+  /**
+   * Registra uso de cupom por cliente
+   */
+  static async recordCouponUsage(couponId: number, customerId: number, orderId: number): Promise<boolean> {
+    try {
+      await db.insert(couponUsages).values({
+        couponId,
+        customerId, 
+        orderId
+      });
+      return true;
+    } catch (error) {
+      console.error("Erro ao registrar uso do cupom:", error);
+      return false;
+    }
+  }
+
+  /**
    * Valida um cupom e calcula o desconto
    */
   static async validateCoupon(request: CouponValidationRequest): Promise<CouponValidationResponse> {
-    const { code, eventId, totalAmount, customerZipCode } = request;
+    const { code, eventId, totalAmount, customerId, customerZipCode } = request;
     
     try {
       console.log('🎫 Validando cupom:', { code, eventId, totalAmount, customerZipCode });
@@ -83,6 +121,17 @@ export class CouponService {
           valid: false,
           message: "Cupom esgotado"
         };
+      }
+
+      // Verificar limite por cliente se habilitado
+      if (couponData.perCustomerEnabled && couponData.perCustomerLimit && customerId) {
+        const customerUsageCount = await this.getCustomerCouponUsageCount(couponData.id, customerId);
+        if (customerUsageCount >= couponData.perCustomerLimit) {
+          return {
+            valid: false,
+            message: `Você já utilizou este cupom ${couponData.perCustomerLimit} vez(es), que é o limite permitido`
+          };
+        }
       }
 
       // Verificar se é válido para o evento (se productIds não for null)
@@ -179,17 +228,34 @@ export class CouponService {
   /**
    * Incrementa o uso de um cupom após pagamento confirmado
    */
-  static async incrementUsage(couponCode: string): Promise<boolean> {
+  static async incrementUsage(couponCode: string, customerId?: number, orderId?: number): Promise<boolean> {
     try {
-      const result = await db
+      // Buscar cupom para pegar ID e verificar se controle por cliente está habilitado
+      const coupon = await db
+        .select({ 
+          id: coupons.id, 
+          perCustomerEnabled: coupons.perCustomerEnabled 
+        })
+        .from(coupons)
+        .where(sql`LOWER(${coupons.code}) = LOWER(${couponCode})`)
+        .limit(1);
+
+      if (coupon.length === 0) return false;
+
+      // Incrementar contador global
+      await db
         .update(coupons)
         .set({ 
           usageCount: sql`${coupons.usageCount} + 1`
         })
-        .where(sql`LOWER(${coupons.code}) = LOWER(${couponCode})`)
-        .returning({ id: coupons.id });
+        .where(sql`LOWER(${coupons.code}) = LOWER(${couponCode})`);
 
-      return result.length > 0;
+      // Registrar uso por cliente se habilitado e dados fornecidos
+      if (coupon[0].perCustomerEnabled && customerId && orderId) {
+        await this.recordCouponUsage(coupon[0].id, customerId, orderId);
+      }
+
+      return true;
     } catch (error) {
       console.error("Erro ao incrementar uso do cupom:", error);
       return false;

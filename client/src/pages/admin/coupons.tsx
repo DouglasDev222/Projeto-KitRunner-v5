@@ -25,6 +25,8 @@ interface Coupon {
   validUntil: string;
   usageLimit?: number;
   usageCount: number;
+  perCustomerEnabled?: boolean;
+  perCustomerLimit?: number;
   active: boolean;
   createdAt: string;
 }
@@ -181,6 +183,13 @@ export default function AdminCoupons() {
                           <span className="font-medium">
                             {coupon.usageCount}/{coupon.usageLimit}
                           </span>
+                        </div>
+                      )}
+                      
+                      {coupon.perCustomerEnabled && coupon.perCustomerLimit && (
+                        <div>
+                          <span className="text-muted-foreground">Limite por cliente: </span>
+                          <span className="font-medium">{coupon.perCustomerLimit}</span>
                         </div>
                       )}
                       

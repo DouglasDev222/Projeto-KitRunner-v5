@@ -118,8 +118,19 @@ export const coupons = pgTable("coupons", {
   validUntil: timestamp("valid_until").notNull(),
   usageLimit: integer("usage_limit"), // null = ilimitado
   usageCount: integer("usage_count").notNull().default(0),
+  perCustomerEnabled: boolean("per_customer_enabled").notNull().default(false), // Se controle por cliente está habilitado
+  perCustomerLimit: integer("per_customer_limit"), // Limite de uso por cliente (null = sem limite por cliente)
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// New table to track coupon usage per customer
+export const couponUsages = pgTable("coupon_usages", {
+  id: serial("id").primaryKey(),
+  couponId: integer("coupon_id").notNull().references(() => coupons.id, { onDelete: "cascade" }),
+  customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+  orderId: integer("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  usedAt: timestamp("used_at").notNull().defaultNow(),
 });
 
 // Admin authentication tables
@@ -289,6 +300,10 @@ export const insertAddressSchema = createInsertSchema(addresses).omit({ id: true
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, orderNumber: true, createdAt: true });
 export const insertKitSchema = createInsertSchema(kits).omit({ id: true });
 export const insertCouponSchema = createInsertSchema(coupons).omit({ id: true, createdAt: true });
+export const insertCouponUsageSchema = createInsertSchema(couponUsages).omit({ 
+  id: true, 
+  usedAt: true 
+});
 export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertAdminSessionSchema = createInsertSchema(adminSessions).omit({ id: true, createdAt: true });
 export const insertAdminAuditLogSchema = createInsertSchema(adminAuditLog).omit({ id: true, createdAt: true });

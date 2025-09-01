@@ -26,6 +26,8 @@ interface Coupon {
   validUntil: string;
   usageLimit?: number;
   usageCount: number;
+  perCustomerEnabled?: boolean;
+  perCustomerLimit?: number;
   active: boolean;
   createdAt: string;
 }
@@ -60,6 +62,8 @@ export function CouponModal({ isOpen, onClose, coupon, isEditing }: CouponModalP
     validFrom: '',
     validUntil: '',
     usageLimit: '',
+    perCustomerEnabled: false,
+    perCustomerLimit: '',
     active: true,
     selectedEvents: [] as number[],
     selectedCepZones: [] as number[]
@@ -96,6 +100,8 @@ export function CouponModal({ isOpen, onClose, coupon, isEditing }: CouponModalP
         validFrom: format(new Date(coupon.validFrom), 'yyyy-MM-dd'),
         validUntil: format(new Date(coupon.validUntil), 'yyyy-MM-dd'),
         usageLimit: coupon.usageLimit?.toString() || '',
+        perCustomerEnabled: coupon.perCustomerEnabled || false,
+        perCustomerLimit: coupon.perCustomerLimit?.toString() || '',
         active: coupon.active,
         selectedEvents: coupon.productIds || [],
         selectedCepZones: coupon.cepZoneIds || []
@@ -110,6 +116,8 @@ export function CouponModal({ isOpen, onClose, coupon, isEditing }: CouponModalP
         validFrom: format(new Date(), 'yyyy-MM-dd'),
         validUntil: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
         usageLimit: '',
+        perCustomerEnabled: false,
+        perCustomerLimit: '',
         active: true,
         selectedEvents: [],
         selectedCepZones: []
@@ -134,6 +142,8 @@ export function CouponModal({ isOpen, onClose, coupon, isEditing }: CouponModalP
         validFrom: data.validFrom,
         validUntil: data.validUntil,
         usageLimit: data.usageLimit ? parseInt(data.usageLimit) : null,
+        perCustomerEnabled: data.perCustomerEnabled,
+        perCustomerLimit: data.perCustomerEnabled && data.perCustomerLimit ? parseInt(data.perCustomerLimit) : null,
         active: data.active
       };
 
@@ -186,6 +196,20 @@ export function CouponModal({ isOpen, onClose, coupon, isEditing }: CouponModalP
     if (new Date(formData.validFrom) >= new Date(formData.validUntil)) {
       setError('Data de fim deve ser posterior à data de início');
       return;
+    }
+
+    // Validar limite por cliente
+    if (formData.perCustomerEnabled) {
+      if (!formData.perCustomerLimit || !formData.perCustomerLimit.trim()) {
+        setError('Limite por cliente é obrigatório quando esta opção está habilitada');
+        return;
+      }
+      
+      const perCustomerLimit = parseInt(formData.perCustomerLimit);
+      if (isNaN(perCustomerLimit) || perCustomerLimit <= 0) {
+        setError('Limite por cliente deve ser um número positivo');
+        return;
+      }
     }
 
     saveMutation.mutate(formData);
@@ -330,6 +354,35 @@ export function CouponModal({ isOpen, onClose, coupon, isEditing }: CouponModalP
               onChange={(e) => setFormData(prev => ({ ...prev, usageLimit: e.target.value }))}
               placeholder="Deixe vazio para uso ilimitado"
             />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="perCustomerEnabled"
+                checked={formData.perCustomerEnabled}
+                onCheckedChange={(checked) =>
+                  setFormData(prev => ({ ...prev, perCustomerEnabled: checked }))
+                }
+              />
+              <Label htmlFor="perCustomerEnabled">Limitar uso por cliente</Label>
+            </div>
+            
+            {formData.perCustomerEnabled && (
+              <div className="space-y-2">
+                <Label htmlFor="perCustomerLimit">Limite por cliente</Label>
+                <Input
+                  id="perCustomerLimit"
+                  type="number"
+                  min="1"
+                  value={formData.perCustomerLimit}
+                  onChange={(e) =>
+                    setFormData(prev => ({ ...prev, perCustomerLimit: e.target.value }))
+                  }
+                  placeholder="Quantas vezes cada cliente pode usar"
+                />
+              </div>
+            )}
           </div>
 
           {events && events.length > 0 && (

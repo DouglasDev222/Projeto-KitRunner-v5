@@ -17,6 +17,7 @@ const couponValidationSchema = z.object({
   code: z.string().min(1, "Código do cupom é obrigatório"),
   eventId: z.number().min(1, "ID do evento é obrigatório"),
   totalAmount: z.number().min(0, "Valor total deve ser positivo"),
+  customerId: z.number().optional(), // ID do cliente para validação de limite por cliente
   customerZipCode: z.string().optional(), // CEP do cliente para validação de zona (fallback)
   addressId: z.number().optional() // ID do endereço do cliente (preferido)
 });
@@ -28,7 +29,9 @@ const adminCouponSchema = insertCouponSchema.extend({
   }),
   discountValue: z.string().min(1, "Valor do desconto é obrigatório"),
   validFrom: z.string().min(1, "Data de início é obrigatória"),
-  validUntil: z.string().min(1, "Data de fim é obrigatória")
+  validUntil: z.string().min(1, "Data de fim é obrigatória"),
+  perCustomerEnabled: z.boolean().optional(),
+  perCustomerLimit: z.number().int().min(1).nullable().optional(),
 });
 
 /**
@@ -37,8 +40,8 @@ const adminCouponSchema = insertCouponSchema.extend({
  */
 router.post('/coupons/validate', async (req, res) => {
   try {
-    const { code, eventId, totalAmount, customerZipCode, addressId } = req.body;
-    console.log('🎫 Coupon validation request:', { code, eventId, totalAmount, customerZipCode, addressId });
+    const { code, eventId, totalAmount, customerId, customerZipCode, addressId } = req.body;
+    console.log('🎫 Coupon validation request:', { code, eventId, totalAmount, customerId, customerZipCode, addressId });
     
     const validatedData = couponValidationSchema.parse(req.body);
     
@@ -68,6 +71,7 @@ router.post('/coupons/validate', async (req, res) => {
     // Atualizar dados validados com CEP encontrado
     const updatedValidatedData = {
       ...validatedData,
+      customerId,
       customerZipCode: finalCustomerZipCode
     };
     
