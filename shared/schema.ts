@@ -395,7 +395,7 @@ export const orderCreationSchema = z.object({
   discountAmount: z.string().default("0"),
   couponCode: z.string().optional(),
   totalCost: z.string().min(1, "Custo total é obrigatório"),
-  paymentMethod: z.enum(["credit", "debit", "pix"], { required_error: "Método de pagamento é obrigatório" }),
+  paymentMethod: z.enum(["credit", "debit", "pix", "gratuito"], { required_error: "Método de pagamento é obrigatório" }),
   kits: z.array(z.object({
     name: z.string().min(1, "Nome é obrigatório"),
     cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(11, "CPF deve ter 11 dígitos"),

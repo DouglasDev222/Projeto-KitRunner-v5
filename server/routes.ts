@@ -626,6 +626,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const finalDonationAmount = providedDonationAmount;
       const finalTotalCost = Math.max(0, providedTotalCost - finalDiscountAmount);
 
+      // 🎁 SECURITY: Validate free orders - only allowed with valid coupon
+      const isFreeOrder = finalTotalCost === 0;
+      if (isFreeOrder) {
+        console.log('🎁 SECURITY: Processing free order validation');
+        
+        if (!orderData.couponCode || !orderData.couponCode.trim()) {
+          console.log('🚫 SECURITY: Free order blocked - No coupon provided');
+          return res.status(400).json({
+            success: false,
+            message: "Pedidos gratuitos só são permitidos com cupom válido",
+            code: "COUPON_REQUIRED_FOR_FREE_ORDER"
+          });
+        }
+
+        // Validate coupon for free order
+        const customerAddress = await storage.getAddress(orderData.addressId);
+        if (!customerAddress) {
+          return res.status(400).json({
+            success: false,
+            message: "Endereço não encontrado"
+          });
+        }
+
+        const { CouponService } = await import('./coupon-service');
+        const couponValidation = await CouponService.validateCoupon({
+          code: orderData.couponCode,
+          eventId: orderData.eventId,
+          totalAmount: providedTotalCost, // Original total before discount
+          customerZipCode: customerAddress.zipCode.replace(/\D/g, '')
+        });
+
+        if (!couponValidation.valid || couponValidation.finalAmount !== 0) {
+          console.log('🚫 SECURITY: Free order blocked - Invalid coupon or doesn\'t result in free order');
+          return res.status(400).json({
+            success: false,
+            message: "Cupom inválido para pedido gratuito",
+            code: "INVALID_COUPON_FOR_FREE_ORDER"
+          });
+        }
+
+        console.log(`🎁 SECURITY: Free order validated with coupon ${orderData.couponCode}`);
+      }
+
       console.log(`💰 FINAL PRICING CALCULATION:
         - Delivery Cost: R$ ${finalDeliveryCost} (provided: ${orderData.deliveryCost}, server calculated: ${deliveryCost})
         - Extra Kits Cost: R$ ${finalExtraKitsCost} (provided: ${orderData.extraKitsCost}, server calculated: ${additionalCost})
@@ -633,6 +676,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         - Discount Amount: R$ ${finalDiscountAmount}
         - Total Cost: R$ ${finalTotalCost} (provided: ${orderData.totalCost}, server calculated: ${totalCost})
       `);
+
+      // Determine order status and payment method based on whether it's free
+      const orderStatus = isFreeOrder ? "confirmado" : "aguardando_pagamento";
+      const finalPaymentMethod = isFreeOrder ? "gratuito" : orderData.paymentMethod;
+
+      console.log(`🎁 Order processing: isFree=${isFreeOrder}, status=${orderStatus}, paymentMethod=${finalPaymentMethod}`);
 
       // Create order with proper pricing breakdown
       const order = await storage.createOrder({
@@ -646,8 +695,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         discountAmount: finalDiscountAmount.toString(),
         couponCode: orderData.couponCode || null,
         totalCost: finalTotalCost.toString(),
-        paymentMethod: orderData.paymentMethod,
-        status: "aguardando_pagamento", // Order starts awaiting payment
+        paymentMethod: finalPaymentMethod,
+        status: orderStatus,
         donationAmount: finalDonationAmount.toString(),
         idempotencyKey: orderData.idempotencyKey,
       });
@@ -703,8 +752,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't fail the order creation if policy recording fails
       }
 
-      // Schedule payment pending email to be sent in 1 minute
-      PaymentReminderScheduler.schedulePaymentPendingEmail(order.orderNumber, 1);
+      // Handle email notifications based on order type
+      if (isFreeOrder) {
+        // 🎁 FREE ORDER: Send confirmation email and WhatsApp immediately
+        console.log(`🎁 FREE ORDER: Sending immediate confirmation for order ${order.orderNumber}`);
+        
+        try {
+          // Send confirmation email immediately
+          const emailService = new EmailService(storage);
+          const { EmailDataMapper } = await import("./email/email-data-mapper");
+          const orderWithDetails = await storage.getOrderWithFullDetails(order.id);
+          
+          if (orderWithDetails) {
+            const confirmationData = EmailDataMapper.mapToServiceConfirmation(orderWithDetails);
+            const emailSent = await emailService.sendServiceConfirmation(
+              confirmationData, 
+              orderWithDetails.customer.email, 
+              orderWithDetails.id, 
+              orderWithDetails.customer.id
+            );
+            
+            if (emailSent) {
+              console.log(`✅ Free order confirmation email sent to ${orderWithDetails.customer.email}`);
+            } else {
+              console.log(`⚠️ Failed to send free order confirmation email to ${orderWithDetails.customer.email}`);
+            }
+
+            // Send WhatsApp notification if available
+            try {
+              const { WhatsAppService } = await import('./whatsapp-service');
+              const whatsAppService = new WhatsAppService();
+              await whatsAppService.sendOrderConfirmation(orderWithDetails);
+              console.log(`📱 Free order WhatsApp confirmation sent to ${orderWithDetails.customer.phone}`);
+            } catch (whatsappError) {
+              console.error('❌ Error sending WhatsApp for free order:', whatsappError);
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error sending free order confirmation:', error);
+        }
+      } else {
+        // PAID ORDER: Schedule payment pending email as usual
+        PaymentReminderScheduler.schedulePaymentPendingEmail(order.orderNumber, 1);
+      }
 
       res.json({
         order,

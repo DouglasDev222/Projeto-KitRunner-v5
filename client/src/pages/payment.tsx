@@ -5,7 +5,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Landmark, QrCode, Shield, Lock, Heart, Package, CheckCircle, ArrowLeft } from "lucide-react";
+import { CreditCard, Landmark, QrCode, Shield, Lock, Heart, Package, CheckCircle, ArrowLeft, Gift, XCircle } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
@@ -107,6 +107,9 @@ export default function Payment() {
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [originalTotalCost, setOriginalTotalCost] = useState(0);
+  
+  // Free order state
+  const [isFreeOrder, setIsFreeOrder] = useState(false);
 
   const { data: event } = useQuery<Event>({
     queryKey: ["/api/events", id],
@@ -261,6 +264,75 @@ export default function Payment() {
   const handleCouponRemoved = () => {
     setAppliedCoupon(null);
     setCouponDiscount(0);
+  };
+
+  // Detect free orders - when total cost after coupon discount equals 0
+  useEffect(() => {
+    if (pricing && appliedCoupon) {
+      const finalTotal = pricing.totalCost - couponDiscount;
+      const isOrderFree = finalTotal === 0;
+      setIsFreeOrder(isOrderFree);
+      console.log('🎁 Free order detection:', { finalTotal, isOrderFree, appliedCoupon: appliedCoupon.code });
+    } else {
+      setIsFreeOrder(false);
+    }
+  }, [pricing, couponDiscount, appliedCoupon]);
+
+  // Handler for free order confirmation
+  const handleFreeOrderConfirmation = async () => {
+    if (!policyAccepted) {
+      setPaymentError("É necessário aceitar os termos para prosseguir");
+      return;
+    }
+
+    if (!appliedCoupon || !isFreeOrder) {
+      setPaymentError("Erro na validação do pedido gratuito");
+      return;
+    }
+
+    setIsProcessing(true);
+    setPaymentError(null);
+
+    try {
+      const orderData = createOrderData(`free-${Date.now()}-${Math.random()}`);
+      orderData.paymentMethod = 'gratuito' as any;
+
+      console.log('🎁 Creating free order:', orderData);
+
+      const response = await apiRequest("POST", "/api/orders", orderData);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Erro ao confirmar pedido gratuito");
+      }
+
+      console.log('🎁 Free order created successfully:', data);
+
+      // Invalidate caches
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customer?.id, "orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+
+      // Record policy acceptance
+      await recordPolicyAcceptance(data.order.id);
+
+      // Set completion state
+      setOrderNumber(data.order.orderNumber);
+      setPaymentCompleted(true);
+      sessionStorage.setItem("orderConfirmation", JSON.stringify(data));
+
+      // Redirect to confirmation page
+      setTimeout(() => {
+        setLocation(`/order/${data.order.orderNumber}/confirmation`);
+      }, 1500);
+
+    } catch (error: any) {
+      console.error('❌ Error creating free order:', error);
+      setPaymentError(error.message || "Erro ao confirmar pedido gratuito");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // SECURITY FIX: Show loading/error states for pricing
@@ -703,8 +775,8 @@ export default function Payment() {
           </CardContent>
         </Card>
 
-        {/* Payment Methods Selection - Hidden when PIX code is generated */}
-        {(!paymentMethod || paymentMethod === 'credit' || (paymentMethod === 'pix' && !pixData)) && (
+        {/* Payment Methods Selection - Hidden when PIX code is generated or for free orders */}
+        {!isFreeOrder && (!paymentMethod || paymentMethod === 'credit' || (paymentMethod === 'pix' && !pixData)) && (
           <Card className="mb-6">
             <CardContent className="p-4">
               <h3 className="font-semibold text-lg text-neutral-800 mb-4">Forma de Pagamento</h3>
@@ -777,73 +849,86 @@ export default function Payment() {
               </Alert>
             )}
 
-            {paymentMethod === 'credit' && (
-              <CardPayment
-                amount={pricing.totalCost}
-                orderData={() => createOrderData(`${Date.now()}-${Math.random()}`)}
-                createOrder={async (orderData) => {
-                  // Validate policy acceptance before creating order
-                  if (!policyAccepted) {
-                    throw new Error("É necessário aceitar a política de pedidos para prosseguir");
-                  }
-
-                  return new Promise((resolve, reject) => {
-                    createOrderMutation.mutate(orderData, {
-                      onSuccess: async (data) => {
-                        // Record policy acceptance after successful order creation
-                        await recordPolicyAcceptance(data.order.id);
-                        resolve(data);
-                      },
-                      onError: (error) => reject(error)
-                    });
-                  });
-                }}
-                customerData={{
-                  name: customer.name,
-                  email: customer.email,
-                  cpf: customer.cpf
-                }}
-                onSuccess={handlePaymentSuccess}
-                onError={handlePaymentError}
+            {isFreeOrder ? (
+              <FreeOrderConfirmation 
+                onConfirm={handleFreeOrderConfirmation}
                 isProcessing={isProcessing}
-                setIsProcessing={setIsProcessing}
-                policyAccepted={policyAccepted}
+                appliedCoupon={appliedCoupon}
+                paymentError={paymentError}
+                customer={customer}
+                event={event}
               />
-            )}
+            ) : (
+              <>
+                {paymentMethod === 'credit' && (
+                  <CardPayment
+                    amount={pricing.totalCost}
+                    orderData={() => createOrderData(`${Date.now()}-${Math.random()}`)}
+                    createOrder={async (orderData) => {
+                      // Validate policy acceptance before creating order
+                      if (!policyAccepted) {
+                        throw new Error("É necessário aceitar a política de pedidos para prosseguir");
+                      }
 
-            {paymentMethod === 'pix' && (
-              <PIXPayment
-                amount={pricing.totalCost}
-                orderData={() => createOrderData(`${Date.now()}-${Math.random()}`)}
-                createOrder={async (orderData) => {
-                  // Validate policy acceptance before creating order
-                  if (!policyAccepted) {
-                    throw new Error("É necessário aceitar a política de pedidos para prosseguir");
-                  }
+                      return new Promise((resolve, reject) => {
+                        createOrderMutation.mutate(orderData, {
+                          onSuccess: async (data) => {
+                            // Record policy acceptance after successful order creation
+                            await recordPolicyAcceptance(data.order.id);
+                            resolve(data);
+                          },
+                          onError: (error) => reject(error)
+                        });
+                      });
+                    }}
+                    customerData={{
+                      name: customer.name,
+                      email: customer.email,
+                      cpf: customer.cpf
+                    }}
+                    onSuccess={handlePaymentSuccess}
+                    onError={handlePaymentError}
+                    isProcessing={isProcessing}
+                    setIsProcessing={setIsProcessing}
+                    policyAccepted={policyAccepted}
+                  />
+                )}
 
-                  return new Promise((resolve, reject) => {
-                    createOrderMutation.mutate(orderData, {
-                      onSuccess: async (data) => {
-                        // Record policy acceptance after successful order creation
-                        await recordPolicyAcceptance(data.order.id);
-                        resolve(data);
-                      },
-                      onError: (error) => reject(error)
-                    });
-                  });
-                }}
-                customerData={{
-                  name: customer.name,
-                  email: customer.email,
-                  cpf: customer.cpf
-                }}
-                onSuccess={handlePaymentSuccess}
-                onError={handlePaymentError}
-                isProcessing={isProcessing}
-                setIsProcessing={setIsProcessing}
-                policyAccepted={policyAccepted}
-                onPixDataGenerated={setPixData}
-              />
+                {paymentMethod === 'pix' && (
+                  <PIXPayment
+                    amount={pricing.totalCost}
+                    orderData={() => createOrderData(`${Date.now()}-${Math.random()}`)}
+                    createOrder={async (orderData) => {
+                      // Validate policy acceptance before creating order
+                      if (!policyAccepted) {
+                        throw new Error("É necessário aceitar a política de pedidos para prosseguir");
+                      }
+
+                      return new Promise((resolve, reject) => {
+                        createOrderMutation.mutate(orderData, {
+                          onSuccess: async (data) => {
+                            // Record policy acceptance after successful order creation
+                            await recordPolicyAcceptance(data.order.id);
+                            resolve(data);
+                          },
+                          onError: (error) => reject(error)
+                        });
+                      });
+                    }}
+                    customerData={{
+                      name: customer.name,
+                      email: customer.email,
+                      cpf: customer.cpf
+                    }}
+                    onSuccess={handlePaymentSuccess}
+                    onError={handlePaymentError}
+                    isProcessing={isProcessing}
+                    setIsProcessing={setIsProcessing}
+                    policyAccepted={policyAccepted}
+                    onPixDataGenerated={setPixData}
+                  />
+                )}
+              </>
             )}
           </CardContent>
         </Card>
@@ -1026,7 +1111,7 @@ export default function Payment() {
                 </div>
 
                 {/* Payment Methods */}
-                {(!paymentMethod || paymentMethod === 'credit' || (paymentMethod === 'pix' && !pixData)) && (
+                {!isFreeOrder && (!paymentMethod || paymentMethod === 'credit' || (paymentMethod === 'pix' && !pixData)) && (
                   <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Forma de Pagamento</h3>
 
@@ -1087,73 +1172,86 @@ export default function Payment() {
                     </Alert>
                   )}
 
-                  {paymentMethod === 'credit' && (
-                    <CardPayment
-                      amount={pricing.totalCost}
-                      orderData={() => createOrderData(`${Date.now()}-${Math.random()}`)}
-                      createOrder={async (orderData) => {
-                        // Validate policy acceptance before creating order
-                        if (!policyAccepted) {
-                          throw new Error("É necessário aceitar a política de pedidos para prosseguir");
-                        }
-
-                        return new Promise((resolve, reject) => {
-                          createOrderMutation.mutate(orderData, {
-                            onSuccess: async (data) => {
-                              // Record policy acceptance after successful order creation
-                              await recordPolicyAcceptance(data.order.id);
-                              resolve(data);
-                            },
-                            onError: (error) => reject(error)
-                          });
-                        });
-                      }}
-                      customerData={{
-                        name: customer.name,
-                        email: customer.email,
-                        cpf: customer.cpf
-                      }}
-                      onSuccess={handlePaymentSuccess}
-                      onError={handlePaymentError}
+                  {isFreeOrder ? (
+                    <FreeOrderConfirmation 
+                      onConfirm={handleFreeOrderConfirmation}
                       isProcessing={isProcessing}
-                      setIsProcessing={setIsProcessing}
-                      policyAccepted={policyAccepted}
+                      appliedCoupon={appliedCoupon}
+                      paymentError={paymentError}
+                      customer={customer}
+                      event={event}
                     />
-                  )}
+                  ) : (
+                    <>
+                      {paymentMethod === 'credit' && (
+                        <CardPayment
+                          amount={pricing.totalCost}
+                          orderData={() => createOrderData(`${Date.now()}-${Math.random()}`)}
+                          createOrder={async (orderData) => {
+                            // Validate policy acceptance before creating order
+                            if (!policyAccepted) {
+                              throw new Error("É necessário aceitar a política de pedidos para prosseguir");
+                            }
 
-                  {paymentMethod === 'pix' && (
-                    <PIXPayment
-                      amount={pricing.totalCost}
-                      orderData={() => createOrderData(`${Date.now()}-${Math.random()}`)}
-                      createOrder={async (orderData) => {
-                        // Validate policy acceptance before creating order
-                        if (!policyAccepted) {
-                          throw new Error("É necessário aceitar a política de pedidos para prosseguir");
-                        }
+                            return new Promise((resolve, reject) => {
+                              createOrderMutation.mutate(orderData, {
+                                onSuccess: async (data) => {
+                                  // Record policy acceptance after successful order creation
+                                  await recordPolicyAcceptance(data.order.id);
+                                  resolve(data);
+                                },
+                                onError: (error) => reject(error)
+                              });
+                            });
+                          }}
+                          customerData={{
+                            name: customer.name,
+                            email: customer.email,
+                            cpf: customer.cpf
+                          }}
+                          onSuccess={handlePaymentSuccess}
+                          onError={handlePaymentError}
+                          isProcessing={isProcessing}
+                          setIsProcessing={setIsProcessing}
+                          policyAccepted={policyAccepted}
+                        />
+                      )}
 
-                        return new Promise((resolve, reject) => {
-                          createOrderMutation.mutate(orderData, {
-                            onSuccess: async (data) => {
-                              // Record policy acceptance after successful order creation
-                              await recordPolicyAcceptance(data.order.id);
-                              resolve(data);
-                            },
-                            onError: (error) => reject(error)
-                          });
-                        });
-                      }}
-                      customerData={{
-                        name: customer.name,
-                        email: customer.email,
-                        cpf: customer.cpf
-                      }}
-                      onSuccess={handlePaymentSuccess}
-                      onError={handlePaymentError}
-                      isProcessing={isProcessing}
-                      setIsProcessing={setIsProcessing}
-                      policyAccepted={policyAccepted}
-                      onPixDataGenerated={setPixData}
-                    />
+                      {paymentMethod === 'pix' && (
+                        <PIXPayment
+                          amount={pricing.totalCost}
+                          orderData={() => createOrderData(`${Date.now()}-${Math.random()}`)}
+                          createOrder={async (orderData) => {
+                            // Validate policy acceptance before creating order
+                            if (!policyAccepted) {
+                              throw new Error("É necessário aceitar a política de pedidos para prosseguir");
+                            }
+
+                            return new Promise((resolve, reject) => {
+                              createOrderMutation.mutate(orderData, {
+                                onSuccess: async (data) => {
+                                  // Record policy acceptance after successful order creation
+                                  await recordPolicyAcceptance(data.order.id);
+                                  resolve(data);
+                                },
+                                onError: (error) => reject(error)
+                              });
+                            });
+                          }}
+                          customerData={{
+                            name: customer.name,
+                            email: customer.email,
+                            cpf: customer.cpf
+                          }}
+                          onSuccess={handlePaymentSuccess}
+                          onError={handlePaymentError}
+                          isProcessing={isProcessing}
+                          setIsProcessing={setIsProcessing}
+                          policyAccepted={policyAccepted}
+                          onPixDataGenerated={setPixData}
+                        />
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -1162,5 +1260,88 @@ export default function Payment() {
         </div>
       </div>
     </>
+  );
+}
+
+// Component for free order confirmation
+function FreeOrderConfirmation({ 
+  onConfirm, 
+  isProcessing, 
+  appliedCoupon, 
+  paymentError,
+  customer,
+  event 
+}: { 
+  onConfirm: () => void;
+  isProcessing: boolean;
+  appliedCoupon: any;
+  paymentError: string | null;
+  customer: Customer;
+  event: Event;
+}) {
+  return (
+    <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="bg-green-100 p-3 rounded-full">
+          <Gift className="h-6 w-6 text-green-600" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-green-800">Pedido Gratuito!</h3>
+          <p className="text-sm text-green-600">
+            Cupom "{appliedCoupon?.code}" aplicado com sucesso
+          </p>
+        </div>
+      </div>
+      
+      <div className="bg-white rounded-md p-4 mb-4 border border-green-200">
+        <div className="text-center">
+          <div className="text-3xl font-bold text-green-600 mb-1">R$ 0,00</div>
+          <div className="text-sm text-gray-600">Total do pedido</div>
+        </div>
+      </div>
+
+      <div className="text-sm text-green-700 mb-4 space-y-1">
+        <p className="flex items-center gap-2">
+          <CheckCircle className="h-4 w-4" />
+          E-mail de confirmação será enviado para {customer.email}
+        </p>
+        <p className="flex items-center gap-2">
+          <CheckCircle className="h-4 w-4" />
+          Mensagem WhatsApp será enviada para {customer.phone}
+        </p>
+        <p className="flex items-center gap-2">
+          <CheckCircle className="h-4 w-4" />
+          Kit será processado automaticamente
+        </p>
+      </div>
+
+      {paymentError && (
+        <Alert className="mb-4 border-red-200 bg-red-50">
+          <XCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-700">
+            {paymentError}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Button 
+        onClick={onConfirm} 
+        disabled={isProcessing}
+        className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3"
+        data-testid="button-confirm-free-order"
+      >
+        {isProcessing ? (
+          <div className="flex items-center gap-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+            Confirmando pedido...
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Gift className="h-4 w-4" />
+            Confirmar Pedido Gratuito
+          </div>
+        )}
+      </Button>
+    </div>
   );
 }
