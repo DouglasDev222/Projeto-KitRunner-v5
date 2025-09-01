@@ -656,6 +656,7 @@ export class DatabaseStorage implements IStorage {
       status: orders.status,
       donationAmount: orders.donationAmount,
       createdAt: orders.createdAt,
+      cepZoneName: orders.cepZoneName,
       customer: {
         id: customers.id,
         name: customers.name,
@@ -726,6 +727,7 @@ export class DatabaseStorage implements IStorage {
       status: orders.status,
       donationAmount: orders.donationAmount,
       createdAt: orders.createdAt,
+      cepZoneName: orders.cepZoneName,
       // PIX payment fields
       paymentId: orders.paymentId,
       pixQrCode: orders.pixQrCode,
@@ -824,6 +826,7 @@ export class DatabaseStorage implements IStorage {
       status: orders.status,
       donationAmount: orders.donationAmount,
       createdAt: orders.createdAt,
+      cepZoneName: orders.cepZoneName,
       customer: {
         id: customers.id,
         name: customers.name,
