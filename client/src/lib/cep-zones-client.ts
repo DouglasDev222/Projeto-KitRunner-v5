@@ -67,6 +67,7 @@ export async function checkCepZone(cep: string, eventName?: string): Promise<Cep
     };
 
   } catch (error) {
+    console.error('Error checking CEP zone:', error);
     return {
       found: false,
       error: error instanceof Error ? error.message : "Erro ao verificar CEP",
