@@ -36,31 +36,26 @@ export async function checkCepZone(cep: string, eventNameOrId?: string | number)
         ? `/api/cep-zones/check/${cleanCep}?eventName=${encodeURIComponent(eventNameOrId)}`
         : `/api/cep-zones/check/${cleanCep}`;
 
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      // Add cache control to prevent network tab errors from being cached
+      cache: 'no-cache'
+    });
 
-    // Handle 404 responses (CEP not found)
-    if (response.status === 404) {
-      const data = await response.json();
+    const data = await response.json();
+
+    // Check if request was successful but CEP was not found
+    if (response.ok && (!data.success || !data.result?.found)) {
       return {
         found: false,
         error: "CEP não atendido. Entre em contato via WhatsApp.",
         whatsappUrl: data.whatsappUrl || generateWhatsAppUrl(cep, typeof eventNameOrId === 'string' ? eventNameOrId : undefined)
       };
     }
-
-    const data = await response.json();
 
     if (!response.ok) {
       throw new Error(data.error || 'Erro ao verificar CEP');
     }
 
-    if (!data.success || !data.result.found) {
-      return {
-        found: false,
-        error: "CEP não atendido. Entre em contato via WhatsApp.",
-        whatsappUrl: data.whatsappUrl || generateWhatsAppUrl(cep, typeof eventNameOrId === 'string' ? eventNameOrId : undefined)
-      };
-    }
 
     return {
       found: true,
@@ -71,7 +66,10 @@ export async function checkCepZone(cep: string, eventNameOrId?: string | number)
     };
 
   } catch (error) {
-    console.error('Error checking CEP zone:', error);
+    // Only log unexpected errors, not 404s which are expected for CEPs not in zones
+    if (error instanceof Error && !error.message.includes('404')) {
+      console.error('Error checking CEP zone:', error);
+    }
     return {
       found: false,
       error: error instanceof Error ? error.message : "Erro ao verificar CEP",

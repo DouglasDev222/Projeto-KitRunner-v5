@@ -379,7 +379,7 @@ router.get("/cep-zones/check/:zipCode", async (req, res) => {
       const result = await calculateCepZoneInfo(zipCode, parseInt(eventId as string));
       
       if (!result) {
-        return res.status(404).json({
+        return res.status(200).json({
           success: false,
           found: false,
           message: "CEP não encontrado nas zonas de entrega"
