@@ -3490,6 +3490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const eventId = parseInt(req.params.id);
       const { zones } = req.body;
+      
 
       if (isNaN(eventId)) {
         return res.status(400).json({ error: "ID do evento inválido" });
