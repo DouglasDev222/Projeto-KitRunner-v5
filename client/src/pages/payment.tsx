@@ -221,6 +221,18 @@ export default function Payment() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/events"] }); // May affect event stats
+      
+      // 🎫 CACHE FIX: Invalidate coupon-related queries to ensure reactive updates
+      if (appliedCoupon) {
+        // Invalidate all validate-coupon queries for this coupon
+        queryClient.invalidateQueries({ 
+          queryKey: ['validate-coupon'], 
+          exact: false 
+        });
+        // Invalidate admin coupons list
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/coupons'] });
+        console.log('🎫 Cache invalidated for coupon:', appliedCoupon.code);
+      }
 
       // Only auto-complete for non-PIX payments
       // PIX payments will handle completion via handlePaymentSuccess when actually approved
@@ -247,6 +259,16 @@ export default function Payment() {
     setPaymentCompleted(true);
     setPaymentError(null);
     setOrderNumber(paymentResult.orderNumber);
+    
+    // 🎫 CACHE FIX: Invalidate coupon cache on payment success
+    if (appliedCoupon) {
+      queryClient.invalidateQueries({ 
+        queryKey: ['validate-coupon'], 
+        exact: false 
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/coupons'] });
+      console.log('🎫 Payment success: Cache invalidated for coupon:', appliedCoupon.code);
+    }
 
     // Store payment result data
     const confirmationData = {

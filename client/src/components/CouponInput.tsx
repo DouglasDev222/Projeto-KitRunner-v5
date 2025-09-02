@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 
 interface CouponData {
   id: number;
@@ -95,6 +96,9 @@ export function CouponInput({
         setValidationStatus('success');
         onCouponApplied(data.coupon, data.discount, data.finalAmount);
         setCouponCode(""); // Limpar o campo após aplicar
+        
+        // 🎫 CACHE FIX: Invalidate future coupon validations to ensure fresh data
+        console.log('🎫 Coupon applied successfully, invalidating cache for future validations');
       } else {
         setValidationStatus('error');
       }
@@ -123,6 +127,14 @@ export function CouponInput({
     setCouponCode("");
     setValidationMessage("");
     setValidationStatus('idle');
+    
+    // 🎫 CACHE FIX: Invalidate coupon validation cache when removing coupon
+    // This ensures fresh validation for future coupon attempts
+    queryClient.invalidateQueries({ 
+      queryKey: ['validate-coupon'], 
+      exact: false 
+    });
+    console.log('🎫 Coupon removed, cache invalidated for fresh validations');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
