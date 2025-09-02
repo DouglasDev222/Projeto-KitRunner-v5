@@ -1,0 +1,49 @@
+Correção da Lógica de Determinação da Zona e Preço no Endereço do Cliente
+
+Atualmente, na tela do cliente /events/{id}/address, o sistema determina a zona de CEP do endereço e o preço de entrega correspondente.
+As regras de preços vêm de duas tabelas:
+
+cep_zones → contém todas as zonas ativas, com seus preços padrão.
+
+event_cep_zone_prices → contém os preços personalizados por evento (opcional).
+
+📌 Problema atual
+O algoritmo hoje busca primeiro os preços personalizados na tabela event_cep_zone_prices.
+
+Se a zona real do CEP não tiver preço personalizado, mas o fallback (última prioridade) tiver um preço configurado, o sistema está escolhendo o fallback.
+
+Isso é incorreto, porque o CEP deveria continuar na zona em que realmente se encaixa (ex: prioridade 2) e usar o preço padrão da tabela cep_zones, em vez de “cair” para o fallback.
+
+Ou seja:
+
+CEP encaixa na zona 2.
+
+Evento não tem preço personalizado para a zona 2 → deveria usar o preço padrão da cep_zones.
+
+Mas, como o fallback (zona 4) tem preço personalizado, o sistema está atribuindo o CEP ao fallback e aplicando esse preço incorretamente.
+
+📌 Regras desejadas (correção):
+
+Identificação da zona
+
+O CEP deve ser classificado sempre pela primeira zona ativa encontrada pela ordem de prioridade (1 → N).
+
+O fallback (última prioridade) só deve ser considerado se o CEP não se encaixar em nenhuma outra zona anterior.
+
+Determinação do preço correto
+
+Verificar se o evento possui um preço personalizado para a zona encontrada (event_cep_zone_prices).
+
+Se sim → usar o preço personalizado.
+
+Se não → usar o preço padrão da zona da tabela cep_zones.
+
+Nunca substituir por preço personalizado do fallback se o CEP já se encaixou em outra zona de maior prioridade.
+
+📌 Objetivo da correção
+
+Garantir que o preço aplicado ao cliente sempre respeite a zona correta e ativa do CEP.
+
+Usar fallback apenas quando necessário, sem sobrepor zonas mais específicas.
+
+Alinhar a tela do cliente (/events/{id}/address) com a lógica de zonas usada em relatórios, cupons e filtros.
