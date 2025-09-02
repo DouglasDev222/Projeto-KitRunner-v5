@@ -1378,12 +1378,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await calculateCepZoneInfo(cleanCep, eventId ? parseInt(eventId as string) : undefined);
 
-      console.log(`✅ Resultado: Zona ${result.zoneName} (ID: ${result.zoneId}) - Preço: R$ ${result.price}`);
+      if (!result) {
+        console.log(`⚠️ CEP ${cleanCep} não encontrado em nenhuma zona ativa`);
+        return res.status(404).json({ 
+          error: 'CEP não encontrado nas zonas de entrega',
+          cep: cleanCep,
+          found: false
+        });
+      }
+
+      console.log(`✅ Resultado: Zona ${result.zoneName} - Preço: R$ ${result.price}`);
 
       res.json({
         price: result.price.toString(),
         zoneName: result.zoneName,
-        zoneId: result.zoneId
+        found: true
       });
 
     } catch (error) {

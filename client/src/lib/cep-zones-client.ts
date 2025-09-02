@@ -4,75 +4,74 @@ export interface CepZoneResult {
   zoneName?: string;
   price?: number;
   error?: string;
+  whatsappUrl?: string; // Added for contact via WhatsApp
+  deliveryCost?: number;
+  description?: string;
 }
 
-/**
- * Check if a CEP belongs to any CEP zone for pricing calculation
- */
-export async function checkCepZone(zipCode: string, eventId?: number): Promise<CepZoneResult> {
+// Placeholder for generateWhatsAppUrl function as it's not provided in the original code.
+// In a real scenario, this function would be defined elsewhere or imported.
+function generateWhatsAppUrl(cep: string, eventName?: string): string {
+  const baseMessage = `Olá! Gostaria de informações sobre a entrega para o CEP ${cep}.`;
+  const fullMessage = eventName ? `${baseMessage} Ref: ${eventName}` : baseMessage;
+  return `https://wa.me/?text=${encodeURIComponent(fullMessage)}`;
+}
+
+
+export async function checkCepZone(cep: string, eventName?: string): Promise<CepZoneResult> {
   try {
-    // Clean and format the CEP
-    const cleanZip = zipCode.replace(/\D/g, '');
-    
-    if (cleanZip.length !== 8) {
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length !== 8) {
       return {
         found: false,
-        error: "CEP deve ter 8 dígitos"
+        error: "CEP deve ter 8 dígitos",
+        whatsappUrl: generateWhatsAppUrl(cep, eventName)
       };
     }
 
-    // Use the enhanced calculate-cep-price API that supports event-specific pricing
-    const queryParams = new URLSearchParams({ 
-      cep: cleanZip,
-      // Add timestamp to force fresh request and prevent caching
-      _t: Date.now().toString()
-    });
-    if (eventId) {
-      queryParams.append('eventId', eventId.toString());
-    }
-    
-    console.log('🚀 Making FRESH API call to /api/calculate-cep-price with params:', queryParams.toString());
-    
-    const response = await fetch(`/api/calculate-cep-price?${queryParams}`, {
-      // Force no cache to ensure fresh data
-      cache: 'no-cache',
-      headers: {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      }
-    });
-    
-    if (!response.ok) {
-      if (response.status === 404) {
-        const errorData = await response.json().catch(() => ({}));
-        return {
-          found: false,
-          error: errorData.error || "CEP não encontrado em nenhuma zona de entrega"
-        };
-      }
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    const url = eventName 
+      ? `/api/cep-zones/check/${cleanCep}?eventName=${encodeURIComponent(eventName)}`
+      : `/api/cep-zones/check/${cleanCep}`;
+
+    const response = await fetch(url);
+
+    // Handle 404 responses (CEP not found)
+    if (response.status === 404) {
+      const data = await response.json();
+      return {
+        found: false,
+        error: "CEP não atendido. Entre em contato via WhatsApp.",
+        whatsappUrl: data.whatsappUrl || generateWhatsAppUrl(cep, eventName)
+      };
     }
 
     const data = await response.json();
-    console.log("🔍 API Response:", data);
-    
-    if (data.price !== undefined) {
-      return {
-        found: true,
-        zoneName: data.zoneName || "Zona de Entrega",
-        price: Number(data.price)
-      };
-    } else {
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Erro ao verificar CEP');
+    }
+
+    if (!data.found) {
       return {
         found: false,
-        error: "CEP não encontrado em nenhuma zona de entrega"
+        error: "CEP não atendido. Entre em contato via WhatsApp.",
+        whatsappUrl: data.whatsappUrl || generateWhatsAppUrl(cep, eventName)
       };
     }
-  } catch (error: any) {
+
+    return {
+      found: true,
+      zoneName: data.zone.zoneName,
+      deliveryCost: data.zone.deliveryCost,
+      description: data.zone.description
+    };
+
+  } catch (error) {
     console.error('Error checking CEP zone:', error);
     return {
       found: false,
-      error: error.message || "Erro ao verificar zona CEP"
+      error: error instanceof Error ? error.message : "Erro ao verificar CEP",
+      whatsappUrl: generateWhatsAppUrl(cep, eventName)
     };
   }
 }
