@@ -726,7 +726,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (orderData.couponCode && orderData.couponCode.trim()) {
         try {
           console.log(`🎫 Incrementing coupon usage for: ${orderData.couponCode}`);
-          const incrementSuccess = await CouponService.incrementUsage(orderData.couponCode);
+          const incrementSuccess = await CouponService.incrementUsage(orderData.couponCode, orderData.customerId, order.id);
           if (incrementSuccess) {
             console.log(`✅ Coupon usage incremented successfully: ${orderData.couponCode}`);
           } else {
