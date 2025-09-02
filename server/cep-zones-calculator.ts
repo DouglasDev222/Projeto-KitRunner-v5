@@ -222,10 +222,10 @@ export async function calculateCepZonePrice(cep: string, eventId?: number): Prom
 
     // STEP 1: Find the correct zone for this CEP (by priority)
     let matchedZone = null;
-    
+
     for (const zone of zones) {
       console.log(`🔍 Checking zone: ${zone.name} (priority: ${zone.priority})`);
-      
+
       if (validateCepInZone(cleanedCep, zone)) {
         matchedZone = zone;
         console.log(`✅ CEP ${cleanedCep} matched zone: ${zone.name} (priority: ${zone.priority})`);
@@ -272,78 +272,69 @@ export async function calculateCepZonePrice(cep: string, eventId?: number): Prom
 /**
  * Calculate CEP zone price and return both price and zone name
  */
-export async function calculateCepZoneInfo(cep: string, eventId?: number): Promise<{ price: number; zoneName: string } | null> {
-  try {
-    const cleanedCep = cep.replace(/\D/g, '').padStart(8, '0');
-
-    if (!isValidCep(cleanedCep)) {
-      return null;
-    }
-
-    console.log(`🔍 [calculateCepZoneInfo] Validating CEP ${cleanedCep} for event ${eventId || 'global'}`);
-
-    // Get all active zones ordered by priority (1 = highest priority)
-    const zones = await db
-      .select()
-      .from(cepZones)
-      .where(eq(cepZones.active, true))
-      .orderBy(cepZones.priority);
-
-    console.log(`📊 [calculateCepZoneInfo] Found ${zones.length} active zones`);
-
-    // STEP 1: Find the correct zone for this CEP (by priority)
-    let matchedZone = null;
-    
-    for (const zone of zones) {
-      console.log(`🔍 [calculateCepZoneInfo] Checking zone: ${zone.name} (priority: ${zone.priority})`);
-      
-      if (validateCepInZone(cleanedCep, zone)) {
-        matchedZone = zone;
-        console.log(`✅ [calculateCepZoneInfo] CEP ${cleanedCep} matched zone: ${zone.name} (priority: ${zone.priority})`);
-        break; // Stop at first match (highest priority)
-      }
-    }
-
-    if (!matchedZone) {
-      console.warn(`⚠️ [calculateCepZoneInfo] CEP ${cleanedCep} not found in any zones`);
-      return null;
-    }
-
-    // STEP 2: Check if there's event-specific pricing for the matched zone
-    if (eventId) {
-      const customPrice = await db
-        .select({
-          price: eventCepZonePrices.price
-        })
-        .from(eventCepZonePrices)
-        .where(
-          and(
-            eq(eventCepZonePrices.eventId, eventId),
-            eq(eventCepZonePrices.cepZoneId, matchedZone.id)
-          )
-        )
-        .limit(1);
-
-      if (customPrice.length > 0) {
-        console.log(`💰 [calculateCepZoneInfo] Using event-specific price for zone ${matchedZone.name}: R$ ${customPrice[0].price}`);
-        return {
-          price: parseFloat(customPrice[0].price),
-          zoneName: matchedZone.name
-        };
-      }
-    }
-
-    // STEP 3: Use global zone price as fallback
-    console.log(`💰 [calculateCepZoneInfo] Using global price for zone ${matchedZone.name}: R$ ${matchedZone.price}`);
-    return {
-      price: parseFloat(matchedZone.price),
-      zoneName: matchedZone.name
-    };
-
-  } catch (error) {
-    console.error('Erro ao calcular preço e zona por CEP:', error);
+export async function calculateCepZoneInfo(cep: string, eventId?: number): Promise<{ zoneName: string; zoneId: number; price: number } | null> {
+  if (!cep) {
     return null;
   }
+
+  const cleanedCep = String(cep).replace(/\D/g, '').padStart(8, '0');
+
+  if (!isValidCep(cleanedCep)) {
+    return null;
+  }
+
+  // Get all active zones ordered by priority (1 = highest priority)
+  const zones = await db
+    .select()
+    .from(cepZones)
+    .where(eq(cepZones.active, true))
+    .orderBy(cepZones.priority);
+
+  // STEP 1: Find the correct zone for this CEP (by priority)
+  let matchedZone = null;
+
+  for (const zone of zones) {
+    if (validateCepInZone(cleanedCep, zone)) {
+      matchedZone = zone;
+      break; // Stop at first match (highest priority)
+    }
+  }
+
+  if (!matchedZone) {
+    console.warn(`CEP ${cleanedCep} not found in any zones`);
+    return null;
+  }
+
+  // STEP 2: Check if there's event-specific pricing for the matched zone
+  if (eventId) {
+    const customPrice = await db
+      .select({
+        price: eventCepZonePrices.price
+      })
+      .from(eventCepZonePrices)
+      .where(
+        and(
+          eq(eventCepZonePrices.eventId, eventId),
+          eq(eventCepZonePrices.cepZoneId, matchedZone.id)
+        )
+      )
+      .limit(1);
+
+    if (customPrice.length > 0) {
+      return {
+        zoneName: matchedZone.name,
+        zoneId: matchedZone.id,
+        price: Number(customPrice[0].price)
+      };
+    }
+  }
+
+  // STEP 3: Use global zone price as fallback
+  return {
+    zoneName: matchedZone.name,
+    zoneId: matchedZone.id,
+    price: Number(matchedZone.price)
+  };
 }
 
 export class CepZonesCalculator {

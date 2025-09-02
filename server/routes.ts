@@ -1374,20 +1374,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'CEP deve ter 8 dígitos' });
       }
 
-      console.log(`🔍 Calculando preço para CEP ${cleanCep} no evento ${eventId}`);
-
       const result = await calculateCepZoneInfo(cleanCep, eventId ? parseInt(eventId as string) : undefined);
 
       if (!result) {
-        console.log(`⚠️ CEP ${cleanCep} não encontrado em nenhuma zona ativa`);
         return res.status(404).json({ 
           error: 'CEP não encontrado nas zonas de entrega',
           cep: cleanCep,
           found: false
         });
       }
-
-      console.log(`✅ Resultado: Zona ${result.zoneName} - Preço: R$ ${result.price}`);
 
       res.json({
         price: result.price.toString(),
@@ -1396,56 +1391,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
     } catch (error) {
-      console.error('❌ Erro ao calcular preço por CEP:', error);
+      console.error('Erro ao calcular preço por CEP:', error);
       res.status(500).json({ error: 'Erro interno do servidor' });
     }
   });
 
-  // Debug endpoint para análise da lógica de zonas (pode ser removido após correção)
-  app.get('/api/debug-cep-zones', async (req, res) => {
-    try {
-      const { cep, eventId } = req.query;
-
-      if (!cep || !eventId) {
-        return res.status(400).json({ error: 'CEP e eventId são obrigatórios para debug' });
-      }
-
-      const cleanCep = (cep as string).replace(/\D/g, '');
-
-      console.log(`🐛 [DEBUG] Starting CEP analysis for ${cleanCep}`);
-
-      // Get all zones and show their ranges
-      const zones = await db.select().from(cepZones).where(eq(cepZones.active, true)).orderBy(cepZones.priority);
-      
-      console.log(`🐛 [DEBUG] Active zones found: ${zones.length}`);
-      
-      zones.forEach((zone, index) => {
-        console.log(`🐛 [DEBUG] Zone ${index + 1}: ${zone.name} (Priority: ${zone.priority})`);
-        try {
-          const ranges = JSON.parse(zone.cepRanges);
-          ranges.forEach((range: any, rangeIndex: number) => {
-            const isInRange = cleanCep >= range.start.replace(/\D/g, '') && cleanCep <= range.end.replace(/\D/g, '');
-            console.log(`🐛 [DEBUG]   Range ${rangeIndex + 1}: ${range.start}...${range.end} ${isInRange ? '✅ MATCH' : '❌'}`);
-          });
-        } catch (err) {
-          console.log(`🐛 [DEBUG]   Error parsing ranges: ${err}`);
-        }
-      });
-
-      const result = await calculateCepZoneInfo(cleanCep, parseInt(eventId as string));
-
-      res.json({ 
-        success: true, 
-        message: 'Debug executado, verifique logs do servidor',
-        result,
-        cleanCep 
-      });
-
-    } catch (error) {
-      console.error('Erro no debug:', error);
-      res.status(500).json({ error: 'Erro no debug' });
-    }
-  });
+  
 
   // Admin Orders Management Routes
 
