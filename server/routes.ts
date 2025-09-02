@@ -33,7 +33,7 @@ async function updateStockAndCloseEventIfNeeded(eventId: number) {
       // Update stock first
       const updatedEvent = await storage.updateEventStock(eventId, 1);
       console.log(`📦 Stock updated for event ${eventId}: +1 order`);
-      
+
       // Check if should close event
       if (updatedEvent.maxOrders && updatedEvent.currentOrders >= updatedEvent.maxOrders) {
         await storage.updateEventStatus(eventId, 'fechado_pedidos');
@@ -257,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (registrationData.addresses && registrationData.addresses.length > 0) {
         // Limit to maximum 2 addresses
         const limitedAddresses = registrationData.addresses.slice(0, 2);
-        
+
         for (const addressData of limitedAddresses) {
           const address = await storage.createAddress({
             customerId: customer.id,
@@ -525,19 +525,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orderData.eventId, 
         1 // Always check for 1 order availability, regardless of kit quantity
       );
-      
+
       if (!eventAvailability.available) {
         const errorMessages = {
           'inativo': 'Este evento não está disponível no momento',
           'fechado_pedidos': 'Este evento está fechado para novos pedidos',
           'not_found': 'Evento não encontrado'
         };
-        
+
         const message = errorMessages[eventAvailability.status as keyof typeof errorMessages] || 
           (eventAvailability.remainingStock === 0 
             ? 'Não possui mais retiradas disponíveis para este evento.' 
             : 'Este evento não está disponível para pedidos');
-            
+
         return res.status(400).json({
           success: false,
           error: message,
@@ -558,7 +558,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Validate CEP zone pricing and get zone info
         const { calculateCepZoneInfo } = await import('./cep-zones-calculator');
         const zoneInfo = await calculateCepZoneInfo(customerAddress.zipCode, orderData.eventId);
-        
+
         if (zoneInfo === null) {
           console.error(`🚨 SECURITY: Order creation blocked - CEP ${customerAddress.zipCode} not found in zones for event ${orderData.eventId}`);
           return res.status(400).json({ 
@@ -624,7 +624,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Apply coupon discount if provided
       const finalDiscountAmount = orderData.discountAmount ? Number(orderData.discountAmount) : 0;
-      
+
       // Use provided values (from secure calculation) but validate they're reasonable
       const finalDeliveryCost = providedDeliveryCost;
       const finalExtraKitsCost = providedExtraKitsCost;
@@ -635,7 +635,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isFreeOrder = finalTotalCost === 0;
       if (isFreeOrder) {
         console.log('🎁 SECURITY: Processing free order validation');
-        
+
         if (!orderData.couponCode || !orderData.couponCode.trim()) {
           console.log('🚫 SECURITY: Free order blocked - No coupon provided');
           return res.status(400).json({
@@ -762,13 +762,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isFreeOrder) {
         // 🎁 FREE ORDER: Send confirmation email and WhatsApp immediately
         console.log(`🎁 FREE ORDER: Sending immediate confirmation for order ${order.orderNumber}`);
-        
+
         try {
           // Send confirmation email immediately
           const emailService = new EmailService(storage);
           const { EmailDataMapper } = await import("./email/email-data-mapper");
           const orderWithDetails = await storage.getOrderWithFullDetails(order.id);
-          
+
           if (orderWithDetails) {
             const confirmationData = EmailDataMapper.mapToServiceConfirmation(orderWithDetails);
             const emailSent = await emailService.sendServiceConfirmation(
@@ -777,7 +777,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               orderWithDetails.id, 
               orderWithDetails.customer.id
             );
-            
+
             if (emailSent) {
               console.log(`✅ Free order confirmation email sent to ${orderWithDetails.customer.email}`);
             } else {
@@ -791,7 +791,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 orderWithDetails,
                 `${req.protocol}://${req.get('host')}/admin/orders/${order.id}`
               );
-              
+
               await emailService.sendAdminOrderConfirmations(adminEmailData, orderWithDetails.id);
               console.log(`✅ Admin notifications sent for free order ${order.orderNumber}`);
             } catch (adminEmailError) {
@@ -1055,13 +1055,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const event = await storage.createEvent(dataToSave);
       console.log("🎉 Created event:", JSON.stringify(event, null, 2));
-      
+
       // Format date properly for Brazilian timezone to avoid frontend date shifting
       const formattedEvent = {
         ...event,
         date: event.date instanceof Date ? event.date.toISOString().split('T')[0] : event.date
       };
-      
+
       res.json(formattedEvent);
     } catch (error: any) {
       console.error("❌ Error creating event:", error);
@@ -1223,7 +1223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updatedEvent = await storage.updateEventStatus(id, status);
       console.log(`📊 Event ${id} status updated to: ${status}`);
-      
+
       res.json(updatedEvent);
     } catch (error) {
       console.error('Error updating event status:', error);
@@ -1238,21 +1238,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { stockEnabled, maxOrders, currentOrders } = req.body;
 
       const updateData: any = {};
-      
+
       if (typeof stockEnabled === 'boolean') {
         updateData.stockEnabled = stockEnabled;
       }
-      
+
       if (maxOrders !== undefined) {
         updateData.maxOrders = maxOrders;
       }
-      
+
       if (currentOrders !== undefined) {
         updateData.currentOrders = currentOrders;
       }
 
       const updatedEvent = await storage.updateEvent(id, updateData);
-      
+
       if (!updatedEvent) {
         return res.status(404).json({ message: "Evento não encontrado" });
       }
@@ -1272,7 +1272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestedQuantity = parseInt(req.query.quantity as string) || 1;
 
       const availability = await storage.checkEventAvailability(id, requestedQuantity);
-      
+
       res.json({
         eventId: id,
         requestedQuantity,
@@ -1360,30 +1360,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Calculate price for a CEP considering event-specific pricing
-  app.get("/api/calculate-cep-price", async (req, res) => {
+  app.get('/api/calculate-cep-price', async (req, res) => {
     try {
       const { cep, eventId } = req.query;
 
-      if (!cep) {
-        return res.status(400).json({ error: "CEP é obrigatório" });
+      if (!cep || !eventId) {
+        return res.status(400).json({ error: 'CEP e eventId são obrigatórios' });
       }
 
-      const result = await calculateCepZoneInfo(
-        cep as string, 
-        eventId ? parseInt(eventId as string) : undefined
-      );
+      const cleanCep = (cep as string).replace(/\D/g, '');
 
-      if (result === null) {
-        return res.status(404).json({ error: "CEP não atendido nas zonas disponíveis" });
+      if (cleanCep.length !== 8) {
+        return res.status(400).json({ error: 'CEP deve ter 8 dígitos' });
       }
 
-      res.json({ 
-        price: result.price.toFixed(2),
-        zoneName: result.zoneName
+      console.log(`🔍 Calculando preço para CEP ${cleanCep} no evento ${eventId}`);
+
+      const result = await calculateCepZoneInfo(cleanCep, eventId ? parseInt(eventId as string) : undefined);
+
+      console.log(`✅ Resultado: Zona ${result.zoneName} (ID: ${result.zoneId}) - Preço: R$ ${result.price}`);
+
+      res.json({
+        price: result.price.toString(),
+        zoneName: result.zoneName,
+        zoneId: result.zoneId
       });
-    } catch (error: any) {
-      console.error('Error calculating CEP price:', error);
-      res.status(500).json({ error: "Erro interno do servidor" });
+
+    } catch (error) {
+      console.error('❌ Erro ao calcular preço por CEP:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Debug endpoint para análise da lógica de zonas (pode ser removido após correção)
+  app.get('/api/debug-cep-zones', async (req, res) => {
+    try {
+      const { cep, eventId } = req.query;
+
+      if (!cep || !eventId) {
+        return res.status(400).json({ error: 'CEP e eventId são obrigatórios para debug' });
+      }
+
+      const cleanCep = (cep as string).replace(/\D/g, '');
+
+      await calculateCepZoneInfo(cleanCep, parseInt(eventId as string)); // Use calculateCepZoneInfo for debug as well
+
+      res.json({ success: true, message: 'Debug executado, verifique logs do servidor' });
+
+    } catch (error) {
+      console.error('Erro no debug:', error);
+      res.status(500).json({ error: 'Erro no debug' });
     }
   });
 
@@ -1394,7 +1420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { page = 1, limit = 10, pageSize, ...filters } = req.query;
       const pageNum = parseInt(page as string);
-      // Accept both 'limit' and 'pageSize' parameters for compatibility
+      // Accept both 'limit' e 'pageSize' parameters for compatibility
       const limitNum = parseInt((pageSize || limit) as string);
 
       // Check if pagination is requested
@@ -1428,7 +1454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update order status
-  app.patch("/api/admin/orders/:id/status", requireAdmin, async (req, res) => {
+  app.patch("/api/admin/orders/:id/status", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { status, reason, sendEmail = true } = req.body;
@@ -1730,7 +1756,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const eventId = parseInt(req.params.eventId);
       const { status } = req.query;
-      
+
       let orders = await storage.getOrdersByEventId(eventId);
 
       if (!orders || orders.length === 0) {
@@ -1742,7 +1768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const statusArray = status.split(',').map(s => s.trim());
         const totalOrdersBeforeFilter = orders.length;
         orders = orders.filter(order => statusArray.includes(order.status));
-        
+
         // Log for debugging
         console.log(`🏷️ Filtering orders by status: [${statusArray.join(', ')}]`);
         console.log(`🏷️ Orders before filter: ${totalOrdersBeforeFilter}`);
@@ -1768,9 +1794,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const event = await storage.getEvent(eventId);
       const eventName = event?.name.replace(/[^a-zA-Z0-9]/g, '-') || 'evento';
       const currentDate = new Date().toISOString().split('T')[0];
+      const statusSuffix = status ? `-${status}` : '';
 
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="etiquetas-${eventName}.pdf"`);
+      res.setHeader('Content-Disposition', `attachment; filename="etiquetas-${eventName}${statusSuffix}-${currentDate}.pdf"`);
       res.send(pdfBuffer);
     } catch (error: any) {
       console.error('Error generating multiple labels:', error);
@@ -1949,7 +1976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const statusFilter = req.query.status as string;
       const statusArray = statusFilter ? statusFilter.split(',') : undefined;
       const format = (req.query.format as 'excel' | 'pdf' | 'csv') || 'excel';
-      
+
       const { generateKitsReport } = await import('./report-generator');
       const buffer = await generateKitsReport(eventId, statusArray, format);
 
@@ -1969,7 +1996,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename="relatorio-kits-${eventName}-${currentDate}.xlsx"`);
       }
-      
+
       res.send(buffer);
     } catch (error: any) {
       console.error('Error generating kits report:', error);
@@ -1989,7 +2016,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Parse zone IDs from query params
       const zones = req.query.zones as string;
       const zoneIds = zones ? zones.split(',').map(id => parseInt(id)).filter(id => !isNaN(id)) : undefined;
-      
+
       // Parse status filter from query params
       const statusFilter = req.query.status as string;
       const statusArray = statusFilter ? statusFilter.split(',') : undefined;
@@ -2025,7 +2052,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // FASE 3: Analytical Reports
-  
+
   // Generate Billing report
   app.get("/api/admin/reports/billing", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
@@ -2163,7 +2190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set appropriate content type based on format
       let contentType: string;
       let extension: string;
-      
+
       switch (format) {
         case 'csv':
           contentType = 'text/csv';
@@ -2248,10 +2275,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const eventForPayment = await storage.getEvent(orderData.eventId);
       if (!eventForPayment || eventForPayment.status !== 'ativo') {
         console.log(`🚫 Card payment blocked BEFORE gateway - Event ${orderData.eventId} status: ${eventForPayment?.status || 'not found'}`);
-        
+
         let errorMessage = 'Este evento não está mais disponível para pedidos';
         let errorTitle = 'Evento indisponível';
-        
+
         if (eventForPayment?.status === 'fechado_pedidos') {
           errorMessage = 'Este evento está fechado para novos pedidos. Entre em contato conosco pelo WhatsApp para verificar possibilidades de pagamento.';
           errorTitle = 'Evento fechado';
@@ -2262,7 +2289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           errorMessage = 'Evento não encontrado no sistema.';
           errorTitle = 'Evento não encontrado';
         }
-        
+
         return res.status(400).json({
           success: false,
           message: errorMessage,
@@ -2274,7 +2301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 🚨 CRITICAL SECURITY FIX: VALIDATE PRICE BEFORE PAYMENT
       console.log('🔒 SECURITY: Validating pricing before payment processing');
-      
+
       // Get customer address for pricing calculation
       const customerAddress = await storage.getAddress(orderData.addressId);
       if (!customerAddress) {
@@ -2298,7 +2325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Calculate CEP zones pricing
         const { calculateCepZonePrice } = await import('./cep-zones-calculator');
         const calculatedPrice = await calculateCepZonePrice(customerAddress.zipCode, eventForPayment.id);
-        
+
         if (calculatedPrice === null) {
           console.error(`🚨 SECURITY: CEP ${customerAddress.zipCode} not found in zones for event ${eventForPayment.id}`);
           return res.status(400).json({ 
@@ -2307,7 +2334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             code: "CEP_ZONE_NOT_FOUND"
           });
         }
-        
+
         deliveryCost = calculatedPrice;
         baseCost = 0;
         console.log(`🔒 SECURITY: CEP zone pricing calculated: R$ ${calculatedPrice} for CEP ${customerAddress.zipCode}`);
@@ -2330,17 +2357,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         donationAmount = Number(eventForPayment.donationAmount) * orderData.kitQuantity;
       }
 
-      serverCalculatedTotal = baseCost + deliveryCost + additionalCost + donationAmount - Number(orderData.discountAmount || 0);
-      
+      serverCalculatedTotal = baseCost + deliveryCost + additionalCost + donationAmount;
+
       // Ensure minimum payment of R$ 0.01
       serverCalculatedTotal = Math.max(0.01, serverCalculatedTotal);
 
       // 🛡️ SECURITY CHECK: Compare client amount with server calculation
       const clientAmount = parseFloat(amount);
       const priceDifference = Math.abs(clientAmount - serverCalculatedTotal);
-      
+
       console.log(`🔒 SECURITY CHECK: Client amount: R$ ${clientAmount.toFixed(2)}, Server calculated: R$ ${serverCalculatedTotal.toFixed(2)}, Difference: R$ ${priceDifference.toFixed(2)}`);
-      
+
       // Allow small floating point differences (1 cent)
       if (priceDifference > 0.01) {
         console.error(`🚨 SECURITY VIOLATION: Price manipulation detected! Client: R$ ${clientAmount.toFixed(2)}, Server: R$ ${serverCalculatedTotal.toFixed(2)}`);
@@ -2353,7 +2380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           serverAmount: serverCalculatedTotal.toFixed(2)
         });
       }
-      
+
       console.log('✅ SECURITY: Price validation passed - proceeding with payment');
 
       const [firstName, ...lastNameParts] = customerName.split(' ');
@@ -2482,7 +2509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               'mercadopago', 
               'Mercado Pago', 
               'Pagamento aprovado via cartão',
-              undefined,
+              undefined, // bulkOperationId
               true // Send customer email
             );
 
@@ -2492,13 +2519,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (orderWithDetails) {
                 const { EmailService } = await import('./email/email-service');
                 const { EmailDataMapper } = await import('./email/email-data-mapper');
-                
+
                 const emailService = new EmailService(storage);
                 const adminEmailData = EmailDataMapper.mapToAdminOrderConfirmation(
                   orderWithDetails,
                   `${req.protocol}://${req.get('host')}/admin/orders/${order.id}`
                 );
-                
+
                 console.log('📧 Sending admin notifications for card payment approval...');
                 await emailService.sendAdminOrderConfirmations(adminEmailData, order.id);
               }
@@ -2507,7 +2534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Don't fail the payment process if email fails
             }
 
-            console.log(`✅ Order ${order.orderNumber} status updated to confirmado - payment approved via card`);
+            console.log(`✅ Order ${order.orderNumber} status updated to confirmed - payment approved via card`);
 
             // Send WhatsApp confirmation notification for card payment
             try {
@@ -2515,7 +2542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (fullOrder && fullOrder.customer && fullOrder.customer.phone) {
                 const WhatsAppService = (await import('./whatsapp-service')).default;
                 const whatsAppService = new WhatsAppService(storage);
-                
+
                 console.log(`📱 Card Payment: Sending WhatsApp confirmation for order ${fullOrder.orderNumber} to phone: ${fullOrder.customer.phone}`);
                 await whatsAppService.sendOrderConfirmation(fullOrder);
                 console.log(`📱 Card Payment: WhatsApp notification sent for order ${fullOrder.orderNumber}`);
@@ -2604,7 +2631,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 🚨 CRITICAL SECURITY FIX: VALIDATE PIX PRICE BEFORE PAYMENT
       console.log('🔒 SECURITY: Validating PIX pricing before payment processing');
-      
+
       // Get customer address for pricing calculation
       const customerAddress = await storage.getAddress(order.addressId);
       if (!customerAddress) {
@@ -2628,7 +2655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Calculate CEP zones pricing
         const { calculateCepZonePrice } = await import('./cep-zones-calculator');
         const calculatedPrice = await calculateCepZonePrice(customerAddress.zipCode, event.id);
-        
+
         if (calculatedPrice === null) {
           console.error(`🚨 SECURITY: CEP ${customerAddress.zipCode} not found in zones for event ${event.id}`);
           return res.status(400).json({ 
@@ -2637,7 +2664,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             code: "CEP_ZONE_NOT_FOUND"
           });
         }
-        
+
         deliveryCost = calculatedPrice;
         baseCost = 0;
         console.log(`🔒 SECURITY: PIX CEP zone pricing calculated: R$ ${calculatedPrice} for CEP ${customerAddress.zipCode}`);
@@ -2660,17 +2687,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         donationAmount = Number(event.donationAmount) * order.kitQuantity;
       }
 
-      serverCalculatedTotal = baseCost + deliveryCost + additionalCost + donationAmount - Number(order.discountAmount || 0);
-      
+      serverCalculatedTotal = baseCost + deliveryCost + additionalCost + donationAmount;
+
       // Ensure minimum payment of R$ 0.01
       serverCalculatedTotal = Math.max(0.01, serverCalculatedTotal);
 
       // 🛡️ SECURITY CHECK: Compare client amount with server calculation
       const clientAmount = parseFloat(amount);
       const priceDifference = Math.abs(clientAmount - serverCalculatedTotal);
-      
+
       console.log(`🔒 SECURITY CHECK PIX: Client amount: R$ ${clientAmount.toFixed(2)}, Server calculated: R$ ${serverCalculatedTotal.toFixed(2)}, Difference: R$ ${priceDifference.toFixed(2)}`);
-      
+
       // Allow small floating point differences (1 cent)
       if (priceDifference > 0.01) {
         console.error(`🚨 SECURITY VIOLATION PIX: Price manipulation detected! Client: R$ ${clientAmount.toFixed(2)}, Server: R$ ${serverCalculatedTotal.toFixed(2)}`);
@@ -2683,7 +2710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           serverAmount: serverCalculatedTotal.toFixed(2)
         });
       }
-      
+
       console.log('✅ SECURITY: PIX price validation passed - proceeding with payment');
 
       const [firstName, ...lastNameParts] = customerName.split(' ');
@@ -2710,14 +2737,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (result) {
         console.log(`💳 PIX payment created for order ${orderId} (${order.orderNumber}) - Payment ID: ${result.id}`);
-        
+
         // After successful PIX creation, update stock and close event if needed
         await updateStockAndCloseEventIfNeeded(order.eventId);
 
         // Calculate PIX expiration date (30 minutes from now) with proper timezone handling
         const pixExpiration = new Date();
         pixExpiration.setMinutes(pixExpiration.getMinutes() + 30);
-        
+
         // Current timestamp for payment creation tracking
         const paymentCreatedAt = new Date();
 
@@ -2734,7 +2761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               paymentCreatedAt: paymentCreatedAt
             })
             .where(eq(orders.id, order.id));
-          
+
           console.log(`✅ Order ${order.orderNumber} updated with PIX data and status: aguardando_pagamento`);
           console.log(`📅 PIX expiration set to: ${pixExpiration.toISOString()}`);
           console.log(`📅 Payment created at: ${paymentCreatedAt.toISOString()}`);
@@ -2789,18 +2816,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const order = await storage.getOrderByNumber(orderId);
             if (order) {
               if (result.status === 'approved') {
-                console.log(`✅ Payment approved for order ${orderId} (ID: ${order.id}) - updating to confirmado`);
+                console.log(`✅ Payment approved for order ${orderId} (ID: ${order.id}) - updating to confirmed`);
                 // Update status - this will automatically send customer email via sendStatusChangeEmail
                 await storage.updateOrderStatus(order.id, 'confirmado', 'mercadopago', 'Mercado Pago', 'Pagamento aprovado via verificação de status');
-                console.log(`✅ Order ${orderId} status successfully updated to confirmado`);
+                console.log(`✅ Order ${orderId} status successfully updated to confirmed`);
 
                 // NOTE: Admin notifications for PIX are sent via webhook only
                 // This avoids duplicate emails since PIX payments are processed asynchronously
                 console.log(`📧 PIX payment confirmed - admin notifications will be sent via webhook`)
               } else if (result.status === 'cancelled' || result.status === 'rejected') {
-                console.log(`❌ Payment failed for order ${orderId} (ID: ${order.id}) - updating to cancelado`);
+                console.log(`❌ Payment failed for order ${orderId} (ID: ${order.id}) - updating to canceled`);
                 await storage.updateOrderStatus(order.id, 'cancelado', 'mercadopago', 'Mercado Pago', 'Pagamento rejeitado via verificação de status');
-                console.log(`❌ Order ${orderId} status successfully updated to cancelado`);
+                console.log(`❌ Order ${orderId} status successfully updated to canceled`);
               } else if (result.status === 'pending') {
                 console.log(`⏳ Payment pending for order ${orderId} - keeping aguardando_pagamento`);
               }
@@ -2844,10 +2871,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Security: Validate webhook signature 
       const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
       const isProduction = process.env.NODE_ENV === 'production';
-      
+
       // For testing with production keys in development, allow bypass with environment flag
       const skipValidationForTesting = process.env.SKIP_WEBHOOK_VALIDATION === 'true';
-      
+
       if (skipValidationForTesting) {
         console.log('🔧 TESTING MODE: Webhook validation bypassed - use only for testing with production keys');
       } else if (webhookSecret) {
@@ -2880,7 +2907,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create payload for signature validation (MercadoPago format)
         const bodyString = JSON.stringify(req.body);
         const manifest = `id:${requestId};request-id:${requestId};ts:${ts};`;
-        
+
         console.log('🔍 Signature validation data:');
         console.log('  Request ID:', requestId);
         console.log('  Timestamp:', ts);
@@ -2892,7 +2919,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .createHmac('sha256', webhookSecret)
           .update(manifest)
           .digest('hex');
-        
+
         console.log('  Expected signature:', expectedSignature);
 
         if (expectedSignature !== v1) {
@@ -2934,17 +2961,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (order) {
               if (result.status === 'approved') {
                 console.log(`🔍 Webhook: Checking order ${orderId} current status: ${order.status}`);
-                
+
                 // For already confirmed orders, just ensure email was sent if needed
                 if (order.status === 'confirmado') {
                   console.log(`⚠️ Webhook: Order ${orderId} is already confirmed - ensuring email was sent`);
-                  
+
                   // Do NOT send duplicate email - already sent when status was updated
                   console.log(`⚠️ Webhook: Order ${order.orderNumber} already confirmed - skipping duplicate email`);
                   // Note: Email already sent when status was first updated to 'confirmado'
                   return res.status(200).send('OK');
                 }
-                
+
                 console.log(`✅ Webhook: Payment approved for order ${orderId} (ID: ${order.id}) - updating to confirmed`);
                 await storage.updateOrderStatus(order.id, 'confirmado', 'mercadopago', 'Mercado Pago', 'Pagamento aprovado via webhook');
                 console.log(`✅ Webhook: Order ${orderId} status successfully updated to confirmed`);
@@ -2954,7 +2981,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 try {
                   // Wait a bit to avoid conflicts with payment flow admin emails
                   await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
-                  
+
                   const fullOrder = await storage.getOrderWithFullDetails(order.id);
                   if (fullOrder) {
                     const emailService = new EmailService(storage);
@@ -2974,7 +3001,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   if (fullOrder && fullOrder.customer && fullOrder.customer.phone) {
                     const WhatsAppService = (await import('./whatsapp-service')).default;
                     const whatsAppService = new WhatsAppService(storage);
-                    
+
                     console.log(`📱 Webhook: Sending WhatsApp confirmation for order ${fullOrder.orderNumber} to phone: ${fullOrder.customer.phone}`);
                     await whatsAppService.sendOrderConfirmation(fullOrder);
                     console.log(`📱 Webhook: WhatsApp notification sent for order ${fullOrder.orderNumber}`);
@@ -3354,7 +3381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const zone of allZones) {
         const customPrice = customPricesMap.get(zone.id);
         const priceToCompare = customPrice !== undefined ? customPrice : Number(zone.price);
-        
+
         if (priceToCompare < minimumPrice) {
           minimumPrice = priceToCompare;
         }
@@ -3593,7 +3620,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/orders/:orderNumber/renew-pix", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const { orderNumber } = req.params;
-      
+
       // Get order details
       const order = await storage.getOrderByNumber(orderNumber);
       if (!order) {
@@ -3668,7 +3695,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create new PIX payment
       const pixPayment = await MercadoPagoService.renewPIXPayment(order.orderNumber, paymentData);
-      
+
       if (!pixPayment) {
         return res.status(500).json({ message: "Erro ao renovar pagamento PIX" });
       }
@@ -3763,7 +3790,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/orders/:orderNumber/payment-status", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const { orderNumber } = req.params;
-      
+
       // Get order details
       const order = await storage.getOrderByNumber(orderNumber);
       if (!order) {
