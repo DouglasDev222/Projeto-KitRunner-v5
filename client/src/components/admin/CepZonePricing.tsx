@@ -85,7 +85,9 @@ export function CepZonePricing({
         };
       });
       setZoneConfigs(initialConfigs);
-      onConfigChange(initialConfigs);
+      if (onConfigChange) {
+        onConfigChange(initialConfigs);
+      }
     }
   }, [zones, onConfigChange]);
 
@@ -103,7 +105,9 @@ export function CepZonePricing({
     }
     
     setZoneConfigs(newConfigs);
-    onConfigChange(newConfigs);
+    if (onConfigChange) {
+      onConfigChange(newConfigs);
+    }
   };
 
   const handleActiveChange = (zoneId: number, active: boolean) => {
@@ -116,7 +120,9 @@ export function CepZonePricing({
     }
     
     setZoneConfigs(newConfigs);
-    onConfigChange(newConfigs);
+    if (onConfigChange) {
+      onConfigChange(newConfigs);
+    }
   };
 
   const handleActivateAll = () => {
@@ -129,7 +135,9 @@ export function CepZonePricing({
       }
     });
     setZoneConfigs(newConfigs);
-    onConfigChange(newConfigs);
+    if (onConfigChange) {
+      onConfigChange(newConfigs);
+    }
   };
 
   const handleDeactivateAll = () => {
@@ -142,7 +150,9 @@ export function CepZonePricing({
       }
     });
     setZoneConfigs(newConfigs);
-    onConfigChange(newConfigs);
+    if (onConfigChange) {
+      onConfigChange(newConfigs);
+    }
   };
 
   if (!isVisible) {
