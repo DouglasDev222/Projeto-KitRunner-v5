@@ -280,8 +280,6 @@ export async function calculateCepZoneInfo(cep: string, eventId?: number): Promi
       return null;
     }
 
-    console.log(`🔍 [calculateCepZoneInfo] Validating CEP ${cleanedCep} for event ${eventId || 'global'}`);
-
     // Get all active zones ordered by priority (1 = highest priority)
     const zones = await db
       .select()
@@ -289,23 +287,17 @@ export async function calculateCepZoneInfo(cep: string, eventId?: number): Promi
       .where(eq(cepZones.active, true))
       .orderBy(cepZones.priority);
 
-    console.log(`📊 [calculateCepZoneInfo] Found ${zones.length} active zones`);
-
     // STEP 1: Find the correct zone for this CEP (by priority)
     let matchedZone = null;
     
     for (const zone of zones) {
-      console.log(`🔍 [calculateCepZoneInfo] Checking zone: ${zone.name} (priority: ${zone.priority})`);
-      
       if (validateCepInZone(cleanedCep, zone)) {
         matchedZone = zone;
-        console.log(`✅ [calculateCepZoneInfo] CEP ${cleanedCep} matched zone: ${zone.name} (priority: ${zone.priority})`);
         break; // Stop at first match (highest priority)
       }
     }
 
     if (!matchedZone) {
-      console.warn(`⚠️ [calculateCepZoneInfo] CEP ${cleanedCep} not found in any zones`);
       return null;
     }
 
@@ -325,7 +317,6 @@ export async function calculateCepZoneInfo(cep: string, eventId?: number): Promi
         .limit(1);
 
       if (customPrice.length > 0) {
-        console.log(`💰 [calculateCepZoneInfo] Using event-specific price for zone ${matchedZone.name}: R$ ${customPrice[0].price}`);
         return {
           price: parseFloat(customPrice[0].price),
           zoneName: matchedZone.name
@@ -334,7 +325,6 @@ export async function calculateCepZoneInfo(cep: string, eventId?: number): Promi
     }
 
     // STEP 3: Use global zone price as fallback
-    console.log(`💰 [calculateCepZoneInfo] Using global price for zone ${matchedZone.name}: R$ ${matchedZone.price}`);
     return {
       price: parseFloat(matchedZone.price),
       zoneName: matchedZone.name

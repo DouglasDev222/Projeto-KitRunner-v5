@@ -374,8 +374,6 @@ router.get("/cep-zones/check/:zipCode", async (req, res) => {
       });
     }
     
-    console.log(`🔍 Checking CEP ${zipCode} for event ${eventId || 'none'}`);
-    
     // If eventId is provided, use the enhanced calculation that considers event-specific pricing
     if (eventId) {
       const result = await calculateCepZoneInfo(zipCode, parseInt(eventId as string));
@@ -387,8 +385,6 @@ router.get("/cep-zones/check/:zipCode", async (req, res) => {
           message: "CEP não encontrado nas zonas de entrega"
         });
       }
-      
-      console.log(`✅ CEP ${zipCode} found in zone ${result.zoneName} with price R$ ${result.price}`);
       
       res.json({ 
         success: true, 
