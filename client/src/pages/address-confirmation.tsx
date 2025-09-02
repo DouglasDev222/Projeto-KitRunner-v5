@@ -210,7 +210,7 @@ export default function AddressConfirmation() {
           
           // Force fresh API call - ignore any cached data
           console.log("🔍 FORCING fresh CEP zone check for:", address.zipCode, "with event ID:", id);
-          const cepResult = await checkCepZone(address.zipCode, event?.name);
+          const cepResult = await checkCepZone(address.zipCode, parseInt(id!));
           console.log("📊 CEP zone result:", cepResult);
           setIsCheckingCepZone(false);
           

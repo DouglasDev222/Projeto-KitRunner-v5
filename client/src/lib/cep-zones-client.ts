@@ -18,20 +18,23 @@ function generateWhatsAppUrl(cep: string, eventName?: string): string {
 }
 
 
-export async function checkCepZone(cep: string, eventName?: string): Promise<CepZoneResult> {
+export async function checkCepZone(cep: string, eventNameOrId?: string | number): Promise<CepZoneResult> {
   try {
     const cleanCep = cep.replace(/\D/g, '');
     if (cleanCep.length !== 8) {
       return {
         found: false,
         error: "CEP deve ter 8 dígitos",
-        whatsappUrl: generateWhatsAppUrl(cep, eventName)
+        whatsappUrl: generateWhatsAppUrl(cep, typeof eventNameOrId === 'string' ? eventNameOrId : undefined)
       };
     }
 
-    const url = eventName 
-      ? `/api/cep-zones/check/${cleanCep}?eventName=${encodeURIComponent(eventName)}`
-      : `/api/cep-zones/check/${cleanCep}`;
+    // If eventNameOrId is a number, treat it as eventId and pass it as query parameter
+    const url = typeof eventNameOrId === 'number' 
+      ? `/api/cep-zones/check/${cleanCep}?eventId=${eventNameOrId}`
+      : eventNameOrId 
+        ? `/api/cep-zones/check/${cleanCep}?eventName=${encodeURIComponent(eventNameOrId)}`
+        : `/api/cep-zones/check/${cleanCep}`;
 
     const response = await fetch(url);
 

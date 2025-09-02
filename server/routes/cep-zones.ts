@@ -6,7 +6,8 @@ import { insertCepZoneSchema, type CepZone } from "@shared/schema";
 import { 
   parseRangesFromText, 
   checkCepZoneOverlap, 
-  calculateCepZoneDelivery, 
+  calculateCepZoneDelivery,
+  calculateCepZoneInfo,
   type CepRange 
 } from "../cep-zones-calculator";
 import { requireAdminAuth } from "../middleware/auth";
@@ -364,6 +365,7 @@ router.patch("/admin/cep-zones/:id/toggle", requireAdminAuth, async (req, res) =
 router.get("/cep-zones/check/:zipCode", async (req, res) => {
   try {
     const { zipCode } = req.params;
+    const { eventId } = req.query;
     
     if (!zipCode || zipCode.length < 8) {
       return res.status(400).json({
@@ -372,13 +374,41 @@ router.get("/cep-zones/check/:zipCode", async (req, res) => {
       });
     }
     
-    const zones = await storage.getCepZones(true); // Only active zones
-    const result = calculateCepZoneDelivery(zipCode, zones);
+    console.log(`🔍 Checking CEP ${zipCode} for event ${eventId || 'none'}`);
     
-    res.json({ 
-      success: true, 
-      result 
-    });
+    // If eventId is provided, use the enhanced calculation that considers event-specific pricing
+    if (eventId) {
+      const result = await calculateCepZoneInfo(zipCode, parseInt(eventId as string));
+      
+      if (!result) {
+        return res.status(404).json({
+          success: false,
+          found: false,
+          message: "CEP não encontrado nas zonas de entrega"
+        });
+      }
+      
+      console.log(`✅ CEP ${zipCode} found in zone ${result.zoneName} with price R$ ${result.price}`);
+      
+      res.json({ 
+        success: true, 
+        result: {
+          found: true,
+          zoneName: result.zoneName,
+          deliveryCost: result.price,
+          description: `Zona: ${result.zoneName}`
+        }
+      });
+    } else {
+      // Fallback to original logic for backward compatibility
+      const zones = await storage.getCepZones(true); // Only active zones
+      const result = calculateCepZoneDelivery(zipCode, zones);
+      
+      res.json({ 
+        success: true, 
+        result 
+      });
+    }
   } catch (error) {
     console.error("Error checking CEP zone:", error);
     res.status(500).json({ 
