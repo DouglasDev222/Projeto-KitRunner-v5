@@ -216,8 +216,10 @@ export function CardPayment({
         
         console.log('Payment error details:', { title: errorTitle, message: errorMessage, code: errorCode });
         
-        // For event-related errors, show more specific feedback
-        if (errorCode === 'EVENT_NOT_AVAILABLE') {
+        // Handle price validation errors with clear messaging
+        if (errorCode === 'PRICE_VALIDATION_FAILED') {
+          onError('Os preços foram atualizados. Por favor, revise seu pedido e tente novamente com os valores corretos.');
+        } else if (errorCode === 'EVENT_NOT_AVAILABLE') {
           onError(`${errorTitle}: ${errorMessage}`);
         } else {
           // For gateway errors, show generic message
@@ -230,8 +232,10 @@ export function CardPayment({
       console.log('Card payment mutation error:', error);
       console.log('Error message:', error.message);
       
-      // Check if this is an event-related error or gateway error
-      if (error.message && (error.message.includes('Entre em contato conosco pelo WhatsApp') || 
+      // Handle price validation errors
+      if (error.message && error.message.includes('PRICE_VALIDATION_FAILED')) {
+        onError('Os preços foram atualizados. Por favor, revise seu pedido e tente novamente com os valores corretos.');
+      } else if (error.message && (error.message.includes('Entre em contato conosco pelo WhatsApp') || 
                             error.message.includes('evento') || 
                             error.message.includes('fechado') ||
                             error.message.includes('desativado'))) {

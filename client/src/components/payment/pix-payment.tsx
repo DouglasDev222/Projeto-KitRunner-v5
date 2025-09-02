@@ -68,12 +68,22 @@ export function PIXPayment({
         // Start checking payment status
         startStatusChecking(data.paymentId);
       } else {
-        onError(data.message || 'Erro ao criar pagamento PIX');
+        // Handle price validation errors with clear messaging
+        if (data.code === 'PRICE_VALIDATION_FAILED') {
+          onError('Os preços foram atualizados. Por favor, revise seu pedido e tente novamente com os valores corretos.');
+        } else {
+          onError(data.message || 'Erro ao criar pagamento PIX');
+        }
       }
     },
     onError: (error: any) => {
       setIsProcessing(false);
-      onError('Erro ao criar pagamento PIX');
+      // Handle price validation errors
+      if (error.message && error.message.includes('PRICE_VALIDATION_FAILED')) {
+        onError('Os preços foram atualizados. Por favor, revise seu pedido e tente novamente com os valores corretos.');
+      } else {
+        onError('Erro ao criar pagamento PIX');
+      }
     }
   });
 
@@ -142,23 +152,17 @@ export function PIXPayment({
     setIsProcessing(true);
     
     try {
-      // First create the order with idempotency key
-      const order = { ...orderData(), idempotencyKey };
-      const orderResult = await createOrder(order);
+      // 🔒 SECURITY FIX: Send order data directly to PIX payment validation
+      // The server will validate prices FIRST, then create PIX payment 
+      // Order creation will happen later via webhook when PIX is approved
+      const orderDataPayload = { ...orderData(), idempotencyKey };
       
-      if (!orderResult?.order?.id) {
-        setIsProcessing(false);
-        onError('Erro ao criar pedido');
-        return;
-      }
-      
-      // Then create PIX payment with order info
       const paymentData = {
-        orderId: orderResult.order.orderNumber,
         amount,
         email: customerData.email,
         customerName: customerData.name,
-        cpf: customerData.cpf
+        cpf: customerData.cpf,
+        orderData: orderDataPayload // Send order data for server validation
       };
 
       createPIXPaymentMutation.mutate(paymentData);
