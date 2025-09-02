@@ -55,9 +55,14 @@ export function CouponInput({
       // Obter customerId da sessão
       let customerId: number | undefined;
       const customerData = sessionStorage.getItem("customerData");
+      console.log('🎫 SessionStorage customerData:', customerData);
       if (customerData) {
         const customer = JSON.parse(customerData);
+        console.log('🎫 Parsed customer:', customer);
         customerId = customer.id;
+        console.log('🎫 Extracted customerId:', customerId);
+      } else {
+        console.log('🎫 No customerData found in sessionStorage');
       }
       
       const response = await fetch('/api/coupons/validate', {
