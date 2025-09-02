@@ -2737,67 +2737,145 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log('✅ SECURITY: PIX price validation passed - proceeding with payment generation');
+      console.log('✅ SECURITY: PIX price validation passed - creating order and then generating payment');
 
-      // 🔒 SECURITY FIX: Generate temporary reference for PIX payment (order will be created via webhook)
-      const tempOrderReference = `TEMP-PIX-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-      
-      const [firstName, ...lastNameParts] = customerName.split(' ');
-      const lastName = lastNameParts.join(' ') || '';
+      // 🔒 SECURITY FIX: Create order immediately after validation (like before) 
+      // but with validated server-side pricing
+      try {
+        // Convert numeric values to strings for schema validation
+        const orderDataForValidation = {
+          ...orderData,
+          deliveryCost: deliveryCost.toString(),
+          extraKitsCost: additionalCost.toString(),
+          donationCost: donationAmount.toString(),
+          discountAmount: typeof orderData.discountAmount === 'number' ? orderData.discountAmount.toString() : orderData.discountAmount,
+          totalCost: serverCalculatedTotal.toString(),
+          donationAmount: donationAmount.toString(),
+        };
 
-      const paymentData = {
-        paymentMethodId: 'pix',
-        email,
-        amount: serverCalculatedTotal,  // 🔒 SECURITY: Use server-calculated amount only
-        description: `Pedido KitRunner - Aguardando aprovação`,
-        orderId: tempOrderReference, // Temporary reference
-        payer: {
-          name: firstName,
-          surname: lastName,
+        // Parse and validate order data
+        const validatedOrderData = orderCreationSchema.parse(orderDataForValidation);
+
+        // Create the order with status "aguardando_pagamento" 
+        const order = await storage.createOrder({
+          eventId: validatedOrderData.eventId,
+          customerId: validatedOrderData.customerId,
+          addressId: validatedOrderData.addressId,
+          kitQuantity: validatedOrderData.kitQuantity,
+          deliveryCost: deliveryCost.toString(),
+          extraKitsCost: additionalCost.toString(),
+          donationCost: donationAmount.toString(),
+          totalCost: serverCalculatedTotal.toString(), // 🔒 SECURITY: Use server-calculated total
+          status: 'aguardando_pagamento', // PIX starts awaiting payment
+          paymentMethod: 'pix',
+          donationAmount: donationAmount.toString(),
+          discountAmount: (validatedOrderData.discountAmount || 0).toString(),
+          idempotencyKey: validatedOrderData.idempotencyKey || null,
+        });
+
+        // Create kits
+        if (validatedOrderData.kits && validatedOrderData.kits.length > 0) {
+          for (const kit of validatedOrderData.kits) {
+            await storage.createKit({
+              orderId: order.id,
+              name: kit.name,
+              cpf: kit.cpf,
+              shirtSize: kit.shirtSize,
+            });
+          }
+        }
+
+        console.log(`✅ PIX Order ${order.orderNumber} created with status: aguardando_pagamento`);
+
+        // Register policy acceptance for the order
+        try {
+          console.log(`📋 Recording policy acceptance for PIX order ${order.id}, customer ${validatedOrderData.customerId}`);
+          const { PolicyService } = await import('./policy-service');
+          const orderPolicy = await PolicyService.getActivePolicyByType('order');
+          if (orderPolicy) {
+            await PolicyService.createPolicyAcceptance({
+              userId: validatedOrderData.customerId,
+              policyId: orderPolicy.id,
+              context: 'order',
+              orderId: order.id
+            });
+            console.log(`✅ Policy acceptance recorded for PIX order ${order.id}`);
+          }
+        } catch (policyError) {
+          console.error(`❌ Error recording policy acceptance for PIX order ${order.id}:`, policyError);
+        }
+
+        // Update stock and close event if needed
+        await updateStockAndCloseEventIfNeeded(validatedOrderData.eventId);
+
+        // Now create PIX payment with the real order number
+        const [firstName, ...lastNameParts] = customerName.split(' ');
+        const lastName = lastNameParts.join(' ') || '';
+
+        const paymentData = {
+          paymentMethodId: 'pix',
           email,
-          identification: {
-            type: 'CPF',
-            number: cpf.replace(/\D/g, ''),
+          amount: serverCalculatedTotal,  // 🔒 SECURITY: Use server-calculated amount only
+          description: `Pedido KitRunner #${order.orderNumber}`,
+          orderId: order.orderNumber, // Use real order number
+          payer: {
+            name: firstName,
+            surname: lastName,
+            email,
+            identification: {
+              type: 'CPF',
+              number: cpf.replace(/\D/g, ''),
+            },
           },
-        },
-      };
+        };
 
-      const result = await MercadoPagoService.createPIXPayment(paymentData);
+        const result = await MercadoPagoService.createPIXPayment(paymentData);
 
-      if (result) {
-        console.log(`💳 PIX payment created with temp reference ${tempOrderReference} - Payment ID: ${result.id}`);
-        
-        // 🔒 SECURITY FIX: Store order data for webhook processing
-        // This will be used when webhook confirms payment
-        global.pendingPixOrders = global.pendingPixOrders || new Map();
-        global.pendingPixOrders.set(result.id.toString(), {
-          orderData,
-          serverCalculatedTotal,
-          deliveryCost,
-          additionalCost,
-          donationAmount,
-          baseCost,
-          tempOrderReference,
-          timestamp: Date.now()
-        });
-        console.log(`📝 Stored order data for payment ID: ${result.id}`);
-        
-        // Calculate PIX expiration date (30 minutes from now)
-        const pixExpiration = new Date();
-        pixExpiration.setMinutes(pixExpiration.getMinutes() + 30);
+        if (result) {
+          console.log(`💳 PIX payment created for order ${order.orderNumber} - Payment ID: ${result.id}`);
+          
+          // Calculate PIX expiration date (30 minutes from now)
+          const pixExpiration = new Date();
+          pixExpiration.setMinutes(pixExpiration.getMinutes() + 30);
 
-        res.json({
-          success: true,
-          paymentId: result.id,
-          qrCode: result.qr_code,
-          qrCodeBase64: result.qr_code_base64,
-          ticketUrl: result.ticket_url,
-          expirationDate: pixExpiration.toISOString()
-        });
-      } else {
-        res.status(400).json({
+          // Update order with PIX payment data
+          try {
+            await db
+              .update(orders)
+              .set({
+                paymentId: result.id?.toString() || null,
+                pixQrCode: result.qr_code_base64 || null,
+                pixCopyPaste: result.qr_code || null,
+                pixExpirationDate: pixExpiration,
+                paymentCreatedAt: new Date()
+              })
+              .where(eq(orders.id, order.id));
+
+            console.log(`✅ Order ${order.orderNumber} updated with PIX payment data`);
+          } catch (updateError) {
+            console.error('Error updating order with PIX data:', updateError);
+          }
+
+          res.json({
+            success: true,
+            paymentId: result.id,
+            qrCode: result.qr_code,
+            qrCodeBase64: result.qr_code_base64,
+            ticketUrl: result.ticket_url,
+            expirationDate: pixExpiration.toISOString(),
+            orderNumber: order.orderNumber // Return order number for frontend
+          });
+        } else {
+          res.status(400).json({
+            success: false,
+            message: 'Erro ao criar pagamento PIX'
+          });
+        }
+      } catch (orderError) {
+        console.error(`❌ PIX order creation error:`, orderError);
+        res.status(500).json({
           success: false,
-          message: 'Erro ao criar pagamento PIX'
+          message: 'Erro ao criar pedido PIX'
         });
       }
     } catch (error) {
@@ -2823,45 +2901,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log(`🔍 Payment ${paymentId} status: ${result.status} for order: ${orderId}`);
 
-        // 🔒 SECURITY FIX: Handle both existing orders and pending PIX orders  
-        if (orderId && orderId.startsWith('TEMP-PIX-')) {
-          // This is a pending PIX payment - check if order was created via webhook
-          console.log(`🔍 Status check for temporary PIX payment ${orderId}`);
-          
-          global.pendingPixOrders = global.pendingPixOrders || new Map();
-          const pendingOrder = global.pendingPixOrders.get(paymentId.toString());
-          
-          if (result.status === 'approved') {
-            console.log(`✅ PIX payment ${paymentId} approved - should have been processed by webhook`);
-            // Try to find the order that should have been created by webhook
-            const orders = await storage.getAllOrders();
-            const createdOrder = orders.find(order => 
-              order.paymentMethod === 'pix' && 
-              order.status === 'confirmado' &&
-              order.createdAt && 
-              (new Date(order.createdAt).getTime() > (pendingOrder?.timestamp || 0))
-            );
-            
-            if (createdOrder) {
-              console.log(`✅ Found order ${createdOrder.orderNumber} created via webhook for PIX ${paymentId}`);
-              // Clean up if webhook already processed it
-              global.pendingPixOrders.delete(paymentId.toString());
-            } else {
-              console.log(`⚠️ PIX ${paymentId} approved but no order found - webhook may not have processed yet`);
-            }
-          } else if (result.status === 'cancelled' || result.status === 'rejected') {
-            console.log(`❌ PIX payment ${paymentId} failed - cleaning up temporary data`);
-            global.pendingPixOrders.delete(paymentId.toString());
-          }
-        } else if (orderId && !orderId.startsWith('TEMP-PIX-')) {
-          // This is a regular order - handle normally
+        // Update order status based on payment status
+        if (orderId) {
           try {
+            // Find order by orderNumber to get the actual order ID
             const order = await storage.getOrderByNumber(orderId);
             if (order) {
               if (result.status === 'approved') {
                 console.log(`✅ Payment approved for order ${orderId} (ID: ${order.id}) - updating to confirmed`);
+                // Update status - this will automatically send customer email via sendStatusChangeEmail
                 await storage.updateOrderStatus(order.id, 'confirmado', 'mercadopago', 'Mercado Pago', 'Pagamento aprovado via verificação de status');
                 console.log(`✅ Order ${orderId} status successfully updated to confirmed`);
+
+                // NOTE: Admin notifications for PIX are sent via webhook only
+                // This avoids duplicate emails since PIX payments are processed asynchronously
+                console.log(`📧 PIX payment confirmed - admin notifications will be sent via webhook`)
               } else if (result.status === 'cancelled' || result.status === 'rejected') {
                 console.log(`❌ Payment failed for order ${orderId} (ID: ${order.id}) - updating to canceled`);
                 await storage.updateOrderStatus(order.id, 'cancelado', 'mercadopago', 'Mercado Pago', 'Pagamento rejeitado via verificação de status');
@@ -2993,114 +3047,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (result.success && result.payment) {
           const orderId = result.payment.external_reference;
 
-          // 🔒 SECURITY FIX: Handle both existing orders and pending PIX orders
-          if (orderId && orderId.startsWith('TEMP-PIX-')) {
-            // This is a pending PIX payment - need to create order now
-            console.log(`🔒 PIX SECURITY FIX: Processing webhook for temporary PIX payment ${orderId}`);
-            
-            global.pendingPixOrders = global.pendingPixOrders || new Map();
-            const pendingOrder = global.pendingPixOrders.get(data.id.toString());
-            
-            if (!pendingOrder) {
-              console.error(`❌ PIX webhook error: No pending order data found for payment ID: ${data.id}`);
-              return res.status(404).send('Pending order data not found');
-            }
-            
-            if (result.status === 'approved') {
-              console.log(`✅ PIX approved - creating order with validated pricing for payment ID: ${data.id}`);
-              
-              try {
-                // Convert numeric values to strings for schema validation
-                const orderDataForValidation = {
-                  ...pendingOrder.orderData,
-                  deliveryCost: pendingOrder.deliveryCost.toString(),
-                  extraKitsCost: pendingOrder.additionalCost.toString(),
-                  donationCost: pendingOrder.donationAmount.toString(),
-                  discountAmount: typeof pendingOrder.orderData.discountAmount === 'number' ? pendingOrder.orderData.discountAmount.toString() : pendingOrder.orderData.discountAmount,
-                  totalCost: pendingOrder.serverCalculatedTotal.toString(),
-                  donationAmount: pendingOrder.donationAmount.toString(),
-                };
-
-                // Parse and validate order data
-                const validatedOrderData = orderCreationSchema.parse(orderDataForValidation);
-
-                // Create the order with final status "confirmado" since PIX was already approved
-                const orderNumber = `KR${new Date().getFullYear()}${String(Date.now() + Math.random() * 1000).slice(-6)}`;
-
-                const order = await storage.createOrder({
-                  eventId: validatedOrderData.eventId,
-                  customerId: validatedOrderData.customerId,
-                  addressId: validatedOrderData.addressId,
-                  kitQuantity: validatedOrderData.kitQuantity,
-                  deliveryCost: pendingOrder.deliveryCost.toString(),
-                  extraKitsCost: pendingOrder.additionalCost.toString(),
-                  donationCost: pendingOrder.donationAmount.toString(),
-                  totalCost: pendingOrder.serverCalculatedTotal.toString(),
-                  status: 'confirmado', // PIX already approved
-                  paymentMethod: 'pix',
-                  donationAmount: pendingOrder.donationAmount.toString(),
-                  discountAmount: (validatedOrderData.discountAmount || 0).toString(),
-                  idempotencyKey: validatedOrderData.idempotencyKey || null,
-                });
-
-                // Create kits
-                if (validatedOrderData.kits && validatedOrderData.kits.length > 0) {
-                  for (const kit of validatedOrderData.kits) {
-                    await storage.createKit({
-                      orderId: order.id,
-                      name: kit.name,
-                      cpf: kit.cpf,
-                      shirtSize: kit.shirtSize,
-                    });
-                  }
-                }
-
-                console.log(`✅ PIX Order ${order.orderNumber} created successfully with status: confirmado`);
-
-                // Register policy acceptance for the order (PIX payment flow)
-                try {
-                  console.log(`📋 Recording policy acceptance for PIX webhook order ${order.id}, customer ${validatedOrderData.customerId}`);
-                  const { PolicyService } = await import('./policy-service');
-                  const orderPolicy = await PolicyService.getActivePolicyByType('order');
-                  if (orderPolicy) {
-                    await PolicyService.createPolicyAcceptance({
-                      userId: validatedOrderData.customerId,
-                      policyId: orderPolicy.id,
-                      context: 'order',
-                      orderId: order.id
-                    });
-                    console.log(`✅ Policy acceptance recorded for PIX webhook order ${order.id}`);
-                  } else {
-                    console.log(`⚠️ No active order policy found - skipping policy acceptance for PIX webhook order ${order.id}`);
-                  }
-                } catch (policyError) {
-                  console.error(`❌ Error recording policy acceptance for PIX webhook order ${order.id}:`, policyError);
-                  // Don't fail the order creation if policy recording fails
-                }
-
-                // Update stock and close event if needed
-                await updateStockAndCloseEventIfNeeded(validatedOrderData.eventId);
-
-                // Clean up temporary data
-                global.pendingPixOrders.delete(data.id.toString());
-                
-                // Continue with notifications below...
-                orderId = order.orderNumber; // Update orderId for notification logic
-                
-              } catch (orderError) {
-                console.error(`❌ PIX webhook error creating order for payment ${data.id}:`, orderError);
-                return res.status(500).send('Error creating order');
-              }
-            } else {
-              // Payment not approved, clean up temporary data
-              global.pendingPixOrders.delete(data.id.toString());
-              console.log(`❌ PIX payment ${data.id} not approved (status: ${result.status}) - cleaned up temporary data`);
-              return res.status(200).send('OK');
-            }
-          }
-          
-          // Update existing order status based on payment status
-          if (orderId && !orderId.startsWith('TEMP-PIX-')) {
+          // Update order status based on payment status
+          if (orderId) {
             const order = await storage.getOrderByNumber(orderId);
             if (order) {
               if (result.status === 'approved') {
@@ -3164,46 +3112,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             } else {
               console.error(`Webhook: Order not found with orderNumber: ${orderId}`);
-            }
-          } else if (orderId && orderId.startsWith('TEMP-PIX-')) {
-            // PIX order already handled above, but still send notifications
-            const order = await storage.getOrderByNumber(orderId);
-            if (order && result.status === 'approved') {
-              console.log(`📧 PIX webhook: Sending notifications for newly created order ${orderId}`);
-              
-              // Send admin order confirmation notifications
-              try {
-                await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
-                
-                const fullOrder = await storage.getOrderWithFullDetails(order.id);
-                if (fullOrder) {
-                  const emailService = new EmailService(storage);
-                  const { EmailDataMapper } = await import('./email/email-data-mapper');
-                  const adminNotificationData = EmailDataMapper.mapToAdminOrderConfirmation(fullOrder);
-                  console.log(`📧 PIX webhook: Sending admin notification for new order ${fullOrder.orderNumber}`);
-                  await emailService.sendAdminOrderConfirmations(adminNotificationData, fullOrder.id);
-                  console.log(`📧 PIX webhook: Admin notification sent for new order ${fullOrder.orderNumber}`);
-                }
-              } catch (adminEmailError) {
-                console.error('PIX webhook: Error sending admin order confirmation:', adminEmailError);
-              }
-
-              // Send WhatsApp confirmation notification
-              try {
-                const fullOrder = await storage.getOrderWithFullDetails(order.id);
-                if (fullOrder && fullOrder.customer && fullOrder.customer.phone) {
-                  const WhatsAppService = (await import('./whatsapp-service')).default;
-                  const whatsAppService = new WhatsAppService(storage);
-
-                  console.log(`📱 PIX webhook: Sending WhatsApp confirmation for new order ${fullOrder.orderNumber} to phone: ${fullOrder.customer.phone}`);
-                  await whatsAppService.sendOrderConfirmation(fullOrder);
-                  console.log(`📱 PIX webhook: WhatsApp notification sent for new order ${fullOrder.orderNumber}`);
-                } else {
-                  console.log(`📱 PIX webhook: No phone number found for new order ${orderId}, skipping WhatsApp`);
-                }
-              } catch (whatsappError) {
-                console.error('PIX webhook: Error sending WhatsApp notification:', whatsappError);
-              }
             }
           }
         }
