@@ -358,6 +358,9 @@ export function CardPayment({
         throw new Error('Bandeira do cartão não foi detectada. Verifique se o número está correto.');
       }
 
+      // 🔒 SECURITY FIX: Generate fresh idempotency key for each attempt
+      const freshIdempotencyKey = `card_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+      
       // Process payment FIRST with order data (do NOT create order yet)
       const paymentData = {
         token: response.id,
@@ -366,7 +369,7 @@ export function CardPayment({
         email: customerData.email,
         customerName: customerData.name,
         cpf: customerData.cpf,
-        orderData: { ...orderData(), idempotencyKey } // Send order data for creation after payment approval
+        orderData: { ...orderData(), idempotencyKey: freshIdempotencyKey } // Send order data for creation after payment approval
       };
 
       console.log('🧪 Sending payment FIRST approach - order will be created only if payment is approved');

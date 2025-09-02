@@ -2729,8 +2729,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error(`🚨 SECURITY VIOLATION PIX: Price manipulation detected! Client: R$ ${clientAmount.toFixed(2)}, Server: R$ ${serverCalculatedTotal.toFixed(2)}`);
         return res.status(400).json({
           success: false,
-          message: "Erro na validação do preço. Por favor, atualize a página e tente novamente.",
-          title: "Erro de Validação",
+          message: "Os preços foram atualizados. Por favor, revise seu pedido e tente novamente com os valores corretos.",
+          title: "Preços Atualizados",
           code: "PRICE_VALIDATION_FAILED",
           clientAmount: clientAmount.toFixed(2),
           serverAmount: serverCalculatedTotal.toFixed(2)
@@ -2755,6 +2755,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Parse and validate order data
         const validatedOrderData = orderCreationSchema.parse(orderDataForValidation);
+
+        // Check for existing order with same idempotency key to avoid duplicates
+        if (validatedOrderData.idempotencyKey) {
+          const existingOrder = await storage.getOrderByIdempotencyKey(validatedOrderData.idempotencyKey);
+          if (existingOrder) {
+            console.log(`⚠️ PIX: Order with idempotency key ${validatedOrderData.idempotencyKey} already exists: ${existingOrder.orderNumber}`);
+            return res.status(400).json({
+              success: false,
+              message: "Este pagamento já foi processado. Verifique seus pedidos ou atualize a página para tentar novamente.",
+              code: "DUPLICATE_REQUEST"
+            });
+          }
+        }
 
         // Create the order with status "aguardando_pagamento" 
         const order = await storage.createOrder({

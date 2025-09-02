@@ -152,10 +152,11 @@ export function PIXPayment({
     setIsProcessing(true);
     
     try {
-      // 🔒 SECURITY FIX: Send order data directly to PIX payment validation
-      // The server will validate prices FIRST, then create PIX payment 
-      // Order creation will happen later via webhook when PIX is approved
-      const orderDataPayload = { ...orderData(), idempotencyKey };
+      // 🔒 SECURITY FIX: Generate fresh idempotency key for each attempt
+      // This prevents duplicate key errors when user retries after price validation failure
+      const freshIdempotencyKey = `pix_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+      
+      const orderDataPayload = { ...orderData(), idempotencyKey: freshIdempotencyKey };
       
       const paymentData = {
         amount,
