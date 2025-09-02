@@ -11,7 +11,7 @@ export const statusOptions: StatusConfig[] = [
   { value: 'confirmado', label: 'Confirmado', color: 'bg-green-100 text-green-800' },
   { value: 'aguardando_pagamento', label: 'Aguardando Pagamento', color: 'bg-yellow-100 text-yellow-800' },
   { value: 'cancelado', label: 'Cancelado', color: 'bg-red-100 text-red-800' },
-  { value: 'kits_sendo_retirados', label: 'Kits sendo Retirados', color: 'bg-blue-100 text-blue-800' },
+  { value: 'kits_sendo_retirados', label: 'Kit Retirado', color: 'bg-blue-100 text-blue-800' },
   { value: 'em_transito', label: 'Em Trânsito', color: 'bg-orange-100 text-orange-800' },
   { value: 'entregue', label: 'Entregue', color: 'bg-green-600 text-white' }
 ];
@@ -22,7 +22,7 @@ export const statusMobileLabels: Record<string, string> = {
   'confirmado': 'Confirmado',
   'aguardando_pagamento': 'Aguard. Pag.',
   'cancelado': 'Cancelado',
-  'kits_sendo_retirados': 'Retirada',
+  'kits_sendo_retirados': 'Kit Retirado',
   'em_transito': 'Trânsito',
   'entregue': 'Entregue'
 };

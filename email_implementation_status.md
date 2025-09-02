@@ -85,7 +85,7 @@
 - **CTA**: Feedback + Instagram @kitrunner_
 
 ### 4. Status Update
-- **Trigger**: Outros status (`kits_sendo_retirados`, `cancelado`, etc.)
+- **Trigger**: Outros status (`kits_sendo_retirados`, `cancelado`, `aguardando_pagamento`)
 - **Assunto**: Dinâmico baseado no status
 - **Conteúdo**: Atualização específica, próximos passos, tempo estimado
 

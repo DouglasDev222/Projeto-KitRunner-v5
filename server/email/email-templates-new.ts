@@ -244,6 +244,8 @@ function getStatusDisplay(status: string): { text: string, class: string } {
       return { text: 'Em Trânsito', class: 'status-transit' };
     case 'entregue':
       return { text: 'Entregue', class: 'status-delivered' };
+    case 'kits_sendo_retirados':
+      return { text: 'Kit Retirado', class: 'status-delivered' }; // Changed from 'Retirada Confirmada' to 'Kit Retirado'
     default:
       return { text: status || 'Processando', class: 'status-pending' };
   }
@@ -252,7 +254,7 @@ function getStatusDisplay(status: string): { text: string, class: string } {
 export function generateOrderConfirmationTemplate(data: OrderConfirmationData): EmailTemplate {
   const subject = `Pedido ${data.orderNumber} recebido - KitRunner`;
   const statusDisplay = getStatusDisplay(data.status);
-  
+
   const html = `
     <!DOCTYPE html>
     <html lang="pt-BR">
@@ -276,7 +278,7 @@ export function generateOrderConfirmationTemplate(data: OrderConfirmationData): 
           <div class="greeting">
             Olá <strong>${data.customerName}</strong>,
           </div>
-          
+
           <p>Seu pedido foi recebido com sucesso e está sendo processado. Abaixo estão os detalhes:</p>
 
           <div class="status-banner ${statusDisplay.class}">
@@ -378,7 +380,7 @@ export function generateOrderConfirmationTemplate(data: OrderConfirmationData): 
 
 export function generatePaymentConfirmationTemplate(data: PaymentConfirmationData): EmailTemplate {
   const subject = `✅ Pagamento confirmado - Pedido ${data.orderNumber}`;
-  
+
   const html = `
     <!DOCTYPE html>
     <html lang="pt-BR">
@@ -402,7 +404,7 @@ export function generatePaymentConfirmationTemplate(data: PaymentConfirmationDat
           <div class="greeting">
             Ótimas notícias, <strong>${data.customerName}</strong>!
           </div>
-          
+
           <p>Seu pagamento foi processado com sucesso e seu pedido está confirmado.</p>
 
           <div class="status-banner">
@@ -484,7 +486,7 @@ export function generatePaymentConfirmationTemplate(data: PaymentConfirmationDat
 export function generateStatusUpdateTemplate(data: StatusUpdateData): EmailTemplate {
   const subject = `Atualização do pedido ${data.orderNumber} - KitRunner`;
   const statusDisplay = getStatusDisplay(data.newStatus);
-  
+
   const html = `
     <!DOCTYPE html>
     <html lang="pt-BR">
@@ -508,7 +510,7 @@ export function generateStatusUpdateTemplate(data: StatusUpdateData): EmailTempl
           <div class="greeting">
             Olá <strong>${data.customerName}</strong>,
           </div>
-          
+
           <p>Temos uma atualização sobre seu pedido:</p>
 
           <div class="status-banner ${statusDisplay.class}">
