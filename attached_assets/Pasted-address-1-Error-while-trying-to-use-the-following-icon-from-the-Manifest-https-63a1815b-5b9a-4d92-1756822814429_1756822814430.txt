@@ -1,0 +1,168 @@
+address:1 Error while trying to use the following icon from the Manifest: https://63a1815b-5b9a-4d92-a00d-887b56521ab1-00-12dqhpipikq3b.spock.replit.dev/logo.webp (Resource size is not correct - typo in the Manifest?)
+cep-zones-client.ts:39  GET https://63a1815b-5b9a-4d92-a00d-887b56521ab1-00-12dqhpipikq3b.spock.replit.dev/api/cep-zones/check/58013420?eventId=12 404 (Not Found)
+checkCepZone @ cep-zones-client.ts:39
+calculateDeliveryCosts @ address-confirmation.tsx:208
+handleAddressSelectSecure @ address-confirmation.tsx:191
+handleAddressSelect @ address-confirmation.tsx:196
+onClick @ address-confirmation.tsx:973
+callCallback2 @ chunk-RPCDYKBN.js?v=da56b521:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=da56b521:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=da56b521:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=da56b521:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=da56b521:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=da56b521:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=da56b521:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=da56b521:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=da56b521:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=da56b521:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=da56b521:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=da56b521:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=da56b521:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=da56b521:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=da56b521:5449
+cep-zones-client.ts:74 Error checking CEP zone: ReferenceError: eventName is not defined
+    at checkCepZone (cep-zones-client.ts:47:67)
+    at async calculateDeliveryCosts (address-confirmation.tsx:208:29)
+    at async handleAddressSelectSecure (address-confirmation.tsx:191:20)
+    at async handleAddressSelect (address-confirmation.tsx:196:5)
+checkCepZone @ cep-zones-client.ts:74
+await in checkCepZone
+calculateDeliveryCosts @ address-confirmation.tsx:208
+handleAddressSelectSecure @ address-confirmation.tsx:191
+handleAddressSelect @ address-confirmation.tsx:196
+onClick @ address-confirmation.tsx:973
+callCallback2 @ chunk-RPCDYKBN.js?v=da56b521:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=da56b521:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=da56b521:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=da56b521:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=da56b521:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=da56b521:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=da56b521:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=da56b521:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=da56b521:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=da56b521:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=da56b521:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=da56b521:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=da56b521:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=da56b521:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=da56b521:5449
+cep-zones-client.ts:39  GET https://63a1815b-5b9a-4d92-a00d-887b56521ab1-00-12dqhpipikq3b.spock.replit.dev/api/cep-zones/check/58110330?eventId=12 404 (Not Found)
+checkCepZone @ cep-zones-client.ts:39
+calculateDeliveryCosts @ address-confirmation.tsx:208
+handleAddressSelectSecure @ address-confirmation.tsx:191
+handleAddressSelect @ address-confirmation.tsx:196
+onClick @ address-confirmation.tsx:973
+callCallback2 @ chunk-RPCDYKBN.js?v=da56b521:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=da56b521:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=da56b521:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=da56b521:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=da56b521:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=da56b521:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=da56b521:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=da56b521:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=da56b521:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=da56b521:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=da56b521:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=da56b521:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=da56b521:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=da56b521:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=da56b521:5449
+cep-zones-client.ts:74 Error checking CEP zone: ReferenceError: eventName is not defined
+    at checkCepZone (cep-zones-client.ts:47:67)
+    at async calculateDeliveryCosts (address-confirmation.tsx:208:29)
+    at async handleAddressSelectSecure (address-confirmation.tsx:191:20)
+    at async handleAddressSelect (address-confirmation.tsx:196:5)
+checkCepZone @ cep-zones-client.ts:74
+await in checkCepZone
+calculateDeliveryCosts @ address-confirmation.tsx:208
+handleAddressSelectSecure @ address-confirmation.tsx:191
+handleAddressSelect @ address-confirmation.tsx:196
+onClick @ address-confirmation.tsx:973
+callCallback2 @ chunk-RPCDYKBN.js?v=da56b521:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=da56b521:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=da56b521:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=da56b521:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=da56b521:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=da56b521:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=da56b521:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=da56b521:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=da56b521:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=da56b521:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=da56b521:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=da56b521:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=da56b521:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=da56b521:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=da56b521:5449
+cep-zones-client.ts:39  GET https://63a1815b-5b9a-4d92-a00d-887b56521ab1-00-12dqhpipikq3b.spock.replit.dev/api/cep-zones/check/58013420?eventId=12 404 (Not Found)
+checkCepZone @ cep-zones-client.ts:39
+calculateDeliveryCosts @ address-confirmation.tsx:208
+handleAddressSelectSecure @ address-confirmation.tsx:191
+handleAddressSelect @ address-confirmation.tsx:196
+onClick @ address-confirmation.tsx:973
+callCallback2 @ chunk-RPCDYKBN.js?v=da56b521:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=da56b521:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=da56b521:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=da56b521:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=da56b521:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=da56b521:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=da56b521:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=da56b521:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=da56b521:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=da56b521:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=da56b521:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=da56b521:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=da56b521:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=da56b521:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=da56b521:5449
+cep-zones-client.ts:74 Error checking CEP zone: ReferenceError: eventName is not defined
+    at checkCepZone (cep-zones-client.ts:47:67)
+    at async calculateDeliveryCosts (address-confirmation.tsx:208:29)
+    at async handleAddressSelectSecure (address-confirmation.tsx:191:20)
+    at async handleAddressSelect (address-confirmation.tsx:196:5)
+checkCepZone @ cep-zones-client.ts:74
+await in checkCepZone
+calculateDeliveryCosts @ address-confirmation.tsx:208
+handleAddressSelectSecure @ address-confirmation.tsx:191
+handleAddressSelect @ address-confirmation.tsx:196
+onClick @ address-confirmation.tsx:973
+callCallback2 @ chunk-RPCDYKBN.js?v=da56b521:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=da56b521:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=da56b521:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=da56b521:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=da56b521:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=da56b521:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=da56b521:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=da56b521:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=da56b521:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=da56b521:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=da56b521:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=da56b521:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=da56b521:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=da56b521:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=da56b521:5449
+cep-zones-client.ts:39  GET https://63a1815b-5b9a-4d92-a00d-887b56521ab1-00-12dqhpipikq3b.spock.replit.dev/api/cep-zones/check/58013420?eventId=12 404 (Not Found)
+checkCepZone @ cep-zones-client.ts:39
+calculateDeliveryCosts @ address-confirmation.tsx:208
+handleAddressSelectSecure @ address-confirmation.tsx:191
+handleAddressSelect @ address-confirmation.tsx:196
+onClick @ address-confirmation.tsx:973
+callCallback2 @ chunk-RPCDYKBN.js?v=da56b521:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=da56b521:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=da56b521:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=da56b521:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=da56b521:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=da56b521:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=da56b521:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=da56b521:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=da56b521:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=da56b521:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=da56b521:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=da56b521:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=da56b521:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=da56b521:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=da56b521:5449
+cep-zones-client.ts:74 Error checking CEP zone: ReferenceError: eventName is not defined
+    at checkCepZone (cep-zones-client.ts:47:67)
+    at async calculateDeliveryCosts (address-confirmation.tsx:208:29)
+    at async handleAddressSelectSecure (address-confirmation.tsx:191:20)
+    at async handleAddressSelect (address-confirmation.tsx:196:5)

@@ -44,7 +44,7 @@ export async function checkCepZone(cep: string, eventNameOrId?: string | number)
       return {
         found: false,
         error: "CEP não atendido. Entre em contato via WhatsApp.",
-        whatsappUrl: data.whatsappUrl || generateWhatsAppUrl(cep, eventName)
+        whatsappUrl: data.whatsappUrl || generateWhatsAppUrl(cep, typeof eventNameOrId === 'string' ? eventNameOrId : undefined)
       };
     }
 
@@ -58,7 +58,7 @@ export async function checkCepZone(cep: string, eventNameOrId?: string | number)
       return {
         found: false,
         error: "CEP não atendido. Entre em contato via WhatsApp.",
-        whatsappUrl: data.whatsappUrl || generateWhatsAppUrl(cep, eventName)
+        whatsappUrl: data.whatsappUrl || generateWhatsAppUrl(cep, typeof eventNameOrId === 'string' ? eventNameOrId : undefined)
       };
     }
 
@@ -75,7 +75,7 @@ export async function checkCepZone(cep: string, eventNameOrId?: string | number)
     return {
       found: false,
       error: error instanceof Error ? error.message : "Erro ao verificar CEP",
-      whatsappUrl: generateWhatsAppUrl(cep, eventName)
+      whatsappUrl: generateWhatsAppUrl(cep, typeof eventNameOrId === 'string' ? eventNameOrId : undefined)
     };
   }
 }

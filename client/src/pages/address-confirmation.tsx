@@ -204,37 +204,50 @@ export default function AddressConfirmation() {
           setIsCheckingCepZone(true);
           setCepZoneError(null);
           
-          // Force fresh API call - ignore any cached data
-          const cepResult = await checkCepZone(address.zipCode, parseInt(id!));
-          setIsCheckingCepZone(false);
-          
-          if (cepResult.found && cepResult.price !== undefined) {
-            const calculatedCosts = {
-              deliveryPrice: cepResult.price,
-              cepZoneName: cepResult.zoneName,
-              pricingType: 'cep_zones',
-              validated: true
-            };
-            // Store for display purposes only (real calculation happens on payment page)
-            sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
-            setCalculatedCosts(calculatedCosts);
-            setPricingValidationStatus('validated');
-            return calculatedCosts;
-          } else {
-            // CEP not found in any zone - show error and block flow
-            const errorMessage = cepResult.error || 'CEP não encontrado nas zonas de entrega';
-            setCepZoneError(errorMessage);
-            const calculatedCosts = {
+          try {
+            // Force fresh API call - ignore any cached data
+            const cepResult = await checkCepZone(address.zipCode, parseInt(id!));
+            setIsCheckingCepZone(false);
+            
+            if (cepResult.found && cepResult.price !== undefined) {
+              const calculatedCosts = {
+                deliveryPrice: cepResult.price,
+                cepZoneName: cepResult.zoneName,
+                pricingType: 'cep_zones',
+                validated: true
+              };
+              // Store for display purposes only (real calculation happens on payment page)
+              sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
+              setCalculatedCosts(calculatedCosts);
+              setPricingValidationStatus('validated');
+              return calculatedCosts;
+            } else {
+              // CEP not found in any zone - show error and block flow
+              const errorMessage = cepResult.error || 'CEP não encontrado nas zonas de entrega';
+              setCepZoneError(errorMessage);
+              const calculatedCosts = {
+                deliveryPrice: 0,
+                error: errorMessage,
+                pricingType: 'cep_zones',
+                validated: false
+              };
+              // Store error state for display purposes
+              sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
+              setCalculatedCosts(calculatedCosts);
+              setPricingValidationStatus('failed');
+              return calculatedCosts;
+            }
+          } catch (cepError) {
+            // Ensure loading state is cleared on CEP check error
+            setIsCheckingCepZone(false);
+            setCepZoneError('Erro ao verificar CEP. Tente novamente.');
+            setPricingValidationStatus('failed');
+            return {
               deliveryPrice: 0,
-              error: errorMessage,
+              error: 'Erro ao verificar CEP',
               pricingType: 'cep_zones',
               validated: false
             };
-            // Store error state for display purposes
-            sessionStorage.setItem('calculatedCosts', JSON.stringify(calculatedCosts));
-            setCalculatedCosts(calculatedCosts);
-            setPricingValidationStatus('failed');
-            return calculatedCosts;
           }
         } else {
           // Use distance-based calculation API for distance/fixed pricing
