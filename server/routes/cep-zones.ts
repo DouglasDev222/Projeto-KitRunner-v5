@@ -385,6 +385,17 @@ router.get("/cep-zones/check/:zipCode", async (req, res) => {
           message: "CEP não encontrado nas zonas de entrega"
         });
       }
+
+      // Check if zone is blocked (inactive)
+      if (result.blocked) {
+        return res.status(200).json({
+          success: false,
+          found: false,
+          blocked: true,
+          zoneName: result.zoneName,
+          message: "No momento não atendemos sua região"
+        });
+      }
       
       res.json({ 
         success: true, 

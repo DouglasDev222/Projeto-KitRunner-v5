@@ -43,8 +43,18 @@ export async function checkCepZone(cep: string, eventNameOrId?: string | number)
 
     const data = await response.json();
 
-    // Check if request was successful but CEP was not found
+    // Check if request was successful but CEP was not found or zone is blocked
     if (response.ok && (!data.success || !data.result?.found)) {
+      // Handle blocked zones (inactive zones)
+      if (data.blocked) {
+        return {
+          found: false,
+          error: data.message || "No momento não atendemos sua região",
+          whatsappUrl: data.whatsappUrl || generateWhatsAppUrl(cep, typeof eventNameOrId === 'string' ? eventNameOrId : undefined)
+        };
+      }
+      
+      // Handle CEPs not in any zone
       return {
         found: false,
         error: "CEP não atendido. Entre em contato via WhatsApp.",

@@ -262,7 +262,7 @@ export async function calculateCepZonePrice(cep: string, eventId?: number): Prom
 /**
  * Calculate CEP zone price and return both price and zone name
  */
-export async function calculateCepZoneInfo(cep: string, eventId?: number): Promise<{ price: number; zoneName: string } | null> {
+export async function calculateCepZoneInfo(cep: string, eventId?: number): Promise<{ price: number; zoneName: string; blocked?: boolean } | null> {
   try {
     const cleanedCep = cep.replace(/\D/g, '').padStart(8, '0');
 
@@ -270,17 +270,16 @@ export async function calculateCepZoneInfo(cep: string, eventId?: number): Promi
       return null;
     }
 
-    // Get all active zones ordered by priority (1 = highest priority)
-    const zones = await db
+    // Get ALL zones (active and inactive) ordered by priority (1 = highest priority)
+    const allZones = await db
       .select()
       .from(cepZones)
-      .where(eq(cepZones.active, true))
       .orderBy(cepZones.priority);
 
     // STEP 1: Find the correct zone for this CEP (by priority)
     let matchedZone = null;
     
-    for (const zone of zones) {
+    for (const zone of allZones) {
       if (validateCepInZone(cleanedCep, zone)) {
         matchedZone = zone;
         break; // Stop at first match (highest priority)
@@ -289,6 +288,16 @@ export async function calculateCepZoneInfo(cep: string, eventId?: number): Promi
 
     if (!matchedZone) {
       return null;
+    }
+
+    // STEP 1.5: Check if the matched zone is inactive - if so, block delivery
+    if (!matchedZone.active) {
+      // Return a special indicator for inactive zones
+      return { 
+        price: -1, // Special indicator for inactive zone
+        zoneName: matchedZone.name,
+        blocked: true 
+      };
     }
 
     // STEP 2: Check if there's event-specific pricing for the matched zone
