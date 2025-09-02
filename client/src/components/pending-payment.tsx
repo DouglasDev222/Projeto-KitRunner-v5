@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,32 +47,39 @@ export function PendingPayment({ order, onPaymentSuccess, onPaymentError }: Pend
   const renewPixMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", `/api/orders/${order.orderNumber}/renew-pix`);
-      return response.json();
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Erro ao renovar PIX');
+      }
+
+      return data;
     },
-    onSuccess: () => {
-      toast({ title: "PIX renovado com sucesso!" });
-      refetchPaymentStatus();
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+    onSuccess: (data) => {
+      console.log('🎯 PIX renewal response:', data);
+
+      if (data.success) {
+        // Trigger refetch of payment status to get updated PIX data
+        refetchPaymentStatus();
+        toast({ title: "PIX renovado com sucesso!" });
+      } else {
+        toast({ 
+          title: "Erro ao renovar PIX", 
+          description: data.message || "Erro desconhecido",
+          variant: "destructive" 
+        });
+      }
     },
     onError: (error: any) => {
-      console.log('PIX renewal error:', error);
-      console.log('Error message:', error.message);
-      console.log('Error details:', JSON.stringify(error, null, 2));
-      
-      const isWhatsAppContact = error.message && error.message.includes("Entre em contato conosco pelo WhatsApp");
-      
-      // For stock-related errors, show WhatsApp contact message
-      const errorMessage = error.message || error.toString() || "Tente novamente";
-      const isStockIssue = errorMessage.includes("fechado") || errorMessage.includes("estoque") || errorMessage.includes("WhatsApp");
-      
-      toast({
-        title: isStockIssue ? "Evento esgotado" : "Erro ao renovar PIX",
-        description: isStockIssue 
-          ? "Este evento está fechado e sem estoque disponível. Entre em contato conosco pelo WhatsApp para verificar possibilidades de pagamento."
-          : errorMessage,
-        variant: "destructive",
+      console.error('❌ PIX renewal error:', error);
+
+      const errorMessage = error.message || "Tente novamente em alguns instantes";
+
+      toast({ 
+        title: "Erro ao renovar PIX", 
+        description: errorMessage,
+        variant: "destructive" 
       });
-      onPaymentError(errorMessage);
     }
   });
 
@@ -162,7 +168,7 @@ export function PendingPayment({ order, onPaymentSuccess, onPaymentError }: Pend
             )}
           </div>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           {/* Order timeout warning */}
           {pix?.isTimedOut ? (
@@ -198,7 +204,7 @@ export function PendingPayment({ order, onPaymentSuccess, onPaymentError }: Pend
                         <p className="text-sm text-yellow-700 mb-4">
                           O QR code PIX expirou (30 minutos). Escolha uma opção para continuar:
                         </p>
-                        
+
                         <div className="space-y-3">
                           <Button
                             onClick={() => renewPixMutation.mutate()}
@@ -212,7 +218,7 @@ export function PendingPayment({ order, onPaymentSuccess, onPaymentError }: Pend
                             )}
                             Gerar novo PIX
                           </Button>
-                          
+
                           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                             <p className="text-sm text-blue-700">
                               <strong>Quer pagar de outra forma?</strong><br />

@@ -3836,11 +3836,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .where(eq(orders.id, order.id));
 
+      console.log('✅ PIX renewal - Order updated with new payment data:', {
+        orderId: order.id,
+        paymentId: pixPayment.id,
+        hasQrCodeBase64: !!pixPayment.qr_code_base64,
+        hasCopyPaste: !!pixPayment.qr_code,
+        expirationDate: pixExpiration.toISOString()
+      });
+
       res.json({
         success: true,
         paymentId: pixPayment.id,
+        qrCode: pixPayment.qr_code, // Add this for compatibility
         qrCodeBase64: pixPayment.qr_code_base64,
         pixCopyPaste: pixPayment.qr_code,
+        ticketUrl: pixPayment.ticket_url,
         expirationDate: pixExpiration.toISOString(),
         message: "PIX renovado com sucesso"
       });
@@ -3939,8 +3949,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           expirationDate: order.pixExpirationDate,
           isExpired: isPixExpired,
           isTimedOut: isPaymentTimedOut,
-          canRenew: !isPaymentTimedOut
+          canRenew: !isPaymentTimedOut,
+          hasValidQrCode: !!(order.pixQrCode && order.pixCopyPaste)
         };
+
+        console.log('📊 Payment status PIX data:', {
+          hasQrCodeBase64: !!order.pixQrCode,
+          hasCopyPaste: !!order.pixCopyPaste,
+          isExpired: isPixExpired,
+          isTimedOut: isPaymentTimedOut,
+          paymentId: order.paymentId
+        });
 
         // Check payment status with MercadoPago if we have paymentId
         if (order.paymentId) {

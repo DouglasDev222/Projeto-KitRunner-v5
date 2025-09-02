@@ -60,13 +60,33 @@ export function PIXPayment({
     },
     onSuccess: (data) => {
       setIsProcessing(false);
+      console.log('🎯 PIX creation response:', data);
+      
       if (data.success) {
-        setPixData(data);
-        setPaymentId(data.paymentId);
+        // Ensure we have the required PIX data
+        const pixDataComplete = {
+          ...data,
+          qrCode: data.qrCode || data.pixCopyPaste,
+          qrCodeBase64: data.qrCodeBase64,
+          paymentId: data.paymentId
+        };
+        
+        console.log('✅ Setting PIX data:', {
+          hasQrCode: !!pixDataComplete.qrCode,
+          hasQrCodeBase64: !!pixDataComplete.qrCodeBase64,
+          paymentId: pixDataComplete.paymentId
+        });
+        
+        setPixData(pixDataComplete);
+        setPaymentId(pixDataComplete.paymentId);
+        
         // Notify parent component that PIX data was generated
-        onPixDataGenerated?.(data);
+        onPixDataGenerated?.(pixDataComplete);
+        
         // Start checking payment status
-        startStatusChecking(data.paymentId);
+        if (pixDataComplete.paymentId) {
+          startStatusChecking(pixDataComplete.paymentId);
+        }
       } else {
         // Handle price validation errors with clear messaging
         if (data.code === 'PRICE_VALIDATION_FAILED') {
@@ -78,6 +98,8 @@ export function PIXPayment({
     },
     onError: (error: any) => {
       setIsProcessing(false);
+      console.error('❌ PIX creation error:', error);
+      
       // Handle price validation errors
       if (error.message && error.message.includes('PRICE_VALIDATION_FAILED')) {
         onError('Os preços foram atualizados. Por favor, revise seu pedido e tente novamente com os valores corretos.');
