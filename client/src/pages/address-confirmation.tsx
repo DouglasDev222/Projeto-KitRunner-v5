@@ -147,7 +147,6 @@ export default function AddressConfirmation() {
       
       // Enhanced: Always force validation on address load, regardless of cache
       (async () => {
-        console.log('🔄 Page loaded - forcing pricing validation for address:', defaultAddress.zipCode);
         setPricingValidationStatus('validating');
         setCalculatedCosts(null); // Clear any cached costs
         try {
@@ -167,7 +166,6 @@ export default function AddressConfirmation() {
   
   // Enhanced secure address selection with validation
   const handleAddressSelectSecure = async (address: Address) => {
-    console.log('🔄 handleAddressSelectSecure called for:', address.zipCode);
     setSelectedAddress(address);
     form.reset({
       street: address.street,
@@ -191,7 +189,6 @@ export default function AddressConfirmation() {
     
     // Calculate real delivery costs based on event pricing type
     const result = await calculateDeliveryCosts(address);
-    console.log('✅ handleAddressSelectSecure completed with result:', result?.validated);
     return result;
   };
 
@@ -201,7 +198,6 @@ export default function AddressConfirmation() {
   
   // Enhanced delivery costs calculation with proper validation
   const calculateDeliveryCosts = async (address: Address) => {
-      console.log('🔄 calculateDeliveryCosts called for CEP:', address.zipCode, 'Event type:', event?.pricingType);
       try {
         // Check if event uses CEP zones pricing
         if (event?.pricingType === 'cep_zones') {
@@ -209,9 +205,7 @@ export default function AddressConfirmation() {
           setCepZoneError(null);
           
           // Force fresh API call - ignore any cached data
-          console.log("🔍 FORCING fresh CEP zone check for:", address.zipCode, "with event ID:", id);
           const cepResult = await checkCepZone(address.zipCode, parseInt(id!));
-          console.log("📊 CEP zone result:", cepResult);
           setIsCheckingCepZone(false);
           
           if (cepResult.found && cepResult.price !== undefined) {

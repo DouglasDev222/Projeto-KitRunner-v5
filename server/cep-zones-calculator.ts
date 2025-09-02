@@ -209,8 +209,6 @@ export async function calculateCepZonePrice(cep: string, eventId?: number): Prom
       return null;
     }
 
-    console.log(`🔍 Validating CEP ${cleanedCep} for event ${eventId || 'global'}`);
-
     // Get all active zones ordered by priority (1 = highest priority)
     const zones = await db
       .select()
@@ -218,23 +216,17 @@ export async function calculateCepZonePrice(cep: string, eventId?: number): Prom
       .where(eq(cepZones.active, true))
       .orderBy(cepZones.priority);
 
-    console.log(`📊 Found ${zones.length} active zones for CEP validation`);
-
     // STEP 1: Find the correct zone for this CEP (by priority)
     let matchedZone = null;
     
     for (const zone of zones) {
-      console.log(`🔍 Checking zone: ${zone.name} (priority: ${zone.priority})`);
-      
       if (validateCepInZone(cleanedCep, zone)) {
         matchedZone = zone;
-        console.log(`✅ CEP ${cleanedCep} matched zone: ${zone.name} (priority: ${zone.priority})`);
         break; // Stop at first match (highest priority)
       }
     }
 
     if (!matchedZone) {
-      console.warn(`⚠️ CEP ${cleanedCep} not found in any zones`);
       return null;
     }
 
@@ -254,13 +246,11 @@ export async function calculateCepZonePrice(cep: string, eventId?: number): Prom
         .limit(1);
 
       if (customPrice.length > 0) {
-        console.log(`💰 Using event-specific price for zone ${matchedZone.name}: R$ ${customPrice[0].price}`);
         return parseFloat(customPrice[0].price);
       }
     }
 
     // STEP 3: Use global zone price as fallback
-    console.log(`💰 Using global price for zone ${matchedZone.name}: R$ ${matchedZone.price}`);
     return parseFloat(matchedZone.price);
 
   } catch (error) {
