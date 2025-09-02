@@ -1403,9 +1403,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const cleanCep = (cep as string).replace(/\D/g, '');
 
-      await calculateCepZoneInfo(cleanCep, parseInt(eventId as string)); // Use calculateCepZoneInfo for debug as well
+      console.log(`🐛 [DEBUG] Starting CEP analysis for ${cleanCep}`);
 
-      res.json({ success: true, message: 'Debug executado, verifique logs do servidor' });
+      // Get all zones and show their ranges
+      const zones = await db.select().from(cepZones).where(eq(cepZones.active, true)).orderBy(cepZones.priority);
+      
+      console.log(`🐛 [DEBUG] Active zones found: ${zones.length}`);
+      
+      zones.forEach((zone, index) => {
+        console.log(`🐛 [DEBUG] Zone ${index + 1}: ${zone.name} (Priority: ${zone.priority})`);
+        try {
+          const ranges = JSON.parse(zone.cepRanges);
+          ranges.forEach((range: any, rangeIndex: number) => {
+            const isInRange = cleanCep >= range.start.replace(/\D/g, '') && cleanCep <= range.end.replace(/\D/g, '');
+            console.log(`🐛 [DEBUG]   Range ${rangeIndex + 1}: ${range.start}...${range.end} ${isInRange ? '✅ MATCH' : '❌'}`);
+          });
+        } catch (err) {
+          console.log(`🐛 [DEBUG]   Error parsing ranges: ${err}`);
+        }
+      });
+
+      const result = await calculateCepZoneInfo(cleanCep, parseInt(eventId as string));
+
+      res.json({ 
+        success: true, 
+        message: 'Debug executado, verifique logs do servidor',
+        result,
+        cleanCep 
+      });
 
     } catch (error) {
       console.error('Erro no debug:', error);
