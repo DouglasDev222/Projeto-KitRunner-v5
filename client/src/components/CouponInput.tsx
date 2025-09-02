@@ -83,6 +83,9 @@ export function CouponInput({
       return response.json();
     },
     enabled: shouldValidate && couponCode.length > 0 && !appliedCoupon && (addressId !== undefined || customerZipCode !== undefined),
+    // 🎫 CACHE FIX: More aggressive cache settings for real-time validation
+    staleTime: 0, // Always consider data stale
+    gcTime: 0, // Don't keep data in cache
     retry: false
   });
 
@@ -97,8 +100,13 @@ export function CouponInput({
         onCouponApplied(data.coupon, data.discount, data.finalAmount);
         setCouponCode(""); // Limpar o campo após aplicar
         
-        // 🎫 CACHE FIX: Invalidate future coupon validations to ensure fresh data
-        console.log('🎫 Coupon applied successfully, invalidating cache for future validations');
+        // 🎫 CACHE FIX: Invalidate coupon cache IMMEDIATELY after successful application
+        queryClient.invalidateQueries({ 
+          queryKey: ['validate-coupon'], 
+          exact: false 
+        });
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/coupons'] });
+        console.log('🎫 Cache invalidated IMMEDIATELY after coupon application');
       } else {
         setValidationStatus('error');
       }
@@ -128,13 +136,15 @@ export function CouponInput({
     setValidationMessage("");
     setValidationStatus('idle');
     
-    // 🎫 CACHE FIX: Invalidate coupon validation cache when removing coupon
-    // This ensures fresh validation for future coupon attempts
+    // 🎫 CACHE FIX: Aggressively invalidate ALL coupon-related cache when removing coupon
     queryClient.invalidateQueries({ 
       queryKey: ['validate-coupon'], 
       exact: false 
     });
-    console.log('🎫 Coupon removed, cache invalidated for fresh validations');
+    queryClient.invalidateQueries({ queryKey: ['/api/admin/coupons'] });
+    // Clear any cached data immediately
+    queryClient.clear();
+    console.log('🎫 Coupon removed, ALL cache cleared for completely fresh validations');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

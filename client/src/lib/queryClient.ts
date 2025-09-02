@@ -4,7 +4,7 @@ async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     try {
       const data = await res.json();
-      
+
       // If the response has a message or error field, use it
       if (data && (data.message || data.error)) {
         const errorMessage = data.message || data.error;
@@ -13,7 +13,7 @@ async function throwIfResNotOk(res: Response) {
         (error as any).responseData = data;
         throw error;
       }
-      
+
       // Otherwise use the whole response as text
       throw new Error(JSON.stringify(data));
     } catch (jsonError) {
@@ -21,7 +21,7 @@ async function throwIfResNotOk(res: Response) {
       if (jsonError instanceof Error && jsonError.message !== 'Unexpected end of JSON input') {
         throw jsonError;
       }
-      
+
       // If JSON parsing failed, try to get text from a cloned response
       try {
         const clonedRes = res.clone();
@@ -38,7 +38,7 @@ async function throwIfResNotOk(res: Response) {
 // Helper function to get auth headers based on request context
 function getAuthHeaders(requestUrl?: string): Record<string, string> {
   const headers: Record<string, string> = {};
-  
+
   try {
     // If it's an admin request, use admin token
     if (requestUrl && requestUrl.includes('/api/admin/')) {
@@ -48,12 +48,12 @@ function getAuthHeaders(requestUrl?: string): Record<string, string> {
         return headers;
       }
     }
-    
+
     // For all other requests, use regular user token
     const savedUser = localStorage.getItem('kitrunner_user');
     if (savedUser) {
       const userData = JSON.parse(savedUser);
-      
+
       if (userData && userData.id && userData.cpf && userData.name) {
         // Create base64 encoded token
         const token = btoa(JSON.stringify(userData));
@@ -63,7 +63,7 @@ function getAuthHeaders(requestUrl?: string): Record<string, string> {
   } catch (error) {
     console.warn('Failed to get auth token:', error);
   }
-  
+
   return headers;
 }
 
@@ -74,11 +74,11 @@ export async function apiRequest(
 ): Promise<Response> {
   const authHeaders = getAuthHeaders(url);
   const headers: Record<string, string> = { ...authHeaders };
-  
+
   if (data) {
     headers["Content-Type"] = "application/json";
   }
-  
+
   const res = await fetch(url, {
     method,
     headers,
@@ -98,10 +98,10 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     const requestUrl = queryKey[0] as string;
     const authHeaders = getAuthHeaders(requestUrl);
-    
+
     // Build URL properly from queryKey
     let url = queryKey[0] as string;
-    
+
     // If there are additional parameters, add them as query string
     if (queryKey.length > 1 && queryKey[1] && typeof queryKey[1] === 'object') {
       const params = new URLSearchParams();
@@ -118,7 +118,7 @@ export const getQueryFn: <T>(options: {
       // Handle path segments
       url = queryKey.join("/");
     }
-    
+
     const res = await fetch(url, {
       headers: authHeaders,
       credentials: "include",
@@ -135,11 +135,17 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes for most queries
+      retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      // 🎫 Special handling for coupon validation queries
+      queryKeyHashFn: (queryKey) => {
+        // For coupon validation queries, always fetch fresh data
+        if (Array.isArray(queryKey) && queryKey[0] === 'validate-coupon') {
+          return JSON.stringify([...queryKey, Date.now()]);
+        }
+        return JSON.stringify(queryKey);
+      },
     },
     mutations: {
       retry: false,

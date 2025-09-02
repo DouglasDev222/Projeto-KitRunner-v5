@@ -260,14 +260,18 @@ export default function Payment() {
     setPaymentError(null);
     setOrderNumber(paymentResult.orderNumber);
     
-    // 🎫 CACHE FIX: Invalidate coupon cache on payment success
+    // 🎫 CACHE FIX: Aggressively invalidate ALL coupon-related cache on payment success
     if (appliedCoupon) {
+      // Invalidate all validate-coupon queries
       queryClient.invalidateQueries({ 
         queryKey: ['validate-coupon'], 
         exact: false 
       });
+      // Invalidate admin coupons
       queryClient.invalidateQueries({ queryKey: ['/api/admin/coupons'] });
-      console.log('🎫 Payment success: Cache invalidated for coupon:', appliedCoupon.code);
+      // Force immediate refetch by clearing the entire cache
+      queryClient.clear();
+      console.log('🎫 Payment success: ALL cache cleared for coupon:', appliedCoupon.code);
     }
 
     // Store payment result data
