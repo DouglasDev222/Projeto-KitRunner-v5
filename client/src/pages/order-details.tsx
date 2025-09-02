@@ -620,10 +620,10 @@ export default function OrderDetails() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       {/* Show delivery cost if exists (variable pricing) */}
                       {parseFloat(order.deliveryCost) > 0 && (
-                        <div className="flex justify-between items-center py-2">
+                        <div className="flex justify-between items-center py-1">
                           <span className="text-gray-600">
                             {order.cepZoneName 
                               ? `Entrega (${order.cepZoneName}):`
@@ -636,21 +636,21 @@ export default function OrderDetails() {
                       
                       {/* Show fixed price if exists */}
                       {order.event?.fixedPrice && (
-                        <div className="flex justify-between items-center py-2">
+                        <div className="flex justify-between items-center py-1">
                           <span className="text-gray-600">Preço Fixo (inclui todos os serviços):</span>
                           <span className="font-medium text-gray-900">{formatCurrency(parseFloat(order.event.fixedPrice))}</span>
                         </div>
                       )}
                       
                       {parseFloat(order.extraKitsCost) > 0 && (
-                        <div className="flex justify-between items-center py-2">
+                        <div className="flex justify-between items-center py-1">
                           <span className="text-gray-600">Kits adicionais:</span>
                           <span className="font-medium text-gray-900">{formatCurrency(parseFloat(order.extraKitsCost))}</span>
                         </div>
                       )}
                       
                       {parseFloat(order.donationAmount) > 0 && (
-                        <div className="flex justify-between items-center py-2">
+                        <div className="flex justify-between items-center py-1">
                           <div className="flex items-center">
                             <Heart className="w-4 h-4 text-red-500 mr-2" />
                             <span className="text-gray-600">Doação:</span>
@@ -661,12 +661,12 @@ export default function OrderDetails() {
                       
                       {parseFloat(order.discountAmount) > 0 && (
                         <>
-                          <div className="flex justify-between items-center py-2">
+                          <div className="flex justify-between items-center py-1">
                             <span className="text-gray-600">Desconto:</span>
                             <span className="font-medium text-green-600">-{formatCurrency(parseFloat(order.discountAmount))}</span>
                           </div>
                           {order.couponCode && (
-                            <div className="flex justify-between items-center py-2">
+                            <div className="flex justify-between items-center py-1">
                               <span className="text-gray-600">Cupom utilizado:</span>
                               <span className="font-mono text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full">{order.couponCode}</span>
                             </div>
@@ -674,14 +674,14 @@ export default function OrderDetails() {
                         </>
                       )}
                       
-                      <Separator />
-                      <div className="flex justify-between items-center py-3 bg-purple-50 px-4 rounded-lg">
+                      <Separator className="my-3" />
+                      <div className="flex justify-between items-center py-3 bg-purple-50 px-4 rounded-lg mt-4">
                         <span className="text-xl font-bold text-gray-900">Total Pago:</span>
                         <span className="text-2xl font-bold text-purple-600">
                           {formatCurrency(parseFloat(order.totalCost))}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center pt-2">
+                      <div className="flex justify-between items-center pt-3">
                         <span className="text-gray-600">Forma de pagamento:</span>
                         <Badge variant="outline" className="bg-gray-50">{order.paymentMethod}</Badge>
                       </div>
