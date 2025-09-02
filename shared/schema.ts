@@ -237,6 +237,7 @@ export const eventCepZonePrices = pgTable("event_cep_zone_prices", {
   eventId: integer("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
   cepZoneId: integer("cep_zone_id").notNull().references(() => cepZones.id, { onDelete: "cascade" }),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  active: boolean("active").notNull().default(true), // Indica se a zona está ativa para este evento
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

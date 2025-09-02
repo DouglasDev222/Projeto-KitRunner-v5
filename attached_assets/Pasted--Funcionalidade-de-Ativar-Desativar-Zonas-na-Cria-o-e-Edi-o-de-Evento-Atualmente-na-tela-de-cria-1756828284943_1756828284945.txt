@@ -1,0 +1,59 @@
+"Funcionalidade de Ativar/Desativar Zonas na Criação e Edição de Evento
+
+Atualmente, na tela de criação e edição de evento, usamos a tabela event_cep_zone_prices apenas para personalizar os preços de zonas ativas (se não houver preço personalizado, usamos o padrão da tabela cep_zones).
+
+📌 Nova funcionalidade desejada:
+
+Adicionar coluna de ativação/desativação de zona no evento
+
+Na tabela event_cep_zone_prices, incluir uma coluna active (boolean).
+
+Essa coluna indicará se a zona está ativa ou desativada para aquele evento específico.
+
+Tela de criação/edição do evento
+
+Listar todas as zonas de CEP ativas globalmente (cep_zones).
+
+O organizador poderá:
+
+Ativar todas (padrão).
+
+Desativar algumas zonas específicas só para aquele evento.
+
+Caso uma zona seja desativada no evento:
+
+Deve ser criado um registro em event_cep_zone_prices para essa zona, com:
+
+O preço preenchido (pode ser o preço padrão da cep_zones, apenas para não deixar vazio).
+
+A flag active = false.
+
+Tela do cliente /events/{id}/address
+
+Ao verificar o CEP do cliente, além da lógica normal de zonas (prioridade, fallback, etc.), verificar também se a zona está ativa no evento (event_cep_zone_prices.active).
+
+Se a zona estiver desativada para aquele evento:
+
+Retornar mensagem clara para o cliente: “Este evento não está disponível para sua região.”
+
+Não seguir para o fallback.
+
+📌 Fluxo resumido de decisão do CEP no evento:
+
+Procurar a zona pela ordem de prioridade.
+
+Se a zona estiver ativa globalmente e ativa no evento → aplicar preço personalizado (se existir) ou preço padrão.
+
+Se a zona estiver ativa globalmente, mas desativada no evento → mostrar mensagem de não atendimento.
+
+Se a zona estiver inativa globalmente → também mostrar mensagem de não atendimento (sem fallback).
+
+Se não encontrar nenhuma zona → aplicar fallback (se existir e ativo para o evento).
+
+📌 Objetivo da melhoria:
+
+Dar flexibilidade para eventos restringirem determinadas regiões.
+
+Centralizar a configuração na tela de criação/edição do evento.
+
+Garantir que clientes recebam mensagens claras quando tentarem usar CEPs de zonas desativadas."

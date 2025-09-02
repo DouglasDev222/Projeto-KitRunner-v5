@@ -230,8 +230,16 @@ export async function calculateCepZonePrice(cep: string, eventId?: number): Prom
       return null;
     }
 
-    // STEP 2: Check if there's event-specific pricing for the matched zone
+    // STEP 2: Check if zone is active for this event (if eventId provided)
     if (eventId) {
+      const isZoneActive = await isZoneActiveForEvent(matchedZone.id, eventId);
+      
+      if (!isZoneActive) {
+        // Zone is disabled for this event
+        return null;
+      }
+
+      // STEP 3: Check if there's event-specific pricing for the matched zone
       const customPrice = await db
         .select({
           price: eventCepZonePrices.price
@@ -256,6 +264,37 @@ export async function calculateCepZonePrice(cep: string, eventId?: number): Prom
   } catch (error) {
     console.error('🚨 Critical error calculating CEP zone price:', error);
     return null;
+  }
+}
+
+/**
+ * Check if a zone is active for a specific event
+ */
+export async function isZoneActiveForEvent(cepZoneId: number, eventId: number): Promise<boolean> {
+  try {
+    const eventZone = await db
+      .select({
+        active: eventCepZonePrices.active
+      })
+      .from(eventCepZonePrices)
+      .where(
+        and(
+          eq(eventCepZonePrices.eventId, eventId),
+          eq(eventCepZonePrices.cepZoneId, cepZoneId)
+        )
+      )
+      .limit(1);
+
+    // Se existe registro específico para o evento, usar o status dele
+    if (eventZone.length > 0) {
+      return eventZone[0].active;
+    }
+
+    // Se não existe registro, zona está ativa por padrão para o evento
+    return true;
+  } catch (error) {
+    console.error('Erro ao verificar ativação da zona para evento:', error);
+    return false;
   }
 }
 
@@ -300,8 +339,20 @@ export async function calculateCepZoneInfo(cep: string, eventId?: number): Promi
       };
     }
 
-    // STEP 2: Check if there's event-specific pricing for the matched zone
+    // STEP 2: Check if zone is active for this event (if eventId provided)
     if (eventId) {
+      const isZoneActive = await isZoneActiveForEvent(matchedZone.id, eventId);
+      
+      if (!isZoneActive) {
+        // Zone is disabled for this event - return blocked status
+        return {
+          price: -1, // Special indicator for disabled zone
+          zoneName: matchedZone.name,
+          blocked: true
+        };
+      }
+
+      // STEP 3: Check if there's event-specific pricing for the matched zone
       const customPrice = await db
         .select({
           price: eventCepZonePrices.price
@@ -347,14 +398,14 @@ export class CepZonesCalculator {
       const zones = await db
         .select()
         .from(cepZones)
-        .where(eq(cepZones.isActive, true))
+        .where(eq(cepZones.active, true))
         .orderBy(asc(cepZones.priority));
 
       console.log(`📊 Zonas ativas encontradas: ${zones.length}`);
 
       zones.forEach((zone, index) => {
-        const isMatch = this.isInCepRange(cep, zone.cepStart, zone.cepEnd);
-        console.log(`${index + 1}. ${zone.name} (${zone.cepStart}-${zone.cepEnd}) - Prioridade: ${zone.priority} - Match: ${isMatch ? '✅' : '❌'}`);
+        const isMatch = validateCepInZone(cep, zone);
+        console.log(`${index + 1}. ${zone.name} - Prioridade: ${zone.priority} - Match: ${isMatch ? '✅' : '❌'}`);
       });
 
       // Buscar preços personalizados
@@ -383,7 +434,7 @@ export class CepZonesCalculator {
       const zones = await db
         .select()
         .from(cepZones)
-        .where(eq(cepZones.isActive, true))
+        .where(eq(cepZones.active, true))
         .orderBy(asc(cepZones.priority));
 
       if (zones.length === 0) {
@@ -413,7 +464,7 @@ export class CepZonesCalculator {
         }
 
         // Verificar se CEP se encaixa na zona específica
-        if (this.isInCepRange(cep, zone.cepStart, zone.cepEnd)) {
+        if (validateCepInZone(cep, zone)) {
           matchedZone = zone;
           break; // Para na primeira zona encontrada (maior prioridade)
         }
@@ -440,7 +491,7 @@ export class CepZonesCalculator {
       console.log(`💰 Preço aplicado: R$ ${finalPrice} (${eventPriceMap.has(matchedZone.id) ? 'personalizado' : 'padrão'})`);
 
       return {
-        price: finalPrice,
+        price: Number(finalPrice),
         zoneName: matchedZone.name,
         zoneId: matchedZone.id
       };
@@ -459,7 +510,7 @@ export class CepZonesCalculator {
       const zones = await db
         .select()
         .from(cepZones)
-        .where(eq(cepZones.isActive, true))
+        .where(eq(cepZones.active, true))
         .orderBy(asc(cepZones.priority));
 
       let matchedZone = null;
@@ -473,7 +524,7 @@ export class CepZonesCalculator {
         }
 
         // Verificar se CEP se encaixa na zona específica
-        if (this.isInCepRange(cep, zone.cepStart, zone.cepEnd)) {
+        if (validateCepInZone(cep, zone)) {
           matchedZone = zone;
           break; // Para na primeira zona encontrada (maior prioridade)
         }

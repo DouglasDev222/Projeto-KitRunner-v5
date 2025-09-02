@@ -3446,18 +3446,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all CEP zones with their global prices
       const allZones = await storage.getCepZones();
 
-      // Get custom prices for this specific event
+      // Get custom prices and activation status for this specific event
       const customPrices = await db
         .select()
         .from(eventCepZonePrices)
         .where(eq(eventCepZonePrices.eventId, eventId));
 
-      // Create a map of custom prices by zone ID
+      // Create maps for custom prices and activation status by zone ID
       const customPricesMap = new Map(
         customPrices.map(cp => [cp.cepZoneId, cp.price])
       );
+      const zoneActivationMap = new Map(
+        customPrices.map(cp => [cp.cepZoneId, cp.active])
+      );
 
-      // Combine zones with their custom prices
+      // Combine zones with their custom prices and activation status
       const zonesWithPrices = allZones.map(zone => ({
         id: zone.id,
         name: zone.name,
@@ -3466,7 +3469,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customPrice: customPricesMap.has(zone.id) 
           ? Number(customPricesMap.get(zone.id)) 
           : null,
-        active: zone.active
+        active: zone.active, // Global activation status
+        activeInEvent: zoneActivationMap.has(zone.id) 
+          ? zoneActivationMap.get(zone.id) 
+          : true // Default to active if no specific record
       }));
 
       res.json({
@@ -3483,14 +3489,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/admin/events/:id/cep-zone-prices", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const eventId = parseInt(req.params.id);
-      const { customPrices } = req.body;
+      const { zones } = req.body;
 
       if (isNaN(eventId)) {
         return res.status(400).json({ error: "ID do evento inválido" });
       }
 
-      if (!Array.isArray(customPrices)) {
-        return res.status(400).json({ error: "customPrices deve ser um array" });
+      if (!Array.isArray(zones)) {
+        return res.status(400).json({ error: "zones deve ser um array" });
       }
 
       // Validate event exists
@@ -3502,28 +3508,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Start transaction - first delete existing custom prices for this event
       await db.delete(eventCepZonePrices).where(eq(eventCepZonePrices.eventId, eventId));
 
-      // Insert new custom prices (only those with valid prices)
-      const validCustomPrices = customPrices.filter(cp => 
-        cp.cepZoneId && 
-        cp.price && 
-        !isNaN(parseFloat(cp.price)) && 
-        parseFloat(cp.price) > 0
-      );
+      // Prepare data for zones that need event-specific configuration
+      const zoneConfigData = zones
+        .filter(zone => {
+          // Include if has custom price OR is deactivated for event
+          const hasCustomPrice = zone.price && !isNaN(parseFloat(zone.price)) && parseFloat(zone.price) > 0;
+          const isDeactivated = zone.active === false;
+          return hasCustomPrice || isDeactivated;
+        })
+        .map(zone => {
+          // For deactivated zones, use global price as default
+          const priceToUse = zone.price && !isNaN(parseFloat(zone.price)) && parseFloat(zone.price) > 0 
+            ? zone.price.toString()
+            : zone.globalPrice.toString();
+          
+          return {
+            eventId,
+            cepZoneId: parseInt(zone.id),
+            price: priceToUse,
+            active: zone.active !== false // Default to true if not explicitly false
+          };
+        });
 
-      if (validCustomPrices.length > 0) {
-        const priceData = validCustomPrices.map(cp => ({
-          eventId,
-          cepZoneId: parseInt(cp.cepZoneId),
-          price: cp.price.toString()
-        }));
-
-        await db.insert(eventCepZonePrices).values(priceData);
+      if (zoneConfigData.length > 0) {
+        await db.insert(eventCepZonePrices).values(zoneConfigData);
       }
 
       res.json({
         success: true,
-        message: `${validCustomPrices.length} preços personalizados salvos com sucesso`,
-        updatedCount: validCustomPrices.length
+        message: `${zoneConfigData.length} configurações de zona salvos com sucesso`,
+        updatedCount: zoneConfigData.length
       });
 
     } catch (error: any) {

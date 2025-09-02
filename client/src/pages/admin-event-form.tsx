@@ -30,7 +30,7 @@ export default function AdminEventForm() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [createdEventId, setCreatedEventId] = useState<number | null>(null);
-  const [cepZonePrices, setCepZonePrices] = useState<Record<number, string>>({});
+  const [zoneConfigs, setZoneConfigs] = useState<Record<number, { price?: string; active: boolean }>>({});
   // Sistema novo: AdminRouteGuard já protege
 
   // Sistema novo: AdminRouteGuard já protege - não precisa de verificação
@@ -63,23 +63,25 @@ export default function AdminEventForm() {
       const response = await apiRequest("POST", "/api/admin/events", data);
       const eventData = await response.json();
       
-      // If the event uses CEP zones pricing and has custom prices, save them
-      if (data.pricingType === "cep_zones" && Object.keys(cepZonePrices).length > 0) {
-        const customPrices = Object.entries(cepZonePrices)
-          .filter(([_, price]) => price && price.trim() !== '')
-          .map(([cepZoneId, price]) => ({
-            cepZoneId: parseInt(cepZoneId),
-            price
-          }));
+      // If the event uses CEP zones pricing and has zone configurations, save them
+      if (data.pricingType === "cep_zones" && Object.keys(zoneConfigs).length > 0) {
+        const zones = Object.entries(zoneConfigs)
+          .map(([zoneId, config]) => ({
+            id: parseInt(zoneId),
+            price: config.price,
+            active: config.active,
+            globalPrice: 0 // Will be filled by the backend
+          }))
+          .filter(zone => zone.price || zone.active === false); // Only send zones with custom price or deactivated
         
-        if (customPrices.length > 0) {
+        if (zones.length > 0) {
           try {
             await apiRequest("PUT", `/api/admin/events/${eventData.id}/cep-zone-prices`, {
-              customPrices
+              zones
             });
           } catch (error) {
-            console.error('Erro ao salvar preços personalizados:', error);
-            // Don't fail the entire operation if custom prices fail
+            console.error('Erro ao salvar configurações de zona:', error);
+            // Don't fail the entire operation if zone configs fail
           }
         }
       }
@@ -351,7 +353,7 @@ export default function AdminEventForm() {
                 {/* CEP Zone Pricing Configuration - Show when cep_zones is selected */}
                 <CepZonePricing
                   isVisible={watchPricingType === "cep_zones"}
-                  onPricesChange={setCepZonePrices}
+                  onConfigChange={setZoneConfigs}
                   className="mt-4"
                 />
 

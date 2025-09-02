@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { MapPin, DollarSign, Info } from "lucide-react";
+import { MapPin, DollarSign, Info, Power, PowerOff } from "lucide-react";
 import { formatCurrency } from "@/lib/brazilian-formatter";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -15,23 +17,29 @@ interface CepZone {
   description?: string;
   globalPrice: number;
   customPrice?: number | null;
+  active: boolean; // Global activation status
+  activeInEvent?: boolean; // Event-specific activation status
+}
+
+interface ZoneConfig {
+  price?: string;
   active: boolean;
 }
 
 interface CepZonePricingProps {
   eventId?: number; // For editing existing events
-  onPricesChange: (prices: Record<number, string>) => void;
+  onConfigChange: (configs: Record<number, ZoneConfig>) => void;
   isVisible: boolean;
   className?: string;
 }
 
 export function CepZonePricing({ 
   eventId, 
-  onPricesChange, 
+  onConfigChange, 
   isVisible, 
   className = "" 
 }: CepZonePricingProps) {
-  const [customPrices, setCustomPrices] = useState<Record<number, string>>({});
+  const [zoneConfigs, setZoneConfigs] = useState<Record<number, ZoneConfig>>({});
 
   // Fetch CEP zones with current prices for this event
   const { data: zonesData, isLoading } = useQuery({
@@ -64,31 +72,77 @@ export function CepZonePricing({
         active: zone.active
       }));
 
-  // Initialize custom prices when data loads
+  // Initialize zone configurations when data loads
   useEffect(() => {
-    if (zones.length > 0 && eventId) {
-      const initialPrices: Record<number, string> = {};
+    if (zones.length > 0) {
+      const initialConfigs: Record<number, ZoneConfig> = {};
       zones.forEach(zone => {
-        if (zone.customPrice !== null && zone.customPrice !== undefined) {
-          initialPrices[zone.id] = zone.customPrice.toString();
-        }
+        initialConfigs[zone.id] = {
+          price: zone.customPrice !== null && zone.customPrice !== undefined 
+            ? zone.customPrice.toString() 
+            : undefined,
+          active: zone.activeInEvent !== undefined ? zone.activeInEvent : true
+        };
       });
-      setCustomPrices(initialPrices);
-      onPricesChange(initialPrices);
+      setZoneConfigs(initialConfigs);
+      onConfigChange(initialConfigs);
     }
-  }, [zones, eventId, onPricesChange]);
+  }, [zones, onConfigChange]);
 
   const handlePriceChange = (zoneId: number, value: string) => {
-    const newPrices = { ...customPrices };
+    const newConfigs = { ...zoneConfigs };
     
-    if (value.trim() === "") {
-      delete newPrices[zoneId];
-    } else {
-      newPrices[zoneId] = value;
+    if (!newConfigs[zoneId]) {
+      newConfigs[zoneId] = { active: true };
     }
     
-    setCustomPrices(newPrices);
-    onPricesChange(newPrices);
+    if (value.trim() === "") {
+      delete newConfigs[zoneId].price;
+    } else {
+      newConfigs[zoneId].price = value;
+    }
+    
+    setZoneConfigs(newConfigs);
+    onConfigChange(newConfigs);
+  };
+
+  const handleActiveChange = (zoneId: number, active: boolean) => {
+    const newConfigs = { ...zoneConfigs };
+    
+    if (!newConfigs[zoneId]) {
+      newConfigs[zoneId] = { active };
+    } else {
+      newConfigs[zoneId].active = active;
+    }
+    
+    setZoneConfigs(newConfigs);
+    onConfigChange(newConfigs);
+  };
+
+  const handleActivateAll = () => {
+    const newConfigs = { ...zoneConfigs };
+    zones.forEach(zone => {
+      if (!newConfigs[zone.id]) {
+        newConfigs[zone.id] = { active: true };
+      } else {
+        newConfigs[zone.id].active = true;
+      }
+    });
+    setZoneConfigs(newConfigs);
+    onConfigChange(newConfigs);
+  };
+
+  const handleDeactivateAll = () => {
+    const newConfigs = { ...zoneConfigs };
+    zones.forEach(zone => {
+      if (!newConfigs[zone.id]) {
+        newConfigs[zone.id] = { active: false };
+      } else {
+        newConfigs[zone.id].active = false;
+      }
+    });
+    setZoneConfigs(newConfigs);
+    onConfigChange(newConfigs);
   };
 
   if (!isVisible) {
@@ -139,27 +193,72 @@ export function CepZonePricing({
           <MapPin className="h-5 w-5" />
           Precificação por Zonas de CEP
         </CardTitle>
-        <p className="text-sm text-gray-600">
-          Defina preços personalizados para cada zona. Deixe em branco para usar o preço global da zona.
-        </p>
+        <div className="space-y-2">
+          <p className="text-sm text-gray-600">
+            Configure preços personalizados e ative/desative zonas específicas para este evento.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleActivateAll}
+              className="flex items-center gap-1"
+            >
+              <Power className="h-3 w-3" />
+              Ativar Todas
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDeactivateAll}
+              className="flex items-center gap-1"
+            >
+              <PowerOff className="h-3 w-3" />
+              Desativar Todas
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {zones.map((zone, index) => (
           <div key={zone.id}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors">
               {/* Zone Info */}
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <h4 className="font-medium">{zone.name}</h4>
                   {zone.active ? (
-                    <Badge variant="secondary" className="text-xs">Ativa</Badge>
+                    <Badge variant="secondary" className="text-xs">Ativa Globalmente</Badge>
                   ) : (
-                    <Badge variant="outline" className="text-xs">Inativa</Badge>
+                    <Badge variant="outline" className="text-xs">Inativa Globalmente</Badge>
                   )}
                 </div>
                 {zone.description && (
                   <p className="text-sm text-gray-500">{zone.description}</p>
                 )}
+              </div>
+
+              {/* Event Activation Control */}
+              <div className="space-y-1">
+                <Label className="text-xs">Ativa no Evento</Label>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`active-${zone.id}`}
+                    checked={(zoneConfigs[zone.id]?.active !== false)}
+                    onCheckedChange={(checked) => 
+                      handleActiveChange(zone.id, checked as boolean)
+                    }
+                    disabled={!zone.active} // Can't activate if globally inactive
+                  />
+                  <Label 
+                    htmlFor={`active-${zone.id}`} 
+                    className={`text-sm ${!zone.active ? 'text-gray-400' : ''}`}
+                  >
+                    {(zoneConfigs[zone.id]?.active !== false) ? 'Ativada' : 'Desativada'}
+                  </Label>
+                </div>
               </div>
 
               {/* Global Price (Read-only) */}
@@ -182,9 +281,10 @@ export function CepZonePricing({
                   step="0.01"
                   min="0"
                   placeholder={`Ex: ${(zone.globalPrice || 0).toFixed(2)}`}
-                  value={customPrices[zone.id] || ""}
+                  value={zoneConfigs[zone.id]?.price || ""}
                   onChange={(e) => handlePriceChange(zone.id, e.target.value)}
                   className="text-right"
+                  disabled={zoneConfigs[zone.id]?.active === false}
                 />
               </div>
             </div>
@@ -193,21 +293,33 @@ export function CepZonePricing({
           </div>
         ))}
 
-        {Object.keys(customPrices).length > 0 && (
+        {Object.entries(zoneConfigs).some(([_, config]) => config.price || config.active === false) && (
           <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h4 className="font-medium text-blue-900 mb-2">Resumo dos Preços Personalizados</h4>
+            <h4 className="font-medium text-blue-900 mb-2">Resumo das Configurações</h4>
             <div className="space-y-1">
-              {Object.entries(customPrices).map(([zoneId, price]) => {
-                const zone = zones.find(z => z.id === parseInt(zoneId));
-                return zone ? (
-                  <div key={zoneId} className="flex justify-between text-sm">
-                    <span className="text-blue-700">{zone.name}</span>
-                    <span className="font-medium text-blue-900">
-                      {formatCurrency(parseFloat(price) || 0)}
-                    </span>
-                  </div>
-                ) : null;
-              })}
+              {Object.entries(zoneConfigs)
+                .filter(([_, config]) => config.price || config.active === false)
+                .map(([zoneId, config]) => {
+                  const zone = zones.find(z => z.id === parseInt(zoneId));
+                  return zone ? (
+                    <div key={zoneId} className="flex justify-between text-sm">
+                      <span className="text-blue-700">{zone.name}</span>
+                      <div className="flex gap-2 items-center">
+                        {config.price && (
+                          <span className="font-medium text-blue-900">
+                            {formatCurrency(parseFloat(config.price) || 0)}
+                          </span>
+                        )}
+                        {config.active === false && (
+                          <Badge variant="outline" className="text-xs text-red-600">
+                            Desativada
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ) : null;
+                })
+              }
             </div>
           </div>
         )}
