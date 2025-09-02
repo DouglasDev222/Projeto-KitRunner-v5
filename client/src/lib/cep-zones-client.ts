@@ -51,7 +51,7 @@ export async function checkCepZone(cep: string, eventName?: string): Promise<Cep
       throw new Error(data.error || 'Erro ao verificar CEP');
     }
 
-    if (!data.found) {
+    if (!data.success || !data.result.found) {
       return {
         found: false,
         error: "CEP não atendido. Entre em contato via WhatsApp.",
@@ -61,9 +61,10 @@ export async function checkCepZone(cep: string, eventName?: string): Promise<Cep
 
     return {
       found: true,
-      zoneName: data.zone.zoneName,
-      deliveryCost: data.zone.deliveryCost,
-      description: data.zone.description
+      zoneName: data.result.zoneName,
+      price: data.result.deliveryCost,
+      deliveryCost: data.result.deliveryCost,
+      description: data.result.description
     };
 
   } catch (error) {
