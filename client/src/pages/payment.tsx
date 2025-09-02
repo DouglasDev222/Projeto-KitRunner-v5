@@ -222,16 +222,28 @@ export default function Payment() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/events"] }); // May affect event stats
       
-      // 🎫 CACHE FIX: Invalidate coupon-related queries to ensure reactive updates
+      // 🎫 CACHE FIX: Aggressively clear all coupon cache after payment
       if (appliedCoupon) {
-        // Invalidate all validate-coupon queries for this coupon
+        // Remove all validate-coupon queries from cache
+        queryClient.removeQueries({ 
+          queryKey: ['validate-coupon'], 
+          exact: false 
+        });
+        // Invalidate all coupon-related queries  
         queryClient.invalidateQueries({ 
           queryKey: ['validate-coupon'], 
           exact: false 
         });
-        // Invalidate admin coupons list
         queryClient.invalidateQueries({ queryKey: ['/api/admin/coupons'] });
-        console.log('🎫 Cache invalidated for coupon:', appliedCoupon.code);
+        
+        // ⚡ NUCLEAR OPTION: Clear entire query cache to force fresh data
+        // This ensures no cached coupon validation remains
+        setTimeout(() => {
+          queryClient.clear();
+          console.log('🎫 NUCLEAR: Entire query cache cleared after coupon usage');
+        }, 1000);
+        
+        console.log('🎫 Aggressive cache clearing for coupon:', appliedCoupon.code);
       }
 
       // Only auto-complete for non-PIX payments
@@ -260,14 +272,25 @@ export default function Payment() {
     setPaymentError(null);
     setOrderNumber(paymentResult.orderNumber);
     
-    // 🎫 CACHE FIX: Invalidate coupon cache on payment success
+    // 🎫 CACHE FIX: Aggressively clear coupon cache on payment success
     if (appliedCoupon) {
+      queryClient.removeQueries({ 
+        queryKey: ['validate-coupon'], 
+        exact: false 
+      });
       queryClient.invalidateQueries({ 
         queryKey: ['validate-coupon'], 
         exact: false 
       });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/coupons'] });
-      console.log('🎫 Payment success: Cache invalidated for coupon:', appliedCoupon.code);
+      
+      // ⚡ NUCLEAR OPTION: Clear entire cache after successful payment
+      setTimeout(() => {
+        queryClient.clear();
+        console.log('🎫 NUCLEAR: Entire cache cleared after successful payment with coupon');
+      }, 1500);
+      
+      console.log('🎫 Payment success: Aggressive cache clearing for coupon:', appliedCoupon.code);
     }
 
     // Store payment result data

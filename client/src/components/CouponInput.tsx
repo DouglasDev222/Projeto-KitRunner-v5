@@ -46,10 +46,11 @@ export function CouponInput({
   const [shouldValidate, setShouldValidate] = useState(false);
   const [validationMessage, setValidationMessage] = useState("");
   const [validationStatus, setValidationStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [validationTimestamp, setValidationTimestamp] = useState<number>(0);
 
   // Query para validação do cupom
   const { isLoading, data, error } = useQuery({
-    queryKey: ['validate-coupon', couponCode, eventId, totalAmount, customerZipCode, addressId],
+    queryKey: ['validate-coupon', couponCode, eventId, totalAmount, customerZipCode, addressId, validationTimestamp],
     queryFn: async (): Promise<CouponValidationResponse> => {
       console.log('🎫 Validating coupon with addressId:', addressId, 'CEP:', customerZipCode);
       
@@ -83,7 +84,10 @@ export function CouponInput({
       return response.json();
     },
     enabled: shouldValidate && couponCode.length > 0 && !appliedCoupon && (addressId !== undefined || customerZipCode !== undefined),
-    retry: false
+    retry: false,
+    staleTime: 0, // ⚡ CACHE FIX: Never use stale data for coupon validation
+    gcTime: 0, // ⚡ CACHE FIX: Don't keep old data in memory
+    refetchOnMount: true, // ⚡ CACHE FIX: Always refetch when component mounts
   });
 
   // Handle response when data changes
@@ -118,6 +122,15 @@ export function CouponInput({
     if (couponCode.trim() && !appliedCoupon) {
       setValidationStatus('idle');
       setValidationMessage("");
+      
+      // 🎫 CACHE FIX: Force cache bust before validation
+      queryClient.removeQueries({ 
+        queryKey: ['validate-coupon'], 
+        exact: false 
+      });
+      
+      // ⚡ FORCE FRESH QUERY: Update timestamp to force unique query
+      setValidationTimestamp(Date.now());
       setShouldValidate(true);
     }
   };
@@ -128,13 +141,16 @@ export function CouponInput({
     setValidationMessage("");
     setValidationStatus('idle');
     
-    // 🎫 CACHE FIX: Invalidate coupon validation cache when removing coupon
-    // This ensures fresh validation for future coupon attempts
+    // 🎫 CACHE FIX: Agressively clear all coupon cache when removing coupon
+    queryClient.removeQueries({ 
+      queryKey: ['validate-coupon'], 
+      exact: false 
+    });
     queryClient.invalidateQueries({ 
       queryKey: ['validate-coupon'], 
       exact: false 
     });
-    console.log('🎫 Coupon removed, cache invalidated for fresh validations');
+    console.log('🎫 Coupon removed, all coupon cache cleared and invalidated');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
