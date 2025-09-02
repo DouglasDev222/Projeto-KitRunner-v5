@@ -71,10 +71,10 @@ export class EmailUtils {
         description: "Pedido confirmado com sucesso",
       },
       kits_sendo_retirados: {
-        text: "Kits sendo Retirados",
+        text: "Kit Retirado",
         color: "#f97316",
         class: "status-pickup-progress",
-        description: "Nossa equipe está retirando seus kits no evento",
+        description: "Nossa equipe retirou seus kits no evento",
       },
       em_transito: {
         text: "Em Trânsito",

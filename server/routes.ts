@@ -3171,7 +3171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   break;
 
                 default:
-                  // For other statuses (kits_sendo_retirados, cancelado), send generic update
+                  // For other statuses (Kit Retirado, cancelado), send generic update
                   const emailData = EmailDataMapper.mapOrderStatusChange({
                     orderNumber: order.orderNumber,
                     customerName: order.customer.name,

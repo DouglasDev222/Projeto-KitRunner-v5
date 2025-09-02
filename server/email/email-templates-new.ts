@@ -245,7 +245,7 @@ function getStatusDisplay(status: string): { text: string, class: string } {
     case 'entregue':
       return { text: 'Entregue', class: 'status-delivered' };
     case 'kits_sendo_retirados':
-      return { text: 'Kit Retirado', class: 'status-delivered' }; // Changed from 'Retirada Confirmada' to 'Kit Retirado'
+      return { text: 'Kit Retirado', class: 'status-delivered' };
     default:
       return { text: status || 'Processando', class: 'status-pending' };
   }
