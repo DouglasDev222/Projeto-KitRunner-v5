@@ -66,13 +66,10 @@ export async function checkCepZone(cep: string, eventNameOrId?: string | number)
     };
 
   } catch (error) {
-    // Only log unexpected errors, not 404s which are expected for CEPs not in zones
-    if (error instanceof Error && !error.message.includes('404')) {
-      console.error('Error checking CEP zone:', error);
-    }
+    // Silently handle expected CEP not found cases to avoid console pollution
     return {
       found: false,
-      error: error instanceof Error ? error.message : "Erro ao verificar CEP",
+      error: "CEP não atendido. Entre em contato via WhatsApp.",
       whatsappUrl: generateWhatsAppUrl(cep, typeof eventNameOrId === 'string' ? eventNameOrId : undefined)
     };
   }
