@@ -173,6 +173,9 @@ export default function AdminEventEdit() {
       queryClient.invalidateQueries({ queryKey: ["/api/events", id] }); // Specific event
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] }); // Dashboard stats
       
+      // IMPORTANTE: Invalidar cache das configurações de zona de CEP para este evento
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/events", parseInt(id!), "cep-zone-prices"] });
+      
       toast({
         title: "Sucesso",
         description: "Evento atualizado com sucesso!",
