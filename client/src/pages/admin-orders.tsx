@@ -118,6 +118,7 @@ export default function AdminOrders() {
   const [bulkStatusModalOpen, setBulkStatusModalOpen] = useState(false);
   const [bulkNewStatus, setBulkNewStatus] = useState("");
   const [sendBulkEmails, setSendBulkEmails] = useState(false);
+  const [sendBulkWhatsApp, setSendBulkWhatsApp] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const [singleExpandedCard, setSingleExpandedCard] = useState<number | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
@@ -334,7 +335,7 @@ export default function AdminOrders() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ orderId, status, sendEmail }: { orderId: number; status: string; sendEmail: boolean }) => {
+    mutationFn: async ({ orderId, status, sendEmail, sendWhatsApp }: { orderId: number; status: string; sendEmail: boolean; sendWhatsApp: boolean }) => {
       const adminToken = localStorage.getItem('adminToken');
       const response = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: 'PATCH',
@@ -342,7 +343,7 @@ export default function AdminOrders() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${adminToken}`
         },
-        body: JSON.stringify({ status, sendEmail }),
+        body: JSON.stringify({ status, sendEmail, sendWhatsApp }),
       });
       if (!response.ok) throw new Error('Erro ao atualizar status');
       return response.json();
@@ -366,11 +367,15 @@ export default function AdminOrders() {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] }); // Pode afetar dados do cliente
       
       // Show toast
+      const notificationsSent = [];
+      if (variables.sendEmail) notificationsSent.push("email");
+      if (variables.sendWhatsApp) notificationsSent.push("WhatsApp");
+      
       toast({
         title: "Status atualizado com sucesso!",
-        description: variables.sendEmail 
-          ? "O status do pedido foi atualizado e o cliente foi notificado por email." 
-          : "O status do pedido foi atualizado sem envio de email.",
+        description: notificationsSent.length > 0
+          ? `O status do pedido foi atualizado e o cliente foi notificado por ${notificationsSent.join(" e ")}.`
+          : "O status do pedido foi atualizado sem envio de notificações.",
       });
     },
     onError: () => {
@@ -387,7 +392,7 @@ export default function AdminOrders() {
 
   // Bulk status change mutation
   const bulkStatusMutation = useMutation({
-    mutationFn: async ({ orderIds, newStatus, sendEmails }: { orderIds: number[]; newStatus: string; sendEmails: boolean }) => {
+    mutationFn: async ({ orderIds, newStatus, sendEmails, sendWhatsApp }: { orderIds: number[]; newStatus: string; sendEmails: boolean; sendWhatsApp: boolean }) => {
       const adminToken = localStorage.getItem('adminToken');
       const response = await fetch('/api/admin/orders/bulk-status-change', {
         method: 'POST',
@@ -395,7 +400,7 @@ export default function AdminOrders() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${adminToken}`
         },
-        body: JSON.stringify({ orderIds, newStatus, sendEmails }),
+        body: JSON.stringify({ orderIds, newStatus, sendEmails, sendWhatsApp }),
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -409,6 +414,7 @@ export default function AdminOrders() {
       setSelectedOrders([]);
       setBulkNewStatus("");
       setSendBulkEmails(false);
+      setSendBulkWhatsApp(false);
       
       // Reatividade: Invalidação abrangente conforme SOLUCAO_REATIVIDADE_IMPLEMENTADA.md
       // 1. Invalidar lista geral da entidade
@@ -422,9 +428,17 @@ export default function AdminOrders() {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] }); // Pode afetar dados do cliente
       
       // Show detailed success toast
+      const notifications = [];
+      if (data.emailsSent) notifications.push(`${data.emailsSent} e-mails`);
+      if (data.whatsAppSent) notifications.push(`${data.whatsAppSent} mensagens WhatsApp`);
+      
       toast({
         title: "Alteração em massa concluída!",
-        description: `${data.successCount} pedidos atualizados com sucesso. ${data.emailsSent ? `${data.emailsSent} e-mails enviados.` : 'Nenhum e-mail foi enviado.'}`,
+        description: `${data.successCount} pedidos atualizados com sucesso. ${
+          notifications.length > 0 
+            ? `${notifications.join(' e ')} enviados.`
+            : 'Nenhuma notificação foi enviada.'
+        }`,
       });
 
       // Show partial failure warning if any
@@ -496,11 +510,12 @@ export default function AdminOrders() {
     }
   };
 
-  const handleConfirmStatusChange = (sendEmail: boolean) => {
+  const handleConfirmStatusChange = (sendEmail: boolean, sendWhatsApp: boolean) => {
     updateStatusMutation.mutate({ 
       orderId: emailConfirmationModal.orderId, 
       status: emailConfirmationModal.newStatus,
-      sendEmail 
+      sendEmail,
+      sendWhatsApp 
     });
   };
 
@@ -639,6 +654,7 @@ export default function AdminOrders() {
       orderIds: selectedOrders,
       newStatus: bulkNewStatus,
       sendEmails: sendBulkEmails,
+      sendWhatsApp: sendBulkWhatsApp,
     });
   };
 
@@ -1765,10 +1781,47 @@ export default function AdminOrders() {
               </label>
             </div>
 
-            {sendBulkEmails && (
+            {/* WhatsApp option - Only show for specific statuses */}
+            {(bulkNewStatus === 'em_transito' || bulkNewStatus === 'entregue') && (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="sendBulkWhatsApp"
+                  checked={sendBulkWhatsApp}
+                  onCheckedChange={(checked) => setSendBulkWhatsApp(checked as boolean)}
+                />
+                <label
+                  htmlFor="sendBulkWhatsApp"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Enviar mensagens no WhatsApp
+                </label>
+              </div>
+            )}
+
+            {(sendBulkEmails || sendBulkWhatsApp) && (
               <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700">
-                <Mail className="h-4 w-4 inline mr-2" />
-                Os clientes receberão um e-mail informando sobre a mudança de status dos seus pedidos.
+                {sendBulkEmails && sendBulkWhatsApp ? (
+                  <>
+                    <Mail className="h-4 w-4 inline mr-2" />
+                    Os clientes receberão notificações por e-mail e WhatsApp sobre a mudança de status.
+                  </>
+                ) : sendBulkEmails ? (
+                  <>
+                    <Mail className="h-4 w-4 inline mr-2" />
+                    Os clientes receberão um e-mail informando sobre a mudança de status dos seus pedidos.
+                  </>
+                ) : sendBulkWhatsApp ? (
+                  <>
+                    <MessageCircle className="h-4 w-4 inline mr-2" />
+                    Os clientes receberão uma mensagem no WhatsApp informando sobre a mudança de status.
+                  </>
+                ) : null}
+                
+                {(bulkNewStatus === 'em_transito' || bulkNewStatus === 'entregue') && (
+                  <p className="text-xs mt-2">
+                    💡 WhatsApp disponível para status "Em Trânsito" e "Entregue"
+                  </p>
+                )}
               </div>
             )}
 
@@ -1790,6 +1843,7 @@ export default function AdminOrders() {
                 setBulkStatusModalOpen(false);
                 setBulkNewStatus("");
                 setSendBulkEmails(false);
+                setSendBulkWhatsApp(false);
               }}
               disabled={bulkStatusMutation.isPending}
             >

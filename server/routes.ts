@@ -1491,9 +1491,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/orders/:id/status", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { status, reason, sendEmail = true } = req.body;
+      const { status, reason, sendEmail = true, sendWhatsApp = false } = req.body;
 
-      console.log('📧 Status update request:', { id, status, sendEmail, reason });
+      console.log('📧 Status update request:', { id, status, sendEmail, sendWhatsApp, reason });
 
       // Validate status - using Portuguese status names
       const validStatuses = ["confirmado", "aguardando_pagamento", "cancelado", "kits_sendo_retirados", "em_transito", "entregue"];
@@ -1585,6 +1585,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else if (currentOrder && oldStatus !== status) {
         console.log(`📧 Status change to ${status} - email not requested by admin`);
+      }
+
+      // Send WhatsApp message if requested and for supported statuses
+      if (currentOrder && oldStatus !== status && sendWhatsApp && (status === 'em_transito' || status === 'entregue')) {
+        try {
+          const { WhatsAppService } = await import("./whatsapp-service");
+          const whatsappService = new WhatsAppService(storage);
+          let whatsAppSent = false;
+
+          console.log(`📱 Sending WhatsApp for status change from ${oldStatus} to ${status}`);
+
+          // Create message based on status
+          let message = '';
+          if (status === 'em_transito') {
+            message = `🚚 *Kit em Trânsito!*\n\nOlá ${currentOrder.customer.name}!\n\nSeu kit do evento *${currentOrder.event.name}* foi retirado e está a caminho da entrega.\n\n📦 Pedido: ${currentOrder.orderNumber}\n📍 Endereço: ${currentOrder.address.street}, ${currentOrder.address.number} - ${currentOrder.address.city}\n\nEm breve chegará até você! 🏃‍♂️`;
+          } else if (status === 'entregue') {
+            message = `✅ *Kit Entregue!*\n\nOlá ${currentOrder.customer.name}!\n\nSeu kit do evento *${currentOrder.event.name}* foi entregue com sucesso! 🎉\n\n📦 Pedido: ${currentOrder.orderNumber}\n📅 Entregue em: ${new Date().toLocaleDateString('pt-BR')}\n\nBora correr! 🏃‍♂️💪`;
+          }
+
+          if (message && currentOrder.customer.phone) {
+            const result = await whatsappService.sendMessage(currentOrder.customer.phone, message);
+            whatsAppSent = result.success;
+            
+            if (whatsAppSent) {
+              console.log(`✅ WhatsApp sent successfully for order ${currentOrder.orderNumber} status change to ${status}`);
+            } else {
+              console.error(`❌ Failed to send WhatsApp for order ${currentOrder.orderNumber}:`, result.error);
+            }
+          } else {
+            console.log(`📱 WhatsApp not sent - missing phone number for order ${currentOrder.orderNumber}`);
+          }
+        } catch (whatsappError) {
+          console.error(`❌ Failed to send WhatsApp for order ${currentOrder.orderNumber}:`, whatsappError);
+        }
+      } else if (currentOrder && oldStatus !== status && sendWhatsApp) {
+        console.log(`📱 WhatsApp requested but not supported for status ${status} (only em_transito and entregue)`);
       }
 
       res.json(order);
@@ -3188,7 +3224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Bulk status change for admin
   app.post("/api/admin/orders/bulk-status-change", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
-      const { orderIds, newStatus, sendEmails, reason } = req.body;
+      const { orderIds, newStatus, sendEmails, sendWhatsApp = false, reason } = req.body;
 
       // Validate input
       if (!Array.isArray(orderIds) || orderIds.length === 0) {
@@ -3230,6 +3266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let successCount = 0;
       let errors: any[] = [];
       let emailsSent = 0;
+      let whatsAppSent = 0;
 
       // Process each order
       for (const order of orders) {
@@ -3349,6 +3386,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
+          // Send WhatsApp message if requested and for supported statuses
+          if (sendWhatsApp && order.customer?.phone && (newStatus === 'em_transito' || newStatus === 'entregue')) {
+            try {
+              const { WhatsAppService } = await import("./whatsapp-service");
+              const whatsappService = new WhatsAppService(storage);
+              let message = '';
+
+              if (newStatus === 'em_transito') {
+                message = `🚚 *Kit em Trânsito!*\n\nOlá ${order.customer.name}!\n\nSeu kit do evento *${order.event.name}* foi retirado e está a caminho da entrega.\n\n📦 Pedido: ${order.orderNumber}\n📍 Endereço: ${order.address.street}, ${order.address.number} - ${order.address.city}\n\nEm breve chegará até você! 🏃‍♂️`;
+              } else if (newStatus === 'entregue') {
+                message = `✅ *Kit Entregue!*\n\nOlá ${order.customer.name}!\n\nSeu kit do evento *${order.event.name}* foi entregue com sucesso! 🎉\n\n📦 Pedido: ${order.orderNumber}\n📅 Entregue em: ${new Date().toLocaleDateString('pt-BR')}\n\nBora correr! 🏃‍♂️💪`;
+              }
+
+              if (message) {
+                const result = await whatsappService.sendMessage(order.customer.phone, message);
+                if (result.success) {
+                  whatsAppSent++;
+                  console.log(`✅ WhatsApp sent for bulk order ${order.orderNumber} status change to ${newStatus}`);
+                } else {
+                  console.error(`❌ Failed to send WhatsApp for bulk order ${order.orderNumber}:`, result.error);
+                }
+              }
+            } catch (whatsappError) {
+              console.error(`Error sending WhatsApp for order ${order.orderNumber}:`, whatsappError);
+              // Don't fail the entire operation for WhatsApp errors
+            }
+          }
+
         } catch (orderError) {
           console.error(`Error updating order ${order.id}:`, orderError);
           errors.push({
@@ -3360,7 +3425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Log the bulk operation
-      console.log(`🔄 Bulk status change completed: ${successCount}/${orders.length} orders updated, ${emailsSent} emails sent`);
+      console.log(`🔄 Bulk status change completed: ${successCount}/${orders.length} orders updated, ${emailsSent} emails sent, ${whatsAppSent} WhatsApp messages sent`);
 
       res.json({
         success: true,
@@ -3369,8 +3434,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         successCount,
         errorCount: errors.length,
         emailsSent: sendEmails ? emailsSent : 0,
+        whatsAppSent: sendWhatsApp ? whatsAppSent : 0,
         errors: errors.length > 0 ? errors : undefined,
-        message: `${successCount} pedidos atualizados com sucesso${sendEmails ? `, ${emailsSent} e-mails enviados` : ''}`
+        message: `${successCount} pedidos atualizados com sucesso${sendEmails ? `, ${emailsSent} e-mails enviados` : ''}${sendWhatsApp ? `, ${whatsAppSent} mensagens WhatsApp enviadas` : ''}`
       });
 
     } catch (error) {

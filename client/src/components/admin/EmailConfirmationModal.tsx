@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,12 +8,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Mail, MailX } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Mail, MailX, MessageCircle } from "lucide-react";
 
 interface EmailConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (sendEmail: boolean) => void;
+  onConfirm: (sendEmail: boolean, sendWhatsApp: boolean) => void;
   orderNumber: string;
   newStatus: string;
   customerName: string;
@@ -29,6 +30,8 @@ export function EmailConfirmationModal({
   customerName,
   isLoading = false,
 }: EmailConfirmationModalProps) {
+  const [sendEmail, setSendEmail] = useState(true);
+  const [sendWhatsApp, setSendWhatsApp] = useState(false);
   // Fix body pointer-events issue with aggressive cleanup
   useEffect(() => {
     const forceCleanup = () => {
@@ -86,6 +89,19 @@ export function EmailConfirmationModal({
     return statusMap[status] || status;
   };
 
+  // Detectar se o status permite WhatsApp (em_transito e entregue)
+  const canSendWhatsApp = () => {
+    return newStatus === 'em_transito' || newStatus === 'entregue';
+  };
+
+  // Reset checkboxes when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setSendEmail(true);
+      setSendWhatsApp(canSendWhatsApp());
+    }
+  }, [isOpen, newStatus]);
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open && !isLoading) {
@@ -114,33 +130,109 @@ export function EmailConfirmationModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4">
+        <div className="py-4 space-y-4">
           <p className="text-sm text-gray-600 mb-4">
-            Deseja enviar um email de notificação para o cliente sobre esta alteração?
+            Escolha as notificações que deseja enviar para o cliente:
           </p>
+
+          {/* Email Option */}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="send-email"
+              checked={sendEmail}
+              onCheckedChange={(checked) => setSendEmail(checked as boolean)}
+              disabled={isLoading}
+            />
+            <label
+              htmlFor="send-email"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+            >
+              <Mail className="h-4 w-4 inline mr-2" />
+              Enviar email de notificação
+            </label>
+          </div>
+
+          {/* WhatsApp Option - Only show for specific statuses */}
+          {canSendWhatsApp() && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="send-whatsapp"
+                checked={sendWhatsApp}
+                onCheckedChange={(checked) => setSendWhatsApp(checked as boolean)}
+                disabled={isLoading}
+              />
+              <label
+                htmlFor="send-whatsapp"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                <MessageCircle className="h-4 w-4 inline mr-2" />
+                Enviar mensagem no WhatsApp
+              </label>
+            </div>
+          )}
+
+          {/* Info message */}
+          {(sendEmail || sendWhatsApp) && (
+            <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700">
+              <p>
+                {sendEmail && sendWhatsApp 
+                  ? "O cliente receberá notificações por email e WhatsApp."
+                  : sendEmail 
+                  ? "O cliente receberá uma notificação por email."
+                  : sendWhatsApp
+                  ? "O cliente receberá uma mensagem no WhatsApp."
+                  : ""
+                }
+              </p>
+              {canSendWhatsApp() && (
+                <p className="text-xs mt-1">
+                  💡 WhatsApp disponível para status "Em Trânsito" e "Entregue"
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
             onClick={() => {
-              onConfirm(false);
+              onConfirm(false, false);
             }}
             disabled={isLoading}
             className="w-full sm:w-auto"
           >
             <MailX className="h-4 w-4 mr-2" />
-            Não, apenas mudar status
+            Apenas mudar status
           </Button>
           <Button
             onClick={() => {
-              onConfirm(true);
+              onConfirm(sendEmail, sendWhatsApp);
             }}
-            disabled={isLoading}
+            disabled={isLoading || (!sendEmail && !sendWhatsApp)}
             className="w-full sm:w-auto"
           >
-            <Mail className="h-4 w-4 mr-2" />
-            Sim, enviar email
+            {sendEmail && sendWhatsApp ? (
+              <>
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Confirmar com notificações
+              </>
+            ) : sendEmail ? (
+              <>
+                <Mail className="h-4 w-4 mr-2" />
+                Confirmar com email
+              </>
+            ) : sendWhatsApp ? (
+              <>
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Confirmar com WhatsApp
+              </>
+            ) : (
+              <>
+                <Mail className="h-4 w-4 mr-2" />
+                Confirmar
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
