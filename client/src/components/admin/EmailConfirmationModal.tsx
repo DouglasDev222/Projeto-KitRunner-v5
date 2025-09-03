@@ -109,7 +109,7 @@ export function EmailConfirmationModal({
       }
     }}>
       <DialogContent 
-        className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto mx-4 z-[100]" 
+        className="sm:max-w-md z-[100]" 
         aria-describedby="email-confirmation-description"
         onPointerDownOutside={(e) => {
           if (isLoading) {
@@ -122,65 +122,59 @@ export function EmailConfirmationModal({
           }
         }}
       >
-        <DialogHeader className="space-y-3">
-          <DialogTitle className="text-lg font-semibold">
-            Confirmar Alteração de Status
-          </DialogTitle>
-          <DialogDescription id="email-confirmation-description" className="text-sm leading-relaxed">
-            Você está alterando o status do pedido{" "}
-            <span className="font-semibold break-all">{orderNumber}</span> de{" "}
-            <span className="font-semibold break-words">{customerName}</span> para{" "}
-            <span className="font-semibold">{getStatusLabel(newStatus)}</span>.
+        <DialogHeader>
+          <DialogTitle>Confirmar Alteração de Status</DialogTitle>
+          <DialogDescription id="email-confirmation-description">
+            Você está alterando o status do pedido <strong>{orderNumber}</strong> de{" "}
+            <strong>{customerName}</strong> para <strong>{getStatusLabel(newStatus)}</strong>.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
+        <div className="py-4 space-y-4">
+          <p className="text-sm text-gray-600 mb-4">
             Escolha as notificações que deseja enviar para o cliente:
           </p>
 
           {/* Email Option */}
-          <div className="flex items-start space-x-3">
+          <div className="flex items-center space-x-2">
             <Checkbox
               id="send-email"
               checked={sendEmail}
               onCheckedChange={(checked) => setSendEmail(checked as boolean)}
               disabled={isLoading}
-              className="mt-0.5"
             />
             <label
               htmlFor="send-email"
-              className="text-sm font-medium leading-relaxed peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
             >
-              <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
-              <span>Enviar email de notificação</span>
+              <Mail className="h-4 w-4 inline mr-2" />
+              Enviar email de notificação
             </label>
           </div>
 
           {/* WhatsApp Option - Only show for specific statuses */}
           {canSendWhatsApp() && (
-            <div className="flex items-start space-x-3">
+            <div className="flex items-center space-x-2">
               <Checkbox
                 id="send-whatsapp"
                 checked={sendWhatsApp}
                 onCheckedChange={(checked) => setSendWhatsApp(checked as boolean)}
                 disabled={isLoading}
-                className="mt-0.5"
               />
               <label
                 htmlFor="send-whatsapp"
-                className="text-sm font-medium leading-relaxed peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
               >
-                <MessageCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span>Enviar mensagem no WhatsApp</span>
+                <MessageCircle className="h-4 w-4 inline mr-2" />
+                Enviar mensagem no WhatsApp
               </label>
             </div>
           )}
 
           {/* Info message */}
           {(sendEmail || sendWhatsApp) && (
-            <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700 space-y-1">
-              <p className="leading-relaxed">
+            <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700">
+              <p>
                 {sendEmail && sendWhatsApp 
                   ? "O cliente receberá notificações por email e WhatsApp."
                   : sendEmail 
@@ -191,7 +185,7 @@ export function EmailConfirmationModal({
                 }
               </p>
               {canSendWhatsApp() && (
-                <p className="text-xs leading-relaxed">
+                <p className="text-xs mt-1">
                   💡 WhatsApp disponível para status "Em Trânsito" e "Entregue"
                 </p>
               )}
@@ -199,48 +193,46 @@ export function EmailConfirmationModal({
           )}
         </div>
 
-        <DialogFooter className="flex flex-col gap-2 pt-4 border-t">
-          <Button
-            onClick={() => {
-              onConfirm(sendEmail, sendWhatsApp);
-            }}
-            disabled={isLoading || (!sendEmail && !sendWhatsApp)}
-            className="w-full"
-            size="sm"
-          >
-            {sendEmail && sendWhatsApp ? (
-              <>
-                <MessageCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span className="truncate">Confirmar com notificações</span>
-              </>
-            ) : sendEmail ? (
-              <>
-                <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span className="truncate">Confirmar com email</span>
-              </>
-            ) : sendWhatsApp ? (
-              <>
-                <MessageCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span className="truncate">Confirmar com WhatsApp</span>
-              </>
-            ) : (
-              <>
-                <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span className="truncate">Confirmar</span>
-              </>
-            )}
-          </Button>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
             onClick={() => {
               onConfirm(false, false);
             }}
             disabled={isLoading}
-            className="w-full"
-            size="sm"
+            className="w-full sm:w-auto"
           >
-            <MailX className="h-4 w-4 mr-2 flex-shrink-0" />
-            <span className="truncate">Apenas mudar status</span>
+            <MailX className="h-4 w-4 mr-2" />
+            Apenas mudar status
+          </Button>
+          <Button
+            onClick={() => {
+              onConfirm(sendEmail, sendWhatsApp);
+            }}
+            disabled={isLoading || (!sendEmail && !sendWhatsApp)}
+            className="w-full sm:w-auto"
+          >
+            {sendEmail && sendWhatsApp ? (
+              <>
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Confirmar com notificações
+              </>
+            ) : sendEmail ? (
+              <>
+                <Mail className="h-4 w-4 mr-2" />
+                Confirmar com email
+              </>
+            ) : sendWhatsApp ? (
+              <>
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Confirmar com WhatsApp
+              </>
+            ) : (
+              <>
+                <Mail className="h-4 w-4 mr-2" />
+                Confirmar
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
