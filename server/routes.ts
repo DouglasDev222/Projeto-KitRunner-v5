@@ -1596,12 +1596,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           console.log(`📱 Sending WhatsApp for status change from ${oldStatus} to ${status}`);
 
-          // Create message based on status
+          // Get template from database
+          const template = await whatsappService.getTemplateByStatus(status);
           let message = '';
-          if (status === 'em_transito') {
-            message = `🚚 *Kit em Trânsito!*\n\nOlá ${currentOrder.customer.name}!\n\nSeu kit do evento *${currentOrder.event.name}* foi retirado e está a caminho da entrega.\n\n📦 Pedido: ${currentOrder.orderNumber}\n📍 Endereço: ${currentOrder.address.street}, ${currentOrder.address.number} - ${currentOrder.address.city}\n\nEm breve chegará até você! 🏃‍♂️`;
-          } else if (status === 'entregue') {
-            message = `✅ *Kit Entregue!*\n\nOlá ${currentOrder.customer.name}!\n\nSeu kit do evento *${currentOrder.event.name}* foi entregue com sucesso! 🎉\n\n📦 Pedido: ${currentOrder.orderNumber}\n📅 Entregue em: ${new Date().toLocaleDateString('pt-BR')}\n\nBora correr! 🏃‍♂️💪`;
+          
+          if (template) {
+            // Replace placeholders with actual data
+            const placeholders = {
+              cliente: currentOrder.customer.name,
+              evento: currentOrder.event.name,
+              numero_pedido: currentOrder.orderNumber,
+              endereco: `${currentOrder.address.street}, ${currentOrder.address.number} - ${currentOrder.address.city}`,
+              data_entrega: new Date().toLocaleDateString('pt-BR')
+            };
+            
+            message = whatsappService.replacePlaceholders(template.templateContent, placeholders);
           }
 
           if (message && currentOrder.customer.phone) {
@@ -3391,12 +3400,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               const { WhatsAppService } = await import("./whatsapp-service");
               const whatsappService = new WhatsAppService(storage);
+              
+              // Get template from database
+              const template = await whatsappService.getTemplateByStatus(newStatus);
               let message = '';
-
-              if (newStatus === 'em_transito') {
-                message = `🚚 *Kit em Trânsito!*\n\nOlá ${order.customer.name}!\n\nSeu kit do evento *${order.event.name}* foi retirado e está a caminho da entrega.\n\n📦 Pedido: ${order.orderNumber}\n📍 Endereço: ${order.address.street}, ${order.address.number} - ${order.address.city}\n\nEm breve chegará até você! 🏃‍♂️`;
-              } else if (newStatus === 'entregue') {
-                message = `✅ *Kit Entregue!*\n\nOlá ${order.customer.name}!\n\nSeu kit do evento *${order.event.name}* foi entregue com sucesso! 🎉\n\n📦 Pedido: ${order.orderNumber}\n📅 Entregue em: ${new Date().toLocaleDateString('pt-BR')}\n\nBora correr! 🏃‍♂️💪`;
+              
+              if (template) {
+                // Replace placeholders with actual data
+                const placeholders = {
+                  cliente: order.customer.name,
+                  evento: order.event.name,
+                  numero_pedido: order.orderNumber,
+                  endereco: `${order.address.street}, ${order.address.number} - ${order.address.city}`,
+                  data_entrega: new Date().toLocaleDateString('pt-BR')
+                };
+                
+                message = whatsappService.replacePlaceholders(template.templateContent, placeholders);
               }
 
               if (message) {

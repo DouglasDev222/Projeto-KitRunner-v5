@@ -276,20 +276,27 @@ export class WhatsAppService {
    * Get template for order confirmation (status = 'confirmado')
    */
   async getActiveTemplate(): Promise<{ templateContent: string } | null> {
+    return this.getTemplateByStatus('confirmado');
+  }
+
+  /**
+   * Get template by status
+   */
+  async getTemplateByStatus(status: string): Promise<{ templateContent: string } | null> {
     try {
       // Use the new whatsappTemplates table to get template for 'confirmado' status
       const { db } = await import('./db');
       const { whatsappTemplates } = await import('@shared/schema');
       const { eq, and, desc } = await import('drizzle-orm');
       
-      console.log('📱 WhatsApp: Searching for template with status "confirmado"');
+      console.log(`📱 WhatsApp: Searching for template with status "${status}"`);
       
       const [template] = await db
         .select()
         .from(whatsappTemplates)
         .where(
           and(
-            eq(whatsappTemplates.status, 'confirmado'),
+            eq(whatsappTemplates.status, status),
             eq(whatsappTemplates.isActive, true)
           )
         )
@@ -297,10 +304,16 @@ export class WhatsAppService {
         .limit(1);
       
       if (!template) {
-        console.log('❌ WhatsApp: No template found for status "confirmado"');
+        console.log(`❌ WhatsApp: No template found for status "${status}"`);
         
-        // Create default template for 'confirmado' status
-        const defaultTemplate = `Olá, *{{cliente}}*! 
+        // Create default templates based on status
+        let defaultTemplate = '';
+        let templateName = '';
+        let description = '';
+
+        switch (status) {
+          case 'confirmado':
+            defaultTemplate = `Olá, *{{cliente}}*! 
 Confirmamos sua solicitação de *[Retirada do Kit] {{evento}}*.
 
 Você solicitou a retirada de *{{qtd_kits}}* kits para os seguintes atletas:
@@ -311,28 +324,65 @@ Vamos retirar seu kit, previsão de entrega é para amanhã dia {{data_entrega}}
 Logo mais entraremos em contato e faremos a entrega no endereço informado no pedido.
 
 Qualquer dúvida, estamos à disposição.`;
+            templateName = 'Confirmação de Pedido';
+            description = 'Template padrão para confirmação de pedido após pagamento aprovado';
+            break;
+
+          case 'em_transito':
+            defaultTemplate = `🚚 *Kit em Trânsito!*
+
+Olá {{cliente}}!
+
+Seu kit do evento *{{evento}}* foi retirado e está a caminho da entrega.
+
+📦 Pedido: {{numero_pedido}}
+📍 Endereço: {{endereco}}
+
+Em breve chegará até você! 🏃‍♂️`;
+            templateName = 'Kit em Trânsito';
+            description = 'Template padrão para notificação de kit em trânsito';
+            break;
+
+          case 'entregue':
+            defaultTemplate = `✅ *Kit Entregue!*
+
+Olá {{cliente}}!
+
+Seu kit do evento *{{evento}}* foi entregue com sucesso! 🎉
+
+📦 Pedido: {{numero_pedido}}
+📅 Entregue em: {{data_entrega}}
+
+Bora correr! 🏃‍♂️💪`;
+            templateName = 'Kit Entregue';
+            description = 'Template padrão para confirmação de entrega';
+            break;
+
+          default:
+            return null; // Don't create templates for unknown statuses
+        }
 
         const [newTemplate] = await db
           .insert(whatsappTemplates)
           .values({
-            name: 'Confirmação de Pedido',
+            name: templateName,
             type: 'order_status',
-            status: 'confirmado',
+            status: status,
             content: defaultTemplate,
-            description: 'Template padrão para confirmação de pedido após pagamento aprovado',
+            description: description,
             isActive: true,
             isDefault: true
           })
           .returning();
 
-        console.log('✅ WhatsApp: Created default template for status "confirmado"');
+        console.log(`✅ WhatsApp: Created default template for status "${status}"`);
         return { templateContent: newTemplate.content };
       }
 
-      console.log('✅ WhatsApp: Found template for status "confirmado"');
+      console.log(`✅ WhatsApp: Found template for status "${status}"`);
       return { templateContent: template.content };
     } catch (error: any) {
-      console.error('❌ Error getting WhatsApp template for status "confirmado":', error.message);
+      console.error(`❌ Error getting WhatsApp template for status "${status}":`, error.message);
       throw error;
     }
   }
