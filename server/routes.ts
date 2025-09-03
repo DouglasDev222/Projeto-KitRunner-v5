@@ -1601,16 +1601,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let message = '';
           
           if (template) {
-            // Replace placeholders with actual data
-            const placeholders = {
-              cliente: currentOrder.customer.name,
-              evento: currentOrder.event.name,
-              numero_pedido: currentOrder.orderNumber,
-              endereco: `${currentOrder.address.street}, ${currentOrder.address.number} - ${currentOrder.address.city}`,
-              data_entrega: new Date().toLocaleDateString('pt-BR')
-            };
+            // Replace placeholders with actual data - using direct string replacement
+            message = template.templateContent;
+            message = message.replace(/\{\{cliente\}\}/g, currentOrder.customer.name);
+            message = message.replace(/\{\{evento\}\}/g, currentOrder.event.name);
+            message = message.replace(/\{\{qtd_kits\}\}/g, currentOrder.kitQuantity.toString());
+            message = message.replace(/\{\{numero_pedido\}\}/g, currentOrder.orderNumber);
+            message = message.replace(/\{\{data_entrega\}\}/g, new Date().toLocaleDateString('pt-BR'));
+            message = message.replace(/\{\{endereco\}\}/g, `${currentOrder.address.street}, ${currentOrder.address.number} - ${currentOrder.address.city}`);
             
-            message = whatsappService.replacePlaceholders(template.templateContent, placeholders);
+            // Format kits list if available
+            const kitsList = currentOrder.kits && currentOrder.kits.length > 0 
+              ? currentOrder.kits.map((kit: any, index: number) => 
+                  `${index + 1}. ${kit.name} - Tamanho: ${kit.shirtSize || 'Não informado'}`
+                ).join('\n')
+              : `${currentOrder.kitQuantity} kit(s) solicitado(s)`;
+            
+            message = message.replace(/\{\{lista_kits\}\}/g, kitsList);
           }
 
           if (message && currentOrder.customer.phone) {
