@@ -444,18 +444,14 @@ Bora correr! 🏃‍♂️💪`;
         new Date(fullOrder.event.date).toLocaleDateString('pt-BR') : 
         'em breve';
 
-      // Prepare placeholders
-      const placeholders: TemplatePlaceholders = {
-        cliente: customerName,
-        evento: eventName,
-        qtd_kits: kitQuantity.toString(),
-        lista_kits: kitsList,
-        data_entrega: deliveryDate,
-        numero_pedido: orderNumber
-      };
-
-      // Replace placeholders in template
-      const finalMessage = this.replacePlaceholders(template.templateContent, placeholders);
+      // Replace placeholders in template - using direct string replacement like in routes
+      let finalMessage = template.templateContent;
+      finalMessage = finalMessage.replace(/\{\{cliente\}\}/g, customerName);
+      finalMessage = finalMessage.replace(/\{\{evento\}\}/g, eventName);
+      finalMessage = finalMessage.replace(/\{\{qtd_kits\}\}/g, kitQuantity.toString());
+      finalMessage = finalMessage.replace(/\{\{numero_pedido\}\}/g, orderNumber);
+      finalMessage = finalMessage.replace(/\{\{data_entrega\}\}/g, deliveryDate);
+      finalMessage = finalMessage.replace(/\{\{lista_kits\}\}/g, kitsList);
 
       // Format phone number with Brazilian formatting
       const formattedPhone = this.formatPhoneNumber(customerPhone);
