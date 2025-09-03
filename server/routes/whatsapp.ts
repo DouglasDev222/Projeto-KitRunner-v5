@@ -1188,33 +1188,38 @@ router.post('/send-message', async (req: Request, res: Response) => {
         });
       }
 
-      // Substituir placeholders
+      // Preparar lista de kits formatada
+      const kitsList = orderKits && orderKits.length > 0 
+        ? orderKits.map((kit: any, index: number) => 
+            `${index + 1}. ${kit.name} - Tamanho: ${kit.shirtSize || 'Não informado'}`
+          ).join('\n')
+        : `${order.order.kitQuantity} kit(s) solicitado(s)`;
+
+      // Preparar data de entrega formatada
+      const deliveryDate = order.event.date ? 
+        new Date(order.event.date).toLocaleDateString('pt-BR') : 
+        'em breve';
+
+      // Substituir placeholders do sistema atual (formato {{placeholder}})
       messageContent = template.content;
+      messageContent = messageContent.replace(/\{\{cliente\}\}/g, order.customer.name);
+      messageContent = messageContent.replace(/\{\{evento\}\}/g, order.event.name);
+      messageContent = messageContent.replace(/\{\{qtd_kits\}\}/g, order.order.kitQuantity.toString());
+      messageContent = messageContent.replace(/\{\{numero_pedido\}\}/g, order.order.orderNumber);
+      messageContent = messageContent.replace(/\{\{data_entrega\}\}/g, deliveryDate);
+      messageContent = messageContent.replace(/\{\{lista_kits\}\}/g, kitsList);
+      
+      // Placeholders alternativos (formato {placeholder})
       messageContent = messageContent.replace(/\{customerName\}/g, order.customer.name);
       messageContent = messageContent.replace(/\{orderNumber\}/g, order.order.orderNumber);
       messageContent = messageContent.replace(/\{eventName\}/g, order.event.name);
-      messageContent = messageContent.replace(/\{eventDate\}/g, order.event.date);
+      messageContent = messageContent.replace(/\{eventDate\}/g, deliveryDate);
       messageContent = messageContent.replace(/\{eventLocation\}/g, order.event.location);
       messageContent = messageContent.replace(/\{kitQuantity\}/g, order.order.kitQuantity.toString());
       messageContent = messageContent.replace(/\{totalCost\}/g, `R$ ${Number(order.order.totalCost).toFixed(2).replace('.', ',')}`);
       messageContent = messageContent.replace(/\{deliveryAddress\}/g, 
         `${order.address.street}, ${order.address.number} - ${order.address.neighborhood}, ${order.address.city}/${order.address.state}`
       );
-      
-      // Preparar lista de kits formatada
-      const kitsList = orderKits && orderKits.length > 0 
-        ? orderKits.map((kit: any, index: number) => 
-            `${index + 1}. ${kit.name}`
-          ).join('\n')
-        : `${order.order.kitQuantity} kit(s) solicitado(s)`;
-      
-      // Placeholders do sistema antigo
-      messageContent = messageContent.replace(/\{\{cliente\}\}/g, order.customer.name);
-      messageContent = messageContent.replace(/\{\{evento\}\}/g, order.event.name);
-      messageContent = messageContent.replace(/\{\{qtd_kits\}\}/g, order.order.kitQuantity.toString());
-      messageContent = messageContent.replace(/\{\{numero_pedido\}\}/g, order.order.orderNumber);
-      messageContent = messageContent.replace(/\{\{data_entrega\}\}/g, 'em breve');
-      messageContent = messageContent.replace(/\{\{lista_kits\}\}/g, kitsList);
     } else if (customMessage) {
       messageContent = customMessage;
     }

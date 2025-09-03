@@ -433,14 +433,16 @@ Bora correr! 🏃‍♂️💪`;
       }
 
       // Format kits list from order kits
-      const kitsList = fullOrder.kits ? fullOrder.kits.map((kit: any, index: number) => 
-        `${index + 1}. ${kit.name}`
-      ).join('\n') : `${kitQuantity} kit(s) para o evento`;
+      const kitsList = fullOrder.kits && fullOrder.kits.length > 0 
+        ? fullOrder.kits.map((kit: any, index: number) => 
+            `${index + 1}. ${kit.name} - Tamanho: ${kit.shirtSize || 'Não informado'}`
+          ).join('\n') 
+        : `${kitQuantity} kit(s) para o evento`;
 
       // Format delivery date
       const deliveryDate = fullOrder.event.date ? 
         new Date(fullOrder.event.date).toLocaleDateString('pt-BR') : 
-        'Data a definir';
+        'em breve';
 
       // Prepare placeholders
       const placeholders: TemplatePlaceholders = {
