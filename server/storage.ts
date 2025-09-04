@@ -1798,9 +1798,14 @@ class MockStorage implements IStorage {
     if (filters?.eventId) {
       filteredOrders = filteredOrders.filter(order => order.eventId === parseInt(filters.eventId));
     }
-    if (filters?.orderNumber) {
+    if (filters?.searchTerm) {
+      const searchTerm = filters.searchTerm.toLowerCase();
       filteredOrders = filteredOrders.filter(order => 
-        order.orderNumber.includes(filters.orderNumber)
+        order.orderNumber.toLowerCase().includes(searchTerm) ||
+        order.customer.name.toLowerCase().includes(searchTerm) ||
+        order.customer.cpf.replace(/\D/g, '').includes(searchTerm.replace(/\D/g, '')) ||
+        order.customer.email.toLowerCase().includes(searchTerm) ||
+        order.customer.phone.replace(/\D/g, '').includes(searchTerm.replace(/\D/g, ''))
       );
     }
     if (filters?.customerName) {

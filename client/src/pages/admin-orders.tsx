@@ -81,7 +81,7 @@ import { cn } from "@/lib/utils";
 interface OrderFilters {
   status: string;
   eventId?: number;
-  orderNumber?: string;
+  searchTerm?: string;
   customerName?: string;
   startDate?: string;
   endDate?: string;
@@ -1008,12 +1008,13 @@ export default function AdminOrders() {
               </div>
 
               <div className="space-y-2 min-w-0">
-                <label className="text-sm font-medium">Número do Pedido</label>
+                <label className="text-sm font-medium">Buscar</label>
                 <Input
-                  placeholder="Ex: KR202400123"
-                  value={filters.orderNumber || ''}
-                  onChange={(e) => setFilters({ ...filters, orderNumber: e.target.value })}
+                  placeholder="Nome, CPF, nº pedido..."
+                  value={filters.searchTerm || ''}
+                  onChange={(e) => setFilters({ ...filters, searchTerm: e.target.value })}
                   className="h-10 w-full"
+                  data-testid="input-search-general"
                 />
               </div>
 
