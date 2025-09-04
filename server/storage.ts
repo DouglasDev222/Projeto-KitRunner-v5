@@ -700,6 +700,18 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(orders.orderNumber, filters.orderNumber));
     }
     
+    // Add searchTerm filter for multiple fields
+    if (filters.searchTerm) {
+      const searchTerm = `%${filters.searchTerm}%`;
+      conditions.push(or(
+        like(orders.orderNumber, searchTerm),
+        like(customers.name, searchTerm),
+        like(customers.cpf, searchTerm),
+        like(customers.email, searchTerm),
+        like(customers.phone, searchTerm)
+      ));
+    }
+    
     let result;
     if (conditions.length > 0) {
       result = await query.where(and(...conditions)).orderBy(desc(orders.createdAt));
