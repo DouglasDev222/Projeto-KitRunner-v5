@@ -56,7 +56,7 @@ export function Footer() {
         <Button
           variant="outline"
           className={`flex-1 flex items-center gap-2 ${
-            isRouteActive(['/profile']) 
+            isRouteActive(['/profile', '/login']) 
               ? "bg-white text-purple-600 border-purple-600" 
               : ""
           }`}
