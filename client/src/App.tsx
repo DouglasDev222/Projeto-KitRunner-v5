@@ -40,7 +40,6 @@ import AdminPolicies from "@/pages/admin/policies";
 import AdminWhatsApp from "@/pages/admin-whatsapp";
 import Landing from "@/pages/landing";
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
-import { AdminPWAInstallPrompt } from "@/components/admin-pwa-install-prompt";
 import { isReplitPreview, clearCachesForPreview, addPreviewModeIndicator } from "@/lib/replit-preview-utils";
 
 function Router() {
@@ -189,7 +188,6 @@ function App() {
             <MetaTags />
             <Router />
             <PWAInstallPrompt />
-            <AdminPWAInstallPrompt />
           </TooltipProvider>
         </AdminAuthProvider>
       </AuthProvider>

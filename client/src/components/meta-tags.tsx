@@ -19,41 +19,10 @@ export function MetaTags({
   const isAdminRoute = location.startsWith('/admin');
 
   useEffect(() => {
-    // Update manifest link based on route
-    let manifestLink = document.querySelector('link[rel="manifest"]');
-    if (manifestLink) {
-      const manifestPath = isAdminRoute ? '/manifest-admin.json' : '/manifest.json';
-      manifestLink.setAttribute('href', manifestPath);
-    } else if (isAdminRoute) {
-      // Create manifest link if it doesn't exist for admin
-      const link = document.createElement('link');
-      link.rel = 'manifest';
-      link.href = '/manifest-admin.json';
-      document.head.appendChild(link);
-    }
-
-    // Update theme color for admin
-    let themeColorMeta = document.querySelector('meta[name="theme-color"]');
-    if (themeColorMeta) {
-      themeColorMeta.setAttribute('content', isAdminRoute ? '#374151' : '#1f2937');
-    }
-
-    // Register appropriate service worker
+    // Register single unified service worker
     if ('serviceWorker' in navigator) {
-      const swPath = isAdminRoute ? '/sw-admin.js' : '/sw.js';
-      
-      // Unregister previous service worker first
-      navigator.serviceWorker.getRegistrations().then(registrations => {
-        registrations.forEach(registration => {
-          if (registration.scope !== window.location.origin + '/') {
-            registration.unregister();
-          }
-        });
-      });
-      
-      // Register new service worker
-      navigator.serviceWorker.register(swPath, { scope: '/' }).then(registration => {
-        console.log(`✅ SW registered: ${swPath}`);
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(registration => {
+        console.log('✅ SW registered: /sw.js');
       }).catch(error => {
         console.log('🚫 SW registration skipped in Replit preview');
       });

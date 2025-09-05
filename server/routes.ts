@@ -145,27 +145,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // SECURITY FIX: Secure pricing validation routes
   registerPricingValidationRoutes(app);
 
-  // Dynamic manifest routing for PWA
+  // Unified PWA manifest (works for both client and admin)
   app.get("/manifest.json", (req, res) => {
-    const referer = req.get('Referer') || '';
-    const isAdminRoute = referer.includes('/admin');
-    
-    if (isAdminRoute) {
-      res.sendFile(path.resolve(process.cwd(), "client/public/manifest-admin.json"));
-    } else {
-      res.sendFile(path.resolve(process.cwd(), "client/public/manifest.json"));
-    }
-  });
-
-  // Specific admin manifest route
-  app.get("/manifest-admin.json", (req, res) => {
-    res.sendFile(path.resolve(process.cwd(), "client/public/manifest-admin.json"));
-  });
-
-  // Serve admin service worker
-  app.get("/sw-admin.js", (req, res) => {
-    res.setHeader('Content-Type', 'application/javascript');
-    res.sendFile(path.resolve(process.cwd(), "client/public/sw-admin.js"));
+    res.sendFile(path.resolve(process.cwd(), "client/public/manifest.json"));
   });
 
   // Serve test HTML files
