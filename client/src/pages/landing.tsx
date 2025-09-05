@@ -172,13 +172,22 @@ const Landing = () => {
                                   {event.location}, {event.city} - {event.state}
                                 </p>
                               </div>
-                              <div className="flex items-center mt-3">
+                              <div className="flex items-center gap-2 mt-3">
                                 <Badge
                                   variant={event.available ? "default" : "secondary"}
                                   className={event.available ? "bg-primary hover:bg-primary/80" : ""}
                                 >
                                   {event.available ? "Disponível" : "Em Breve"}
                                 </Badge>
+                                {event.isOfficial && (
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-gradient-to-r from-yellow-50 to-amber-50 border-amber-200 text-amber-700 font-medium"
+                                    data-testid="badge-official-partnership"
+                                  >
+                                    ⭐ Oficial
+                                  </Badge>
+                                )}
                               </div>
                             </div>
                             <ChevronRight className="w-5 h-5 text-muted-foreground ml-2" />
@@ -215,12 +224,23 @@ const Landing = () => {
                             </p>
                           </div>
                           <div className="flex items-center justify-between">
-                            <Badge
-                              variant={event.available ? "default" : "secondary"}
-                              className={event.available ? "bg-primary hover:bg-primary/80" : ""}
-                            >
-                              {event.available ? "Disponível" : "Em Breve"}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant={event.available ? "default" : "secondary"}
+                                className={event.available ? "bg-primary hover:bg-primary/80" : ""}
+                              >
+                                {event.available ? "Disponível" : "Em Breve"}
+                              </Badge>
+                              {event.isOfficial && (
+                                <Badge
+                                  variant="outline"
+                                  className="bg-gradient-to-r from-yellow-50 to-amber-50 border-amber-200 text-amber-700 font-medium text-xs"
+                                  data-testid="badge-official-partnership-mobile"
+                                >
+                                  ⭐ Oficial
+                                </Badge>
+                              )}
+                            </div>
                             <ChevronRight className="w-5 h-5 text-muted-foreground" />
                           </div>
                         </div>

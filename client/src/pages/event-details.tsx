@@ -264,6 +264,17 @@ export default function EventDetails() {
                 <Zap className="w-8 h-8" />
               </div>
               <h2 className="text-xl font-bold">{event.name}</h2>
+              {event.isOfficial && (
+                <div className="mt-2">
+                  <Badge
+                    variant="outline"
+                    className="bg-white/20 border-white/40 text-white font-semibold backdrop-blur-sm"
+                    data-testid="badge-official-partnership-details-mobile"
+                  >
+                    ⭐ Parceria Oficial
+                  </Badge>
+                </div>
+              )}
             </div>
           </div>
 
@@ -483,6 +494,17 @@ export default function EventDetails() {
                       <Zap className="w-6 h-6" />
                     </div>
                     <h2 className="text-lg font-bold">{event.name}</h2>
+                    {event.isOfficial && (
+                      <div className="mt-1">
+                        <Badge
+                          variant="outline"
+                          className="bg-white/20 border-white/40 text-white font-semibold backdrop-blur-sm text-xs"
+                          data-testid="badge-official-partnership-details-desktop"
+                        >
+                          ⭐ Oficial
+                        </Badge>
+                      </div>
+                    )}
                   </div>
                 </div>
 

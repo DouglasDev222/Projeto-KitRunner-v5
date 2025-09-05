@@ -55,6 +55,7 @@ export default function AdminEventForm() {
       stockEnabled: false,
       maxOrders: undefined,
       currentOrders: 0,
+      isOfficial: false,
     },
   });
 
@@ -503,6 +504,33 @@ export default function AdminEventForm() {
                       )}
                     />
                   )}
+                </div>
+
+                {/* Parceria Oficial */}
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="isOfficial"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            data-testid="checkbox-official-partnership"
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>
+                            Parceria Oficial
+                          </FormLabel>
+                          <FormDescription>
+                            Marque se este evento possui parceria oficial com a organização
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
                 <div className="flex gap-4 pt-6">

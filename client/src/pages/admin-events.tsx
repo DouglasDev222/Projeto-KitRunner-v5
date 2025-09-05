@@ -167,6 +167,15 @@ export default function AdminEvents() {
                           {event.currentOrders || 0}/{event.maxOrders || '∞'} Pedidos
                         </Badge>
                       )}
+                      {event.isOfficial && (
+                        <Badge
+                          variant="outline"
+                          className="bg-gradient-to-r from-yellow-50 to-amber-50 border-amber-200 text-amber-700 font-medium text-xs"
+                          data-testid="badge-official-partnership-admin"
+                        >
+                          ⭐ Oficial
+                        </Badge>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"

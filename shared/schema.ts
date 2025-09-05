@@ -29,6 +29,9 @@ export const events = pgTable("events", {
   // Manter available por compatibilidade (deprecated)
   available: boolean("available").notNull().default(true),
   
+  // Parceria oficial
+  isOfficial: boolean("is_official").notNull().default(false),
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -499,6 +502,7 @@ export const adminEventCreationSchema = z.object({
   stockEnabled: z.boolean().default(false),
   maxOrders: z.number().optional(),
   currentOrders: z.number().default(0),
+  isOfficial: z.boolean().default(false),
 }).refine((data) => {
   // If pricing type is "fixed", fixedPrice must be provided and be a valid number > 0
   if (data.pricingType === "fixed") {

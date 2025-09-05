@@ -91,6 +91,7 @@ export default function AdminEventEdit() {
       stockEnabled: false,
       maxOrders: undefined,
       currentOrders: 0,
+      isOfficial: false,
     },
   });
 
@@ -119,6 +120,7 @@ export default function AdminEventEdit() {
         stockEnabled: event.stockEnabled || false,
         maxOrders: event.maxOrders || undefined,
         currentOrders: event.currentOrders || 0,
+        isOfficial: event.isOfficial || false,
       });
     }
   }, [event, form]);
@@ -641,6 +643,31 @@ export default function AdminEventEdit() {
                         <Checkbox
                           checked={field.value}
                           onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {/* Parceria Oficial */}
+                <FormField
+                  control={form.control}
+                  name="isOfficial"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">
+                          Parceria Oficial
+                        </FormLabel>
+                        <FormDescription>
+                          Marque se este evento possui parceria oficial com a organização
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-official-partnership-edit"
                         />
                       </FormControl>
                     </FormItem>
