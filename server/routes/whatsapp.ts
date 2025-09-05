@@ -558,7 +558,8 @@ const newTemplateSchema = z.object({
   status: z.string().optional(),
   content: z.string().min(1, 'Conteúdo é obrigatório'),
   description: z.string().optional(),
-  placeholders: z.array(z.string()).optional()
+  placeholders: z.array(z.string()).optional(),
+  quickSend: z.boolean().optional()
 });
 
 router.post('/templates', async (req: Request, res: Response) => {
@@ -574,7 +575,7 @@ router.post('/templates', async (req: Request, res: Response) => {
       });
     }
 
-    const { name, type, status, content, description, placeholders } = validation.data;
+    const { name, type, status, content, description, placeholders, quickSend } = validation.data;
     
     const { db } = await import('../db');
     const { whatsappTemplates } = await import('@shared/schema');
@@ -588,6 +589,7 @@ router.post('/templates', async (req: Request, res: Response) => {
         content,
         description: description || null,
         placeholders: placeholders ? JSON.stringify(placeholders) : null,
+        quickSend: quickSend || false,
         isActive: true,
         isDefault: false
       })
@@ -604,6 +606,7 @@ router.post('/templates', async (req: Request, res: Response) => {
         description: template.description,
         isActive: template.isActive,
         isDefault: template.isDefault,
+        quickSend: template.quickSend,
         placeholders: template.placeholders ? JSON.parse(template.placeholders) : null,
         createdAt: template.createdAt,
         updatedAt: template.updatedAt
@@ -644,7 +647,7 @@ router.put('/templates/:id', async (req: Request, res: Response) => {
       });
     }
 
-    const { name, type, status, content, description, placeholders } = validation.data;
+    const { name, type, status, content, description, placeholders, quickSend } = validation.data;
     
     const { db } = await import('../db');
     const { whatsappTemplates } = await import('@shared/schema');
@@ -658,6 +661,7 @@ router.put('/templates/:id', async (req: Request, res: Response) => {
         content,
         description: description || null,
         placeholders: placeholders ? JSON.stringify(placeholders) : null,
+        quickSend: quickSend || false,
         updatedAt: new Date()
       })
       .where(eq(whatsappTemplates.id, templateId))
@@ -681,6 +685,7 @@ router.put('/templates/:id', async (req: Request, res: Response) => {
         description: template.description,
         isActive: template.isActive,
         isDefault: template.isDefault,
+        quickSend: template.quickSend,
         placeholders: template.placeholders ? JSON.parse(template.placeholders) : null,
         createdAt: template.createdAt,
         updatedAt: template.updatedAt
