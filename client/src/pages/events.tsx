@@ -495,12 +495,23 @@ export default function Events() {
                         </div>
                       </div>
 
-                      <Badge
-                        variant={getEventStatusVariant(event, isPastEvent)}
-                        className={`text-xs rounded-full px-3 py-1 ${getEventStatusColor(event, isPastEvent)}`}
-                      >
-                        {getEventStatusLabel(event, isPastEvent)}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={getEventStatusVariant(event, isPastEvent)}
+                          className={`text-xs rounded-full px-3 py-1 ${getEventStatusColor(event, isPastEvent)}`}
+                        >
+                          {getEventStatusLabel(event, isPastEvent)}
+                        </Badge>
+                        {event.isOfficial && event.available && !isPastEvent && (
+                          <Badge
+                            variant="outline"
+                            className="bg-gradient-to-r from-yellow-50 to-amber-50 border-amber-200 text-amber-700 font-medium text-xs"
+                            data-testid="badge-official-partnership-events-mobile"
+                          >
+                            ⭐ Oficial
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -961,12 +972,23 @@ export default function Events() {
                         </div>
 
                         <div className="flex justify-between items-center">
-                          <Badge
-                            variant={getEventStatusVariant(event, isPastEvent)}
-                            className={`text-xs rounded-md px-3 py-1 font-medium ${getEventStatusColor(event, isPastEvent)}`}
-                          >
-                            {getEventStatusLabel(event, isPastEvent)}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant={getEventStatusVariant(event, isPastEvent)}
+                              className={`text-xs rounded-md px-3 py-1 font-medium ${getEventStatusColor(event, isPastEvent)}`}
+                            >
+                              {getEventStatusLabel(event, isPastEvent)}
+                            </Badge>
+                            {event.isOfficial && event.available && !isPastEvent && (
+                              <Badge
+                                variant="outline"
+                                className="bg-gradient-to-r from-yellow-50 to-amber-50 border-amber-200 text-amber-700 font-medium text-xs"
+                                data-testid="badge-official-partnership-events-desktop"
+                              >
+                                ⭐ Oficial
+                              </Badge>
+                            )}
+                          </div>
 
                           <div className="flex gap-2">
                             {event.status === 'ativo' && !isPastEvent ? (
