@@ -10,7 +10,7 @@ KitRunner is a responsive web application designed for managing event kit pickup
 - **Email Services**: Both Resend (primary) and SendGrid (fallback) configured ✅
 - **Payment Systems**: MercadoPago and payment timeout scheduler active ✅
 - **CEP Zones System**: Postal code pricing system loaded and functional ✅
-- **Deployment Config**: Production deployment configured for autoscale ✅
+- **Deployment Config**: Production deployment configured for VM with proper build/run commands ✅
 - **WhatsApp API Migration**: Updated to new organized API with `/api/` prefixed routes ✅
 - **WhatsApp Integration**: Fully implemented WhatsApp notification system for automatic customer messages ✅
 - **Critical Security Fix**: Eliminated payment price manipulation vulnerability with server-side validation ✅
