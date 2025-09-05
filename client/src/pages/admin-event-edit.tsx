@@ -38,6 +38,7 @@ const eventSchema = z.object({
   stockEnabled: z.boolean().default(false),
   maxOrders: z.number().optional(),
   currentOrders: z.number().default(0),
+  isOfficial: z.boolean().default(false),
 }).refine((data) => {
   if (data.pricingType === "fixed") {
     if (!data.fixedPrice || data.fixedPrice.trim() === "") {

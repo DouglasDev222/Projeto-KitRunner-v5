@@ -1130,6 +1130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Convert boolean strings to actual booleans
         donationRequired: updateData.donationRequired === true || updateData.donationRequired === "true",
         available: updateData.available === true || updateData.available === "true",
+        isOfficial: updateData.isOfficial === true || updateData.isOfficial === "true",
         // Handle decimal fields - convert empty strings to null
         fixedPrice: updateData.fixedPrice && updateData.fixedPrice.toString().trim() !== "" ? updateData.fixedPrice.toString() : null,
         extraKitPrice: updateData.extraKitPrice && updateData.extraKitPrice.toString().trim() !== "" ? updateData.extraKitPrice.toString() : "8.00",
