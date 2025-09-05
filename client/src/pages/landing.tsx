@@ -384,7 +384,7 @@ const Landing = () => {
                 <p className="text-sm text-muted-foreground">© 2025 KitRunner. Todos os direitos reservados.</p>
                 <p className="text-sm text-muted-foreground">CNPJ: 55.108.434/0001-00</p>
               </div>
-              <a href="https://www.instagram.com/kitrunner/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
+              <a href="https://www.instagram.com/kitrunner_/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-instagram"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.5" y1="6.5" y2="6.5"/></svg>
               </a>
           </div>
