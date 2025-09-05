@@ -303,11 +303,31 @@ export default function AdminOrders() {
 
         // Exibir notificação do navegador se permitido
         if (hasNotificationPermission && typeof window !== 'undefined' && 'Notification' in window) {
-          new Notification('KitRunner - Novos Pedidos', {
-            body: `${newOrdersCount} novo${newOrdersCount > 1 ? 's' : ''} pedido${newOrdersCount > 1 ? 's' : ''} recebido${newOrdersCount > 1 ? 's' : ''}!`,
-            icon: '/favicon.ico',
-            tag: 'new-orders'
-          });
+          try {
+            // Tentar usar Service Worker notification se disponível (para PWA/mobile)
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+              navigator.serviceWorker.ready.then(registration => {
+                registration.showNotification('KitRunner - Novos Pedidos', {
+                  body: `${newOrdersCount} novo${newOrdersCount > 1 ? 's' : ''} pedido${newOrdersCount > 1 ? 's' : ''} recebido${newOrdersCount > 1 ? 's' : ''}!`,
+                  icon: '/favicon.ico',
+                  tag: 'new-orders',
+                  badge: '/favicon.ico'
+                });
+              }).catch(() => {
+                // Fallback para notificação simples se Service Worker falhar
+                console.log('Service Worker notification failed, using simple notification');
+              });
+            } else {
+              // Fallback para desktop/browsers normais
+              new Notification('KitRunner - Novos Pedidos', {
+                body: `${newOrdersCount} novo${newOrdersCount > 1 ? 's' : ''} pedido${newOrdersCount > 1 ? 's' : ''} recebido${newOrdersCount > 1 ? 's' : ''}!`,
+                icon: '/favicon.ico',
+                tag: 'new-orders'
+              });
+            }
+          } catch (error) {
+            console.log('Notification failed:', error);
+          }
         }
 
         // Invalidar caches relacionados conforme padrão de reatividade
