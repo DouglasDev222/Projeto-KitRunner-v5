@@ -508,7 +508,7 @@ export default function Events() {
                             className="bg-gradient-to-r from-yellow-50 to-amber-50 border-amber-200 text-amber-700 font-medium text-xs"
                             data-testid="badge-official-partnership-events-mobile"
                           >
-                            ⭐ Oficial
+                            ⭐ Parceria Oficial
                           </Badge>
                         )}
                       </div>
