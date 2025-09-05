@@ -145,6 +145,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // SECURITY FIX: Secure pricing validation routes
   registerPricingValidationRoutes(app);
 
+  // Dynamic manifest routing for PWA
+  app.get("/manifest.json", (req, res) => {
+    const referer = req.get('Referer') || '';
+    const isAdminRoute = referer.includes('/admin');
+    
+    if (isAdminRoute) {
+      res.sendFile(path.resolve(process.cwd(), "client/public/manifest-admin.json"));
+    } else {
+      res.sendFile(path.resolve(process.cwd(), "client/public/manifest.json"));
+    }
+  });
+
   // Serve test HTML files
   app.get("/test-rejected-payment.html", (req, res) => {
     res.sendFile(path.resolve(process.cwd(), "test-rejected-payment.html"));

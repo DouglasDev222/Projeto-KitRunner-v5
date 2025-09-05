@@ -1,5 +1,6 @@
 
 import { useEffect } from 'react';
+import { useLocation } from 'wouter';
 
 interface MetaTagsProps {
   title?: string;
@@ -14,7 +15,24 @@ export function MetaTags({
   image = "/logo.webp",
   url = window.location.href
 }: MetaTagsProps) {
+  const [location] = useLocation();
+  const isAdminRoute = location.startsWith('/admin');
+
   useEffect(() => {
+    // Update manifest link based on route
+    let manifestLink = document.querySelector('link[rel="manifest"]');
+    if (manifestLink) {
+      const manifestPath = isAdminRoute ? '/manifest-admin.json' : '/manifest.json';
+      manifestLink.setAttribute('href', manifestPath);
+    }
+
+    // Register appropriate service worker
+    if ('serviceWorker' in navigator) {
+      const swPath = isAdminRoute ? '/sw-admin.js' : '/sw.js';
+      navigator.serviceWorker.register(swPath).catch(error => {
+        console.log('🚫 SW registration skipped in Replit preview');
+      });
+    }
     // Update document title
     document.title = title;
     
@@ -60,7 +78,7 @@ export function MetaTags({
     if (twitterImage) {
       twitterImage.setAttribute('content', image);
     }
-  }, [title, description, image, url]);
+  }, [title, description, image, url, isAdminRoute]);
 
   return null;
 }

@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Download, X } from "lucide-react";
+import { Download, X, Shield } from "lucide-react";
 import { useLocation } from "wouter";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -10,30 +9,20 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-export function PWAInstallPrompt() {
+export function AdminPWAInstallPrompt() {
   const [location] = useLocation();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   
-  const isAdminRoute = location.startsWith('/admin');
+  const isAdminLoginRoute = location === '/admin/login';
   
-  // Check if user has dismissed client PWA installation
-  const hasUserDismissedClientPWA = () => {
-    const dismissedAt = localStorage.getItem('pwa-client-dismissed');
-    if (!dismissedAt) return false;
-    
-    const dismissedTime = parseInt(dismissedAt);
-    const hoursAgo = (Date.now() - dismissedTime) / (1000 * 60 * 60);
-    return hoursAgo < 6; // Show again after 6 hours
-  };
-
   useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       
-      // Only show client PWA prompt outside admin routes and if not recently dismissed
-      if (!isAdminRoute && !hasUserDismissedClientPWA()) {
+      // Only show admin PWA prompt on admin login page
+      if (isAdminLoginRoute) {
         setShowInstallPrompt(true);
       }
     };
@@ -41,7 +30,7 @@ export function PWAInstallPrompt() {
     window.addEventListener('beforeinstallprompt', handler);
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, [isAdminRoute]);
+  }, [isAdminLoginRoute]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -50,7 +39,7 @@ export function PWAInstallPrompt() {
     const { outcome } = await deferredPrompt.userChoice;
     
     if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
+      console.log('Admin accepted the install prompt');
     }
     
     setDeferredPrompt(null);
@@ -60,32 +49,27 @@ export function PWAInstallPrompt() {
   const handleDismiss = () => {
     setShowInstallPrompt(false);
     setDeferredPrompt(null);
-    
-    // Save dismissal timestamp for client PWA
-    if (!isAdminRoute) {
-      localStorage.setItem('pwa-client-dismissed', Date.now().toString());
-    }
   };
 
-  // Don't show client PWA prompt on admin routes
-  if (!showInstallPrompt || isAdminRoute) return null;
+  // Only show on admin login route
+  if (!showInstallPrompt || !isAdminLoginRoute) return null;
 
   return (
-    <Card className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-sm shadow-lg">
+    <Card className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-sm shadow-lg border-orange-200 bg-orange-50">
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Download className="h-5 w-5 text-blue-600" />
+            <Shield className="h-5 w-5 text-orange-600" />
             <div>
-              <p className="text-sm font-medium">Instalar KitRunner</p>
-              <p className="text-xs text-gray-600">Acesso rápido no seu dispositivo</p>
+              <p className="text-sm font-medium text-orange-800">Instalar KitRunner Admin</p>
+              <p className="text-xs text-orange-600">Acesso administrativo rápido</p>
             </div>
           </div>
           <div className="flex space-x-2">
-            <Button size="sm" onClick={handleInstallClick}>
+            <Button size="sm" onClick={handleInstallClick} className="bg-orange-600 hover:bg-orange-700">
               Instalar
             </Button>
-            <Button size="sm" variant="ghost" onClick={handleDismiss}>
+            <Button size="sm" variant="ghost" onClick={handleDismiss} className="text-orange-600 hover:bg-orange-100">
               <X className="h-4 w-4" />
             </Button>
           </div>
