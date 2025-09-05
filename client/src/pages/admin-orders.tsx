@@ -287,8 +287,15 @@ export default function AdminOrders() {
     if (ordersData && typeof ordersData === 'object' && 'total' in ordersData) {
       const currentTotal = (ordersData as any).total;
       
-      // Se já temos um total anterior e o atual é maior, há novos pedidos
-      if (lastOrderCount > 0 && currentTotal > lastOrderCount) {
+      // Só verificar novos pedidos se estivermos vendo todos os pedidos (sem filtros ativos)
+      const hasActiveFilters = filters.status !== 'all' || 
+                              filters.eventId || 
+                              filters.searchTerm || 
+                              filters.customerName ||
+                              filters.dateFilter !== 'month';
+      
+      // Se já temos um total anterior, o atual é maior E não há filtros ativos, há novos pedidos
+      if (lastOrderCount > 0 && currentTotal > lastOrderCount && !hasActiveFilters) {
         const newOrdersCount = currentTotal - lastOrderCount;
         
         // Tocar som de notificação
@@ -336,10 +343,12 @@ export default function AdminOrders() {
         queryClient.invalidateQueries({ queryKey: ["/api/events"] });
       }
       
-      // Atualizar contagem de pedidos
-      setLastOrderCount(currentTotal);
+      // Só atualizar contagem se não há filtros ativos (para não perder a referência real)
+      if (!hasActiveFilters) {
+        setLastOrderCount(currentTotal);
+      }
     }
-  }, [ordersData, lastOrderCount, hasNotificationPermission, toast, queryClient]);
+  }, [ordersData, lastOrderCount, hasNotificationPermission, toast, queryClient, filters]);
 
   const orders = (ordersData as any)?.orders || [];
   const totalPages = (ordersData as any)?.totalPages || 1;
