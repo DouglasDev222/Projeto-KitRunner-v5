@@ -24,6 +24,7 @@ import { formatCPF, isValidCPF } from "@/lib/cpf-validator";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth-context";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Footer } from "@/components/footer";
 
 // Função para formatar data brasileira (DD/MM/AAAA)
 const formatBrazilianDate = (value: string): string => {
@@ -166,7 +167,7 @@ export default function Login() {
   if (isMobile) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen">
-        <Header showBackButton onBack={() => setLocation("/eventos")} />
+        <Header />
         <div className="p-4">
           <Card>
             <CardHeader className="text-center">
@@ -276,6 +277,7 @@ export default function Login() {
             </CardContent>
           </Card>
         </div>
+        <Footer />
       </div>
     );
   }

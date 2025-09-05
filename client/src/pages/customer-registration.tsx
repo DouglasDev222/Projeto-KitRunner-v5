@@ -200,7 +200,7 @@ export default function CustomerRegistration() {
   if (isMobile) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen pb-20">
-        <Header showBackButton onBack={getBackNavigation()} />
+        <Header />
         <div className="p-4">
         <div className="flex items-center mb-4">
           <UserPlus className="w-6 h-6 text-primary mr-2" />
