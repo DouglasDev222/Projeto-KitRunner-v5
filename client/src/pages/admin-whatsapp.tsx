@@ -114,7 +114,7 @@ export default function AdminWhatsApp() {
     cliente: "João Silva",
     evento: "Maratona de João Pessoa",
     qtd_kits: "2",
-    lista_kits: "1. João Silva - Tamanho: M\n2. Maria Silva - Tamanho: P",
+    lista_kits: "1. João Silva\n2. Maria Silva",
     data_entrega: "15/12/2024",
     numero_pedido: "KR2024123456"
   });

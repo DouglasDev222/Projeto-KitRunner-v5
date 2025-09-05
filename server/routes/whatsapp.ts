@@ -1032,7 +1032,7 @@ const testTemplateSchema = z.object({
     cliente: z.string().optional().default('João Silva'),
     evento: z.string().optional().default('Maratona de João Pessoa'),
     qtd_kits: z.string().optional().default('2'),
-    lista_kits: z.string().optional().default('1. João Silva - Tamanho: M\n2. Maria Silva - Tamanho: P'),
+    lista_kits: z.string().optional().default('1. João Silva\n2. Maria Silva'),
     data_entrega: z.string().optional().default('15/12/2024'),
     numero_pedido: z.string().optional().default('KR2024123456')
   }).optional().default({})

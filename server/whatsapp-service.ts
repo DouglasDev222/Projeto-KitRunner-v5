@@ -435,7 +435,7 @@ Bora correr! 🏃‍♂️💪`;
       // Format kits list from order kits
       const kitsList = fullOrder.kits && fullOrder.kits.length > 0 
         ? fullOrder.kits.map((kit: any, index: number) => 
-            `${index + 1}. ${kit.name} - Tamanho: ${kit.shirtSize || 'Não informado'}`
+            `${index + 1}. ${kit.name}`
           ).join('\n') 
         : `${kitQuantity} kit(s) para o evento`;
 
