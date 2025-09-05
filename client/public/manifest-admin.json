@@ -2,7 +2,8 @@
   "name": "KitRunner Admin",
   "short_name": "KitRunner Admin",
   "description": "Painel administrativo do KitRunner",
-  "start_url": "/admin",
+  "start_url": "/admin?source=pwa",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#1f2937",
   "theme_color": "#374151",
@@ -17,13 +18,25 @@
       "src": "/logo.webp",
       "sizes": "192x192",
       "type": "image/webp",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.webp",
+      "sizes": "192x192",
+      "type": "image/webp",
+      "purpose": "maskable"
     },
     {
       "src": "/logo.webp",
       "sizes": "512x512",
       "type": "image/webp",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "maskable"
     }
   ],
   "categories": ["business", "productivity", "utilities"],

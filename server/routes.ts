@@ -157,6 +157,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Specific admin manifest route
+  app.get("/manifest-admin.json", (req, res) => {
+    res.sendFile(path.resolve(process.cwd(), "client/public/manifest-admin.json"));
+  });
+
+  // Serve admin service worker
+  app.get("/sw-admin.js", (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.sendFile(path.resolve(process.cwd(), "client/public/sw-admin.js"));
+  });
+
   // Serve test HTML files
   app.get("/test-rejected-payment.html", (req, res) => {
     res.sendFile(path.resolve(process.cwd(), "test-rejected-payment.html"));
