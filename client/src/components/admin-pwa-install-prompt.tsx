@@ -16,34 +16,46 @@ export function AdminPWAInstallPrompt() {
   
   const isAdminLoginRoute = location === '/admin/login';
   
+  // Check if PWA is already installed
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  
   useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      
-      // Only show admin PWA prompt on admin login page
-      if (isAdminLoginRoute) {
-        setShowInstallPrompt(true);
-      }
     };
 
     window.addEventListener('beforeinstallprompt', handler);
+    
+    // Show prompt immediately on admin login if PWA is not installed
+    if (isAdminLoginRoute && !isStandalone) {
+      setShowInstallPrompt(true);
+    }
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, [isAdminLoginRoute]);
+  }, [isAdminLoginRoute, isStandalone]);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('Admin accepted the install prompt');
+    if (deferredPrompt) {
+      // Native PWA install prompt available
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        console.log('Admin accepted the install prompt');
+      }
+      
+      setDeferredPrompt(null);
+      setShowInstallPrompt(false);
+    } else {
+      // Fallback: Show manual installation instructions
+      if (isIOS) {
+        alert('Para instalar no iOS: Toque no botão de compartilhamento e selecione "Adicionar à tela de início"');
+      } else {
+        alert('Para instalar: Clique no menu do navegador (⋮) e selecione "Instalar app" ou "Adicionar à tela de início"');
+      }
     }
-    
-    setDeferredPrompt(null);
-    setShowInstallPrompt(false);
   };
 
   const handleDismiss = () => {
