@@ -1191,7 +1191,7 @@ router.post('/send-message', async (req: Request, res: Response) => {
       // Preparar lista de kits formatada
       const kitsList = orderKits && orderKits.length > 0 
         ? orderKits.map((kit: any, index: number) => 
-            `${index + 1}. ${kit.name} - Tamanho: ${kit.shirtSize || 'Não informado'}`
+            `${index + 1}. ${kit.name}`
           ).join('\n')
         : `${order.order.kitQuantity} kit(s) solicitado(s)`;
 
