@@ -625,7 +625,27 @@ export default function Payment() {
       donationCost: pricing.donationAmount,  // From secure calculation (mapped to donationCost)
       discountAmount: couponDiscount,  // Only discount is sent from frontend
       donationAmount: pricing.donationAmount,  // From secure calculation
-      zoneName: securePricing?.zoneName || null,  // 🎯 CEP ZONE FIX: Send zone name from secure calculation
+      zoneName: (() => {
+        // 🎯 CEP ZONE FIX: Get zone name from sessionStorage calculatedCosts first, then fallback to securePricing
+        try {
+          const calculatedCosts = sessionStorage.getItem("calculatedCosts");
+          console.log('🎯 DEBUG zoneName - calculatedCosts from sessionStorage:', calculatedCosts);
+          if (calculatedCosts) {
+            const costs = JSON.parse(calculatedCosts);
+            console.log('🎯 DEBUG zoneName - parsed costs:', costs);
+            console.log('🎯 DEBUG zoneName - costs.cepZoneName:', costs.cepZoneName);
+            console.log('🎯 DEBUG zoneName - securePricing?.zoneName:', securePricing?.zoneName);
+            const finalZoneName = costs.cepZoneName || securePricing?.zoneName || null;
+            console.log('🎯 DEBUG zoneName - final value:', finalZoneName);
+            return finalZoneName;
+          }
+        } catch (error) {
+          console.warn('Error parsing calculatedCosts from sessionStorage:', error);
+        }
+        const fallbackZoneName = securePricing?.zoneName || null;
+        console.log('🎯 DEBUG zoneName - fallback value:', fallbackZoneName);
+        return fallbackZoneName;
+      })(),
       idempotencyKey,
       couponCode: appliedCoupon?.code,
     };
