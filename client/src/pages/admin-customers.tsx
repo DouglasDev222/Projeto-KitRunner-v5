@@ -88,9 +88,9 @@ export default function AdminCustomers() {
     refetchOnWindowFocus: true, // Refetch when window gains focus
   });
 
-  const customers = customersData?.customers || [];
-  const totalPages = customersData?.totalPages || 1;
-  const totalCustomers = customersData?.total || 0;
+  const customers = (customersData as any)?.customers || [];
+  const totalPages = (customersData as any)?.totalPages || 1;
+  const totalCustomers = (customersData as any)?.total || 0;
 
   // Create customer form
   const createForm = useForm<CustomerRegistration>({
@@ -795,120 +795,216 @@ export default function AdminCustomers() {
           </div>
         )}
 
-        {/* Customer Table */}
+        {/* Customer Table - Desktop */}
         {!customersLoading && (
-          <div className="bg-white rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>CPF</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Telefone</TableHead>
-                  <TableHead>Endereços</TableHead>
-                  <TableHead>Pedidos</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {customers.map((customer: any) => (
-                  <TableRow key={customer.id}>
-                    <TableCell className="font-medium">{customer.name}</TableCell>
-                    <TableCell>{formatCPF(customer.cpf)}</TableCell>
-                    <TableCell>{customer.email}</TableCell>
-                    <TableCell>{formatPhone(customer.phone)}</TableCell>
-                    <TableCell>
-                      {customer.addresses && customer.addresses.length > 0 ? (
-                        <div className="space-y-1">
-                          {customer.addresses.slice(0, 2).map((address: any) => (
-                            <div key={address.id} className="text-xs">
-                              <span className="font-medium">{address.label}:</span> {address.street}, {address.number}
-                            </div>
-                          ))}
-                          {customer.addresses.length > 2 && (
-                            <div className="text-xs text-gray-500">
-                              +{customer.addresses.length - 2} mais
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-gray-500 text-sm">Sem endereços</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{customer.orderCount || 0}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-2 justify-end">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openDetailsModal(customer)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEditModal(customer)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+          <>
+            <div className="hidden lg:block bg-white rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>CPF</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Endereços</TableHead>
+                    <TableHead>Pedidos</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="mt-6 p-4 border-t flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, totalCustomers)} de {totalCustomers} clientes
+                </TableHeader>
+                <TableBody>
+                  {customers.map((customer: any) => (
+                    <TableRow key={customer.id}>
+                      <TableCell className="font-medium">{customer.name}</TableCell>
+                      <TableCell>{formatCPF(customer.cpf)}</TableCell>
+                      <TableCell>{customer.email}</TableCell>
+                      <TableCell>{formatPhone(customer.phone)}</TableCell>
+                      <TableCell>
+                        {customer.addresses && customer.addresses.length > 0 ? (
+                          <div className="space-y-1">
+                            {customer.addresses.slice(0, 2).map((address: any) => (
+                              <div key={address.id} className="text-xs">
+                                <span className="font-medium">{address.label}:</span> {address.street}, {address.number}
+                              </div>
+                            ))}
+                            {customer.addresses.length > 2 && (
+                              <div className="text-xs text-gray-500">
+                                +{customer.addresses.length - 2} mais
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-500 text-sm">Sem endereços</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{customer.orderCount || 0}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openDetailsModal(customer)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditModal(customer)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile Cards View */}
+            <div className="lg:hidden space-y-3">
+              {customers.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Nenhum cliente encontrado.</p>
                 </div>
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious 
-                        href="#" 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (currentPage > 1) handlePageChange(currentPage - 1);
-                        }}
-                        className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-                      />
-                    </PaginationItem>
-                    
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handlePageChange(page);
-                          }}
-                          isActive={currentPage === page}
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-                    
-                    <PaginationItem>
-                      <PaginationNext 
-                        href="#" 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (currentPage < totalPages) handlePageChange(currentPage + 1);
-                        }}
-                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
+              ) : (
+                customers.map((customer: any) => (
+                  <Card key={customer.id} className="relative">
+                    <div className="p-4">
+                      <div className="space-y-3">
+                        {/* Header - Nome e CPF */}
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-gray-900 truncate">{customer.name}</h3>
+                            <p className="text-sm text-gray-600">{formatCPF(customer.cpf)}</p>
+                          </div>
+                          <Badge variant={customer.orderCount && customer.orderCount > 0 ? "default" : "secondary"} className="ml-2">
+                            {customer.orderCount || 0} pedidos
+                          </Badge>
+                        </div>
+
+                        {/* Contato */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Mail className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">{customer.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Phone className="h-4 w-4 flex-shrink-0" />
+                            <span>{formatPhone(customer.phone)}</span>
+                          </div>
+                        </div>
+
+                        {/* Endereços */}
+                        {customer.addresses?.length > 0 && (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <MapPin className="h-4 w-4 flex-shrink-0" />
+                              <span>Endereços ({customer.addresses.length})</span>
+                            </div>
+                            <div className="space-y-1 ml-6">
+                              {customer.addresses.slice(0, 2).map((address: any) => (
+                                <div key={address.id} className="text-xs text-gray-600">
+                                  <span className="font-medium">{address.label}:</span> {address.street}, {address.number}
+                                </div>
+                              ))}
+                              {customer.addresses.length > 2 && (
+                                <div className="text-xs text-gray-500">
+                                  +{customer.addresses.length - 2} mais
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Ações */}
+                        <div className="flex gap-2 pt-2 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openDetailsModal(customer)}
+                            className="flex-1"
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            Ver
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditModal(customer)}
+                            className="flex-1"
+                          >
+                            <Edit className="w-4 h-4 mr-1" />
+                            Editar
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openDeleteDialog(customer)}
+                            className="flex-1"
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Excluir
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Pagination - Show for both desktop and mobile */}
+        {!customersLoading && totalPages > 1 && (
+          <div className="mt-6 p-4 border-t flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, totalCustomers)} de {totalCustomers} clientes
+            </div>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (currentPage > 1) handlePageChange(currentPage - 1);
+                    }}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handlePageChange(page);
+                      }}
+                      isActive={currentPage === page}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                    }}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
         )}
 
