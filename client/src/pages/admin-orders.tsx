@@ -861,28 +861,40 @@ export default function AdminOrders() {
         {/* Statistics Cards - Mobile shows only 2 essential */}
         {(orderStats as any) && (
           <>
-            {/* Mobile: Only Total and Confirmed */}
-            <div className="grid grid-cols-2 gap-3 sm:hidden">
+            {/* Mobile: Total, Confirmed and Revenue - Stacked */}
+            <div className="flex flex-col gap-2 sm:hidden">
               <Card>
                 <CardContent className="p-3">
-                  <div className="flex items-center space-x-2">
-                    <Package className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-gray-600">Total</p>
-                      <p className="text-xl font-bold">{(orderStats as any).totalOrders}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Package className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                      <p className="text-sm font-medium text-gray-600">Total de Pedidos</p>
                     </div>
+                    <p className="text-xl font-bold">{(orderStats as any).totalOrders}</p>
                   </div>
                 </CardContent>
               </Card>
               
               <Card>
                 <CardContent className="p-3">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-gray-600">Confirmados</p>
-                      <p className="text-xl font-bold">{(orderStats as any).confirmedOrders}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
+                      <p className="text-sm font-medium text-gray-600">Pedidos Confirmados</p>
                     </div>
+                    <p className="text-xl font-bold">{(orderStats as any).confirmedOrders}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <DollarSign className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      <p className="text-sm font-medium text-gray-600">Total em Valor</p>
+                    </div>
+                    <p className="text-xl font-bold">{formatCurrency((orderStats as any).totalRevenue)}</p>
                   </div>
                 </CardContent>
               </Card>
