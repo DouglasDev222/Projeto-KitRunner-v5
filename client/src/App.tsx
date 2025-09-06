@@ -65,13 +65,11 @@ function Router() {
       <Route path="/profile/address/:id/edit" component={NewAddress} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={CustomerRegistration} />
-      <Route path="/admin/login" >
-        {() => <AdminLogin />}
-      </Route>
+      <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin" >
         {() => (
           <AdminRouteGuard>
-            <AdminOrders />
+            <AdminDashboard />
           </AdminRouteGuard>
         )}
       </Route>

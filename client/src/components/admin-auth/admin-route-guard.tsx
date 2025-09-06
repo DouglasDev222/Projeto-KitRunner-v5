@@ -1,6 +1,6 @@
-import React, { type ReactNode } from 'react';
+import React, { type ReactNode, useEffect } from 'react';
 import { useAdminAuth } from '@/contexts/admin-auth-context';
-import { AdminLogin } from './admin-login';
+import { useLocation } from 'wouter';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface AdminRouteGuardProps {
@@ -10,6 +10,14 @@ interface AdminRouteGuardProps {
 
 export function AdminRouteGuard({ children, requiredRole = 'admin' }: AdminRouteGuardProps) {
   const { admin, isAuthenticated, isLoading } = useAdminAuth();
+  const [, setLocation] = useLocation();
+
+  // Redirecionar para login se não estiver autenticado
+  useEffect(() => {
+    if (!isLoading && (!isAuthenticated || !admin)) {
+      setLocation('/admin/login');
+    }
+  }, [isLoading, isAuthenticated, admin, setLocation]);
 
   // Mostrar loading enquanto verifica autenticação
   if (isLoading) {
@@ -20,9 +28,13 @@ export function AdminRouteGuard({ children, requiredRole = 'admin' }: AdminRoute
     );
   }
 
-  // Se não estiver autenticado, mostrar tela de login
+  // Se não estiver autenticado, mostrar loading enquanto redireciona
   if (!isAuthenticated || !admin) {
-    return <AdminLogin />;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   // Verificar se o usuário tem a role necessária
