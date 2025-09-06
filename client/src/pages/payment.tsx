@@ -625,6 +625,7 @@ export default function Payment() {
       donationCost: pricing.donationAmount,  // From secure calculation (mapped to donationCost)
       discountAmount: couponDiscount,  // Only discount is sent from frontend
       donationAmount: pricing.donationAmount,  // From secure calculation
+      zoneName: securePricing?.zoneName || null,  // 🎯 CEP ZONE FIX: Send zone name from secure calculation
       idempotencyKey,
       couponCode: appliedCoupon?.code,
     };

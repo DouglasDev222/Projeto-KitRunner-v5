@@ -552,7 +552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Enhanced validation: CEP zones pricing security check and get zone name
-      let cepZoneName = null;
+      let cepZoneName = orderData.zoneName || null; // 🎯 CEP ZONE FIX: Use zone name from frontend if provided
       if (selectedEvent.pricingType === 'cep_zones') {
         const customerAddress = await storage.getAddress(orderData.addressId);
         if (!customerAddress) {

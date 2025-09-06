@@ -422,6 +422,7 @@ export const orderCreationSchema = z.object({
     shirtSize: z.string().min(1, "Tamanho da camisa é obrigatório"),
   })),
   donationAmount: z.string().default("0"),
+  zoneName: z.string().optional(), // 🎯 CEP ZONE FIX: Add zone name from secure calculation
   idempotencyKey: z.string().optional(),
 });
 
