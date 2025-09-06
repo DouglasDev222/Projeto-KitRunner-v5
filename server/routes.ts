@@ -2544,6 +2544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // paymentProcessorOrderId: result.id?.toString() || null, // Field not in schema
             donationAmount: donationAmount.toString(),
             discountAmount: (validatedOrderData.discountAmount || 0).toString(),
+            cepZoneName: validatedOrderData.zoneName || null, // 🎯 CEP ZONE FIX: Card payment zoneName
             idempotencyKey: validatedOrderData.idempotencyKey || null,
           });
 
@@ -2841,6 +2842,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           paymentMethod: 'pix',
           donationAmount: donationAmount.toString(),
           discountAmount: (validatedOrderData.discountAmount || 0).toString(),
+          cepZoneName: validatedOrderData.zoneName || null, // 🎯 CEP ZONE FIX: PIX payment zoneName
           idempotencyKey: validatedOrderData.idempotencyKey || null,
         });
 

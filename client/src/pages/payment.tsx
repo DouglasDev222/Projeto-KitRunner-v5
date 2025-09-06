@@ -629,22 +629,14 @@ export default function Payment() {
         // 🎯 CEP ZONE FIX: Get zone name from sessionStorage calculatedCosts first, then fallback to securePricing
         try {
           const calculatedCosts = sessionStorage.getItem("calculatedCosts");
-          console.log('🎯 DEBUG zoneName - calculatedCosts from sessionStorage:', calculatedCosts);
           if (calculatedCosts) {
             const costs = JSON.parse(calculatedCosts);
-            console.log('🎯 DEBUG zoneName - parsed costs:', costs);
-            console.log('🎯 DEBUG zoneName - costs.cepZoneName:', costs.cepZoneName);
-            console.log('🎯 DEBUG zoneName - securePricing?.zoneName:', securePricing?.zoneName);
-            const finalZoneName = costs.cepZoneName || securePricing?.zoneName || null;
-            console.log('🎯 DEBUG zoneName - final value:', finalZoneName);
-            return finalZoneName;
+            return costs.cepZoneName || securePricing?.zoneName || null;
           }
         } catch (error) {
           console.warn('Error parsing calculatedCosts from sessionStorage:', error);
         }
-        const fallbackZoneName = securePricing?.zoneName || null;
-        console.log('🎯 DEBUG zoneName - fallback value:', fallbackZoneName);
-        return fallbackZoneName;
+        return securePricing?.zoneName || null;
       })(),
       idempotencyKey,
       couponCode: appliedCoupon?.code,
