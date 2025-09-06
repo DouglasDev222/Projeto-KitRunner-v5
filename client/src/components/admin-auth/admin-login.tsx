@@ -42,9 +42,9 @@ export function AdminLogin() {
       if (result.success) {
         toast({
           title: "Login realizado com sucesso",
-          description: "Redirecionando para o painel..."
+          description: "Redirecionando para pedidos..."
         });
-        // Redirecionar para dashboard admin
+        // Redirecionar para pedidos admin
         setLocation('/admin');
       } else {
         const errorMessage = result.error || 'Erro ao fazer login';

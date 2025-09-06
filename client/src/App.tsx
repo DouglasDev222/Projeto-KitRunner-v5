@@ -69,7 +69,7 @@ function Router() {
       <Route path="/admin" >
         {() => (
           <AdminRouteGuard>
-            <AdminDashboard />
+            <AdminOrders />
           </AdminRouteGuard>
         )}
       </Route>
