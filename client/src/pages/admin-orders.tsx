@@ -800,7 +800,7 @@ export default function AdminOrders() {
 
   return (
     <AdminLayout>
-      <div className="admin-container space-y-4 lg:space-y-6">
+      <div className="admin-container space-y-2 sm:space-y-4 lg:space-y-6 px-2 sm:px-4 max-w-full overflow-x-hidden">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="min-w-0 flex-1">
@@ -1153,36 +1153,37 @@ export default function AdminOrders() {
                 )}
 
                 {/* Mobile Cards View */}
-                <div className="block lg:hidden space-y-4 mobile-card-container">
+                <div className="block lg:hidden space-y-3 mobile-card-container w-full max-w-full overflow-x-hidden">
                   {/* Select All Control for Mobile */}
                   {orders?.length > 0 && (
-                    <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 border border-gray-200 rounded-lg w-full max-w-full">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
                         <Checkbox
                           checked={selectedOrders.length === orders.length && orders.length > 0}
                           onCheckedChange={handleSelectAll}
                           aria-label="Selecionar todos os pedidos"
+                          className="flex-shrink-0"
                         />
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-xs sm:text-sm font-medium text-gray-700 truncate">
                           Selecionar todos ({orders.length})
                         </span>
                       </div>
-                      <span className="text-xs text-gray-500">
-                        {selectedOrders.length} selecionado{selectedOrders.length !== 1 ? 's' : ''}
+                      <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                        {selectedOrders.length} sel.
                       </span>
                     </div>
                   )}
                   {Array.isArray(orders) && orders.map((order: any) => (
-                    <Card key={order.id} className="relative mobile-card-content">
-                      <CardContent className="p-0 mobile-card-content">
+                    <Card key={order.id} className="relative w-full max-w-full overflow-x-hidden">
+                      <CardContent className="p-0 w-full max-w-full overflow-x-hidden">
                         {/* Card Header - Always Visible */}
                         <div 
-                          className="p-3 sm:p-4 cursor-pointer select-none w-full max-w-full"
+                          className="p-2 sm:p-3 lg:p-4 cursor-pointer select-none w-full max-w-full"
                           onClick={() => toggleCardExpansion(order.id)}
                         >
                           <div className="flex items-start justify-between w-full max-w-full">
                             <div className="flex-1 min-w-0 max-w-full overflow-hidden">
-                              <div className="flex items-center gap-2 mb-2 w-full overflow-hidden">
+                              <div className="flex items-center gap-1 sm:gap-2 mb-2 w-full overflow-hidden">
                                 <Checkbox
                                   checked={selectedOrders.includes(order.id)}
                                   onCheckedChange={(checked) => handleSelectOrder(order.id, checked as boolean)}
@@ -1190,14 +1191,14 @@ export default function AdminOrders() {
                                   onClick={(e) => e.stopPropagation()}
                                   className="flex-shrink-0"
                                 />
-                                <span className="font-mono text-xs sm:text-sm font-medium flex-shrink-0 min-w-0 truncate">{order.orderNumber}</span>
+                                <span className="font-mono text-xs font-medium flex-shrink-0 min-w-0 truncate">{order.orderNumber}</span>
                                 <div className="flex-shrink-0 ml-auto">{getStatusBadge(order.status)}</div>
                               </div>
                               <div className="space-y-1 w-full max-w-full overflow-hidden">
-                                <p className="font-medium text-gray-900 truncate">{order.customer.name}</p>
-                                <p className="text-sm text-gray-600 truncate">{order.event.name}</p>
+                                <p className="font-medium text-gray-900 truncate text-sm">{order.customer.name}</p>
+                                <p className="text-xs text-gray-600 truncate">{order.event.name}</p>
                                 <div className="flex items-center justify-between w-full overflow-hidden">
-                                  <span className="text-base sm:text-lg font-bold text-green-600 flex-shrink-0">
+                                  <span className="text-sm sm:text-base font-bold text-green-600 flex-shrink-0">
                                     {formatCurrency(Number(order.totalCost))}
                                   </span>
                                   <div className="flex items-center gap-1 text-xs text-gray-500 flex-shrink-0">
@@ -1210,11 +1211,11 @@ export default function AdminOrders() {
                                 </div>
                               </div>
                             </div>
-                            <div className="ml-2 sm:ml-4 flex items-center flex-shrink-0">
+                            <div className="ml-1 sm:ml-2 flex items-center flex-shrink-0">
                               {isCardExpanded(order.id) ? (
-                                <ChevronUp className="h-5 w-5 text-gray-400" />
+                                <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                               ) : (
-                                <ChevronDown className="h-5 w-5 text-gray-400" />
+                                <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                               )}
                             </div>
                           </div>
@@ -1248,36 +1249,36 @@ export default function AdminOrders() {
 
                               {/* Action Buttons - Mobile Optimized */}
                               <div className="pt-3 border-t w-full max-w-full overflow-hidden">
-                                <div className="grid grid-cols-2 gap-2 w-full">
+                                <div className="grid grid-cols-2 gap-1 sm:gap-2 w-full">
                                   <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleViewOrder(order.id)}
-                                    className="justify-start w-full"
+                                    className="justify-center sm:justify-start w-full text-xs sm:text-sm h-8 px-2 sm:px-3"
                                   >
-                                    <Eye className="h-4 w-4 mr-1" />
-                                    <span className="truncate">Ver Detalhes</span>
+                                    <Eye className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                                    <span className="hidden sm:inline truncate">Ver Detalhes</span>
                                   </Button>
                                   <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleGenerateLabel(order.id, order.orderNumber)}
-                                    className="justify-start w-full"
+                                    className="justify-center sm:justify-start w-full text-xs sm:text-sm h-8 px-2 sm:px-3"
                                   >
-                                    <FileText className="h-4 w-4 mr-1" />
-                                    <span className="truncate">Etiqueta</span>
+                                    <FileText className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                                    <span className="hidden sm:inline truncate">Etiqueta</span>
                                   </Button>
                                 </div>
-                                <div className="grid grid-cols-2 gap-2 mt-2 w-full">
+                                <div className="grid grid-cols-2 gap-1 sm:gap-2 mt-1 sm:mt-2 w-full">
                                   <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleOpenWhatsApp(order)}
-                                    className="justify-start w-full"
+                                    className="justify-center sm:justify-start w-full text-xs sm:text-sm h-8 px-2 sm:px-3"
                                     data-testid={`button-whatsapp-${order.id}`}
                                   >
-                                    <MessageCircle className="h-4 w-4 mr-1" />
-                                    <span className="truncate">WhatsApp</span>
+                                    <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                                    <span className="hidden sm:inline truncate">WhatsApp</span>
                                   </Button>
                                   <Button
                                     variant="outline"
@@ -1288,11 +1289,11 @@ export default function AdminOrders() {
                                         window.open(`https://api.whatsapp.com/send?phone=55${phone}`, '_blank');
                                       }
                                     }}
-                                    className="justify-start w-full"
+                                    className="justify-center sm:justify-start w-full text-xs sm:text-sm h-8 px-2 sm:px-3"
                                     data-testid={`button-whatsapp-direct-${order.id}`}
                                   >
-                                    <ExternalLink className="h-4 w-4 mr-1" />
-                                    <span className="truncate">Abrir Zap</span>
+                                    <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                                    <span className="hidden sm:inline truncate">Abrir Zap</span>
                                   </Button>
                                 </div>
                               </div>
