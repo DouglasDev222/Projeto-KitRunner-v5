@@ -988,30 +988,104 @@ export default function AdminOrders() {
           </>
         )}
 
-        {/* Filters - Mobile Optimized */}
-        <Card className="w-full max-w-full">
-          <CardHeader 
-            className={cn("pb-3", isMobile && "cursor-pointer")} 
-            onClick={() => isMobile && setFiltersExpanded(!filtersExpanded)}
-          >
-            <CardTitle className="flex items-center justify-between text-lg">
-              <div className="flex items-center gap-2">
-                <Filter className="h-5 w-5" />
-                Filtros
-              </div>
-              {isMobile && (
-                <div className="ml-2">
-                  {filtersExpanded ? (
-                    <ChevronUp className="h-5 w-5 text-gray-400" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-gray-400" />
-                  )}
-                </div>
+        {/* Mobile: Search Field Outside Filters */}
+        <div className="sm:hidden space-y-3">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Buscar Pedidos</label>
+            <Input
+              placeholder="Nome, CPF, nº pedido..."
+              value={filters.searchTerm || ''}
+              onChange={(e) => setFilters({ ...filters, searchTerm: e.target.value })}
+              className="h-10 w-full"
+              data-testid="input-search-general"
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setFiltersExpanded(!filtersExpanded)}
+              className="text-sm text-blue-600 hover:text-blue-800 underline flex items-center gap-1"
+            >
+              <Filter className="h-4 w-4" />
+              Filtros avançados
+              {filtersExpanded ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
               )}
+            </button>
+            
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={resetFilters}
+              className="text-xs px-3"
+            >
+              <Search className="h-3 w-3 mr-1" />
+              Limpar
+            </Button>
+          </div>
+          
+          {filtersExpanded && (
+            <Card className="w-full">
+              <CardContent className="p-4 space-y-4">
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Status</label>
+                    <Select
+                      value={filters.status}
+                      onValueChange={(value) => setFilters({ ...filters, status: value })}
+                    >
+                      <SelectTrigger className="h-10 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusOptions.map((status) => (
+                          <SelectItem key={status.value} value={status.value}>
+                            {status.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Evento</label>
+                    <Select
+                      value={filters.eventId?.toString() || 'all'}
+                      onValueChange={(value) => setFilters({ 
+                        ...filters, 
+                        eventId: value === 'all' ? undefined : parseInt(value) 
+                      })}
+                    >
+                      <SelectTrigger className="h-10 w-full">
+                        <SelectValue placeholder="Todos os eventos" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos os eventos</SelectItem>
+                        {Array.isArray(events) && events.map((event: any) => (
+                          <SelectItem key={event.id} value={event.id.toString()}>
+                            {event.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Desktop: Filters - Keep as is */}
+        <Card className="hidden sm:block w-full max-w-full">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Filter className="h-5 w-5" />
+              Filtros
             </CardTitle>
           </CardHeader>
-          {(!isMobile || filtersExpanded) && (
-            <CardContent className="space-y-4 overflow-hidden">
+          <CardContent className="space-y-4 overflow-hidden">
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
               <div className="space-y-2 min-w-0">
                 <label className="text-sm font-medium">Status</label>
@@ -1077,8 +1151,7 @@ export default function AdminOrders() {
                 </Button>
               </div>
             </div>
-            </CardContent>
-          )}
+          </CardContent>
         </Card>
 
         {/* Orders Table */}
