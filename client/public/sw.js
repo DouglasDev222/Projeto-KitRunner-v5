@@ -75,7 +75,11 @@ self.addEventListener('fetch', (event) => {
   if (event.request.url.includes('/api/')) return;
 
   // Skip admin routes - let them load normally
-  if (event.request.url.includes('/admin')) return;
+  if (event.request.url.includes('/admin')) {
+    // For admin routes, fetch directly without caching
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request)
