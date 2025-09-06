@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -41,12 +41,43 @@ import AdminWhatsApp from "@/pages/admin-whatsapp";
 import Landing from "@/pages/landing";
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 import { isReplitPreview, clearCachesForPreview, addPreviewModeIndicator } from "@/lib/replit-preview-utils";
+import { useEffect } from "react";
+
+function RootRoute() {
+  const [, navigate] = useLocation();
+  
+  useEffect(() => {
+    // Check if we're in PWA standalone mode
+    const isPWAStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                           (window.navigator as any).standalone === true;
+    
+    // If in PWA standalone mode, redirect to /eventos
+    if (isPWAStandalone) {
+      navigate('/eventos');
+      return;
+    }
+    
+    // Otherwise, show landing page (fallback to Landing component)
+  }, [navigate]);
+  
+  // Check if we're in PWA standalone mode
+  const isPWAStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                         (window.navigator as any).standalone === true;
+  
+  // If PWA, redirect immediately (this handles the initial render)
+  if (isPWAStandalone) {
+    return <Events />;
+  }
+  
+  // Otherwise show landing page
+  return <Landing />;
+}
 
 function Router() {
   return (
     <ScrollToTop>
       <Switch>
-        <Route path="/" component={Landing} />
+        <Route path="/" component={RootRoute} />
         <Route path="/eventos" component={Events} />
       <Route path="/events/:id" component={EventDetails} />
       <Route path="/events/:id/register" component={CustomerRegistration} />
