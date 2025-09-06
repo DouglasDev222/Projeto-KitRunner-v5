@@ -707,9 +707,9 @@ export default function Payment() {
           <CardContent className="p-4">
             <h3 className="font-semibold text-lg text-neutral-800 mb-3">Resumo do Pedido</h3>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-neutral-600">Evento:</span>
-                <span className="font-medium text-neutral-800">{event.name}</span>
+              <div className="flex justify-between items-start">
+                <span className="text-neutral-600 flex-shrink-0">Evento:</span>
+                <span className="font-medium text-neutral-800 text-right ml-2 break-words max-w-[65%]">{event.name}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-600">Quantidade de kits:</span>
@@ -1033,9 +1033,9 @@ export default function Payment() {
                 <div className="border-t pt-4">
                   <h4 className="font-semibold text-gray-900 mb-3">Resumo do Pedido</h4>
                   <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Evento:</span>
-                      <span className="font-medium text-gray-800">{event.name}</span>
+                    <div className="flex justify-between items-start">
+                      <span className="text-gray-600 flex-shrink-0">Evento:</span>
+                      <span className="font-medium text-gray-800 text-right ml-2 break-words max-w-[65%]">{event.name}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Kits:</span>
