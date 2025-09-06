@@ -103,13 +103,15 @@ export default function AdminOrders() {
   const [whatsAppOrder, setWhatsAppOrder] = useState<any>(null);
   const [showOrderDialog, setShowOrderDialog] = useState(false);
   const [filters, setFilters] = useState<OrderFilters>(() => {
+    // 🇧🇷 TIMEZONE FIX: Use Brazilian timezone for initial filter setup
     const now = new Date();
-    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const nowBrazil = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+    const monthAgo = new Date(nowBrazil.getTime() - 30 * 24 * 60 * 60 * 1000);
     return {
       status: 'all',
       dateFilter: 'month',
       startDate: monthAgo.toISOString().split('T')[0],
-      endDate: now.toISOString().split('T')[0]
+      endDate: nowBrazil.toISOString().split('T')[0]
     };
   });
   const [currentPage, setCurrentPage] = useState(1);
@@ -582,27 +584,33 @@ export default function AdminOrders() {
     setCurrentPage(1);
   };
 
-  // Date filter functions
-  const getDateFilterDates = (filter: 'today' | 'week' | 'month' | 'all') => {
+  // Date filter functions - 🇧🇷 TIMEZONE FIX: Use Brazilian timezone for filters
+  const getBrazilianDate = () => {
     const now = new Date();
+    // Brazil is UTC-3, so we subtract 3 hours from UTC
+    return new Date(now.getTime() - (3 * 60 * 60 * 1000));
+  };
+
+  const getDateFilterDates = (filter: 'today' | 'week' | 'month' | 'all') => {
+    const nowBrazil = getBrazilianDate();
     
     switch (filter) {
       case 'today':
-        const today = now.toISOString().split('T')[0];
+        const today = nowBrazil.toISOString().split('T')[0];
         return { startDate: today, endDate: today };
         
       case 'week':
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const weekAgo = new Date(nowBrazil.getTime() - 7 * 24 * 60 * 60 * 1000);
         return { 
           startDate: weekAgo.toISOString().split('T')[0], 
-          endDate: now.toISOString().split('T')[0] 
+          endDate: nowBrazil.toISOString().split('T')[0] 
         };
         
       case 'month':
-        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const monthAgo = new Date(nowBrazil.getTime() - 30 * 24 * 60 * 60 * 1000);
         return { 
           startDate: monthAgo.toISOString().split('T')[0], 
-          endDate: now.toISOString().split('T')[0] 
+          endDate: nowBrazil.toISOString().split('T')[0] 
         };
         
       case 'all':
