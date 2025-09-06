@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Download, X, Shield, Smartphone, Globe } from "lucide-react";
+import { Download, X, Smartphone, Globe } from "lucide-react";
 import { useLocation } from "wouter";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -19,18 +19,15 @@ export function PWAInstallPrompt() {
   const [isDesktop, setIsDesktop] = useState(false);
   
   const isAdminRoute = location.startsWith('/admin');
-  const isAdminLogin = location === '/admin/login';
   
-  // Check if user has dismissed PWA installation
+  // Check if user has dismissed PWA installation (only for client routes)
   const hasUserDismissedPWA = () => {
-    const key = isAdminRoute ? 'pwa-admin-dismissed' : 'pwa-client-dismissed';
-    const dismissedAt = localStorage.getItem(key);
+    const dismissedAt = localStorage.getItem('pwa-client-dismissed');
     if (!dismissedAt) return false;
     
     const dismissedTime = parseInt(dismissedAt);
     const hoursAgo = (Date.now() - dismissedTime) / (1000 * 60 * 60);
-    const threshold = isAdminRoute ? 24 : 6; // Admin: 24h, Client: 6h
-    return hoursAgo < threshold;
+    return hoursAgo < 6; // Client: 6h
   };
 
   useEffect(() => {
@@ -62,27 +59,21 @@ export function PWAInstallPrompt() {
                         (window.navigator as any).standalone === true;
     setIsInStandaloneMode(isStandalone);
 
-    // 🖥️ DESKTOP FIX: Don't show PWA on desktop
-    if (isStandalone || desktop) return;
+    // 🚫 ADMIN ROUTES: Never show PWA on admin routes
+    if (isStandalone || desktop || isAdminRoute) return;
 
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       
-      // 🖥️ DESKTOP FIX: Only show client PWA prompt outside admin routes AND not on desktop
-      if (!isAdminRoute && !hasUserDismissedPWA() && !desktop) {
+      // Only show client PWA prompt outside admin routes AND not on desktop
+      if (!hasUserDismissedPWA() && !desktop) {
         setShowInstallPrompt(true);
       }
     };
 
-    // 🖥️ DESKTOP FIX: Show admin PWA prompt only on login page AND not on desktop
-    if (isAdminLogin && !hasUserDismissedPWA() && !desktop) {
-      const timer = setTimeout(() => setShowInstallPrompt(true), 2000);
-      return () => clearTimeout(timer);
-    }
-
-    // 🖥️ DESKTOP FIX: For iOS Safari, show manual instructions only if not desktop
-    if (iOS && !isAdminRoute && !hasUserDismissedPWA() && !desktop) {
+    // For iOS Safari, show manual instructions only if not desktop and not admin
+    if (iOS && !hasUserDismissedPWA() && !desktop) {
       setShowInstallPrompt(true);
     }
 
@@ -112,9 +103,8 @@ export function PWAInstallPrompt() {
     setShowInstallPrompt(false);
     setDeferredPrompt(null);
     
-    // Save dismissal timestamp 
-    const key = isAdminRoute ? 'pwa-admin-dismissed' : 'pwa-client-dismissed';
-    localStorage.setItem(key, Date.now().toString());
+    // Save dismissal timestamp for client PWA
+    localStorage.setItem('pwa-client-dismissed', Date.now().toString());
   };
 
   const getBrowserInstructions = () => {
@@ -163,18 +153,13 @@ export function PWAInstallPrompt() {
     }
   };
 
-  // 🖥️ DESKTOP FIX: Don't render PWA prompt on desktop
-  if (!showInstallPrompt || isInStandaloneMode || isDesktop) return null;
+  // Don't render PWA prompt on desktop, admin routes, or if already standalone
+  if (!showInstallPrompt || isInStandaloneMode || isDesktop || isAdminRoute) return null;
 
   const instructions = getBrowserInstructions();
   
-  // Admin styling and content
-  const config = isAdminRoute ? {
-    icon: <Shield className="h-5 w-5 text-orange-600" />,
-    title: "Instalar KitRunner Admin",
-    description: "Acesso rápido ao painel administrativo",
-    cardClass: "border-orange-200 bg-gradient-to-r from-orange-50 to-red-50"
-  } : {
+  // Client-only styling and content
+  const config = {
     icon: <Download className="h-5 w-5 text-blue-600" />,
     title: "Instalar KitRunner",
     description: "Acesso rápido no seu dispositivo",
