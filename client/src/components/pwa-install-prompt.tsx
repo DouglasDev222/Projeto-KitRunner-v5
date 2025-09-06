@@ -79,7 +79,7 @@ export function PWAInstallPrompt() {
 
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, [isAdminRoute, isAdminLogin, isInStandaloneMode, isDesktop]);
+  }, [isAdminRoute, isInStandaloneMode, isDesktop]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
