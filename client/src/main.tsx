@@ -4,46 +4,32 @@ import "./index.css";
 
 createRoot(document.getElementById("root")!).render(<App />);
 
-// Register service worker for PWA
+// Register service worker
 if ('serviceWorker' in navigator) {
-  // Check if we're in Replit preview environment
-  const isReplitPreview = location.hostname.includes('replit.dev') || 
-                         location.hostname.includes('replit.co') ||
-                         location.hostname.includes('spock.replit.dev');
-
   window.addEventListener('load', () => {
+    // Check if we're in Replit preview mode
+    const isReplitPreview = window.location.hostname.includes('.replit.dev') || 
+                           window.location.hostname.includes('replit.com');
+
+    // Skip SW registration for admin routes
+    const isAdminRoute = window.location.pathname.startsWith('/admin');
+
     if (isReplitPreview) {
       console.log('🚫 SW registration skipped in Replit preview');
-      // Clear any existing service workers in preview
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        registrations.forEach((registration) => {
-          registration.unregister();
-        });
-      });
       return;
     }
 
-    navigator.serviceWorker.register('/sw.js', {
-      scope: '/',
-      updateViaCache: 'none'
-    })
+    if (isAdminRoute) {
+      console.log('🚫 SW registration skipped for admin routes');
+      return;
+    }
+
+    navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
-        console.log('✅ SW registered: ', registration);
-        
-        // Force update check
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          if (newWorker) {
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('🔄 New SW available, will update on next page load');
-              }
-            });
-          }
-        });
+        console.log('✅ SW registered:', registration.scope);
       })
-      .catch((registrationError) => {
-        console.warn('⚠️ SW registration failed: ', registrationError);
+      .catch((error) => {
+        console.log('❌ SW registration failed:', error);
       });
   });
 }

@@ -65,6 +65,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Only handle GET requests
+  if (event.request.method !== 'GET') return;
+
+  // Skip non-navigation requests
+  if (event.request.mode !== 'navigate') return;
+
+  // Skip requests to API routes
+  if (event.request.url.includes('/api/')) return;
+
+  // Skip admin routes - let them load normally
+  if (event.request.url.includes('/admin')) return;
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
