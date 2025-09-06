@@ -108,7 +108,6 @@ button, a, input, select, textarea {
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
-}
 
 /* Desktop: Allow horizontal scroll when needed */
 @media (min-width: 1025px) {
