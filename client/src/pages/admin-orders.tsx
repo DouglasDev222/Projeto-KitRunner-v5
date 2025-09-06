@@ -863,7 +863,7 @@ export default function AdminOrders() {
             {/* Mobile: Total, Confirmed and Revenue - Stacked */}
             <div className="flex flex-col gap-2 sm:hidden">
               <Card>
-                <CardContent className="p-3">
+                <CardContent className="p-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <Package className="h-4 w-4 text-blue-500 flex-shrink-0" />
@@ -875,7 +875,7 @@ export default function AdminOrders() {
               </Card>
               
               <Card>
-                <CardContent className="p-3">
+                <CardContent className="p-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
@@ -887,7 +887,7 @@ export default function AdminOrders() {
               </Card>
 
               <Card>
-                <CardContent className="p-3">
+                <CardContent className="p-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <DollarSign className="h-4 w-4 text-green-500 flex-shrink-0" />
@@ -988,19 +988,8 @@ export default function AdminOrders() {
           </>
         )}
 
-        {/* Mobile: Search Field Outside Filters */}
+        {/* Mobile: Filters First, Then Search */}
         <div className="sm:hidden space-y-3">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Buscar Pedidos</label>
-            <Input
-              placeholder="Nome, CPF, nº pedido..."
-              value={filters.searchTerm || ''}
-              onChange={(e) => setFilters({ ...filters, searchTerm: e.target.value })}
-              className="h-10 w-full"
-              data-testid="input-search-general"
-            />
-          </div>
-          
           <div className="flex items-center justify-between">
             <button
               onClick={() => setFiltersExpanded(!filtersExpanded)}
@@ -1075,6 +1064,17 @@ export default function AdminOrders() {
               </CardContent>
             </Card>
           )}
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Buscar Pedidos</label>
+            <Input
+              placeholder="Nome, CPF, nº pedido..."
+              value={filters.searchTerm || ''}
+              onChange={(e) => setFilters({ ...filters, searchTerm: e.target.value })}
+              className="h-10 w-full"
+              data-testid="input-search-general"
+            />
+          </div>
         </div>
 
         {/* Desktop: Filters - Keep as is */}
