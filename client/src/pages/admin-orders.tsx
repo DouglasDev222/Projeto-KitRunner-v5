@@ -858,7 +858,7 @@ export default function AdminOrders() {
         </div>
 
         {/* Statistics Cards - Mobile shows only 2 essential */}
-        {(orderStats as any) && (
+        {(orderStats as any) ? (
           <>
             {/* Mobile: Total, Confirmed and Revenue - Stacked */}
             <div className="flex flex-col gap-2 sm:hidden">
@@ -984,6 +984,64 @@ export default function AdminOrders() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Mobile Loading Skeleton */}
+            <div className="flex flex-col gap-2 sm:hidden">
+              <Card>
+                <CardContent className="p-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-4 w-4 bg-gray-200 rounded animate-pulse flex-shrink-0"></div>
+                      <div className="h-3 w-24 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                    <div className="h-4 w-8 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-gray-200 rounded-full animate-pulse flex-shrink-0"></div>
+                      <div className="h-3 w-28 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                    <div className="h-4 w-8 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-4 w-4 bg-gray-200 rounded animate-pulse flex-shrink-0"></div>
+                      <div className="h-3 w-20 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Desktop Loading Skeleton */}
+            <div className="hidden sm:grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+              {[...Array(7)].map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+                      <div>
+                        <div className="h-3 w-16 bg-gray-200 rounded animate-pulse mb-2"></div>
+                        <div className="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </>
         )}
