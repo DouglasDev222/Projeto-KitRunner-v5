@@ -229,10 +229,12 @@ export class AdminAuthService {
         throw new Error('Usuário não encontrado');
       }
 
+      // 🔐 CASE-INSENSITIVE FIX: Declare normalized username outside scope
+      let normalizedUsername: string | undefined;
+
       // Verificar conflitos de username
       if (updates.username) {
-        // 🔐 CASE-INSENSITIVE FIX: Convert username to lowercase
-        const normalizedUsername = updates.username.toLowerCase();
+        normalizedUsername = updates.username.toLowerCase();
         
         const [conflictUsername] = await db
           .select()
@@ -266,9 +268,9 @@ export class AdminAuthService {
         }
       }
 
-      // Atualizar usuário - 🔐 CASE-INSENSITIVE FIX: Normalize username if present
+      // Atualizar usuário - 🔐 CASE-INSENSITIVE FIX: Use normalized username if available
       const updateData = { ...updates, updatedAt: new Date() };
-      if (updates.username) {
+      if (normalizedUsername) {
         updateData.username = normalizedUsername;
       }
       
