@@ -16,6 +16,7 @@ export function PWAInstallPrompt() {
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isInStandaloneMode, setIsInStandaloneMode] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   
   const isAdminRoute = location.startsWith('/admin');
   const isAdminLogin = location === '/admin/login';
@@ -37,37 +38,57 @@ export function PWAInstallPrompt() {
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     setIsIOS(iOS);
 
+    // 🖥️ DESKTOP FIX: Detect desktop to not show PWA prompt
+    const checkIsDesktop = () => {
+      // Check screen size (desktop typically >= 1024px width)
+      const hasLargeScreen = window.innerWidth >= 1024;
+      
+      // Check for desktop user agents (not mobile/tablet)
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+      
+      // Check for touch support (desktops usually don't have primary touch)
+      const hasTouchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      
+      // Desktop if: large screen AND not mobile device AND (no touch OR has mouse)
+      return hasLargeScreen && !isMobileDevice && (!hasTouchSupport || window.matchMedia('(pointer: fine)').matches);
+    };
+    
+    const desktop = checkIsDesktop();
+    setIsDesktop(desktop);
+
     // Check if already installed or in standalone mode
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
                         (window.navigator as any).standalone === true;
     setIsInStandaloneMode(isStandalone);
 
-    if (isStandalone) return; // Already installed
+    // 🖥️ DESKTOP FIX: Don't show PWA on desktop
+    if (isStandalone || desktop) return;
 
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       
-      // Show client PWA prompt outside admin routes
-      if (!isAdminRoute && !hasUserDismissedPWA()) {
+      // 🖥️ DESKTOP FIX: Only show client PWA prompt outside admin routes AND not on desktop
+      if (!isAdminRoute && !hasUserDismissedPWA() && !desktop) {
         setShowInstallPrompt(true);
       }
     };
 
-    // Show admin PWA prompt only on login page
-    if (isAdminLogin && !hasUserDismissedPWA()) {
+    // 🖥️ DESKTOP FIX: Show admin PWA prompt only on login page AND not on desktop
+    if (isAdminLogin && !hasUserDismissedPWA() && !desktop) {
       const timer = setTimeout(() => setShowInstallPrompt(true), 2000);
       return () => clearTimeout(timer);
     }
 
-    // For iOS Safari, show manual instructions
-    if (iOS && !isAdminRoute && !hasUserDismissedPWA()) {
+    // 🖥️ DESKTOP FIX: For iOS Safari, show manual instructions only if not desktop
+    if (iOS && !isAdminRoute && !hasUserDismissedPWA() && !desktop) {
       setShowInstallPrompt(true);
     }
 
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, [isAdminRoute, isAdminLogin, isInStandaloneMode]);
+  }, [isAdminRoute, isAdminLogin, isInStandaloneMode, isDesktop]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -142,7 +163,8 @@ export function PWAInstallPrompt() {
     }
   };
 
-  if (!showInstallPrompt || isInStandaloneMode) return null;
+  // 🖥️ DESKTOP FIX: Don't render PWA prompt on desktop
+  if (!showInstallPrompt || isInStandaloneMode || isDesktop) return null;
 
   const instructions = getBrowserInstructions();
   
