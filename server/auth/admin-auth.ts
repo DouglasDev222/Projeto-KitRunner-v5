@@ -18,13 +18,16 @@ export class AdminAuthService {
   // Autenticação
   async login(username: string, password: string, ipAddress?: string, userAgent?: string): Promise<AuthResult> {
     try {
+      // 🔐 CASE-INSENSITIVE FIX: Convert username to lowercase
+      const normalizedUsername = username.toLowerCase();
+      
       // Buscar usuário
       const [user] = await db
         .select()
         .from(adminUsers)
         .where(
           and(
-            eq(adminUsers.username, username),
+            eq(adminUsers.username, normalizedUsername),
             eq(adminUsers.isActive, true)
           )
         );
@@ -155,11 +158,14 @@ export class AdminAuthService {
   // Gestão de usuários
   async createAdminUser(userData: CreateAdminUser, createdBy: number): Promise<AdminUser> {
     try {
+      // 🔐 CASE-INSENSITIVE FIX: Convert username to lowercase
+      const normalizedUsername = userData.username.toLowerCase();
+      
       // Verificar se username já existe
       const [existingUsername] = await db
         .select()
         .from(adminUsers)
-        .where(eq(adminUsers.username, userData.username));
+        .where(eq(adminUsers.username, normalizedUsername));
 
       if (existingUsername) {
         throw new Error('Nome de usuário já existe');
@@ -188,7 +194,7 @@ export class AdminAuthService {
       const [newUser] = await db
         .insert(adminUsers)
         .values({
-          username: userData.username,
+          username: normalizedUsername,
           email: userData.email,
           passwordHash,
           fullName: userData.fullName,
@@ -199,7 +205,7 @@ export class AdminAuthService {
 
       // Log da ação
       await this.logAction(createdBy, 'create_admin_user', 'admin_user', newUser.id.toString(), 
-        { created_username: userData.username, role: userData.role });
+        { created_username: normalizedUsername, role: userData.role });
 
       // Remover senha do retorno
       const { passwordHash: _, ...userWithoutPassword } = newUser;
@@ -225,12 +231,15 @@ export class AdminAuthService {
 
       // Verificar conflitos de username
       if (updates.username) {
+        // 🔐 CASE-INSENSITIVE FIX: Convert username to lowercase
+        const normalizedUsername = updates.username.toLowerCase();
+        
         const [conflictUsername] = await db
           .select()
           .from(adminUsers)
           .where(
             and(
-              eq(adminUsers.username, updates.username),
+              eq(adminUsers.username, normalizedUsername),
               sql`id != ${id}`
             )
           );
@@ -257,13 +266,15 @@ export class AdminAuthService {
         }
       }
 
-      // Atualizar usuário
+      // Atualizar usuário - 🔐 CASE-INSENSITIVE FIX: Normalize username if present
+      const updateData = { ...updates, updatedAt: new Date() };
+      if (updates.username) {
+        updateData.username = normalizedUsername;
+      }
+      
       const [updatedUser] = await db
         .update(adminUsers)
-        .set({
-          ...updates,
-          updatedAt: new Date(),
-        })
+        .set(updateData)
         .where(eq(adminUsers.id, id))
         .returning();
 
