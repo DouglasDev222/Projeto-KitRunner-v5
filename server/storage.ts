@@ -37,6 +37,18 @@ import {
 import { db } from "./db";
 import { eq, and, count, sum, desc, ne, sql, like, or, asc, inArray } from "drizzle-orm";
 
+/**
+ * 🇧🇷 TIMEZONE FIX: Generate Brazilian timestamp (UTC-3)
+ * This ensures all orders are created with the correct Brazilian time
+ */
+function getBrazilianTimestamp(): Date {
+  const now = new Date();
+  // Brazil is UTC-3, so we subtract 3 hours from UTC
+  const brazilTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+  console.log(`🕐 Brazilian timestamp: ${brazilTime.toISOString()} (UTC: ${now.toISOString()})`);
+  return brazilTime;
+}
+
 export interface IStorage {
   // Events
   getEvents(): Promise<Event[]>;
@@ -432,6 +444,7 @@ export class DatabaseStorage implements IStorage {
           .values({
             ...insertOrder,
             orderNumber,
+            createdAt: getBrazilianTimestamp(), // 🇧🇷 TIMEZONE FIX: Use Brazilian timestamp
           })
           .returning();
         
