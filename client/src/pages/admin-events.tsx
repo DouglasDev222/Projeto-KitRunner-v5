@@ -109,18 +109,20 @@ export default function AdminEvents() {
 
   return (
     <AdminLayout>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-neutral-800">Administração de Eventos</h1>
-          <p className="text-neutral-600">Gerencie eventos, visualize pedidos e controle disponibilidade</p>
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-neutral-800">Administração de Eventos</h1>
+            <p className="text-sm sm:text-base text-neutral-600">Gerencie eventos, visualize pedidos e controle disponibilidade</p>
+          </div>
+          <Button
+            onClick={() => setLocation("/admin/events/new")}
+            className="bg-primary hover:bg-primary/90 w-full sm:w-auto"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Evento
+          </Button>
         </div>
-        <Button
-          onClick={() => setLocation("/admin/events/new")}
-          className="bg-primary hover:bg-primary/90"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Evento
-        </Button>
       </div>
 
       {/* Events List */}
@@ -136,15 +138,33 @@ export default function AdminEvents() {
             {(events || []).map((event: Event) => (
               <Card key={event.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-primary/20">
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Calendar className="w-5 h-5 text-primary" />
-                      <div>
-                        <CardTitle className="text-lg text-gray-900">{event.name}</CardTitle>
-                        <p className="text-sm text-gray-500 mt-1">{formatDate(event.date)} • {event.city}, {event.state}</p>
+                  <div className="space-y-3">
+                    {/* Mobile-first header layout */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <Calendar className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <CardTitle className="text-base sm:text-lg text-gray-900 leading-tight">{event.name}</CardTitle>
+                          <p className="text-xs sm:text-sm text-gray-500 mt-1">{formatDate(event.date)} • {event.city}, {event.state}</p>
+                        </div>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleEvent(event)}
+                        disabled={toggleEventMutation.isPending}
+                        className="h-8 w-8 p-0 flex-shrink-0"
+                      >
+                        {event.available ? (
+                          <ToggleRight className="w-5 h-5 text-green-600" />
+                        ) : (
+                          <ToggleLeft className="w-5 h-5 text-gray-400" />
+                        )}
+                      </Button>
                     </div>
-                    <div className="flex items-center gap-2">
+                    
+                    {/* Badges row - better mobile layout */}
+                    <div className="flex flex-wrap items-center gap-2">
                       <Badge 
                         variant={event.status === 'ativo' ? "default" : "secondary"}
                         className={
@@ -164,7 +184,7 @@ export default function AdminEvents() {
                       </Badge>
                       {event.stockEnabled && (
                         <Badge variant="outline" className="text-xs">
-                          {event.currentOrders || 0}/{event.maxOrders || '∞'} Pedidos
+                          {event.currentOrders || 0}/{event.maxOrders || '∞'}
                         </Badge>
                       )}
                       {event.isOfficial && (
@@ -176,96 +196,89 @@ export default function AdminEvents() {
                           ⭐ Oficial
                         </Badge>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleToggleEvent(event)}
-                        disabled={toggleEventMutation.isPending}
-                        className="h-8 w-8 p-0"
-                      >
-                        {event.available ? (
-                          <ToggleRight className="w-5 h-5 text-green-600" />
-                        ) : (
-                          <ToggleLeft className="w-5 h-5 text-gray-400" />
-                        )}
-                      </Button>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <MapPin className="w-4 h-4 text-gray-400" />
-                      <span>{event.location}</span>
+                <CardContent className="pt-0">
+                  <div className="space-y-4">
+                    {/* Location and pricing info - mobile optimized */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <span className="truncate">{event.location}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600 flex-wrap">
+                        <DollarSign className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <span className="font-medium">
+                          {event.pricingType === "fixed" && event.fixedPrice ? (
+                            `${formatCurrency(Number(event.fixedPrice))}`
+                          ) : event.pricingType === "distance" ? (
+                            "Por Distância"
+                          ) : event.pricingType === "cep_zones" ? (
+                            "Zonas de CEP"
+                          ) : (
+                            "Não definido"
+                          )}
+                        </span>
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${
+                            event.pricingType === "fixed" ? "border-green-200 text-green-700" :
+                            event.pricingType === "distance" ? "border-blue-200 text-blue-700" :
+                            event.pricingType === "cep_zones" ? "border-purple-200 text-purple-700" :
+                            "border-gray-200 text-gray-700"
+                          }`}
+                        >
+                          {event.pricingType === "fixed" ? "Fixo" : 
+                           event.pricingType === "distance" ? "Distância" :
+                           event.pricingType === "cep_zones" ? "CEP" : "?"}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <DollarSign className="w-4 h-4 text-gray-400" />
-                      <span className="font-medium">
-                        {event.pricingType === "fixed" && event.fixedPrice ? (
-                          `Preço Fixo: ${formatCurrency(Number(event.fixedPrice))}`
-                        ) : event.pricingType === "distance" ? (
-                          "Por Distância"
-                        ) : event.pricingType === "cep_zones" ? (
-                          "Zonas de CEP"
-                        ) : (
-                          "Não definido"
-                        )}
-                      </span>
-                      <Badge 
-                        variant="outline" 
-                        className={
-                          event.pricingType === "fixed" ? "border-green-200 text-green-700" :
-                          event.pricingType === "distance" ? "border-blue-200 text-blue-700" :
-                          event.pricingType === "cep_zones" ? "border-purple-200 text-purple-700" :
-                          "border-gray-200 text-gray-700"
-                        }
-                      >
-                        {event.pricingType === "fixed" ? "Fixo" : 
-                         event.pricingType === "distance" ? "Distância" :
-                         event.pricingType === "cep_zones" ? "CEP" : "?"}
-                      </Badge>
-                    </div>
-                  </div>
 
-                  {event.donationRequired && (
-                    <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                      <p className="text-sm text-orange-800">
-                        <strong>Doação Obrigatória:</strong> {event.donationDescription}
-                        {event.donationAmount && ` - ${formatCurrency(Number(event.donationAmount))}`}
-                      </p>
-                    </div>
-                  )}
+                    {event.donationRequired && (
+                      <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                        <p className="text-sm text-orange-800">
+                          <strong>Doação Obrigatória:</strong> {event.donationDescription}
+                          {event.donationAmount && ` - ${formatCurrency(Number(event.donationAmount))}`}
+                        </p>
+                      </div>
+                    )}
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-2">
-                      <EventDetailsModal 
-                        event={event}
-                        trigger={
-                          <Button variant="outline" size="sm">
-                            <Eye className="w-4 h-4 mr-2" />
-                            Detalhes
-                          </Button>
-                        }
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setLocation(`/admin/events/${event.id}/edit`)}
-                      >
-                        <Edit className="w-4 h-4 mr-2" />
-                        Editar
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewOrders(event)}
-                      >
-                        <Package className="w-4 h-4 mr-2" />
-                        Pedidos
-                      </Button>
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      ID: {event.id}
+                    {/* Actions - mobile-first responsive layout */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="grid grid-cols-3 sm:flex gap-2">
+                        <EventDetailsModal 
+                          event={event}
+                          trigger={
+                            <Button variant="outline" size="sm" className="text-xs">
+                              <Eye className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+                              <span className="hidden sm:inline">Detalhes</span>
+                            </Button>
+                          }
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs"
+                          onClick={() => setLocation(`/admin/events/${event.id}/edit`)}
+                        >
+                          <Edit className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Editar</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs"
+                          onClick={() => handleViewOrders(event)}
+                        >
+                          <Package className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Pedidos</span>
+                        </Button>
+                      </div>
+                      <div className="text-xs text-gray-400 text-right sm:text-left">
+                        ID: {event.id}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -277,47 +290,47 @@ export default function AdminEvents() {
 
       {/* Orders Dialog */}
       <Dialog open={showOrdersDialog} onOpenChange={setShowOrdersDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] w-[95vw] sm:w-full overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Pedidos do Evento: {selectedEvent?.name}</DialogTitle>
-            <DialogDescription>
-              Visualize todos os pedidos realizados para este evento
+            <DialogTitle className="text-base sm:text-lg pr-8">Pedidos: {selectedEvent?.name}</DialogTitle>
+            <DialogDescription className="text-sm">
+              Pedidos realizados para este evento
             </DialogDescription>
           </DialogHeader>
 
           {selectedEvent && (
             <div className="space-y-4">
               {/* Event Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <Package className="w-6 h-6 text-blue-600" />
-                      <div>
-                        <p className="text-sm text-neutral-600">Total de Pedidos</p>
-                        <p className="text-xl font-bold">{getEventStats(selectedEvent).totalOrders}</p>
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <Package className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs sm:text-sm text-neutral-600">Pedidos</p>
+                        <p className="text-lg sm:text-xl font-bold">{getEventStats(selectedEvent).totalOrders}</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <Users className="w-6 h-6 text-green-600" />
-                      <div>
-                        <p className="text-sm text-neutral-600">Total de Kits</p>
-                        <p className="text-xl font-bold">{getEventStats(selectedEvent).totalKits}</p>
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <Users className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs sm:text-sm text-neutral-600">Kits</p>
+                        <p className="text-lg sm:text-xl font-bold">{getEventStats(selectedEvent).totalKits}</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <DollarSign className="w-6 h-6 text-orange-600" />
-                      <div>
-                        <p className="text-sm text-neutral-600">Faturamento</p>
-                        <p className="text-xl font-bold">{formatCurrency(getEventStats(selectedEvent).totalRevenue)}</p>
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs sm:text-sm text-neutral-600">Faturamento</p>
+                        <p className="text-lg sm:text-xl font-bold">{formatCurrency(getEventStats(selectedEvent).totalRevenue)}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -332,38 +345,44 @@ export default function AdminEvents() {
                   ))}
                 </div>
               ) : (
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Número do Pedido</TableHead>
-                        <TableHead>Cliente</TableHead>
-                        <TableHead>Kits</TableHead>
-                        <TableHead>Total</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Data</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(eventOrders || []).map((order: any) => (
-                        <TableRow key={order.id}>
-                          <TableCell className="font-medium">{order.orderNumber}</TableCell>
-                          <TableCell>{order.customer?.name || "N/A"}</TableCell>
-                          <TableCell>{order.kitQuantity}</TableCell>
-                          <TableCell>{formatCurrency(Number(order.totalCost))}</TableCell>
-                          <TableCell>
-                            <Badge variant={order.status === "confirmed" ? "default" : "secondary"}>
-                              {order.status === "confirmed" ? "Confirmado" : order.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{new Date(order.createdAt).toLocaleDateString('pt-BR')}</TableCell>
+                <div className="border rounded-lg overflow-hidden">
+                  {/* Mobile-friendly table with horizontal scroll */}
+                  <div className="overflow-x-auto">
+                    <Table className="min-w-full">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="min-w-[120px]">Pedido</TableHead>
+                          <TableHead className="min-w-[150px]">Cliente</TableHead>
+                          <TableHead className="min-w-[60px]">Kits</TableHead>
+                          <TableHead className="min-w-[80px]">Total</TableHead>
+                          <TableHead className="min-w-[100px]">Status</TableHead>
+                          <TableHead className="min-w-[90px]">Data</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {(eventOrders || []).map((order: any) => (
+                          <TableRow key={order.id}>
+                            <TableCell className="font-medium text-sm">{order.orderNumber}</TableCell>
+                            <TableCell className="text-sm">{order.customer?.name || "N/A"}</TableCell>
+                            <TableCell className="text-sm">{order.kitQuantity}</TableCell>
+                            <TableCell className="text-sm">{formatCurrency(Number(order.totalCost))}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={order.status === "confirmed" ? "default" : "secondary"}
+                                className="text-xs"
+                              >
+                                {order.status === "confirmed" ? "Confirmado" : order.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm">{new Date(order.createdAt).toLocaleDateString('pt-BR')}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                   {(!eventOrders || eventOrders.length === 0) && (
-                    <div className="p-8 text-center text-neutral-500">
-                      Nenhum pedido encontrado para este evento
+                    <div className="p-6 sm:p-8 text-center text-neutral-500">
+                      <p className="text-sm sm:text-base">Nenhum pedido encontrado para este evento</p>
                     </div>
                   )}
                 </div>

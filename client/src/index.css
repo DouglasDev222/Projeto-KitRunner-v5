@@ -58,6 +58,40 @@ button, a, input, select, textarea {
     padding-right: 1rem !important;
   }
 
+  /* Mobile form improvements */
+  .form-section-title {
+    font-size: 1rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  /* Better mobile input sizing */
+  input, select, textarea {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+  }
+
+  /* Mobile-friendly dialog content */
+  [data-radix-dialog-content] {
+    max-height: 90vh !important;
+    margin: 2rem 1rem !important;
+  }
+
+  /* Improve table responsiveness */
+  .admin-table {
+    font-size: 0.875rem;
+  }
+
+  /* Better button spacing on mobile */
+  .mobile-button-group {
+    gap: 0.5rem;
+  }
+
+  /* Form card mobile improvements */
+  .form-card {
+    margin: 0.5rem;
+    padding: 1rem !important;
+  }
+}
+
   .mobile-card-container {
     max-width: 100% !important;
     overflow-x: hidden !important;

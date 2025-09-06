@@ -124,11 +124,13 @@ export default function AdminEventForm() {
 
   return (
     <AdminLayout>
-      <div className="flex items-center mb-6">
-        <Calendar className="w-8 h-8 text-primary mr-3" />
-        <div>
-          <h2 className="text-2xl font-bold text-neutral-800">Novo Evento</h2>
-          <p className="text-neutral-600">Adicione um novo evento ao sistema</p>
+      <div className="mb-6">
+        <div className="flex items-center gap-3">
+          <Calendar className="w-6 h-6 sm:w-8 sm:h-8 text-primary flex-shrink-0" />
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-neutral-800">Novo Evento</h2>
+            <p className="text-sm sm:text-base text-neutral-600">Adicione um novo evento ao sistema</p>
+          </div>
         </div>
       </div>
 
@@ -183,7 +185,7 @@ export default function AdminEventForm() {
                     )}
                   />
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="city"
@@ -533,19 +535,19 @@ export default function AdminEventForm() {
                   />
                 </div>
 
-                <div className="flex gap-4 pt-6">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setLocation("/admin")}
-                    className="flex-1"
+                    className="flex-1 order-2 sm:order-1"
                   >
                     Cancelar
                   </Button>
                   <Button
                     type="submit"
                     disabled={createEventMutation.isPending}
-                    className="flex-1"
+                    className="flex-1 order-1 sm:order-2"
                   >
                     {createEventMutation.isPending ? "Criando..." : "Criar Evento"}
                   </Button>

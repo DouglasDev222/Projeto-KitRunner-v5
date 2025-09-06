@@ -139,10 +139,10 @@ export default function AdminEventEdit() {
         donationDescription: data.donationDescription && data.donationDescription.trim() !== "" ? data.donationDescription : null,
         description: data.description && data.description.trim() !== "" ? data.description : "**Importante:**\n\nPara utilizar nosso serviço, você precisa estar devidamente inscrito no evento através da página oficial da organização. Após a inscrição, basta solicitar a retirada conosco com seu número de inscrição e dados necessários.\n\n**Este é um serviço independente, sem vínculo com a organização do evento. Nossa missão é facilitar sua experiência!**",
       };
-      
+
       const response = await apiRequest("PUT", `/api/admin/events/${id}`, finalData);
       const eventData = await response.json();
-      
+
       // If the event uses CEP zones pricing and has zone configurations, save them
       if (data.pricingType === "cep_zones" && Object.keys(zoneConfigs).length > 0) {
         const zones = Object.entries(zoneConfigs)
@@ -153,7 +153,7 @@ export default function AdminEventEdit() {
             globalPrice: 0 // Will be filled by the backend
           }))
           .filter(zone => zone.price || zone.active === false); // Only send zones with custom price or deactivated
-        
+
         if (zones.length > 0) {
           try {
             await apiRequest("PUT", `/api/admin/events/${id}/cep-zone-prices`, {
@@ -165,7 +165,7 @@ export default function AdminEventEdit() {
           }
         }
       }
-      
+
       return eventData;
     },
     onSuccess: () => {
@@ -175,10 +175,10 @@ export default function AdminEventEdit() {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] }); // Public events list
       queryClient.invalidateQueries({ queryKey: ["/api/events", id] }); // Specific event
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] }); // Dashboard stats
-      
+
       // IMPORTANTE: Invalidar cache das configurações de zona de CEP para este evento
       queryClient.invalidateQueries({ queryKey: ["/api/admin/events", parseInt(id!), "cep-zone-prices"] });
-      
+
       toast({
         title: "Sucesso",
         description: "Evento atualizado com sucesso!",
@@ -528,7 +528,7 @@ export default function AdminEventEdit() {
                 <div className="flex items-center gap-2 mb-4">
                   <h3 className="text-lg font-semibold">Status e Controle de Estoque</h3>
                 </div>
-                
+
                 <FormField
                   control={form.control}
                   name="status"
@@ -579,53 +579,53 @@ export default function AdminEventEdit() {
                 />
 
                 {watchStockEnabled && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="maxOrders"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Limite Máximo de Pedidos</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="100"
-                              type="number"
-                              min="1"
-                              value={field.value || ''}
-                              onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Número máximo de pedidos que podem ser aceitos
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="currentOrders"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Pedidos Realizados Atualmente</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min="0"
-                              value={field.value || 0}
-                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Número atual de pedidos já realizados (somente leitura)
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="maxOrders"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Limite Máximo de Pedidos</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="100"
+                                type="number"
+                                min="1"
+                                value={field.value || ''}
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Número máximo de pedidos que podem ser aceitos
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="currentOrders"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Pedidos Realizados Atualmente</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={field.value || 0}
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Número atual de pedidos já realizados (somente leitura)
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
 
                 <FormField
                   control={form.control}
@@ -694,4 +694,3 @@ export default function AdminEventEdit() {
     </AdminLayout>
   );
 }
-
