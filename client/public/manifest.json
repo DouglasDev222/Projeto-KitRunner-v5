@@ -3,11 +3,11 @@
   "name": "KitRunner",
   "short_name": "KitRunner",
   "description": "Seu Kit de Corrida, Entregue com Agilidade e Praticidade!",
-  "start_url": "/",
+  "start_url": "/eventos",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#1f2937",
-  "theme_color": "#1f2937",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "orientation": "any",
   "icons": [
     {
